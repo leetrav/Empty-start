@@ -1,0 +1,10 @@
+# Godot-generated files
+.godot/
+
+# Local environment and secret files
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
