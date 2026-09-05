@@ -41,41 +41,41 @@ grow_vertical = 2
 [node name="PanelContainer" type="PanelContainer" parent="Overlay/CenterContainer"]
 custom_minimum_size = Vector2(440, 0)
 layout_mode = 2
+theme_type_variation = &"DialogPanel"
 
 [node name="MarginContainer" type="MarginContainer" parent="Overlay/CenterContainer/PanelContainer"]
 layout_mode = 2
-theme_override_constants/margin_left = 28
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 28
-theme_override_constants/margin_bottom = 24
 
 [node name="PauseActions" type="VBoxContainer" parent="Overlay/CenterContainer/PanelContainer/MarginContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 16
 
 [node name="PauseTitle" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/PauseActions"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_type_variation = &"TitleLabel"
 text = "暂停"
 horizontal_alignment = 1
 
 [node name="ResumeButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/PauseActions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
+theme_type_variation = &"PrimaryButton"
 text = "继续游戏"
 
 [node name="SettingsButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/PauseActions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
+theme_type_variation = &"SecondaryButton"
 text = "设置"
 
 [node name="MainMenuButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/PauseActions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
+theme_type_variation = &"SecondaryButton"
 text = "返回主菜单"
 
 [node name="SettingsPanel" parent="." instance=ExtResource("2_settings_panel")]

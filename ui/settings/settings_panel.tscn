@@ -23,7 +23,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
-color = Color(0.02, 0.027, 0.05, 0.94)
+color = Color(0.090196, 0.098039, 0.113725, 0.94)
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -36,21 +36,18 @@ grow_vertical = 2
 [node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
 custom_minimum_size = Vector2(560, 0)
 layout_mode = 2
+theme_type_variation = &"CardPanel"
 
 [node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
 layout_mode = 2
-theme_override_constants/margin_left = 28
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 28
-theme_override_constants/margin_bottom = 24
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 16
 
 [node name="SettingsTitle" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_type_variation = &"TitleLabel"
 text = "设置"
 horizontal_alignment = 1
 
@@ -66,7 +63,7 @@ vertical_alignment = 1
 
 [node name="MasterSlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MasterRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 32)
+custom_minimum_size = Vector2(260, 64)
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
@@ -85,7 +82,7 @@ vertical_alignment = 1
 
 [node name="MusicSlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MusicRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 32)
+custom_minimum_size = Vector2(260, 64)
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
@@ -104,7 +101,7 @@ vertical_alignment = 1
 
 [node name="SFXSlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SFXRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 32)
+custom_minimum_size = Vector2(260, 64)
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
@@ -123,7 +120,7 @@ vertical_alignment = 1
 
 [node name="UISlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/UIRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 32)
+custom_minimum_size = Vector2(260, 64)
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
@@ -133,28 +130,31 @@ step = 0.01
 [node name="FullscreenCheck" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+custom_minimum_size = Vector2(0, 64)
 text = "Fullscreen 全屏"
 
 [node name="SettingsHint" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.58, 0.62, 0.72, 1)
+theme_type_variation = &"MutedLabel"
 text = "拖动滑块立即生效，点击返回时保存。"
 horizontal_alignment = 1
 
 [node name="ActionRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 16
 
 [node name="ResetButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ActionRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_type_variation = &"SecondaryButton"
 text = "恢复默认"
 
 [node name="BackButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ActionRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_type_variation = &"SecondaryButton"
 text = "返回"

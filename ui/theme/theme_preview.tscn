@@ -1,0 +1,177 @@
+[gd_scene load_steps=2 format=3]
+
+[node name="ThemePreview" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.090196, 0.098039, 0.113725, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 48.0
+offset_top = 48.0
+offset_right = -48.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Content" type="VBoxContainer" parent="MarginContainer/ScrollContainer"]
+custom_minimum_size = Vector2(760, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Theme Preview / 主题预览 123"
+horizontal_alignment = 1
+
+[node name="ButtonsHeading" type="Label" parent="MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "Buttons / 按钮"
+
+[node name="PrimaryButton" type="Button" parent="MarginContainer/ScrollContainer/Content"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+text = "PrimaryButton / 主要操作"
+
+[node name="SecondaryButton" type="Button" parent="MarginContainer/ScrollContainer/Content"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_type_variation = &"SecondaryButton"
+text = "SecondaryButton / 次要操作"
+
+[node name="DangerButton" type="Button" parent="MarginContainer/ScrollContainer/Content"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_type_variation = &"DangerButton"
+text = "DangerButton / 危险操作"
+
+[node name="StateHint" type="Label" parent="MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "状态示例：Normal / Hover / Pressed / Focus / Disabled"
+
+[node name="StateRow" type="HBoxContainer" parent="MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="NormalButton" type="Button" parent="MarginContainer/ScrollContainer/Content/StateRow"]
+custom_minimum_size = Vector2(170, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Normal"
+
+[node name="PressedButton" type="Button" parent="MarginContainer/ScrollContainer/Content/StateRow"]
+custom_minimum_size = Vector2(170, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_pressed = true
+text = "Pressed"
+
+[node name="FocusButton" type="Button" parent="MarginContainer/ScrollContainer/Content/StateRow"]
+custom_minimum_size = Vector2(170, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+text = "Focus"
+
+[node name="DisabledButton" type="Button" parent="MarginContainer/ScrollContainer/Content/StateRow"]
+custom_minimum_size = Vector2(170, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Disabled"
+
+[node name="TextHeading" type="Label" parent="MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "Labels / 文本"
+
+[node name="BodyLabel" type="Label" parent="MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+text = "Body Label / 正文文本 / 1234567890"
+
+[node name="MutedLabel" type="Label" parent="MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "Muted Label / 次要说明 / 辅助文字"
+
+[node name="ControlsHeading" type="Label" parent="MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "Controls / 控件"
+
+[node name="VolumeSlider" type="HSlider" parent="MarginContainer/ScrollContainer/Content"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+value = 0.65
+tooltip_text = "HSlider / 音量"
+
+[node name="FullscreenCheck" type="CheckButton" parent="MarginContainer/ScrollContainer/Content"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+text = "CheckButton / Fullscreen 全屏"
+
+[node name="PanelsHeading" type="Label" parent="MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "Panels / 面板"
+
+[node name="CardPanel" type="PanelContainer" parent="MarginContainer/ScrollContainer/Content"]
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+theme_type_variation = &"CardPanel"
+
+[node name="CardContent" type="VBoxContainer" parent="MarginContainer/ScrollContainer/Content/CardPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CardTitle" type="Label" parent="MarginContainer/ScrollContainer/Content/CardPanel/CardContent"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "CardPanel"
+
+[node name="CardText" type="Label" parent="MarginContainer/ScrollContainer/Content/CardPanel/CardContent"]
+layout_mode = 2
+text = "普通内容面板 / Standard content panel"
+
+[node name="DialogPanel" type="PanelContainer" parent="MarginContainer/ScrollContainer/Content"]
+custom_minimum_size = Vector2(0, 144)
+layout_mode = 2
+theme_type_variation = &"DialogPanel"
+
+[node name="DialogContent" type="VBoxContainer" parent="MarginContainer/ScrollContainer/Content/DialogPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DialogTitle" type="Label" parent="MarginContainer/ScrollContainer/Content/DialogPanel/DialogContent"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "DialogPanel"
+
+[node name="DialogText" type="Label" parent="MarginContainer/ScrollContainer/Content/DialogPanel/DialogContent"]
+layout_mode = 2
+text = "对话内容面板 / Dialog content panel"
