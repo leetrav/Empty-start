@@ -1,0 +1,160 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/settings/settings_panel.gd" id="1_settings_panel"]
+
+[node name="SettingsPanel" type="Control"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+process_mode = 3
+visible = false
+z_index = 20
+script = ExtResource("1_settings_panel")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+color = Color(0.02, 0.027, 0.05, 0.94)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SettingsTitle" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "设置"
+horizontal_alignment = 1
+
+[node name="MasterRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="MasterLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MasterRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Master 主音量"
+vertical_alignment = 1
+
+[node name="MasterSlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MasterRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+
+[node name="MusicRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="MusicLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MusicRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Music 音乐音量"
+vertical_alignment = 1
+
+[node name="MusicSlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MusicRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+
+[node name="SFXRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="SFXLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SFXRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "SFX 音效音量"
+vertical_alignment = 1
+
+[node name="SFXSlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SFXRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+
+[node name="UIRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="UILabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/UIRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "UI UI音效音量"
+vertical_alignment = 1
+
+[node name="UISlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/UIRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+
+[node name="FullscreenCheck" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Fullscreen 全屏"
+
+[node name="SettingsHint" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.58, 0.62, 0.72, 1)
+text = "拖动滑块立即生效，点击返回时保存。"
+horizontal_alignment = 1
+
+[node name="ActionRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ResetButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ActionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "恢复默认"
+
+[node name="BackButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ActionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "返回"

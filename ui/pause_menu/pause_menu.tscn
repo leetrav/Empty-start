@@ -1,0 +1,82 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/pause_menu/pause_menu.gd" id="1_pause_menu"]
+[ext_resource type="PackedScene" path="res://ui/settings/settings_panel.tscn" id="2_settings_panel"]
+
+[node name="PauseMenu" type="CanvasLayer"]
+process_mode = 3
+layer = 20
+script = ExtResource("1_pause_menu")
+
+[node name="Overlay" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+process_mode = 3
+visible = false
+mouse_filter = 1
+
+[node name="Dim" type="ColorRect" parent="Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.01, 0.015, 0.03, 0.78)
+
+[node name="CenterContainer" type="CenterContainer" parent="Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="Overlay/CenterContainer"]
+custom_minimum_size = Vector2(440, 0)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Overlay/CenterContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="PauseActions" type="VBoxContainer" parent="Overlay/CenterContainer/PanelContainer/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PauseTitle" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/PauseActions"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "暂停"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/PauseActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "继续游戏"
+
+[node name="SettingsButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/PauseActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "设置"
+
+[node name="MainMenuButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/PauseActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "返回主菜单"
+
+[node name="SettingsPanel" parent="." instance=ExtResource("2_settings_panel")]
+unique_name_in_owner = true
