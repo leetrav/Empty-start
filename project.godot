@@ -12,10 +12,15 @@ config_version=5
 
 config/features=PackedStringArray("4.7")
 
+[audio]
+
+buses/default_bus_layout="res://default_bus_layout.tres"
+
 [autoload]
 
 SceneRouter="*res://core/autoload/scene_router.gd"
 SettingsManager="*res://core/autoload/settings_manager.gd"
+AudioManager="*res://core/autoload/audio_manager.gd"
 MCPRuntimeProbe="*res://addons/godot_mcp/runtime/mcp_runtime_probe.gd"
 
 [editor_plugins]
