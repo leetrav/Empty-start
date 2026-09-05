@@ -34,7 +34,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
-custom_minimum_size = Vector2(720, 0)
+custom_minimum_size = Vector2(560, 0)
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
@@ -51,97 +51,17 @@ theme_override_constants/separation = 12
 [node name="TitleLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "Empty-start 验收主场景"
+text = "Empty-start"
 horizontal_alignment = 1
 
-[node name="DescriptionLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.72, 0.76, 0.86, 1)
-text = "用于验证 SaveManager、SceneRouter 和项目启动流程"
-horizontal_alignment = 1
-
-[node name="Separator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="SaveStateLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "磁盘存档：检查中"
-horizontal_alignment = 1
-
-[node name="SaveDataLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "当前内存数据：检查中"
-horizontal_alignment = 1
-
-[node name="DataActions" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="NewGameButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/DataActions"]
+[node name="StartButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-size_flags_horizontal = 3
-text = "新建测试数据"
+text = "开始游戏"
 
-[node name="SaveButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/DataActions"]
+[node name="QuitButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-size_flags_horizontal = 3
-text = "保存存档"
-
-[node name="FileActions" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="LoadButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/FileActions"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "读取存档"
-
-[node name="DeleteButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/FileActions"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "删除存档"
-
-[node name="SceneActions" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="GameButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SceneActions"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "进入 Sandbox 游戏入口"
-
-[node name="ReloadButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SceneActions"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "重载当前主场景"
-
-[node name="StatusLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.48, 0.86, 0.68, 1)
-text = "状态"
-horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 2
-
-[node name="HintLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.58, 0.62, 0.72, 1)
-text = "建议流程：新建测试数据 → 保存 → 进入 Sandbox → 返回主菜单 → 读取 → 删除"
-horizontal_alignment = 1
-autowrap_mode = 2
+text = "退出游戏"
