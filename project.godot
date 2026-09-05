@@ -14,6 +14,7 @@ config/features=PackedStringArray("4.7")
 
 [autoload]
 
+SceneRouter="*res://core/autoload/scene_router.gd"
 MCPRuntimeProbe="*res://addons/godot_mcp/runtime/mcp_runtime_probe.gd"
 
 [editor_plugins]
