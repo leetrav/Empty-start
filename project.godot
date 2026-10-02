@@ -10,16 +10,9 @@ config_version=5
 
 [application]
 
-config/features=PackedStringArray("4.7")
 run/main_scene="res://core/boot/boot.tscn"
+config/features=PackedStringArray("4.7")
 
-[input]
-
-pause={
-"deadzone": 0.5,
-"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194305,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
-]
-}
 [audio]
 
 buses/default_bus_layout="res://default_bus_layout.tres"
@@ -32,10 +25,6 @@ AudioManager="*res://core/autoload/audio_manager.gd"
 SaveManager="*res://core/autoload/save_manager.gd"
 MCPRuntimeProbe="*res://addons/godot_mcp/runtime/mcp_runtime_probe.gd"
 
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
-
 [display]
 
 window/stretch/mode="canvas_items"
@@ -44,6 +33,18 @@ window/stretch/aspect="expand"
 [gui]
 
 theme/custom="res://ui/theme/base_theme.tres"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
+
+[input]
+
+pause={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194305,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
 
 [physics]
 
