@@ -12,3 +12,21 @@ enum RepeatType { NORMAL, CONTRADICTION }
 
 # 每个复读条目的等待偏移；延迟队列负责按配置生成并读取这些时间。
 @export var wait_offsets_seconds: PackedFloat32Array = PackedFloat32Array()
+
+
+# 把本次命中的原句、结算档位和已解析配置值复制进普通复读计划。
+static func create_normal_hit_plan(
+		original_line_id: StringName,
+		original_line_text: String,
+		settled_tier: int,
+		configured_repeat_count: int,
+		configured_lifetime_seconds: float
+	) -> RepeatPlan:
+	var plan := RepeatPlan.new()
+	plan.original_line_id = original_line_id
+	plan.original_line_text = original_line_text
+	plan.repeat_type = RepeatType.NORMAL
+	plan.planned_repeat_count = configured_repeat_count
+	plan.generation_tier = settled_tier
+	plan.lifetime_seconds = configured_lifetime_seconds
+	return plan
