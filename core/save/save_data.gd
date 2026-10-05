@@ -18,3 +18,6 @@ const CURRENT_VERSION: int = 1
 
 # 吞并系统保存当前周目累计的主播、词库权重和特性成果。
 @export var assimilation_data: AssimilationData = AssimilationData.new()
+
+# 圣典系统持有当前周目已保存及待写入的经文记录。
+@export var scripture_data: ScriptureData = ScriptureData.new()
