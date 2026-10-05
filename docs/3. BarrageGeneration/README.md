@@ -19,8 +19,8 @@
 
 ## 当前仓库状态
 
-- BG-01 已有单条弹幕运行时记录，BG-02 已有普通话语抽取逻辑；当前仍没有可见弹幕生成与生命周期实现。
-- 仓库搜索不到已有 barrage / bullet / projectile / spawn 游戏逻辑。
+- BG-01～BG-03 已提供运行时记录、普通话语抽取和单条可见弹幕；BG-04 已按当前关基础参数持续生成。
+- Tier 倍率、弹幕寿命、同屏上限、暂停和移除仍由后续任务负责。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - 4. BarrageTraits、5. CombatAttack、6. HitResolution、8. CombatStage、10. Repeat、12. ContradictionBreak 等依赖系统尚未实现时，对应联调任务只保留任务卡，不提前造临时接口。
 
@@ -102,3 +102,9 @@ BG-13 等【8. CombatStage】和【10. Repeat】都存在真实清理接口后�
 `systems/barrage_generation/barrage_area.tscn` 是可复用弹幕区域，公开 `spawn_normal_barrage(LevelProfile, LevelSpeech)` 入口；调用后创建 `BarrageRuntimeRecord` 并实例化 `barrage_view.tscn`。视图显示原句文本，并按当前关 `base_move_speed_pixels_per_second` 从右向左移动。
 
 当前项目实际游戏入口仍指向技术 Sandbox，BG-03 将弹幕区域接入该场景用于原型验证。强度暂用 `1.0` 占位；没有增加到期、离屏移除、命中或连续生成逻辑，等待对应任务卡。
+
+### BG-04 普通弹幕持续生成
+
+`BarrageArea.start_normal_generation(LevelProfile)` 打开普通生成，立即生成第一批，随后使用 `base_spawn_interval_seconds` 驱动内置 `Timer`，每批调用 `spawn_normal_barrage()` 共 `base_batch_count` 次。`stop_normal_generation()` 停止后续批次；已经在场的视图继续移动。
+
+Sandbox 当前负责调用启动入口；未来战斗阶段可调用相同的启动 / 停止方法。此卡尚未接入 Tier 倍率、同屏上限、暂停或弹幕移除，因此临时参数下同一通道的话语可能重叠。

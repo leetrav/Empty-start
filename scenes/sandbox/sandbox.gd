@@ -3,30 +3,24 @@ extends Control
 const SAMPLE_LEVEL_CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 
 @onready var _barrage_area: BarrageArea = %BarrageArea
-var _speech_selector: NormalSpeechSelector = NormalSpeechSelector.new()
 
 
 func _ready() -> void:
-	# 连接 Sandbox 的两个技术验证入口，并显示一条当前关普通话语。
+	# 连接 Sandbox 的技术验证入口并启动当前关的普通弹幕生成。
 	%ReloadButton.pressed.connect(_on_reload_button_pressed)
 	%MainMenuButton.pressed.connect(_on_main_menu_button_pressed)
-	_spawn_sample_barrage()
+	_start_sample_barrage_generation()
 
 
-func _spawn_sample_barrage() -> void:
-	# Sandbox 是当前游戏入口；用正式关卡与选择器管线生成一条可见样例。
+func _start_sample_barrage_generation() -> void:
+	# Sandbox 是当前游戏入口；用当前关配置启动普通生成演示。
 	var run_state: LevelRunState = LevelRunState.new(SAMPLE_LEVEL_CATALOG)
 	var current_level: LevelProfile = run_state.get_current_level_profile()
 	if current_level == null:
 		push_error("Sandbox: 当前没有普通关卡配置。")
 		return
-	var speech: LevelSpeech = _speech_selector.select_next_normal_speech(current_level)
-	if speech == null:
-		push_error("Sandbox: 当前关没有可生成的普通话语。")
-		return
-	var barrage_view: BarrageView = _barrage_area.spawn_normal_barrage(current_level, speech)
-	if barrage_view == null:
-		push_error("Sandbox: 单条普通弹幕生成失败。")
+	if not _barrage_area.start_normal_generation(current_level):
+		push_error("Sandbox: 无法启动普通弹幕生成。")
 
 
 func _on_reload_button_pressed() -> void:
