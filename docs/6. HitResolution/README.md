@@ -20,6 +20,8 @@ HR-01 由 `core/combat/hit_resolution.gd` 持有本场唯一玩家 PK，脚本�
 
 对手占比只从玩家 PK 派生，不在其他系统保存第二份可写 PK。Tier 通知与攻击整发结算仍由后续任务接入。
 
+HR-02 的 `calculate_normal_word_reward(strength)` 按强度返回 `pk_delta` 和 `tendency_delta`，不修改当前 PK，也不提交三项倾向。PK 奖励从百分比换算为内部 0–1 比例：强度 1 为 `0.0012 / +1`，强度 2 为 `0.002 / +5`，强度 3 为 `0.005 / +10`。Tier 不参与该接口。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |

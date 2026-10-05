@@ -1,6 +1,12 @@
 class_name HitResolution
 extends RefCounted
 
+const _NORMAL_WORD_REWARDS_BY_STRENGTH: Dictionary = {
+	1: {"pk_delta": 0.0012, "tendency_delta": 1},
+	2: {"pk_delta": 0.002, "tendency_delta": 5},
+	3: {"pk_delta": 0.005, "tendency_delta": 10},
+}
+
 var _player_pk: float = 0.0
 var _minimum_player_pk: float = 0.0
 var _maximum_player_pk: float = 1.0
@@ -27,6 +33,14 @@ func apply_player_pk_delta(delta: float) -> float:
 func get_player_pk() -> float:
 	# 只读提供玩家 PK；对手显示值由读取方按需从总量中计算。
 	return _player_pk
+
+
+func calculate_normal_word_reward(strength: int) -> Dictionary:
+	# 固定收益只由话语强度决定；Tier 不参与计算，本方法也不直接更新 PK 或倾向。
+	if not _NORMAL_WORD_REWARDS_BY_STRENGTH.has(strength):
+		push_error("Normal word strength must be 1, 2, or 3; received %d." % strength)
+		return {}
+	return _NORMAL_WORD_REWARDS_BY_STRENGTH[strength].duplicate()
 
 
 func _clamp_player_pk(value: float) -> float:
