@@ -57,3 +57,10 @@ func advance(delta_seconds: float) -> Array[RepeatPlan]:
 
 	_pending_items = remaining_items
 	return ready_requests
+
+
+# 转入矛盾阶段时清空尚未到期的普通复读，避免阶段结束后迟到。
+func clear_normal_queue() -> int:
+	var cleared_count: int = _pending_items.size()
+	_pending_items.clear()
+	return cleared_count
