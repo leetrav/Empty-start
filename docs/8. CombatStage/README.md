@@ -16,6 +16,8 @@
 
 `data/combat_stage/tier_catalog.tres` 为 Tier 0～5 的静态配置来源。`CombatStageTierCatalog.get_tier_config(tier)` 按档位读取各自的升/降档阈值、生成数量/频率/移动/寿命倍率、对手回拉倍率、每次命中复读数和对手立绘状态标识。
 
+CS-02 的运行时 `CombatStage` 对象通过 `begin_combat()` 在新一场或当前关重开时把当前 Tier 设为 0；`get_current_tier()` 只读该状态。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
