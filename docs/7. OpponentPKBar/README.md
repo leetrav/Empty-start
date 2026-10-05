@@ -22,6 +22,8 @@ OP-01 的 `calculate_pullback_amount(speed, elapsed_seconds)` 返回正的 PK �
 
 OP-05 在当前唯一 PK 到达 0 时只发出一次 `attempt_failed`，并停止本系统的回拉。失败监听方可据此关闭攻击并显示本场失败；当前真实攻击入口尚未合并。重开状态由 OP-06 处理。
 
+OP-09 由 OpponentPKBar 记录本关连败：`record_current_level_failure()` 加一，`complete_current_level()` 与 `start_new_run()` 均归零。连败只作为记录，不改变难度参数。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |

@@ -7,6 +7,7 @@ var _hit_resolution: HitResolution
 var _pullback_speed: float = 0.0
 var _is_pullback_active: bool = false
 var _attempt_failed: bool = false
+var _loss_streak_count: int = 0
 
 
 func _ready() -> void:
@@ -36,6 +37,26 @@ func resume_pullback() -> void:
 
 func has_attempt_failed() -> bool:
 	return _attempt_failed
+
+
+func record_current_level_failure() -> int:
+	# 每次当前关失败只由失败流程调用一次，并递增本关连败数。
+	_loss_streak_count += 1
+	return _loss_streak_count
+
+
+func complete_current_level() -> void:
+	# 完成本关后清零，下一关从零开始计算连败。
+	_loss_streak_count = 0
+
+
+func start_new_run() -> void:
+	# 新周目与当前关进度无关，连败记录重新开始。
+	_loss_streak_count = 0
+
+
+func get_loss_streak_count() -> int:
+	return _loss_streak_count
 
 
 func _process(delta: float) -> void:
