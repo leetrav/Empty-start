@@ -4,7 +4,8 @@ extends Node
 signal attempt_failed
 
 var _hit_resolution: HitResolution
-var _pullback_speed: float = 0.0
+var _base_pullback_speed: float = 0.0
+var _pullback_multiplier: float = 1.0
 var _is_pullback_active: bool = false
 var _attempt_failed: bool = false
 var _loss_streak_count: int = 0
@@ -15,13 +16,18 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 
 
-func start_pullback(hit_resolution: HitResolution, speed: float) -> void:
+func start_pullback(hit_resolution: HitResolution, base_speed: float) -> void:
 	# 普通战斗开始时绑定唯一 PK 所有者和当前回拉速度，不复制玩家 PK。
 	if _attempt_failed:
 		return
 	_hit_resolution = hit_resolution
-	_pullback_speed = speed
+	_base_pullback_speed = base_speed
 	_is_pullback_active = true
+
+
+func update_pullback_multiplier(multiplier: float) -> void:
+	# Tier 变化只影响后续帧的回拉速度，已经结算的时间不会重新计算。
+	_pullback_multiplier = maxf(multiplier, 0.0)
 
 
 func stop_pullback() -> void:
@@ -67,7 +73,8 @@ func _process(delta: float) -> void:
 		_mark_attempt_failed()
 		return
 
-	var pullback_amount: float = calculate_pullback_amount(_pullback_speed, delta)
+	var current_speed: float = _base_pullback_speed * _pullback_multiplier
+	var pullback_amount: float = calculate_pullback_amount(current_speed, delta)
 	if pullback_amount > 0.0:
 		_hit_resolution.apply_player_pk_delta(-pullback_amount)
 		if _hit_resolution.get_player_pk() <= 0.0:
