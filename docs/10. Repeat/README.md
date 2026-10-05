@@ -22,7 +22,9 @@
 - `RepeatPlan` 是可序列化的复读计划 Resource，字段包括原句 ID / 文本、模板显示文本、普通或矛盾类型、已确定数量、生成档位、寿命和逐条等待偏移；`wait_offsets_seconds` 每项对应一个待复读条目的计划等待时间。
 - `RepeatPlan.create_normal_hit_plan(...)` 在普通命中时创建计划，并把原句、结算后档位、调用方已解析的复读数量和寿命复制为固定值；当前没有可用的 CombatStage Tier 配置接口，所以本系统不重复维护档位数值表。
 - `RepeatPlan.apply_display_template(template)` 将模板中的 `{原句}` 替换为原句文本并保存到 `display_text`；模板缺少标记时发出警告并回退显示原句。`original_line_id` 始终独立保留，供生成弹幕关联原句。正式模板内容仍待策划提供。
-- 后续延迟队列可读取计划和每条复读的等待偏移；RP-04 按正式延迟配置填充等待信息。
+- `RepeatDelayConfig` 位于 `data/repeat/repeat_delay_config.tres`，当前等待范围为 0.5～3.0 秒，正式调参可直接改此资源。
+- `RepeatDelayQueue.enqueue_plan(plan)` 将普通计划拆为单条请求并抽取各自等待时间；`advance(delta_seconds)` 返回到期请求，之后由 RP-06 交给弹幕生成系统。
+- 原计划的 `wait_offsets_seconds` 保存每条复读的相对等待时间；队列不创建或管理屏幕上的弹幕实例。
 - 当前只建立数据结构；数量计算、延迟调度、弹幕生成、统计和历史提交分别由后续任务负责。
 
 ## 任务顺序
