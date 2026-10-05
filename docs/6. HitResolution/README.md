@@ -14,6 +14,12 @@
 
 矛盾阶段的胜负不在这里判断。
 
+## 当前已实现接口
+
+HR-01 由 `core/combat/hit_resolution.gd` 持有本场唯一玩家 PK，脚本为场景解耦的 `RefCounted` 对象。创建对象时传入本场初始 PK、下限和上限；重开时可调用 `initialize_player_pk()` 重置。`apply_player_pk_delta()` 统一修改并限制 PK，`get_player_pk()` 提供只读值。
+
+对手占比只从玩家 PK 派生，不在其他系统保存第二份可写 PK。Tier 通知与攻击整发结算仍由后续任务接入。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
