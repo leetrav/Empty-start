@@ -2,12 +2,21 @@ extends Node
 
 # 统一维护主菜单和游戏入口的目标路径，避免 UI 分散保存场景路径。
 const MAIN_MENU_SCENE_PATH: String = "res://ui/main_menu/main_menu.tscn"
+const IDENTITY_SETUP_SCENE_PATH: String = "res://ui/identity_setup/identity_setup.tscn"
 const GAME_SCENE_PATH: String = "res://scenes/sandbox/sandbox.tscn"
 
 
 func goto_main_menu() -> Error:
 	# 加载并切换到项目约定的主菜单场景。
 	var scene: PackedScene = _load_scene(MAIN_MENU_SCENE_PATH)
+	if scene == null:
+		return ERR_FILE_NOT_FOUND
+	return _change_scene(scene)
+
+
+func goto_identity_setup() -> Error:
+	# 新周目的身份设置作为顶层页面统一通过 SceneRouter 切换。
+	var scene: PackedScene = _load_scene(IDENTITY_SETUP_SCENE_PATH)
 	if scene == null:
 		return ERR_FILE_NOT_FOUND
 	return _change_scene(scene)

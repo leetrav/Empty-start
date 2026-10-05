@@ -22,15 +22,16 @@
 - `IdentityConfirmationState` 锁定后的身份 ID 可通过 `SaveManager.set_identity_data()` 写入 SaveData，供本周目场景重建后继续读取。
 - `SaveData.streamer_name` 与 `SaveData.identity_id` 保存本周目确认结果；新周目初始化为空名和空 ID，确认后由 `SaveManager.set_identity_data()` 一次写入。
 - 新增字段有明确空值默认，并兼容缺少这两个字段的旧版 SaveData，因此 `SaveData.CURRENT_VERSION` 保持 `1`。
-- `ui/identity_setup/identity_setup.tscn` 提供主播名输入、身份选项、当前选中态和确认按钮；确认调用名字规则、身份锁定状态与 SaveManager，不负责顶层场景切换。
+- `ui/identity_setup/identity_setup.tscn` 提供主播名输入、身份选项和当前选中态；确认时调用名字规则与身份锁定、写入并保存 SaveData，再由 SceneRouter 进入 Game。
 - 身份图标为空时，页面用倾向字标占位；正式图标可直接由 `IdentityOption.icon` 替换。
 
 ## 当前仓库状态
 
-- 身份选项数据类型、三份占位资源、主播名确认、身份锁定、周目存档字段和身份设置页面已建立；主菜单到身份设置的流程仍待 ID-06 接通。
+- 身份流程已接通：主菜单 Start 新建 SaveData 并进入身份设置；确认后保存姓名和身份 ID，再由 SceneRouter 进入当前 Game 入口。
+- 身份选项数据类型、三份占位资源、主播名确认、身份锁定、周目存档字段和身份设置页面已建立。
 - `SaveManager` 已存在，并持有 `SaveData`。
 - `SaveData` 包含版本、游玩时间、当前场景、checkpoint、主播名和身份 ID 字段。
-- 主菜单 Start 当前直接调用 `SceneRouter.goto_game()` 进入 sandbox。
+- 当前 `SceneRouter.goto_game()` 仍指向 Sandbox 技术测试场景，后续替换真实游戏入口时更新。
 - 当前仓库没有独立单元测试框架。
 
 ## 任务顺序
