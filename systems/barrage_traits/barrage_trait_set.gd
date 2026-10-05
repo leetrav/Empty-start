@@ -55,7 +55,7 @@ func is_selectable() -> bool:
 	return not has_trait(UNSELECTABLE)
 
 
-# 把当前特性转换成结算可读取的目标结果；反弹优先于遮挡和基础结果。
+# 按反弹、遮挡、基础类型的固定顺序生成唯一结果。
 func get_hit_result() -> BarrageTraitResult:
 	if has_trait(REFLECT):
 		return BarrageTraitResult.new(BarrageTraitResult.Kind.REFLECT)
