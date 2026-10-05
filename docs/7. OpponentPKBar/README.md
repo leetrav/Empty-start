@@ -20,6 +20,8 @@
 
 OP-01 的 `calculate_pullback_amount(speed, elapsed_seconds)` 返回正的 PK 扣减量，不保存或修改玩家 PK。OP-03 将 Node 设为 `PROCESS_MODE_PAUSABLE`，由 `SceneTree.paused` 自动暂停回拉；阶段结束调用 `stop_pullback()`，普通战斗恢复时调用 `resume_pullback()`。
 
+OP-05 在当前唯一 PK 到达 0 时只发出一次 `attempt_failed`，并停止本系统的回拉。失败监听方可据此关闭攻击并显示本场失败；当前真实攻击入口尚未合并。重开状态由 OP-06 处理。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |

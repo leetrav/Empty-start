@@ -1,9 +1,12 @@
 class_name OpponentPKBar
 extends Node
 
+signal attempt_failed
+
 var _hit_resolution: HitResolution
 var _pullback_speed: float = 0.0
 var _is_pullback_active: bool = false
+var _attempt_failed: bool = false
 
 
 func _ready() -> void:
@@ -13,6 +16,8 @@ func _ready() -> void:
 
 func start_pullback(hit_resolution: HitResolution, speed: float) -> void:
 	# 普通战斗开始时绑定唯一 PK 所有者和当前回拉速度，不复制玩家 PK。
+	if _attempt_failed:
+		return
 	_hit_resolution = hit_resolution
 	_pullback_speed = speed
 	_is_pullback_active = true
@@ -25,18 +30,36 @@ func stop_pullback() -> void:
 
 func resume_pullback() -> void:
 	# 恢复普通战斗时沿用当前速度和唯一 PK 所有者继续回拉。
-	if _hit_resolution != null:
+	if _hit_resolution != null and not _attempt_failed:
 		_is_pullback_active = true
+
+
+func has_attempt_failed() -> bool:
+	return _attempt_failed
 
 
 func _process(delta: float) -> void:
 	# 仅在显式启动后逐帧计算回拉量，并把负增量交给 HitResolution。
-	if not _is_pullback_active or _hit_resolution == null:
+	if not _is_pullback_active or _hit_resolution == null or _attempt_failed:
+		return
+	if _hit_resolution.get_player_pk() <= 0.0:
+		_mark_attempt_failed()
 		return
 
 	var pullback_amount: float = calculate_pullback_amount(_pullback_speed, delta)
 	if pullback_amount > 0.0:
 		_hit_resolution.apply_player_pk_delta(-pullback_amount)
+		if _hit_resolution.get_player_pk() <= 0.0:
+			_mark_attempt_failed()
+
+
+func _mark_attempt_failed() -> void:
+	# 本场失败只通知一次；监听方负责关闭攻击入口并显示失败流程。
+	if _attempt_failed:
+		return
+	_attempt_failed = true
+	_is_pullback_active = false
+	attempt_failed.emit()
 
 
 func calculate_pullback_amount(speed: float, elapsed_seconds: float) -> float:
