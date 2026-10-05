@@ -11,9 +11,15 @@
 
 本系统当前不负责三项倾向的累计，也不负责结局判词。它只把“开局是谁”保存好并提供给后续系统。
 
+## 当前数据约定
+
+- `IdentityOption` 是可编辑的 Godot `Resource`，包含稳定身份 ID、显示名称、`Texture2D` 图标引用和倾向 ID。
+- 倾向 ID 使用 `orthodox`、`heretical`、`absurd`，供后续系统读取；身份系统不负责累计倾向。
+- `data/identity/` 提供三份占位资源。正式身份名称和图标素材尚未进入仓库，资源中的图标目前为空，待正式内容到位后替换。
+
 ## 当前仓库状态
 
-- 当前没有身份系统代码和身份选择场景。
+- 身份选项数据类型和三份占位资源已建立；主播名确认、身份锁定、周目保存和身份设置场景仍待后续任务完成。
 - `SaveManager` 已存在，并持有 `SaveData`。
 - `SaveData` 当前只有版本、游玩时间、当前场景和 checkpoint 字段。
 - 主菜单 Start 当前直接调用 `SceneRouter.goto_game()` 进入 sandbox。
