@@ -1,0 +1,102 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/identity_setup/identity_setup.gd" id="1_identity_setup"]
+
+[node name="IdentitySetup" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_identity_setup")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.090196, 0.098039, 0.113725, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 24.0
+offset_right = -40.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(1180, 0)
+layout_mode = 2
+theme_type_variation = &"DialogPanel"
+
+[node name="Margins" type="MarginContainer" parent="CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="Content" type="VBoxContainer" parent="CenterContainer/Panel/Margins"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="CenterContainer/Panel/Margins/Content"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "建立你的身份"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="CenterContainer/Panel/Margins/Content"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "留下主播名，选择你准备侍奉的身份。"
+horizontal_alignment = 1
+
+[node name="NameHeading" type="Label" parent="CenterContainer/Panel/Margins/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "主播名"
+
+[node name="StreamerNameInput" type="LineEdit" parent="CenterContainer/Panel/Margins/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+placeholder_text = "输入主播名；留空会使用默认名“新主播”"
+
+[node name="IdentityHeading" type="Label" parent="CenterContainer/Panel/Margins/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "选择开局身份"
+
+[node name="IdentityHint" type="Label" parent="CenterContainer/Panel/Margins/Content"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "身份确认后，本周目内保持固定。"
+
+[node name="IdentityOptions" type="HBoxContainer" parent="CenterContainer/Panel/Margins/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="StatusLabel" type="Label" parent="CenterContainer/Panel/Margins/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "输入主播名并选择身份后确认。"
+
+[node name="ConfirmButton" type="Button" parent="CenterContainer/Panel/Margins/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+text = "确认身份"
