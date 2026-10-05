@@ -169,8 +169,8 @@
 </tr>
 <tr>
 <td>KT-26</td>
-<td>同时打开多个启用 Godot-MCP-Native 的 worktree 编辑器时，第二个编辑器可能因默认端口 9080 已被占用而无法启动 MCP 服务。</td>
-<td>并行编辑器使用不同 MCP 端口；无法配置独立端口时避免同时启动多个默认端口服务，纯脚本校验继续使用 Godot CLI。</td>
+<td>同时启动多个启用 Godot-MCP-Native 的编辑器时，后启动的实例可能因默认端口 9080 已被占用而无法连接 MCP；仅因 Codex 工具列表未显示 Godot 工具就判断项目 MCP 未启动，也会漏掉正在运行的服务。</td>
+<td>先请求 `http://127.0.0.1:9080/cli/v1/doctor` 检查 `editor_connected` 与 `project_path`，目标编辑器已连接时复用它的本地 MCP 接口；确需启动第二个编辑器时配置独立端口，纯脚本校验仍可使用 Godot CLI。</td>
 </tr>
 </table>
 ## 六、自查入口
