@@ -31,3 +31,9 @@ extends Resource
 @export var true_contradictions: Array[LevelContradiction] = []
 @export var false_contradictions: Array[LevelContradiction] = []
 @export var contradiction_context_clues: Array[String] = []
+
+## 以下为未实测的基础生成默认值，策划试玩后调整。
+@export var base_batch_count: int = 3
+@export var base_spawn_interval_seconds: float = 1.0
+@export var base_move_speed_pixels_per_second: float = 100.0
+@export var normal_barrage_screen_cap: int = 24

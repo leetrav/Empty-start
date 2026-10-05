@@ -9,6 +9,7 @@ script = ExtResource("2_speech")
 original_sentence_id = "sample_sentence_001"
 text = "示例普通话语，后续替换为策划内容。"
 tendency_id = ""
+appearance_weight = 1.0
 
 [sub_resource type="Resource" script_class="LevelContradiction" id="LevelContradiction_true_sample"]
 script = ExtResource("3_contradiction")
@@ -35,3 +36,7 @@ absurd_ratio = 0.0
 true_contradictions = Array[ExtResource("3_contradiction")]([SubResource("LevelContradiction_true_sample")])
 false_contradictions = Array[ExtResource("3_contradiction")]([SubResource("LevelContradiction_false_sample")])
 contradiction_context_clues = Array[String](["示例前文线索，后续由策划替换。"])
+base_batch_count = 3
+base_spawn_interval_seconds = 1.0
+base_move_speed_pixels_per_second = 100.0
+normal_barrage_screen_cap = 24

@@ -8,3 +8,6 @@ extends Resource
 
 ## 共享倾向 ID 约定尚未落地，先保留可编辑字符串，不设第二套枚举。
 @export var tendency_id: String = ""
+
+## 同一倾向内的相对出现权重；1.0 暂作等权默认值。
+@export var appearance_weight: float = 1.0
