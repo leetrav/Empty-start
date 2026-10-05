@@ -53,7 +53,7 @@ UI、10 秒计时器、战斗冻结、奖励系统和休息流程全部做实际
 ## 依赖顺序
 
 FO-01 等 12. ContradictionBreak 的成功与过渡完成事件。
-FO-02～05 可在普通命中历史与 10. Repeat 统计存在后完成纯候选逻辑。
+FO-02～05 在【6. HitResolution】HR-14 的本场普通命中历史与【10. Repeat】普通复读统计存在后完成纯候选逻辑。
 FO-06～09 完成神谕选择流程。
 FO-10 等 15. Scripture。
 FO-11 等 16. LoserCard 与 14. Assimilation。
