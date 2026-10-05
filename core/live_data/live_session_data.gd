@@ -1,10 +1,34 @@
 class_name LiveSessionData
 extends Resource
 
-@export var viewer_count: int = 0
-@export var like_count: int = 0
-@export var comment_count: int = 0
-@export var fan_count: int = 0
+# 四项数值变化时通知读取它们的表现 UI。
+@export var viewer_count: int = 0:
+	set(value):
+		if viewer_count == value:
+			return
+		viewer_count = value
+		emit_changed()
+
+@export var like_count: int = 0:
+	set(value):
+		if like_count == value:
+			return
+		like_count = value
+		emit_changed()
+
+@export var comment_count: int = 0:
+	set(value):
+		if comment_count == value:
+			return
+		comment_count = value
+		emit_changed()
+
+@export var fan_count: int = 0:
+	set(value):
+		if fan_count == value:
+			return
+		fan_count = value
+		emit_changed()
 
 
 # 开始一场直播时重置本场表现值，并接收本周目当前粉丝数。
