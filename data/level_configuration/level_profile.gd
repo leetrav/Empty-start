@@ -23,3 +23,11 @@ extends Resource
 @export var orthodox_ratio: float = 0.0
 @export var heretical_ratio: float = 0.0
 @export var absurd_ratio: float = 0.0
+
+## 特性 ID 的正式取值由弹幕特性系统定义，关卡只保存本关选择的 ID。
+@export var special_trait_ids: Array[String] = []
+
+## 矛盾内容与线索归当前关卡配置，判定规则由矛盾击破系统执行。
+@export var true_contradictions: Array[LevelContradiction] = []
+@export var false_contradictions: Array[LevelContradiction] = []
+@export var contradiction_context_clues: Array[String] = []

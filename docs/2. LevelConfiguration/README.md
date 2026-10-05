@@ -74,7 +74,7 @@ LC-01 使用 `data/level_configuration/level_profile.gd` 定义 `LevelProfile` R
 
 基础资料包含稳定关卡 ID、关卡顺序、主播稳定 ID、主播显示名、主播形象纹理、直播主题、粉丝牌稳定 ID 和粉丝牌纹理。主播形象与粉丝牌纹理使用 `Texture2D` 引用；美术资源缺失时可以暂留空值，后续直接替换。粉丝牌也可先用稳定 ID 标识。
 
-当前类型保存静态关卡资料、普通话语池和倾向比例；尚未包含特殊玩法、生成参数或推进状态。
+当前类型保存静态关卡资料、普通话语池、倾向比例、特殊玩法标识、真假矛盾和前文线索；尚未包含生成参数或推进状态。
 
 ### LC-02 词库与倾向比例
 
@@ -83,3 +83,9 @@ LC-01 使用 `data/level_configuration/level_profile.gd` 定义 `LevelProfile` R
 三项比例字段为 `orthodox_ratio`、`heretical_ratio`、`absurd_ratio`，类型均为浮点数。本数据类型只保存比例，不负责抽取、归一化或玩家倾向累计；具体内容与比例由策划填写。
 
 身份系统与三项倾向系统目前还没有共享的稳定倾向 ID 约定，因此 `tendency_id` 暂不固定取值，示例值留空，也不在关卡配置系统另建枚举。共享 ID 约定落地后，再填写对应 ID。
+
+### LC-03 特殊玩法与矛盾内容
+
+`LevelProfile.special_trait_ids` 保存本关使用的特性稳定 ID 字符串，具体 ID 由弹幕特性系统定义。当前仓库还没有 BT-01 数据定义，所以示例列表留空，本系统不预设一份特性枚举。
+
+真、假矛盾分别保存在 `true_contradictions` 与 `false_contradictions` 中；每项为 `LevelContradiction` Resource，含稳定 `original_sentence_id` 与文本。`contradiction_context_clues` 保存本关前文线索文本。矛盾真假判定和命中流程仍由矛盾击破系统负责。
