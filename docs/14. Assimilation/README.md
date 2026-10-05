@@ -11,6 +11,13 @@
 
 同时区分“关卡通关”和“真正击败”，并把已获得内容提供给后续关卡、休息时刻和神降临。
 
+## 当前数据底座
+
+- `AssimilationData` 是吞并系统的数据 Resource，由当前周目的 `SaveData.assimilation_data` 持有。
+- `completed_streamer_ids` 与 `defeated_streamer_ids` 分别保存已通关主播 ID 和真正击败主播 ID。
+- `inherited_word_weights` 以稳定词库 ID 为键、出现权重为值；`inherited_trait_ids` 保存可继承特性 ID。
+- 本卡只定义可保存 / 读取的长期成果字段；击败登记、去重、词库 / 特性实际写入及跨系统读取由后续任务实现。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
