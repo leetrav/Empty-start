@@ -84,3 +84,9 @@ BG-10 等【10. Repeat】提供真实复读生成请求后再接。
 BG-12 等【8. CombatStage】和【12. ContradictionBreak】确定真实阶段入口与矛盾数据后再接。
 
 BG-13 等【8. CombatStage】和【10. Repeat】都存在真实清理接口后再做完整阶段清理。
+
+## BG-01 已实现的运行时数据
+
+`systems/barrage_generation/barrage_runtime_record.gd` 定义 `BarrageRuntimeRecord`（`RefCounted`），运行时实例保存显示文本、来源稳定 ID、倾向 ID、强度和稳定 `original_sentence_id`。来源 ID 表示内容拥有者，当前关话语可取主播 ID；强度默认 `0.0`，创建方按正式参数赋值。它是运行时数据快照，不改写 `LevelSpeech` 或 `LevelContradiction` 静态 Resource。
+
+当前记录不包含弹幕类别、场景节点、移动或寿命状态；后续任务确实需要区分时再增加对应字段。`tendency_id` 继续沿用关卡内容提供的字符串，不在弹幕生成系统另建枚举。
