@@ -1,5 +1,5 @@
-## 保存普通战斗弹幕与陷阱共同占用的容量身份。
-class_name NormalBarrageCapacityLedger
+## 按对象实例身份维护一组弹幕容量；不同用途分别持有独立账本。
+class_name BarrageCapacityLedger
 extends RefCounted
 
 var _occupants: Dictionary = {}

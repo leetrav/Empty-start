@@ -1,6 +1,6 @@
 extends SceneTree
 
-const CAPACITY_LEDGER_SCRIPT = preload("res://systems/barrage_generation/normal_barrage_capacity_ledger.gd")
+const CAPACITY_LEDGER_SCRIPT = preload("res://systems/barrage_generation/barrage_capacity_ledger.gd")
 
 # 使用轻量对象区分陷阱与话语占位，验证它们共用同一上限。
 func _init() -> void:

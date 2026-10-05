@@ -1,6 +1,6 @@
 extends SceneTree
 
-const CAPACITY_LEDGER_SCRIPT = preload("res://systems/barrage_generation/normal_barrage_capacity_ledger.gd")
+const CAPACITY_LEDGER_SCRIPT = preload("res://systems/barrage_generation/barrage_capacity_ledger.gd")
 
 # 释放陷阱占位后，普通占用者应拿到腾出的容量。
 func _init() -> void:

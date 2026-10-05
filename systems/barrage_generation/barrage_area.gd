@@ -5,6 +5,8 @@ extends Control
 @export var barrage_view_scene: PackedScene
 ## 临时全局基础寿命，正式数值表接入前可在 Inspector 调整。
 @export var base_lifetime_seconds: float = 10.0
+## 临时复读同屏上限，正式数值表接入前可在 Inspector 调整。
+@export var repeat_barrage_screen_cap: int = 24
 @onready var _spawn_timer: Timer = $SpawnTimer
 
 var _speech_selector: NormalSpeechSelector = NormalSpeechSelector.new()
@@ -15,7 +17,8 @@ var _frequency_multiplier: float = 1.0
 var _movement_speed_multiplier: float = 1.0
 var _lifetime_multiplier: float = 1.0
 ## 普通话语与陷阱共用的容量账本。
-var _normal_capacity_ledger: NormalBarrageCapacityLedger = NormalBarrageCapacityLedger.new()
+var _normal_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
+var _repeat_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
 
 ## 连接本组件的批次 Timer 超时信号。
 func _ready() -> void:
@@ -126,6 +129,60 @@ func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> B
 		start_x = 0.0
 	view.position = Vector2(start_x, maxf((size.y - view.size.y) * 0.5, 0.0))
 	return view
+
+## 把 RepeatPlan 的单条请求显示为场上复读；容量满时返回 null 供 Repeat 处理溢出。
+func spawn_repeat_barrage(plan: RepeatPlan) -> BarrageView:
+	if plan == null or _current_level_profile == null:
+		return null
+	if barrage_view_scene == null:
+		push_error("BarrageArea: 未配置弹幕表现 Scene。")
+		return null
+	var original_line_id: String = str(plan.original_line_id)
+	if original_line_id.is_empty() or plan.lifetime_seconds <= 0.0:
+		push_error("BarrageArea: 复读请求需要稳定原句 ID 和正寿命。")
+		return null
+	if not _repeat_capacity_ledger.has_capacity(repeat_barrage_screen_cap):
+		return null
+
+	var repeat_record: BarrageRuntimeRecord = BarrageRuntimeRecord.new()
+	repeat_record.text = plan.display_text if not plan.display_text.is_empty() else plan.original_line_text
+	repeat_record.source_id = _current_level_profile.streamer_id
+	repeat_record.original_sentence_id = original_line_id
+	repeat_record.strength = 1.0
+	repeat_record.capture_lifetime_at_spawn(Time.get_ticks_msec(), plan.lifetime_seconds, 1.0)
+
+	var view: BarrageView = barrage_view_scene.instantiate() as BarrageView
+	if view == null:
+		push_error("BarrageArea: 弹幕表现 Scene 根节点需要 BarrageView。")
+		return null
+	var effective_move_speed: float = _current_level_profile.base_move_speed_pixels_per_second * _movement_speed_multiplier
+	view.setup(repeat_record, effective_move_speed, self)
+	if not _try_register_repeat_capacity_occupant(view):
+		view.free()
+		return null
+	add_child(view)
+	var start_x: float = size.x - view.size.x
+	if start_x < 0.0:
+		start_x = 0.0
+	view.position = Vector2(start_x, maxf((size.y - view.size.y) * 0.5, 0.0))
+	return view
+
+## 复读屏幕容量独立登记，视图离树时自动释放。
+func _try_register_repeat_capacity_occupant(occupant: Object) -> bool:
+	if occupant == null:
+		return false
+	if _repeat_capacity_ledger.has_occupant(occupant):
+		return true
+	if not _repeat_capacity_ledger.try_register(occupant, repeat_barrage_screen_cap):
+		return false
+	if occupant is Node:
+		var occupant_node: Node = occupant as Node
+		occupant_node.tree_exited.connect(_on_repeat_capacity_occupant_tree_exited.bind(occupant), CONNECT_ONE_SHOT)
+	return true
+
+## 复读视图离树时归还独立屏幕容量。
+func _on_repeat_capacity_occupant_tree_exited(occupant: Object) -> void:
+	_repeat_capacity_ledger.release(occupant)
 
 ## 按四舍五入后的批次数量倍率生成当前批次。
 func _spawn_normal_batch() -> void:

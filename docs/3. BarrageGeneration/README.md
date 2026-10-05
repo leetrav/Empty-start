@@ -19,10 +19,10 @@
 
 ## 当前仓库状态
 
-- BG-01～BG-03 已提供运行时记录、普通话抽取和单条可见弹幕；BG-04 持续生成，BG-05 应用后续倍率，BG-06 固定生成时寿命，BG-07 共享普通容量，BG-08 处理到期与离区移除。
-- BG-06～BG-08 已完成；CombatStage 接线、全局暂停、命中移除和布局参数接线仍由后续任务负责。
+- BG-01～BG-08 核心任务已完成；BG-09 等待 4. BarrageTraits / 6. HitResolution 结果接口，BG-10 消费 RepeatPlan 并维护独立复读容量。
+- Repeat 的延迟队列调用接线由 10. Repeat 的 RP-06 处理；CombatStage 接线、全局暂停、命中移除和布局参数接线仍由后续任务负责。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
-- 4. BarrageTraits、5. CombatAttack、6. HitResolution、8. CombatStage、10. Repeat、12. ContradictionBreak 等依赖系统尚未实现时，对应联调任务只保留任务卡，不提前造临时接口。
+- 4. BarrageTraits、5. CombatAttack、6. HitResolution、8. CombatStage、12. ContradictionBreak 等缺少真实接口时，对应联调任务仍保留任务卡；10. Repeat 已提供 RepeatPlan 数据，队列发出请求仍待 RP-06。
 
 ## 任务顺序
 
@@ -126,3 +126,7 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 ### BG-08 到期与离开区域自然移除
 
 生成时由 `BarrageArea` 把所属 `Control` 注入 `BarrageView`。视图每帧比较当前单调时钟与 `BarrageRuntimeRecord.expires_at_msec`；到期后调用 `queue_free()`。移动后，视图矩形与所属 Control 当前矩形不相交时也会自然结束。Node 离树触发 BG-07 的容量释放。当前有效区域使用 BarrageArea 实际边界，BG-14 布局读取完成后再接入舞台参数。命中移除由 BG-09 处理，全局暂停补偿由 BG-11 处理。
+
+### BG-10 复读请求与独立同屏上限
+
+`BarrageArea.spawn_repeat_barrage(RepeatPlan)` 接收单条计划，复制原句 ID、display_text 和计划寿命到运行时记录。复读使用独立的 `repeat_barrage_screen_cap`（临时默认 24，可在 Inspector 调整）和独立容量账本；普通容量满时复读仍可生成。复读容量满时方法返回 `null`，Repeat 调用方按既定溢出规则处理。延迟与数量由 RepeatDelayQueue 决定，本系统只显示到期请求。
