@@ -55,8 +55,10 @@ func is_selectable() -> bool:
 	return not has_trait(UNSELECTABLE)
 
 
-# 把遮挡特性转换成结算可读取的目标结果；具体异常优先级由 BT-08 统一处理。
+# 把当前特性转换成结算可读取的目标结果；反弹优先于遮挡和基础结果。
 func get_hit_result() -> BarrageTraitResult:
+	if has_trait(REFLECT):
+		return BarrageTraitResult.new(BarrageTraitResult.Kind.REFLECT)
 	if has_trait(OCCLUSION):
 		return BarrageTraitResult.new(BarrageTraitResult.Kind.OCCLUSION)
 	if has_trait(FAKE_CARD):

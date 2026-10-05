@@ -1,7 +1,7 @@
 class_name BarrageTraitResult
 extends RefCounted
 
-enum Kind { NORMAL, OCCLUSION, FAKE_CARD, RETALIATION_COPY }
+enum Kind { NORMAL, OCCLUSION, FAKE_CARD, RETALIATION_COPY, REFLECT }
 
 var kind: Kind = Kind.NORMAL
 
@@ -13,9 +13,13 @@ var receives_normal_reward: bool:
 # 遮挡异常交给命中结算系统应用数值，这里只传递异常类型。
 var anomaly_type: StringName:
 	get:
-		if kind == Kind.OCCLUSION:
-			return &"occlusion"
-		return &""
+		match kind:
+			Kind.OCCLUSION:
+				return &"occlusion"
+			Kind.REFLECT:
+				return &"reflect"
+			_:
+				return &""
 
 
 # 创建已经解析的目标结果，不在特性模块计算 PK 或扣分。

@@ -28,6 +28,7 @@
 - BT-04 已让同一结果接口区分 `FAKE_CARD`；假牌不发正常话语收益，由后续命中结算识别并应用对应惩罚。
 - BT-05 可通过 `mark_as_retaliation_copy()` 标记复制品；`is_retaliation_copy()` 可供 UI 显示反击标记，`can_trigger_copy()` 阻止复制链延续，命中时返回 `RETALIATION_COPY` 结果。
 - BT-06 已实现正常话语的一次性分裂触发判定；两个子话语的生成、配置倾向 / 强度、独立原句 ID 和母体截止时间继承等待 3. BarrageGeneration 的真实入口与数据接口。
+- BT-07 反弹目标返回 `REFLECT` 结果，不发正常话语收益，并携带 `reflect` 异常类型；反弹优先于遮挡和基础结果。
 - 3. BarrageGeneration 尚无正式弹幕运行时记录或生成入口；该组件暂未挂接到场上弹幕实例，等待真实运行时对象出现后组合接入。
 - 2. LevelConfiguration 已拆出“本关特殊玩法标识”的配置任务。
 - 3. BarrageGeneration 已拆出弹幕运行时记录、生成、生命周期与容量任务。
