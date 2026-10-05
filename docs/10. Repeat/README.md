@@ -26,6 +26,7 @@
 - `RepeatDelayQueue.new(maximum_pending_normal_count)` 接收调用方已解析的普通待生成容量；`enqueue_plan(plan)` 只保留剩余容量内的请求并直接丢弃溢出，返回实际接受数量。
 - `RepeatDelayQueue.advance(delta_seconds)` 返回到期单条请求，之后由 RP-06 交给弹幕生成系统。该待生成队列容量独立于 3. BarrageGeneration 的屏幕弹幕容量。
 - 原计划的 `wait_offsets_seconds` 保存每条复读的相对等待时间；队列不创建或管理屏幕上的弹幕实例。
+- `RepeatGenerationStats.record_generated(plan, actual_generated_count)` 仅根据计划类型把弹幕生成系统确认的实际生成数量按 `original_line_id` 累计；`get_normal_count(id)` 与 `get_contradiction_count(id)` 分别读取两类统计。
 - 当前只建立数据结构；数量计算、延迟调度、弹幕生成、统计和历史提交分别由后续任务负责。
 
 ## 任务顺序
