@@ -45,3 +45,13 @@ func try_tier_down(final_player_pk: float) -> bool:
 
 	_current_tier -= 1
 	return true
+
+
+func update_tier_for_pk(final_player_pk: float) -> bool:
+	# 重复调用已实现的单档规则，直到该 PK 不再跨越升档或降档阈值。
+	var tier_changed: bool = false
+	while try_tier_up(final_player_pk):
+		tier_changed = true
+	while try_tier_down(final_player_pk):
+		tier_changed = true
+	return tier_changed
