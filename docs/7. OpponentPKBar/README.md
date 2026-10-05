@@ -16,7 +16,9 @@
 
 ## 当前已实现接口
 
-OP-01 由 `core/combat/opponent_pk_bar.gd` 提供纯计算方法 `calculate_pullback_amount(speed, elapsed_seconds)`，返回正的 PK 扣减量，不修改玩家 PK。实际状态更新由 HitResolution 负责。
+`core/combat/opponent_pk_bar.gd` 是场景内的回拉 Node。OP-02 可通过 `start_pullback(hit_resolution, speed)` 在普通战斗开始时注入 6 系统所有者和当前速度；`_process(delta)` 每帧计算回拉量，并以负增量调用 `HitResolution.apply_player_pk_delta()`。
+
+OP-01 的 `calculate_pullback_amount(speed, elapsed_seconds)` 返回正的 PK 扣减量，不保存或修改玩家 PK。OP-03 仍负责暂停和阶段结束时停止回拉。
 
 ## 任务顺序
 
