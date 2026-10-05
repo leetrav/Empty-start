@@ -72,6 +72,17 @@ custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
 placeholder_text = "输入主播名；留空会使用默认名“新主播”"
 
+[node name="FanGroupHeading" type="Label" parent="CenterContainer/Panel/Margins/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "粉丝团名"
+
+[node name="FanGroupNameInput" type="LineEdit" parent="CenterContainer/Panel/Margins/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+placeholder_text = "输入粉丝团名；留空会使用默认名“新粉丝团”"
+
 [node name="IdentityHeading" type="Label" parent="CenterContainer/Panel/Margins/Content"]
 layout_mode = 2
 theme_type_variation = &"HeadingLabel"

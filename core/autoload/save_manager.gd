@@ -15,13 +15,14 @@ func new_game() -> void:
 	data = SaveData.new()
 
 
-# 将身份系统确认后的姓名和身份 ID 写入当前周目数据。
-func set_identity_data(streamer_name: String, identity_id: StringName) -> Error:
+# 将身份系统确认后的主播名、粉丝团名和身份 ID 一次写入当前周目数据。
+func set_identity_data(streamer_name: String, identity_id: StringName, fan_group_name: String) -> Error:
 	if data == null:
 		push_error("SaveManager: cannot set identity because current SaveData is null.")
 		return ERR_UNCONFIGURED
 
 	data.streamer_name = streamer_name
+	data.fan_group_name = fan_group_name
 	data.identity_id = identity_id
 	return OK
 

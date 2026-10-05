@@ -11,13 +11,14 @@ var _selected_option: IdentityOption = null
 var _option_buttons: Array[Button] = []
 
 @onready var _streamer_name_input: LineEdit = %StreamerNameInput
+@onready var _fan_group_name_input: LineEdit = %FanGroupNameInput
 @onready var _identity_options_container: HBoxContainer = %IdentityOptions
 @onready var _status_label: Label = %StatusLabel
 @onready var _confirm_button: Button = %ConfirmButton
 
 
 func _ready() -> void:
-	# 页面只设置和提交本周目身份，不负责创建新周目或切换场景。
+	# 主菜单创建本周目数据；页面负责身份确认并在保存后进入 Game。
 	_confirm_button.pressed.connect(_on_confirm_button_pressed)
 	_build_identity_options()
 	_restore_saved_identity()
@@ -92,9 +93,10 @@ func _restore_saved_identity() -> void:
 		return
 
 	_streamer_name_input.text = SaveManager.data.streamer_name
+	_fan_group_name_input.text = SaveManager.data.fan_group_name
 	var saved_identity_id: StringName = SaveManager.data.identity_id
 	if saved_identity_id.is_empty():
-		_status_label.text = "输入主播名并选择身份后确认。空白名字会使用默认名“新主播”。"
+		_status_label.text = "输入主播名、粉丝团名并选择身份后确认。空白名称会使用默认名。"
 		return
 
 	var identity_ids := _get_identity_ids()
@@ -121,7 +123,7 @@ func _get_identity_ids() -> Array[StringName]:
 	return identity_ids
 
 
-# 确认名字、锁定身份并写入当前 SaveData；场景切换留给 ID-06。
+# 确认两个名称和身份、保存当前 SaveData，再通过 SceneRouter 进入 Game。
 func _on_confirm_button_pressed() -> void:
 	if SaveManager.data == null:
 		_status_label.text = "当前没有新周目数据，请从主菜单开始新周目。"
@@ -132,20 +134,23 @@ func _on_confirm_button_pressed() -> void:
 			return
 
 		var streamer_name: String = IdentityNameRules.confirm_streamer_name(_streamer_name_input.text)
+		var fan_group_name: String = IdentityNameRules.confirm_fan_group_name(_fan_group_name_input.text)
 		if not _confirmation_state.confirm_identity(_selected_option.identity_id, _get_identity_ids()):
 			_status_label.text = "身份确认失败；请检查身份选项数据。"
 			return
 
 		var identity_error: Error = SaveManager.set_identity_data(
 			streamer_name,
-			_confirmation_state.get_confirmed_identity_id()
+			_confirmation_state.get_confirmed_identity_id(),
+			fan_group_name
 		)
 		if identity_error != OK:
 			_status_label.text = "身份数据未能写入当前周目。"
 			return
 
 		_streamer_name_input.text = streamer_name
-		_status_label.text = "已确认：%s · %s。正在保存。" % [streamer_name, _selected_option.display_name]
+		_fan_group_name_input.text = fan_group_name
+		_status_label.text = "已确认：%s · %s · %s。正在保存。" % [streamer_name, fan_group_name, _selected_option.display_name]
 		_lock_identity_controls()
 	elif SaveManager.data.identity_id != _confirmation_state.get_confirmed_identity_id():
 		_status_label.text = "当前周目数据与已确认身份不一致，无法继续。"
@@ -162,9 +167,10 @@ func _on_confirm_button_pressed() -> void:
 		return
 
 
-# 首次确认后允许重试保存或进入 Game，只锁定主播名和身份选项。
+# 首次确认后允许重试保存或进入 Game，同时锁定两个名称和身份选项。
 func _lock_identity_controls() -> void:
 	_streamer_name_input.editable = false
+	_fan_group_name_input.editable = false
 	for button in _option_buttons:
 		button.disabled = true
 
