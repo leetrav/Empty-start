@@ -66,6 +66,14 @@ func select_shot_anomaly(has_bounce: bool, has_obstruction: bool, is_miss: bool)
 	return ShotAnomaly.NONE
 
 
+func is_shot_fully_missed(target_validity: Array[bool]) -> bool:
+	# 只要本发存在一个有效目标，其他失效目标就不能把整发变成落空。
+	for target_is_valid: bool in target_validity:
+		if target_is_valid:
+			return false
+	return true
+
+
 func resolve_shot_results(target_results: Array[Dictionary]) -> Dictionary:
 	# 保留逐目标结算数据，只把 PK 增量求和后统一更新一次并应用范围限制。
 	var total_pk_delta: float = 0.0

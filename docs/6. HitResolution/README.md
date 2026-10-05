@@ -28,6 +28,8 @@ HR-05 的 `resolve_shot_results(target_results)` 接收逐目标结算字典，�
 
 HR-06 的 `select_shot_anomaly(has_bounce, has_obstruction, is_miss)` 每发只选择一个异常，顺序为 `BOUNCE > OBSTRUCTION > MISS`；没有异常时返回 `NONE`。调用方把同一反弹目标的重复报告合并为 `has_bounce` 后调用。
 
+HR-07 的 `is_shot_fully_missed(target_validity)` 仅在没有任何有效目标时返回 true。只要有一个有效目标，其余失效目标不会增加落空异常；全失效或空目标列表仍可交给 HR-06 判断落空。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
