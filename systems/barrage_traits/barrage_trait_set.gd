@@ -30,6 +30,14 @@ func is_selectable() -> bool:
 	return not has_trait(UNSELECTABLE)
 
 
+# 把遮挡特性转换成结算可读取的目标结果；具体异常优先级由 BT-08 统一处理。
+func get_hit_result() -> BarrageTraitResult:
+	if has_trait(OCCLUSION):
+		return BarrageTraitResult.new(BarrageTraitResult.Kind.OCCLUSION)
+
+	return BarrageTraitResult.new()
+
+
 # 返回副本，避免调用方绕过装配入口修改这条弹幕的特性。
 func get_trait_ids() -> Array[StringName]:
 	return _trait_ids.duplicate()
