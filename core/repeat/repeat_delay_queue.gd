@@ -5,10 +5,12 @@ const DELAY_CONFIG: RepeatDelayConfig = preload("res://data/repeat/repeat_delay_
 
 var _random_generator: RandomNumberGenerator = RandomNumberGenerator.new()
 var _pending_items: Array[Dictionary] = []
+var _maximum_pending_normal_count: int
 
 
-func _init() -> void:
-	# 每个队列使用独立随机源，为不同复读条目抽取各自等待时间。
+func _init(maximum_pending_normal_count: int) -> void:
+	# 容量由调用方读取数值配置后传入；随机源只在普通计划入队时抽取等待时间。
+	_maximum_pending_normal_count = maxi(maximum_pending_normal_count, 0)
 	_random_generator.randomize()
 
 
@@ -20,8 +22,10 @@ func enqueue_plan(plan: RepeatPlan) -> int:
 		push_error("RepeatDelayQueue: configured delay range is invalid.")
 		return 0
 
+	var available_capacity: int = maxi(_maximum_pending_normal_count - _pending_items.size(), 0)
+	var accepted_count: int = mini(plan.planned_repeat_count, available_capacity)
 	var wait_offsets: PackedFloat32Array = PackedFloat32Array()
-	for _index in range(plan.planned_repeat_count):
+	for _index in range(accepted_count):
 		var delay_seconds: float = _random_generator.randf_range(
 			DELAY_CONFIG.minimum_delay_seconds,
 			DELAY_CONFIG.maximum_delay_seconds
@@ -34,7 +38,7 @@ func enqueue_plan(plan: RepeatPlan) -> int:
 		_pending_items.append({"remaining_seconds": delay_seconds, "plan": request_plan})
 
 	plan.wait_offsets_seconds = wait_offsets
-	return wait_offsets.size()
+	return accepted_count
 
 
 # 推进所有等待项，并返回到期的单条计划副本供调用方生成。
