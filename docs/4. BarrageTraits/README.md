@@ -23,6 +23,7 @@
 ## 当前仓库状态
 
 - BT-01 已提供 `BarrageTraitSet` 运行时数据组件，包含稳定特性 ID，并支持单条弹幕装配和查询多个特性。
+- BT-02 已提供 `BarrageTraitSet.is_selectable()`；带 `unselectable` 的弹幕返回 `false`，其他弹幕返回 `true`。
 - 3. BarrageGeneration 尚无正式弹幕运行时记录或生成入口；该组件暂未挂接到场上弹幕实例，等待真实运行时对象出现后组合接入。
 - 2. LevelConfiguration 已拆出“本关特殊玩法标识”的配置任务。
 - 3. BarrageGeneration 已拆出弹幕运行时记录、生成、生命周期与容量任务。

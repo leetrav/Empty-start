@@ -25,6 +25,11 @@ func has_trait(trait_id: StringName) -> bool:
 	return _trait_ids.has(trait_id)
 
 
+# 只判断这条弹幕能否进入攻击目标集合，不处理整发落空。
+func is_selectable() -> bool:
+	return not has_trait(UNSELECTABLE)
+
+
 # 返回副本，避免调用方绕过装配入口修改这条弹幕的特性。
 func get_trait_ids() -> Array[StringName]:
 	return _trait_ids.duplicate()
