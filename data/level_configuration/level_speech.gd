@@ -6,7 +6,7 @@ extends Resource
 @export var original_sentence_id: String = ""
 @export_multiline var text: String = ""
 
-## 共享倾向 ID 约定尚未落地，先保留可编辑字符串，不设第二套枚举。
+## 倾向 ID 沿用身份选项系统的 orthodox / heretical / absurd 稳定字符串。
 @export var tendency_id: String = ""
 
 ## 同一倾向内的相对出现权重；1.0 暂作等权默认值。

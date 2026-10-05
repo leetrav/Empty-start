@@ -1,14 +1,28 @@
-[gd_resource type="Resource" script_class="LevelProfile" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="LevelProfile" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://data/level_configuration/level_profile.gd" id="1_profile"]
 [ext_resource type="Script" path="res://data/level_configuration/level_speech.gd" id="2_speech"]
 [ext_resource type="Script" path="res://data/level_configuration/level_contradiction.gd" id="3_contradiction"]
 
-[sub_resource type="Resource" script_class="LevelSpeech" id="LevelSpeech_sample"]
+[sub_resource type="Resource" script_class="LevelSpeech" id="LevelSpeech_orthodox_sample"]
 script = ExtResource("2_speech")
 original_sentence_id = "sample_sentence_001"
-text = "示例普通话语，后续替换为策划内容。"
-tendency_id = ""
+text = "示例正统话语，策划后续替换。"
+tendency_id = "orthodox"
+appearance_weight = 1.0
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="LevelSpeech_heretical_sample"]
+script = ExtResource("2_speech")
+original_sentence_id = "sample_sentence_heretical_001"
+text = "示例异端话语，策划后续替换。"
+tendency_id = "heretical"
+appearance_weight = 1.0
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="LevelSpeech_absurd_sample"]
+script = ExtResource("2_speech")
+original_sentence_id = "sample_sentence_absurd_001"
+text = "示例荒谬话语，策划后续替换。"
+tendency_id = "absurd"
 appearance_weight = 1.0
 
 [sub_resource type="Resource" script_class="LevelContradiction" id="LevelContradiction_true_sample"]
@@ -29,10 +43,10 @@ streamer_id = "streamer_sample"
 streamer_name = "示例主播"
 stream_topic = "示例直播主题，可在 Inspector 中编辑。"
 fan_badge_id = "fan_badge_sample"
-normal_speech_pool = Array[ExtResource("2_speech")]([SubResource("LevelSpeech_sample")])
-orthodox_ratio = 0.0
-heretical_ratio = 0.0
-absurd_ratio = 0.0
+normal_speech_pool = Array[ExtResource("2_speech")]([SubResource("LevelSpeech_orthodox_sample"), SubResource("LevelSpeech_heretical_sample"), SubResource("LevelSpeech_absurd_sample")])
+orthodox_ratio = 1.0
+heretical_ratio = 1.0
+absurd_ratio = 1.0
 true_contradictions = Array[ExtResource("3_contradiction")]([SubResource("LevelContradiction_true_sample")])
 false_contradictions = Array[ExtResource("3_contradiction")]([SubResource("LevelContradiction_false_sample")])
 contradiction_context_clues = Array[String](["示例前文线索，后续由策划替换。"])

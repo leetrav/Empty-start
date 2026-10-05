@@ -82,7 +82,7 @@ LevelProfile 保存静态关卡资料、普通话语池、倾向比例、特殊�
 
 三项比例字段为 `orthodox_ratio`、`heretical_ratio`、`absurd_ratio`，类型均为浮点数。本数据类型只保存比例，不负责抽取、归一化或玩家倾向累计；具体内容与比例由策划填写。
 
-身份系统与三项倾向系统目前还没有共享的稳定倾向 ID 约定，因此 `tendency_id` 暂不固定取值，示例值留空，也不在关卡配置系统另建枚举。共享 ID 约定落地后，再填写对应 ID。
+倾向稳定 ID 沿用身份选项系统 ID-01 的字符串值：`orthodox`、`heretical`、`absurd`。`LevelSpeech.tendency_id` 保持字符串字段，不在关卡配置系统另建枚举。
 
 ### LC-03 特殊玩法与矛盾内容
 

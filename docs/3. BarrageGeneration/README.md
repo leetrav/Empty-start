@@ -19,7 +19,7 @@
 
 ## 当前仓库状态
 
-- 当前没有正式弹幕生成系统实现。
+- BG-01 已有单条弹幕运行时记录，BG-02 已有普通话语抽取逻辑；当前仍没有可见弹幕生成与生命周期实现。
 - 仓库搜索不到已有 barrage / bullet / projectile / spawn 游戏逻辑。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - 4. BarrageTraits、5. CombatAttack、6. HitResolution、8. CombatStage、10. Repeat、12. ContradictionBreak 等依赖系统尚未实现时，对应联调任务只保留任务卡，不提前造临时接口。
@@ -90,3 +90,9 @@ BG-13 等【8. CombatStage】和【10. Repeat】都存在真实清理接口后�
 `systems/barrage_generation/barrage_runtime_record.gd` 定义 `BarrageRuntimeRecord`（`RefCounted`），运行时实例保存显示文本、来源稳定 ID、倾向 ID、强度和稳定 `original_sentence_id`。来源 ID 表示内容拥有者，当前关话语可取主播 ID；强度默认 `0.0`，创建方按正式参数赋值。它是运行时数据快照，不改写 `LevelSpeech` 或 `LevelContradiction` 静态 Resource。
 
 当前记录不包含弹幕类别、场景节点、移动或寿命状态；后续任务确实需要区分时再增加对应字段。`tendency_id` 继续沿用关卡内容提供的字符串，不在弹幕生成系统另建枚举。
+
+## BG-02 普通话语抽取
+
+`NormalSpeechSelector.select_next_normal_speech(current_level)` 每次直接读取传入关卡的当前词库与倾向比例，不缓存旧内容。倾向 ID 使用 `orthodox`、`heretical`、`absurd`；先按关卡比例选择倾向，再按该倾向下各条 `LevelSpeech.appearance_weight` 选择话语。
+
+返回值是原始 `LevelSpeech` Resource，可继续读取文本、倾向和稳定原句 ID；没有有效候选时返回 `null`。本步骤不创建场上实例。
