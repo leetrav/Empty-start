@@ -74,7 +74,7 @@ LC-01 使用 `data/level_configuration/level_profile.gd` 定义 `LevelProfile` R
 
 基础资料包含稳定关卡 ID、关卡顺序、主播稳定 ID、主播显示名、主播形象纹理、直播主题、粉丝牌稳定 ID 和粉丝牌纹理。主播形象与粉丝牌纹理使用 `Texture2D` 引用；美术资源缺失时可以暂留空值，后续直接替换。粉丝牌也可先用稳定 ID 标识。
 
-当前类型保存静态关卡资料、普通话语池、倾向比例、特殊玩法标识、真假矛盾、前文线索和基础生成参数；尚未包含关卡推进状态。
+LevelProfile 保存静态关卡资料、普通话语池、倾向比例、特殊玩法标识、真假矛盾、前文线索和基础生成参数；当前周目进度由 LevelRunState 单独保存。
 
 ### LC-02 词库与倾向比例
 
@@ -103,3 +103,9 @@ LC-01 使用 `data/level_configuration/level_profile.gd` 定义 `LevelProfile` R
 `LevelCatalog.profiles` 保存普通关卡集合；每个 `LevelProfile.level_order` 使用唯一递增序号表示流程位置。`LevelRunState` 新建时选择序号最小的关卡，通过 `set_current_level_order()` 切换，并由 `get_current_level_profile()` 返回当前配置。
 
 示例目录 `data/level_configuration/level_catalog.tres` 列出 `level_001.tres` 与 `level_002.tres`。本阶段只读取当前关卡，不推进、不结算，也不接入 UI。
+
+### LC-06 同一关只完成一次并推进
+
+`LevelRunState.complete_level(level_id)` 只接受当前关的首次完成：存在更大的 `level_order` 时返回 `ADVANCED` 并推进；重复提交返回 `ALREADY_COMPLETED`；最后一关返回 `ALL_NORMAL_LEVELS_COMPLETED`，`is_all_normal_levels_completed()` 同时报告结束状态。空白或未知 ID 返回 `INVALID_LEVEL`，已知但非当前关返回 `LEVEL_NOT_CURRENT`。
+
+完成记录保存在单个 `LevelRunState` 实例中，以当前周目状态实例 + `level_id` 识别本次提交。去重状态不写入 SaveData；本类不调用休息时刻、终局或奖励系统。
