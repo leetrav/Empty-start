@@ -76,12 +76,22 @@ func is_shot_fully_missed(target_validity: Array[bool]) -> bool:
 
 func resolve_shot_results(target_results: Array[Dictionary]) -> Dictionary:
 	# 保留逐目标结算数据，只把 PK 增量求和后统一更新一次并应用范围限制。
+	# 回拉已使 PK 到达下限时整发作废，避免提交命中收益或倾向结果。
+	if _player_pk <= _minimum_player_pk:
+		return {
+			"cancelled_by_zero_pk": true,
+			"total_pk_delta": 0.0,
+			"final_player_pk": _player_pk,
+			"target_results": [],
+		}
+
 	var total_pk_delta: float = 0.0
 	for target_result: Dictionary in target_results:
 		total_pk_delta += float(target_result.get("pk_delta", 0.0))
 
 	var final_player_pk: float = apply_player_pk_delta(total_pk_delta)
 	return {
+		"cancelled_by_zero_pk": false,
 		"total_pk_delta": total_pk_delta,
 		"final_player_pk": final_player_pk,
 		"target_results": target_results.duplicate(true),

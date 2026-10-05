@@ -26,6 +26,8 @@ HR-04 的 `calculate_repeat_hit_result()` 返回有效命中标记和零 PK、�
 
 HR-05 的 `resolve_shot_results(target_results)` 接收逐目标结算字典，先汇总全部 `pk_delta`，再一次性更新并限制玩家 PK。返回整发的 `total_pk_delta` 与 `final_player_pk`，并深拷贝保留原有 `target_results`，供后续读取每个目标的倾向变化。此处还没有接入 Tier 通知。
 
+HR-08 在整发结算前检查当前 PK。若回拉已把 PK 降至下限，返回 `cancelled_by_zero_pk = true`、零 PK 增量和空 `target_results`，本发命中与倾向变化都不再传递；正常结算返回 false。
+
 HR-06 的 `select_shot_anomaly(has_bounce, has_obstruction, is_miss)` 每发只选择一个异常，顺序为 `BOUNCE > OBSTRUCTION > MISS`；没有异常时返回 `NONE`。调用方把同一反弹目标的重复报告合并为 `has_bounce` 后调用。
 
 HR-07 的 `is_shot_fully_missed(target_validity)` 仅在没有任何有效目标时返回 true。只要有一个有效目标，其余失效目标不会增加落空异常；全失效或空目标列表仍可交给 HR-06 判断落空。
