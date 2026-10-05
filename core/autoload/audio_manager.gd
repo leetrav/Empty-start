@@ -6,6 +6,7 @@ const UI_PLAYER_COUNT: int = 4
 const MUSIC_BUS_NAME: StringName = &"Music"
 const SFX_BUS_NAME: StringName = &"SFX"
 const UI_BUS_NAME: StringName = &"UI"
+const AUDIO_EVENT_CONFIG: AudioEventConfig = preload("res://data/shared/audio_event_config.tres")
 
 var _music_player: AudioStreamPlayer
 var _sfx_players: Array[AudioStreamPlayer] = []
@@ -67,6 +68,27 @@ func play_sfx(stream: AudioStream) -> void:
 func play_ui(stream: AudioStream) -> void:
 	# 将 UI 音效播放到独立的 UI 播放器池。
 	_play_from_pool(stream, _ui_players, _ui_play_order, UI_BUS_NAME, "play_ui")
+
+
+# 按稳定事件 ID 查配置，再交给现有播放器和 Bus 入口执行。
+func play_event(event_id: StringName) -> void:
+	var event: AudioEvent = AUDIO_EVENT_CONFIG.find_event(event_id)
+	if event == null:
+		push_warning("AudioManager: audio event '%s' is not configured." % str(event_id))
+		return
+	if event.stream == null:
+		push_warning("AudioManager: audio event '%s' has no AudioStream." % str(event_id))
+		return
+
+	match event.audio_type:
+		AudioEvent.AudioType.MUSIC:
+			play_music(event.stream)
+		AudioEvent.AudioType.SFX:
+			play_sfx(event.stream)
+		AudioEvent.AudioType.UI:
+			play_ui(event.stream)
+		_:
+			push_error("AudioManager: audio event '%s' has an unsupported audio type." % str(event_id))
 
 
 func _create_player(player_name: String, bus_name: StringName, bus_available: bool) -> AudioStreamPlayer:
