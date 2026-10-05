@@ -1,6 +1,13 @@
 class_name HitResolution
 extends RefCounted
 
+enum ShotAnomaly {
+	NONE,
+	BOUNCE,
+	OBSTRUCTION,
+	MISS,
+}
+
 const _NORMAL_WORD_REWARDS_BY_STRENGTH: Dictionary = {
 	1: {"pk_delta": 0.0012, "tendency_delta": 1},
 	2: {"pk_delta": 0.002, "tendency_delta": 5},
@@ -46,6 +53,17 @@ func calculate_normal_word_reward(strength: int) -> Dictionary:
 func calculate_repeat_hit_result() -> Dictionary:
 	# 复读是有效命中，但不产生 PK 或倾向收益，避免被整发结算误判为落空。
 	return {"is_valid_hit": true, "pk_delta": 0.0, "tendency_delta": 0}
+
+
+func select_shot_anomaly(has_bounce: bool, has_obstruction: bool, is_miss: bool) -> ShotAnomaly:
+	# 每发只选一个异常；布尔输入把同一反弹目标的重复报告折叠为一次。
+	if has_bounce:
+		return ShotAnomaly.BOUNCE
+	if has_obstruction:
+		return ShotAnomaly.OBSTRUCTION
+	if is_miss:
+		return ShotAnomaly.MISS
+	return ShotAnomaly.NONE
 
 
 func resolve_shot_results(target_results: Array[Dictionary]) -> Dictionary:
