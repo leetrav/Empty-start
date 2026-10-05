@@ -18,7 +18,7 @@
 
 `core/combat/opponent_pk_bar.gd` 是场景内的回拉 Node。OP-02 可通过 `start_pullback(hit_resolution, speed)` 在普通战斗开始时注入 6 系统所有者和当前速度；`_process(delta)` 每帧计算回拉量，并以负增量调用 `HitResolution.apply_player_pk_delta()`。
 
-OP-01 的 `calculate_pullback_amount(speed, elapsed_seconds)` 返回正的 PK 扣减量，不保存或修改玩家 PK。OP-03 仍负责暂停和阶段结束时停止回拉。
+OP-01 的 `calculate_pullback_amount(speed, elapsed_seconds)` 返回正的 PK 扣减量，不保存或修改玩家 PK。OP-03 将 Node 设为 `PROCESS_MODE_PAUSABLE`，由 `SceneTree.paused` 自动暂停回拉；阶段结束调用 `stop_pullback()`，普通战斗恢复时调用 `resume_pullback()`。
 
 ## 任务顺序
 

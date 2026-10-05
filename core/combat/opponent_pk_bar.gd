@@ -6,11 +6,27 @@ var _pullback_speed: float = 0.0
 var _is_pullback_active: bool = false
 
 
+func _ready() -> void:
+	# 全局暂停时由 SceneTree 停止此节点处理，避免回拉继续推进。
+	process_mode = Node.PROCESS_MODE_PAUSABLE
+
+
 func start_pullback(hit_resolution: HitResolution, speed: float) -> void:
 	# 普通战斗开始时绑定唯一 PK 所有者和当前回拉速度，不复制玩家 PK。
 	_hit_resolution = hit_resolution
 	_pullback_speed = speed
 	_is_pullback_active = true
+
+
+func stop_pullback() -> void:
+	# 普通战斗结束或切入其他阶段时停止回拉。
+	_is_pullback_active = false
+
+
+func resume_pullback() -> void:
+	# 恢复普通战斗时沿用当前速度和唯一 PK 所有者继续回拉。
+	if _hit_resolution != null:
+		_is_pullback_active = true
 
 
 func _process(delta: float) -> void:
