@@ -1,6 +1,8 @@
 class_name HitResolution
 extends RefCounted
 
+signal final_player_pk_updated(final_player_pk: float)
+
 enum ShotAnomaly {
 	NONE,
 	BOUNCE,
@@ -34,8 +36,9 @@ func initialize_player_pk(initial_pk: float, minimum_pk: float, maximum_pk: floa
 
 
 func apply_player_pk_delta(delta: float) -> float:
-	# 命中、惩罚或回拉都通过这里修改唯一 PK，并立即限制到合法范围。
+	# 命中、惩罚或回拉都通过这里修改唯一 PK；clamp 后发送一次最终值事实。
 	_player_pk = _clamp_player_pk(_player_pk + delta)
+	final_player_pk_updated.emit(_player_pk)
 	return _player_pk
 
 

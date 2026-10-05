@@ -28,6 +28,8 @@ HR-05 的 `resolve_shot_results(target_results)` 接收逐目标结算字典，�
 
 HR-08 在整发结算前检查当前 PK。若回拉已把 PK 降至下限，返回 `cancelled_by_zero_pk = true`、零 PK 增量和空 `target_results`，本发命中与倾向变化都不再传递；正常结算返回 false。
 
+HR-09 由 `apply_player_pk_delta()` 在 clamp 后发出一次 `final_player_pk_updated(final_player_pk)`。HR-05 的整发汇总只调用该入口一次；OpponentPKBar 每次回拉更新也调用该入口一次。CS-06 负责将该信号连接到 CombatStage。
+
 HR-14 由 `record_normal_word_hit(original_sentence_id, tendency)` 记录有效普通命中。历史按原句 ID 归并，保留倾向、命中次数、首次顺序和最近顺序；`get_normal_hit_history()` 返回深拷贝快照。复读与矛盾文本不写入此历史。
 
 HR-06 的 `select_shot_anomaly(has_bounce, has_obstruction, is_miss)` 每发只选择一个异常，顺序为 `BOUNCE > OBSTRUCTION > MISS`；没有异常时返回 `NONE`。调用方把同一反弹目标的重复报告合并为 `has_bounce` 后调用。
