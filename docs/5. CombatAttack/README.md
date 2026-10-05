@@ -22,6 +22,7 @@
 - CA-02 提供 `BarrageAimIntersection.circle_overlaps_rect()`，边缘接触判为相交；`AimReticle.intersects_target_area()` 复用同一准心尺寸。
 - CA-03 提供 `AttackChargeInput` 和纯状态 `AttackChargeProgress`；按住鼠标左键会累积至导出时长（当前默认 0.8 秒），和准心 / 候选目标状态解耦。
 - CA-04 未蓄满松开会清空当前进度，不产生攻击结果。
+- CA-05 提供 `AttackTargetSnapshot.capture_at_release()`，复制候选 Node 的实例 ID 并去重；后续候选变化不会修改已建快照。
 - 3. BarrageGeneration 尚无正式弹幕运行时碰撞区域接口；与真实弹幕实例的联调待该接口出现。
 
 ## 任务顺序
