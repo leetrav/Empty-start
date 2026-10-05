@@ -9,6 +9,7 @@ const SPLIT: StringName = &"split"
 const REFLECT: StringName = &"reflect"
 
 var _trait_ids: Array[StringName] = []
+var _split_triggered: bool = false
 
 
 # 给单条弹幕装配已定义的特性；重复或未知 ID 不会进入集合。
@@ -38,6 +39,15 @@ func is_retaliation_copy() -> bool:
 # 复制品不再触发复制，避免复制链继续扩散。
 func can_trigger_copy() -> bool:
 	return not is_retaliation_copy()
+
+
+# 仅允许带分裂特性的正常话语触发一次；子弹幕创建交由真实生成入口处理。
+func try_begin_split(is_normal_word: bool) -> bool:
+	if not is_normal_word or not has_trait(SPLIT) or _split_triggered:
+		return false
+
+	_split_triggered = true
+	return true
 
 
 # 只判断这条弹幕能否进入攻击目标集合，不处理整发落空。
