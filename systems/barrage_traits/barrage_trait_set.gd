@@ -34,6 +34,8 @@ func is_selectable() -> bool:
 func get_hit_result() -> BarrageTraitResult:
 	if has_trait(OCCLUSION):
 		return BarrageTraitResult.new(BarrageTraitResult.Kind.OCCLUSION)
+	if has_trait(FAKE_CARD):
+		return BarrageTraitResult.new(BarrageTraitResult.Kind.FAKE_CARD)
 
 	return BarrageTraitResult.new()
 
