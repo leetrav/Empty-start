@@ -12,6 +12,10 @@
 5. PK 满时结束普通战斗并进入矛盾阶段；
 6. 协调进入矛盾阶段前的清理。
 
+## 当前已实现数据
+
+`data/combat_stage/tier_catalog.tres` 为 Tier 0～5 的静态配置来源。`CombatStageTierCatalog.get_tier_config(tier)` 按档位读取各自的升/降档阈值、生成数量/频率/移动/寿命倍率、对手回拉倍率、每次命中复读数和对手立绘状态标识。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
