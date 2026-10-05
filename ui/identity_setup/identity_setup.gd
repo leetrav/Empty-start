@@ -148,6 +148,9 @@ func _on_confirm_button_pressed() -> void:
 			_status_label.text = "身份数据未能写入当前周目。"
 			return
 
+		# 将开局身份资源中的对应倾向交给三项倾向系统作为本周目比较参照。
+		SaveManager.data.tendency_state.initialize_from_identity_option(_selected_option)
+
 		_streamer_name_input.text = streamer_name
 		_fan_group_name_input.text = fan_group_name
 		_status_label.text = "已确认：%s · %s · %s。正在保存。" % [streamer_name, fan_group_name, _selected_option.display_name]

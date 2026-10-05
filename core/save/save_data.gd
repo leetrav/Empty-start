@@ -21,3 +21,6 @@ const CURRENT_VERSION: int = 1
 
 # 圣典系统持有当前周目已保存及待写入的经文记录。
 @export var scripture_data: ScriptureData = ScriptureData.new()
+
+# 三项倾向系统持有精确累计值与开局身份对应倾向参照。
+@export var tendency_state: TendencyState = TendencyState.new()

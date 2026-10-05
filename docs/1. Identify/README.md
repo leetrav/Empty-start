@@ -16,6 +16,7 @@
 
 - `IdentityOption` 是可编辑的 Godot `Resource`，包含稳定身份 ID、显示名称、`Texture2D` 图标引用和倾向 ID。
 - 倾向 ID 使用 `orthodox`、`heretical`、`absurd`，供后续系统读取；身份系统不负责累计倾向。
+- 身份确认后，身份设置页将所选 `IdentityOption.tendency_id` 交给 `SaveData.tendency_state.initialize_from_identity_option()`，只提供开局比较参照。
 - `data/identity/` 提供三份占位资源。正式身份名称和图标素材尚未进入仓库，资源中的图标目前为空，待正式内容到位后替换。
 - `IdentityNameRules.confirm_streamer_name()` 与 `confirm_fan_group_name()` 共用 `confirm_name()` 规则；空字符串和纯空白回退到各自默认值，其他输入原样保留。
 - 默认主播名目前为临时值“新主播”，正式文案确定后修改 `IdentityNameRules.DEFAULT_STREAMER_NAME`。
@@ -29,7 +30,7 @@
 
 ## 当前仓库状态
 
-- 身份流程已接通：主菜单 Start 新建 SaveData 并进入身份设置；确认后保存主播名、粉丝团名和身份 ID，再由 SceneRouter 进入当前 Game 入口。
+- 身份流程已接通：主菜单 Start 新建 SaveData 并进入身份设置；确认后保存主播名、粉丝团名和身份 ID，并初始化三项倾向系统的开局参照，再由 SceneRouter 进入当前 Game 入口。
 - 身份选项数据类型、三份占位资源、名称确认、身份锁定、周目存档字段和身份设置页面已建立。
 - `SaveManager` 已存在，并持有 `SaveData`。
 - `SaveData` 包含版本、游玩时间、当前场景、checkpoint、主播名、粉丝团名和身份 ID 字段。
