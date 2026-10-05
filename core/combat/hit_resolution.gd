@@ -43,5 +43,10 @@ func calculate_normal_word_reward(strength: int) -> Dictionary:
 	return _NORMAL_WORD_REWARDS_BY_STRENGTH[strength].duplicate()
 
 
+func calculate_repeat_hit_result() -> Dictionary:
+	# 复读是有效命中，但不产生 PK 或倾向收益，避免被整发结算误判为落空。
+	return {"is_valid_hit": true, "pk_delta": 0.0, "tendency_delta": 0}
+
+
 func _clamp_player_pk(value: float) -> float:
 	return clampf(value, _minimum_player_pk, _maximum_player_pk)
