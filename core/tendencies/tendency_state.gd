@@ -19,11 +19,15 @@ func initialize_from_identity_option(identity_option: IdentityOption) -> void:
 
 # 返回最高分主导倾向；并列时先看开局参照，再按固定倾向顺序裁决。
 func get_primary_tendency_id() -> String:
+	if has_no_effective_behavior():
+		return opening_identity_tendency_id
 	return _resolve_tendency_tie(_get_top_tendency_ids())
 
 
 # 从主导以外的正分项中选择最高项；没有正分项时次要沿用主导。
 func get_secondary_tendency_id() -> String:
+	if has_no_effective_behavior():
+		return opening_identity_tendency_id
 	var primary_tendency_id: String = get_primary_tendency_id()
 	var remaining_tendency_ids: Array[String] = []
 	for tendency_id in ["orthodox", "heretical", "absurd"]:
@@ -46,6 +50,11 @@ func get_secondary_tendency_id() -> String:
 # 并列标记由当前累计值即时计算，避免保存第二份可派生状态。
 func is_primary_tied() -> bool:
 	return _get_top_tendency_ids().size() > 1
+
+
+# 三项累计值全零时，沿用开局参照并标记本周目没有有效行为。
+func has_no_effective_behavior() -> bool:
+	return orthodox_total == 0 and heretical_total == 0 and absurd_total == 0
 
 
 # 收集当前所有最高分项，供主导倾向裁决和并列标记共用。
