@@ -11,7 +11,8 @@
 - `TendencyState` 保存 `orthodox_total`、`heretical_total`、`absurd_total` 三个精确累计值和 `opening_identity_tendency_id` 比较参照。
 - 当前周目通过 `SaveData.tendency_state` 持有此 Resource。
 - 身份确认时调用 `initialize_from_identity_option(identity_option)`，从已选 `IdentityOption.tendency_id` 复制开局比较参照，并将三项累计值初始化为 0。
-- 本卡未接普通命中增量、PK 胜负提交、失败回滚或主导倾向判定；这些由后续任务实现。
+- TT-05 的 `get_primary_tendency_id()` 在单一最高累计值时返回对应 ID；最高值并列与全零结果由 TT-06 / TT-08 处理。
+- 普通命中增量、PK 胜负提交和失败回滚由后续任务接入；主导并列与全零规则也由后续任务处理。
 
 本系统需要：
 
