@@ -19,13 +19,15 @@
 - `IdentityNameRules.confirm_streamer_name()` 负责生成确认后的主播名；空字符串和纯空白回退到 `DEFAULT_STREAMER_NAME`，其他输入原样保留。
 - 默认主播名目前为临时值“新主播”，正式文案确定后修改 `IdentityNameRules.DEFAULT_STREAMER_NAME`。
 - `IdentityConfirmationState` 首次只接受调用方从当前身份资源整理出的有效 ID，之后拒绝覆盖；运行持有者通过 `get_confirmed_identity_id()` 读取结果。
-- 本卡的锁定状态由调用方持有的 `IdentityConfirmationState` 实例维护；写入 `SaveData` 并跨实际场景重建沿用，留给 ID-04。
+- `IdentityConfirmationState` 锁定后的身份 ID 可通过 `SaveManager.set_identity_data()` 写入 SaveData，供本周目场景重建后继续读取。
+- `SaveData.streamer_name` 与 `SaveData.identity_id` 保存本周目确认结果；新周目初始化为空名和空 ID，确认后由 `SaveManager.set_identity_data()` 一次写入。
+- 新增字段有明确空值默认，并兼容缺少这两个字段的旧版 SaveData，因此 `SaveData.CURRENT_VERSION` 保持 `1`。
 
 ## 当前仓库状态
 
-- 身份选项数据类型、三份占位资源、主播名确认规则和身份锁定规则已建立；周目保存和身份设置场景仍待后续任务完成。
+- 身份选项数据类型、三份占位资源、主播名确认、身份锁定和周目存档字段已建立；身份设置场景仍待后续任务完成。
 - `SaveManager` 已存在，并持有 `SaveData`。
-- `SaveData` 当前只有版本、游玩时间、当前场景和 checkpoint 字段。
+- `SaveData` 包含版本、游玩时间、当前场景、checkpoint、主播名和身份 ID 字段。
 - 主菜单 Start 当前直接调用 `SceneRouter.goto_game()` 进入 sandbox。
 - 当前仓库没有独立单元测试框架。
 

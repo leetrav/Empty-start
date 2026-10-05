@@ -15,6 +15,17 @@ func new_game() -> void:
 	data = SaveData.new()
 
 
+# 将身份系统确认后的姓名和身份 ID 写入当前周目数据。
+func set_identity_data(streamer_name: String, identity_id: StringName) -> Error:
+	if data == null:
+		push_error("SaveManager: cannot set identity because current SaveData is null.")
+		return ERR_UNCONFIGURED
+
+	data.streamer_name = streamer_name
+	data.identity_id = identity_id
+	return OK
+
+
 func save_game() -> Error:
 	# 将当前 SaveData 写入固定用户存档路径，并返回 ResourceSaver 的结果。
 	if data == null:
