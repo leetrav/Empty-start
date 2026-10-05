@@ -167,6 +167,11 @@
 <td>使用 `--script` 直接运行验证脚本时，项目 Autoload 不会自动作为全局标识符注入，直接引用 Autoload 名称会编译失败。</td>
 <td>依赖 Autoload 的测试使用真实场景启动，或在脚本中显式加载并实例化目标脚本，同时单独核对项目配置。</td>
 </tr>
+<tr>
+<td>KT-26</td>
+<td>headless --script 验证脚本以 record 作为局部变量名时，只加载脚本而未输出用例结果，退出码仍为 0。</td>
+<td>运行时记录使用 runtime_record、barrage_record 等明确变量名；测试检查预期输出和用例结果，不能只看进程退出码。</td>
+</tr>
 </table>
 ## 六、自查入口
 遇到问题优先按类别检查：

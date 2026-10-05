@@ -19,8 +19,8 @@
 
 ## 当前仓库状态
 
-- BG-01～BG-03 已提供运行时记录、普通话语抽取和单条可见弹幕；BG-04 已按当前关基础参数持续生成。
-- Tier 倍率更新入口已提供；实际 CombatStage 接线、弹幕寿命、同屏上限、暂停和移除仍由后续任务负责。
+- BG-01～BG-03 已提供运行时记录、普通话抽取和单条可见弹幕；BG-04 持续生成，BG-05 应用后续倍率，BG-06 在生成时固定寿命截止时间。
+- 生成时寿命快照已完成；CombatStage 接线、同屏上限、暂停与自然移除仍由后续任务负责。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - 4. BarrageTraits、5. CombatAttack、6. HitResolution、8. CombatStage、10. Repeat、12. ContradictionBreak 等依赖系统尚未实现时，对应联调任务只保留任务卡，不提前造临时接口。
 
@@ -113,4 +113,8 @@ Sandbox 当前负责调用启动入口；未来战斗阶段可调用相同的启
 
 `BarrageArea.set_generation_multipliers(generation_count_multiplier, generation_frequency_multiplier, movement_speed_multiplier)` 提供给 CombatStage 的倍率更新入口，字段语义对应 `CombatStageTierConfig`，但当前不直接依赖 8 号系统脚本。
 
-后续批次数量按 `roundi(base_batch_count * generation_count_multiplier)` 取整；Timer 间隔为 `base_spawn_interval_seconds / generation_frequency_multiplier`；新视图速度为 `base_move_speed_pixels_per_second * movement_speed_multiplier`。倍率更新重置下一批计时，已生成视图保留创建时的速度。寿命倍率仍由 BG-06 处理。
+后续批次数量按 `roundi(base_batch_count * generation_count_multiplier)` 取整；Timer 间隔为 `base_spawn_interval_seconds / generation_frequency_multiplier`；新视图速度为 `base_move_speed_pixels_per_second * movement_speed_multiplier`。倍率更新重置下一批计时，已生成视图保留创建时的速度。BG-06 的寿命倍率同样只作用于新实例。
+
+### BG-06 生成时固定弹幕寿命
+
+BarrageArea 暴露可编辑的 `base_lifetime_seconds` 临时基础值（默认 10 秒），并提供 `set_lifetime_multiplier()` 接收当前档位寿命倍率。生成新实例时，`BarrageRuntimeRecord` 保存单调时钟毫秒截止时间。倍率变化只影响之后新建的记录，既有截止时间保持不变。公共数值表尚未落地，基础值可在 Inspector 调整；到期移除留给 BG-08，暂停补偿留给 BG-11。

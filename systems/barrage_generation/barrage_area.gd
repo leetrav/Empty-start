@@ -3,6 +3,8 @@ class_name BarrageArea
 extends Control
 
 @export var barrage_view_scene: PackedScene
+## 临时全局基础寿命，正式数值表接入前可在 Inspector 调整。
+@export var base_lifetime_seconds: float = 10.0
 @onready var _spawn_timer: Timer = $SpawnTimer
 
 var _speech_selector: NormalSpeechSelector = NormalSpeechSelector.new()
@@ -11,6 +13,7 @@ var _normal_generation_enabled: bool = false
 var _count_multiplier: float = 1.0
 var _frequency_multiplier: float = 1.0
 var _movement_speed_multiplier: float = 1.0
+var _lifetime_multiplier: float = 1.0
 
 ## 连接本组件的批次 Timer 超时信号。
 func _ready() -> void:
@@ -38,6 +41,10 @@ func set_generation_multipliers(generation_count_multiplier: float, generation_f
 	_movement_speed_multiplier = movement_speed_multiplier
 	_restart_spawn_timer()
 
+## 保存当前寿命倍率；它只参与之后新建弹幕的截止时间计算。
+func set_lifetime_multiplier(lifetime_multiplier: float) -> void:
+	_lifetime_multiplier = lifetime_multiplier
+
 ## 关闭普通生成；已在场弹幕继续按自己的运行参数移动。
 func stop_normal_generation() -> void:
 	_normal_generation_enabled = false
@@ -58,6 +65,7 @@ func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> B
 	record.tendency_id = speech.tendency_id
 	record.strength = 1.0
 	record.original_sentence_id = speech.original_sentence_id
+	record.capture_lifetime_at_spawn(Time.get_ticks_msec(), base_lifetime_seconds, _lifetime_multiplier)
 
 	var view: BarrageView = barrage_view_scene.instantiate() as BarrageView
 	if view == null:
