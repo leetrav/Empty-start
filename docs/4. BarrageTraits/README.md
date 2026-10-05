@@ -22,10 +22,13 @@
 
 ## 当前仓库状态
 
-- 当前没有正式弹幕特性实现。
+- BT-01 已提供 `BarrageTraitSet` 运行时数据组件，包含稳定特性 ID，并支持单条弹幕装配和查询多个特性。
+- 3. BarrageGeneration 尚无正式弹幕运行时记录或生成入口；该组件暂未挂接到场上弹幕实例，等待真实运行时对象出现后组合接入。
 - 2. LevelConfiguration 已拆出“本关特殊玩法标识”的配置任务。
 - 3. BarrageGeneration 已拆出弹幕运行时记录、生成、生命周期与容量任务。
 - 5. CombatAttack、6. HitResolution、12. ContradictionBreak、14. Assimilation 尚未完成时，对应联调任务只保留任务卡，不提前造临时接口。
+
+BT-01 特性 ID：`occlusion`（遮挡）、`retaliation_copy`（水军复制 / 反击）、`fake_card`（假牌）、`unselectable`（不可选）、`split`（分裂）、`reflect`（反弹）。
 
 ## 任务顺序
 
