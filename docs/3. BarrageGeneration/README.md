@@ -20,7 +20,7 @@
 ## 当前仓库状态
 
 - BG-01～BG-03 已提供运行时记录、普通话抽取和单条可见弹幕；BG-04 持续生成，BG-05 应用后续倍率，BG-06 在生成时固定寿命截止时间。
-- 生成时寿命快照已完成；CombatStage 接线、同屏上限、暂停与自然移除仍由后续任务负责。
+- BG-06 寿命快照和 BG-07 普通容量共享已完成；CombatStage 接线、全局暂停与自然移除仍由后续任务负责。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - 4. BarrageTraits、5. CombatAttack、6. HitResolution、8. CombatStage、10. Repeat、12. ContradictionBreak 等依赖系统尚未实现时，对应联调任务只保留任务卡，不提前造临时接口。
 
@@ -118,3 +118,7 @@ Sandbox 当前负责调用启动入口；未来战斗阶段可调用相同的启
 ### BG-06 生成时固定弹幕寿命
 
 BarrageArea 暴露可编辑的 `base_lifetime_seconds` 临时基础值（默认 10 秒），并提供 `set_lifetime_multiplier()` 接收当前档位寿命倍率。生成新实例时，`BarrageRuntimeRecord` 保存单调时钟毫秒截止时间。倍率变化只影响之后新建的记录，既有截止时间保持不变。公共数值表尚未落地，基础值可在 Inspector 调整；到期移除留给 BG-08，暂停补偿留给 BG-11。
+
+### BG-07 普通弹幕共享同屏上限
+
+BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。普通话语创建时自动登记，节点离开场景树时自动释放；陷阱等普通容量占用者通过 `try_register_normal_capacity_occupant()` 和 `release_normal_capacity_occupant()` 复用同一账本。达到上限时普通批次 Timer 暂停，释放容量后继续。BG-07 不实现弹幕特性规则；到期和离屏移除仍由 BG-08 负责。
