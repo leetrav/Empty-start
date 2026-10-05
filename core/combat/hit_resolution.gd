@@ -17,6 +17,8 @@ const _NORMAL_WORD_REWARDS_BY_STRENGTH: Dictionary = {
 var _player_pk: float = 0.0
 var _minimum_player_pk: float = 0.0
 var _maximum_player_pk: float = 1.0
+var _normal_hit_history: Array[Dictionary] = []
+var _normal_hit_order: int = 0
 
 
 func _init(initial_pk: float, minimum_pk: float, maximum_pk: float) -> void:
@@ -40,6 +42,34 @@ func apply_player_pk_delta(delta: float) -> float:
 func get_player_pk() -> float:
 	# 只读提供玩家 PK；对手显示值由读取方按需从总量中计算。
 	return _player_pk
+
+
+func record_normal_word_hit(original_sentence_id: Variant, tendency: Variant) -> void:
+	# 每次有效普通命中递增顺序；同一原句只保留一条记录并更新次数和最近顺序。
+	_normal_hit_order += 1
+	for history_record: Dictionary in _normal_hit_history:
+		if history_record["original_sentence_id"] == original_sentence_id:
+			history_record["hit_count"] = int(history_record["hit_count"]) + 1
+			history_record["last_hit_order"] = _normal_hit_order
+			return
+
+	_normal_hit_history.append(
+		{
+			"original_sentence_id": original_sentence_id,
+			"tendency": tendency,
+			"hit_count": 1,
+			"first_hit_order": _normal_hit_order,
+			"last_hit_order": _normal_hit_order,
+		}
+	)
+
+
+func get_normal_hit_history() -> Array[Dictionary]:
+	# 给神谕等读取方返回本场快照，避免外部修改命中结算系统拥有的历史。
+	var history_copy: Array[Dictionary] = []
+	for history_record: Dictionary in _normal_hit_history:
+		history_copy.append(history_record.duplicate(true))
+	return history_copy
 
 
 func calculate_normal_word_reward(strength: int) -> Dictionary:
