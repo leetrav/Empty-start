@@ -32,3 +32,16 @@ func try_tier_up(final_player_pk: float) -> bool:
 
 	_current_tier += 1
 	return true
+
+
+func try_tier_down(final_player_pk: float) -> bool:
+	# 只有 PK 严格低于当前档位的降档阈值时才下降一档。
+	if _current_tier <= INITIAL_TIER:
+		return false
+
+	var current_config: CombatStageTierConfig = _tier_catalog.get_tier_config(_current_tier)
+	if final_player_pk >= current_config.downgrade_threshold:
+		return false
+
+	_current_tier -= 1
+	return true
