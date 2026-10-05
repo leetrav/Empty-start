@@ -25,6 +25,21 @@ func has_trait(trait_id: StringName) -> bool:
 	return _trait_ids.has(trait_id)
 
 
+# 把这条弹幕标记为水军复制品，后续 UI 可读取同一标记。
+func mark_as_retaliation_copy() -> bool:
+	return add_trait(RETALIATION_COPY)
+
+
+# 供 UI 判断是否显示反击标记。
+func is_retaliation_copy() -> bool:
+	return has_trait(RETALIATION_COPY)
+
+
+# 复制品不再触发复制，避免复制链继续扩散。
+func can_trigger_copy() -> bool:
+	return not is_retaliation_copy()
+
+
 # 只判断这条弹幕能否进入攻击目标集合，不处理整发落空。
 func is_selectable() -> bool:
 	return not has_trait(UNSELECTABLE)
@@ -36,6 +51,8 @@ func get_hit_result() -> BarrageTraitResult:
 		return BarrageTraitResult.new(BarrageTraitResult.Kind.OCCLUSION)
 	if has_trait(FAKE_CARD):
 		return BarrageTraitResult.new(BarrageTraitResult.Kind.FAKE_CARD)
+	if has_trait(RETALIATION_COPY):
+		return BarrageTraitResult.new(BarrageTraitResult.Kind.RETALIATION_COPY)
 
 	return BarrageTraitResult.new()
 

@@ -1,11 +1,11 @@
 class_name BarrageTraitResult
 extends RefCounted
 
-enum Kind { NORMAL, OCCLUSION, FAKE_CARD }
+enum Kind { NORMAL, OCCLUSION, FAKE_CARD, RETALIATION_COPY }
 
 var kind: Kind = Kind.NORMAL
 
-# 普通结果才发放正常话语收益；遮挡和假牌结果都会跳过该收益。
+# 普通结果才发放正常话语收益；遮挡、假牌和反击复制品结果都会跳过该收益。
 var receives_normal_reward: bool:
 	get:
 		return kind == Kind.NORMAL
