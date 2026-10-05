@@ -3,7 +3,13 @@ extends RefCounted
 
 const INITIAL_TIER: int = 0
 
+var _tier_catalog: CombatStageTierCatalog
 var _current_tier: int = INITIAL_TIER
+
+
+func _init(tier_catalog: CombatStageTierCatalog) -> void:
+	# 注入本系统静态 Tier 配置；运行时当前档位继续由 CombatStage 自己持有。
+	_tier_catalog = tier_catalog
 
 
 func begin_combat() -> void:
@@ -13,3 +19,16 @@ func begin_combat() -> void:
 
 func get_current_tier() -> int:
 	return _current_tier
+
+
+func try_tier_up(final_player_pk: float) -> bool:
+	# 达到当前档位配置的升档阈值时最多升一档，Tier 5 留给矛盾阶段处理。
+	if _current_tier >= 5:
+		return false
+
+	var current_config: CombatStageTierConfig = _tier_catalog.get_tier_config(_current_tier)
+	if final_player_pk < current_config.upgrade_threshold:
+		return false
+
+	_current_tier += 1
+	return true
