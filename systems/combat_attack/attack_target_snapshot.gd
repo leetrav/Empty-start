@@ -26,3 +26,19 @@ static func capture_at_release(current_candidates: Array[Node]) -> AttackTargetS
 # 返回 ID 副本，调用方不能修改已经冻结的本发目标集合。
 func get_target_instance_ids() -> Array[int]:
 	return _target_instance_ids.duplicate()
+
+
+# 将快照 ID 解析回仍在场景树中的 Node；不按新位置重新检查准心范围。
+func resolve_present_targets() -> Array[Node]:
+	var present_targets: Array[Node] = []
+	for instance_id in _target_instance_ids:
+		var target: Object = instance_from_id(instance_id)
+		if not is_instance_valid(target) or not target is Node:
+			continue
+
+		var target_node := target as Node
+		if not target_node.is_inside_tree() or target_node.is_queued_for_deletion():
+			continue
+
+		present_targets.append(target_node)
+	return present_targets

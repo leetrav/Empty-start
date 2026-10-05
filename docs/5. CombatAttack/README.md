@@ -23,6 +23,7 @@
 - CA-03 提供 `AttackChargeInput` 和纯状态 `AttackChargeProgress`；按住鼠标左键会累积至导出时长（当前默认 0.8 秒），和准心 / 候选目标状态解耦。
 - CA-04 未蓄满松开会清空当前进度，不产生攻击结果。
 - CA-05 提供 `AttackTargetSnapshot.capture_at_release()`，复制候选 Node 的实例 ID 并去重；后续候选变化不会修改已建快照。
+- CA-06 可把快照解析为仍在场景树中的 Node，不按新位置重查准心范围；过期 / 离屏判定等待 3. BarrageGeneration 的真实生命周期接口。
 - 3. BarrageGeneration 尚无正式弹幕运行时碰撞区域接口；与真实弹幕实例的联调待该接口出现。
 
 ## 任务顺序
