@@ -19,18 +19,28 @@ func initialize_from_identity_option(identity_option: IdentityOption) -> void:
 
 # 返回最高分主导倾向；并列时先看开局参照，再按固定倾向顺序裁决。
 func get_primary_tendency_id() -> String:
-	var top_tendency_ids: Array[String] = _get_top_tendency_ids()
-	if top_tendency_ids.size() == 1:
-		return top_tendency_ids[0]
-	if top_tendency_ids.has(opening_identity_tendency_id):
-		return opening_identity_tendency_id
-	if top_tendency_ids.has("orthodox"):
-		return "orthodox"
-	if top_tendency_ids.has("heretical"):
-		return "heretical"
-	if top_tendency_ids.has("absurd"):
-		return "absurd"
-	return ""
+	return _resolve_tendency_tie(_get_top_tendency_ids())
+
+
+# 从主导以外的正分项中选择最高项；没有正分项时次要沿用主导。
+func get_secondary_tendency_id() -> String:
+	var primary_tendency_id: String = get_primary_tendency_id()
+	var remaining_tendency_ids: Array[String] = []
+	for tendency_id in ["orthodox", "heretical", "absurd"]:
+		if tendency_id != primary_tendency_id and _get_tendency_total(tendency_id) > 0:
+			remaining_tendency_ids.append(tendency_id)
+	if remaining_tendency_ids.is_empty():
+		return primary_tendency_id
+
+	var highest_remaining_score: int = 0
+	for tendency_id in remaining_tendency_ids:
+		highest_remaining_score = maxi(highest_remaining_score, _get_tendency_total(tendency_id))
+
+	var top_secondary_ids: Array[String] = []
+	for tendency_id in remaining_tendency_ids:
+		if _get_tendency_total(tendency_id) == highest_remaining_score:
+			top_secondary_ids.append(tendency_id)
+	return _resolve_tendency_tie(top_secondary_ids)
 
 
 # 并列标记由当前累计值即时计算，避免保存第二份可派生状态。
@@ -49,3 +59,30 @@ func _get_top_tendency_ids() -> Array[String]:
 	if absurd_total == highest_score:
 		top_tendency_ids.append("absurd")
 	return top_tendency_ids
+
+
+# 对任意候选并列项沿用开局参照优先，再按正统 / 异端 / 荒谬排序。
+func _resolve_tendency_tie(tendency_ids: Array[String]) -> String:
+	if tendency_ids.size() == 1:
+		return tendency_ids[0]
+	if tendency_ids.has(opening_identity_tendency_id):
+		return opening_identity_tendency_id
+	if tendency_ids.has("orthodox"):
+		return "orthodox"
+	if tendency_ids.has("heretical"):
+		return "heretical"
+	if tendency_ids.has("absurd"):
+		return "absurd"
+	return ""
+
+
+func _get_tendency_total(tendency_id: String) -> int:
+	match tendency_id:
+		"orthodox":
+			return orthodox_total
+		"heretical":
+			return heretical_total
+		"absurd":
+			return absurd_total
+		_:
+			return 0
