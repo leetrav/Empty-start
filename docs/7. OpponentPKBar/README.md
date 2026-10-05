@@ -18,7 +18,7 @@
 
 `core/combat/opponent_pk_bar.gd` 是场景内的回拉 Node。OP-02 可通过 `start_pullback(hit_resolution, base_speed)` 在普通战斗开始时注入 6 系统所有者和每秒基础回拉速度；`_process(delta)` 每帧将基础速度乘当前 Tier 倍率，再以负增量调用 `HitResolution.apply_player_pk_delta()`。
 
-OP-01 的 `calculate_pullback_amount(speed, elapsed_seconds)` 返回正的 PK 扣减量，不保存或修改玩家 PK。OP-03 将 Node 设为 `PROCESS_MODE_PAUSABLE`，由 `SceneTree.paused` 自动暂停回拉；阶段结束调用 `stop_pullback()`，普通战斗恢复时调用 `resume_pullback()`。OP-04 通过 `update_pullback_multiplier(multiplier)` 更新后续帧速度。
+OP-01 的 `calculate_pullback_amount(speed, elapsed_seconds)` 返回正的 PK 扣减量，不保存或修改玩家 PK。OP-03 将 Node 设为 `PROCESS_MODE_PAUSABLE`，由 `SceneTree.paused` 自动暂停回拉；阶段结束调用 `stop_pullback()`，普通战斗恢复时调用 `resume_pullback()`。OP-04 通过 `update_pullback_multiplier(multiplier)` 更新后续帧速度；CS-09 通过 `apply_tier_state(multiplier, tier5_desperation_active)` 接收 Tier 配置。
 
 OP-05 在当前唯一 PK 到达 0 时只发出一次 `attempt_failed`，并停止本系统的回拉。失败监听方可据此关闭攻击并显示本场失败；当前真实攻击入口尚未合并。重开状态由 OP-06 处理。
 

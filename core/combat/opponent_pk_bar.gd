@@ -6,6 +6,7 @@ signal attempt_failed
 var _hit_resolution: HitResolution
 var _base_pullback_speed: float = 0.0
 var _pullback_multiplier: float = 1.0
+var _tier5_desperation_active: bool = false
 var _is_pullback_active: bool = false
 var _attempt_failed: bool = false
 var _loss_streak_count: int = 0
@@ -28,6 +29,16 @@ func start_pullback(hit_resolution: HitResolution, base_speed: float) -> void:
 func update_pullback_multiplier(multiplier: float) -> void:
 	# Tier 变化只影响后续帧的回拉速度，已经结算的时间不会重新计算。
 	_pullback_multiplier = maxf(multiplier, 0.0)
+
+
+func apply_tier_state(pullback_multiplier: float, tier5_desperation_active: bool) -> void:
+	# 接收 CombatStage 在 Tier 稳定后广播的回拉倍率与 Tier 5 状态。
+	update_pullback_multiplier(pullback_multiplier)
+	_tier5_desperation_active = tier5_desperation_active
+
+
+func is_tier5_desperation_active() -> bool:
+	return _tier5_desperation_active
 
 
 func stop_pullback() -> void:
