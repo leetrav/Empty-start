@@ -116,7 +116,7 @@ func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> B
 		push_error("BarrageArea: 弹幕表现 Scene 根节点需要 BarrageView。")
 		return null
 	var effective_move_speed: float = level_profile.base_move_speed_pixels_per_second * _movement_speed_multiplier
-	view.setup(barrage_record, effective_move_speed)
+	view.setup(barrage_record, effective_move_speed, self)
 	if not _try_register_normal_capacity_occupant(view, level_profile.normal_barrage_screen_cap):
 		view.free()
 		return null

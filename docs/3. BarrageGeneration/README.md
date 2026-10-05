@@ -19,8 +19,8 @@
 
 ## 当前仓库状态
 
-- BG-01～BG-03 已提供运行时记录、普通话抽取和单条可见弹幕；BG-04 持续生成，BG-05 应用后续倍率，BG-06 在生成时固定寿命截止时间。
-- BG-06 寿命快照和 BG-07 普通容量共享已完成；CombatStage 接线、全局暂停与自然移除仍由后续任务负责。
+- BG-01～BG-03 已提供运行时记录、普通话抽取和单条可见弹幕；BG-04 持续生成，BG-05 应用后续倍率，BG-06 固定生成时寿命，BG-07 共享普通容量，BG-08 处理到期与离区移除。
+- BG-06～BG-08 已完成；CombatStage 接线、全局暂停、命中移除和布局参数接线仍由后续任务负责。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - 4. BarrageTraits、5. CombatAttack、6. HitResolution、8. CombatStage、10. Repeat、12. ContradictionBreak 等依赖系统尚未实现时，对应联调任务只保留任务卡，不提前造临时接口。
 
@@ -122,3 +122,7 @@ BarrageArea 暴露可编辑的 `base_lifetime_seconds` 临时基础值（默认 
 ### BG-07 普通弹幕共享同屏上限
 
 BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。普通话语创建时自动登记，节点离开场景树时自动释放；陷阱等普通容量占用者通过 `try_register_normal_capacity_occupant()` 和 `release_normal_capacity_occupant()` 复用同一账本。达到上限时普通批次 Timer 暂停，释放容量后继续。BG-07 不实现弹幕特性规则；到期和离屏移除仍由 BG-08 负责。
+
+### BG-08 到期与离开区域自然移除
+
+生成时由 `BarrageArea` 把所属 `Control` 注入 `BarrageView`。视图每帧比较当前单调时钟与 `BarrageRuntimeRecord.expires_at_msec`；到期后调用 `queue_free()`。移动后，视图矩形与所属 Control 当前矩形不相交时也会自然结束。Node 离树触发 BG-07 的容量释放。当前有效区域使用 BarrageArea 实际边界，BG-14 布局读取完成后再接入舞台参数。命中移除由 BG-09 处理，全局暂停补偿由 BG-11 处理。
