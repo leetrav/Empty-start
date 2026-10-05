@@ -31,6 +31,15 @@ func get_aim_center_global_position() -> Vector2:
 	return global_position + size * 0.5
 
 
+# 复用准心当前配置尺寸判断弹幕区域，不在攻击系统复制判定常量。
+func intersects_target_area(target_area: Rect2) -> bool:
+	return BarrageAimIntersection.circle_overlaps_rect(
+		get_aim_center_global_position(),
+		reticle_diameter,
+		target_area
+	)
+
+
 # 使用导出的直径和线条配置绘制准心，保留数值表接入前的配置入口。
 func _draw() -> void:
 	var center: Vector2 = size * 0.5
