@@ -4,13 +4,21 @@ extends Node
 @export var charge_duration_seconds: float = 0.8
 
 var _charge_progress: AttackChargeProgress
+var _was_attack_held: bool = false
 
 
-# 每帧读取鼠标左键按住状态；此状态不依赖准心或当前候选目标。
+# 每帧累积按住时间；检测到未蓄满松开时只清空进度，不发射攻击事件。
 func _process(delta: float) -> void:
 	if _charge_progress == null:
 		return
-	_charge_progress.advance(delta, Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT))
+
+	var is_attack_held: bool = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+	if is_attack_held:
+		_charge_progress.advance(delta, true)
+	elif _was_attack_held:
+		_charge_progress.cancel_if_undercharged()
+
+	_was_attack_held = is_attack_held
 
 
 func _ready() -> void:

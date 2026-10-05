@@ -18,6 +18,15 @@ func advance(delta: float, is_attack_held: bool) -> void:
 	_elapsed_seconds = minf(_duration_seconds, _elapsed_seconds + maxf(delta, 0.0))
 
 
+# 未蓄满松开时取消本次蓄力；满蓄状态留给后续释放任务处理。
+func cancel_if_undercharged() -> bool:
+	if is_fully_charged():
+		return false
+
+	_elapsed_seconds = 0.0
+	return true
+
+
 # 把累计时长转换为 0 到 1 的蓄力比例。
 func get_progress() -> float:
 	if _duration_seconds <= 0.0:
