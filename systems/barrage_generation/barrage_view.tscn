@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/barrage_generation/barrage_view.gd" id="1_view"]
+
+[node name="BarrageView" type="Label"]
+custom_minimum_size = Vector2(520, 48)
+size = Vector2(520, 48)
+theme_type_variation = &"HeadingLabel"
+horizontal_alignment = 0
+vertical_alignment = 1
+mouse_filter = 2
+script = ExtResource("1_view")

@@ -96,3 +96,9 @@ BG-13 等【8. CombatStage】和【10. Repeat】都存在真实清理接口后�
 `NormalSpeechSelector.select_next_normal_speech(current_level)` 每次直接读取传入关卡的当前词库与倾向比例，不缓存旧内容。倾向 ID 使用 `orthodox`、`heretical`、`absurd`；先按关卡比例选择倾向，再按该倾向下各条 `LevelSpeech.appearance_weight` 选择话语。
 
 返回值是原始 `LevelSpeech` Resource，可继续读取文本、倾向和稳定原句 ID；没有有效候选时返回 `null`。本步骤不创建场上实例。
+
+### BG-03 单条普通弹幕实例
+
+`systems/barrage_generation/barrage_area.tscn` 是可复用弹幕区域，公开 `spawn_normal_barrage(LevelProfile, LevelSpeech)` 入口；调用后创建 `BarrageRuntimeRecord` 并实例化 `barrage_view.tscn`。视图显示原句文本，并按当前关 `base_move_speed_pixels_per_second` 从右向左移动。
+
+当前项目实际游戏入口仍指向技术 Sandbox，BG-03 将弹幕区域接入该场景用于原型验证。强度暂用 `1.0` 占位；没有增加到期、离屏移除、命中或连续生成逻辑，等待对应任务卡。
