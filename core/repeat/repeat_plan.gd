@@ -1,10 +1,13 @@
 class_name RepeatPlan
 extends Resource
 
+const ORIGINAL_LINE_PLACEHOLDER: String = "{原句}"
+
 enum RepeatType { NORMAL, CONTRADICTION }
 
 @export var original_line_id: StringName = &""
 @export var original_line_text: String = ""
+@export var display_text: String = ""
 @export var repeat_type: RepeatType = RepeatType.NORMAL
 @export var planned_repeat_count: int = 0
 @export var generation_tier: int = 0
@@ -30,3 +33,14 @@ static func create_normal_hit_plan(
 	plan.generation_tier = settled_tier
 	plan.lifetime_seconds = configured_lifetime_seconds
 	return plan
+
+
+# 将原句填入策划模板并保存显示文本，计划始终保留原句 ID。
+func apply_display_template(template: String) -> String:
+	if not template.contains(ORIGINAL_LINE_PLACEHOLDER):
+		push_warning("RepeatPlan: display template has no {原句} placeholder; using original line text.")
+		display_text = original_line_text
+		return display_text
+
+	display_text = template.replace(ORIGINAL_LINE_PLACEHOLDER, original_line_text)
+	return display_text
