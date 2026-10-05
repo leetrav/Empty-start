@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="LevelProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/level_configuration/level_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+level_id = "level_002"
+level_order = 2
+streamer_id = "streamer_sample_002"
+streamer_name = "第二位示例主播"
+stream_topic = "待策划填写的第二关主题。"
+fan_badge_id = "fan_badge_sample_002"

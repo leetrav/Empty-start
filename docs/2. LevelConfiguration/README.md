@@ -97,3 +97,9 @@ LC-01 使用 `data/level_configuration/level_profile.gd` 定义 `LevelProfile` R
 `LevelSpeech.appearance_weight` 保存同一倾向话语间的相对出现权重，`1.0` 表示默认等权值。三项比例用于倾向类别选择，两者分别配置。
 
 示例值 `3` 条 / 批、`1.0` 秒间隔、`100` 像素 / 秒、同屏 `24` 条与权重 `1.0` 都是临时试玩默认值，等待策划实测调整。本类型不执行生成，也不包含 Tier 倍率和弹幕寿命。
+
+### LC-05 当前普通关卡选择
+
+`LevelCatalog.profiles` 保存普通关卡集合；每个 `LevelProfile.level_order` 使用唯一递增序号表示流程位置。`LevelRunState` 新建时选择序号最小的关卡，通过 `set_current_level_order()` 切换，并由 `get_current_level_profile()` 返回当前配置。
+
+示例目录 `data/level_configuration/level_catalog.tres` 列出 `level_001.tres` 与 `level_002.tres`。本阶段只读取当前关卡，不推进、不结算，也不接入 UI。
