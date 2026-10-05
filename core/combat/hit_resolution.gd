@@ -48,5 +48,19 @@ func calculate_repeat_hit_result() -> Dictionary:
 	return {"is_valid_hit": true, "pk_delta": 0.0, "tendency_delta": 0}
 
 
+func resolve_shot_results(target_results: Array[Dictionary]) -> Dictionary:
+	# 保留逐目标结算数据，只把 PK 增量求和后统一更新一次并应用范围限制。
+	var total_pk_delta: float = 0.0
+	for target_result: Dictionary in target_results:
+		total_pk_delta += float(target_result.get("pk_delta", 0.0))
+
+	var final_player_pk: float = apply_player_pk_delta(total_pk_delta)
+	return {
+		"total_pk_delta": total_pk_delta,
+		"final_player_pk": final_player_pk,
+		"target_results": target_results.duplicate(true),
+	}
+
+
 func _clamp_player_pk(value: float) -> float:
 	return clampf(value, _minimum_player_pk, _maximum_player_pk)

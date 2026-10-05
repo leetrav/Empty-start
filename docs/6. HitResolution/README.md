@@ -24,6 +24,8 @@ HR-02 的 `calculate_normal_word_reward(strength)` 按强度返回 `pk_delta` �
 
 HR-04 的 `calculate_repeat_hit_result()` 返回有效命中标记和零 PK、零倾向收益；它不修改 PK 或提交倾向。
 
+HR-05 的 `resolve_shot_results(target_results)` 接收逐目标结算字典，先汇总全部 `pk_delta`，再一次性更新并限制玩家 PK。返回整发的 `total_pk_delta` 与 `final_player_pk`，并深拷贝保留原有 `target_results`，供后续读取每个目标的倾向变化。此处还没有接入 Tier 通知。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
