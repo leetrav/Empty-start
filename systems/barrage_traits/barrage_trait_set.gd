@@ -74,6 +74,24 @@ func get_trait_ids() -> Array[StringName]:
 	return _trait_ids.duplicate()
 
 
+# 校验当前明示的互斥组合；陷阱和复读类别由对应系统作为类型信息传入。
+static func are_compatible(
+	trait_ids: Array[StringName],
+	includes_trap: bool = false,
+	includes_repeat: bool = false
+) -> bool:
+	var contains_unselectable: bool = trait_ids.has(UNSELECTABLE)
+	var contains_split: bool = trait_ids.has(SPLIT)
+	var contains_reflect: bool = trait_ids.has(REFLECT)
+
+	if contains_unselectable and (contains_split or contains_reflect):
+		return false
+	if contains_split and (includes_trap or includes_repeat):
+		return false
+
+	return true
+
+
 # 只接纳当前系统定义的稳定 ID，避免拼写差异产生无效特性。
 func _is_supported_trait(trait_id: StringName) -> bool:
 	return trait_id in [OCCLUSION, RETALIATION_COPY, FAKE_CARD, UNSELECTABLE, SPLIT, REFLECT]
