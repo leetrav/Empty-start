@@ -21,6 +21,15 @@ func get_current_tier() -> int:
 	return _current_tier
 
 
+func bind_hit_resolution(hit_resolution: HitResolution) -> void:
+	# 监听命中结算的最终 PK 事实；整发攻击和每次回拉共用同一入口。
+	hit_resolution.final_player_pk_updated.connect(_on_final_player_pk_updated)
+
+
+func _on_final_player_pk_updated(final_player_pk: float) -> void:
+	update_tier_for_pk(final_player_pk)
+
+
 func try_tier_up(final_player_pk: float) -> bool:
 	# 达到当前档位配置的升档阈值时最多升一档，Tier 5 留给矛盾阶段处理。
 	if _current_tier >= 5:
