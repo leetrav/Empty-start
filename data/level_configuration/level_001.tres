@@ -1,6 +1,13 @@
-[gd_resource type="Resource" script_class="LevelProfile" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="LevelProfile" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://data/level_configuration/level_profile.gd" id="1_profile"]
+[ext_resource type="Script" path="res://data/level_configuration/level_speech.gd" id="2_speech"]
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="LevelSpeech_sample"]
+script = ExtResource("2_speech")
+original_sentence_id = "sample_sentence_001"
+text = "示例普通话语，后续替换为策划内容。"
+tendency_id = ""
 
 [resource]
 script = ExtResource("1_profile")
@@ -10,3 +17,7 @@ streamer_id = "streamer_sample"
 streamer_name = "示例主播"
 stream_topic = "示例直播主题，可在 Inspector 中编辑。"
 fan_badge_id = "fan_badge_sample"
+normal_speech_pool = Array[ExtResource("2_speech")]([SubResource("LevelSpeech_sample")])
+orthodox_ratio = 0.0
+heretical_ratio = 0.0
+absurd_ratio = 0.0
