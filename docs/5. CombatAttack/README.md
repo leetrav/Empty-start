@@ -15,6 +15,11 @@
 
 它不负责计算 PK，也不负责弹幕自身的生成和寿命。
 
+## 当前实现
+
+- CA-01 提供独立 `AimReticle` 场景并接入当前 sandbox 游戏入口。
+- `reticle_diameter` 保留准心尺寸配置入口；`get_aim_center_global_position()` 返回与绘制中心相同的位置，供后续瞄准判定复用。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/sandbox/sandbox.gd" id="1_sandbox"]
 [ext_resource type="PackedScene" path="res://ui/pause_menu/pause_menu.tscn" id="2_pause_menu"]
+[ext_resource type="PackedScene" path="res://systems/combat_attack/aim_reticle.tscn" id="3_aim_reticle"]
 
 [node name="Sandbox" type="Control"]
 layout_mode = 3
@@ -71,5 +72,7 @@ custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 theme_type_variation = &"SecondaryButton"
 text = "返回 MainMenu"
+
+[node name="AimReticle" parent="." instance=ExtResource("3_aim_reticle")]
 
 [node name="PauseMenu" parent="." instance=ExtResource("2_pause_menu")]
