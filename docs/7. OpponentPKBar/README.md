@@ -14,6 +14,10 @@
 
 唯一 PK 值仍由【6. HitResolution】维护。
 
+## 当前已实现接口
+
+OP-01 由 `core/combat/opponent_pk_bar.gd` 提供纯计算方法 `calculate_pullback_amount(speed, elapsed_seconds)`，返回正的 PK 扣减量，不修改玩家 PK。实际状态更新由 HitResolution 负责。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
