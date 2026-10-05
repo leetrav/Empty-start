@@ -13,6 +13,13 @@
 
 这些数据由战斗事件驱动，但不参与 PK、三项倾向和关卡解锁。
 
+## 当前数据底座
+
+- `LiveSessionData` 是直播数据系统唯一持有的四项数据 Resource，字段为 `viewer_count`、`like_count`、`comment_count` 和 `fan_count`。
+- 当前周目通过 `SaveData.live_session` 持有该 Resource；跨场景和存档读写沿用现有 `SaveManager`。
+- `LiveSessionData.initialize_session(initial_fan_count)` 清空本场观看、点赞、评论，并设置本周目当前粉丝数；新周目默认粉丝数为 0，正式起始粉丝值待 LD-02 配置。开播观看人数计算和后续事件变化也由后续任务实现。
+- 这些值只供表现和展示读取，不作为 PK、倾向或关卡解锁输入。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |

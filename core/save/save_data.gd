@@ -12,3 +12,6 @@ const CURRENT_VERSION: int = 1
 @export var streamer_name: String = ""
 @export var fan_group_name: String = ""
 @export var identity_id: StringName = &""
+
+# 直播数据系统持有本场表现状态；随当前周目存档跨场景保留粉丝数。
+@export var live_session: LiveSessionData = LiveSessionData.new()
