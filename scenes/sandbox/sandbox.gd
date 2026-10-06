@@ -1,6 +1,7 @@
 extends Control
 
 signal final_oracle_opened(session: FinalOracleSession)
+signal rest_opened(session: RestSession)
 
 const SAMPLE_LEVEL_CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
@@ -21,6 +22,7 @@ var _normal_combat_active: bool = false
 var _contradiction_stage_active: bool = false
 var _contradiction_break: ContradictionBreakSystem
 var _final_oracle_session: FinalOracleSession
+var _rest_session: RestSession
 var _oracle_transition_timer: Timer
 var _oracle_transition_started: bool = false
 var _opening_fan_count: int = 0
@@ -60,6 +62,7 @@ func restart_current_attempt() -> void:
 	_oracle_transition_started = false
 	_oracle_transition_timer.stop()
 	_final_oracle_session = null
+	_rest_session = null
 	if _contradiction_break != null:
 		remove_child(_contradiction_break)
 		_contradiction_break.queue_free()
@@ -191,7 +194,30 @@ func _on_contradiction_outcome_locked(outcome: int) -> void:
 	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		_battle_hud.show_battle_state("矛盾击破成功 · 等待复读展示")
 	else:
-		_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾")
+		_open_rest_after_unbroken()
+
+
+# 未击破已是本场最终结果，直接把无神谕奖励的 PK 胜利快照交给休息入口。
+func _open_rest_after_unbroken() -> void:
+	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.NOT_BROKEN:
+		return
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	if current_level == null:
+		return
+	_rest_session = RestSession.new()
+	if not _rest_session.open_result({
+		"level_id": current_level.level_id,
+		"result_kind": "pk_win_unbroken",
+		"pk_won": true,
+		"contradiction_broken": false,
+		"new_scripture_entries": [],
+		"new_loser_cards": [],
+		"new_assimilation": [],
+	}):
+		push_error("Sandbox: 休息入口拒绝本场未击破结果。")
+		return
+	_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾 · 休息时刻")
+	rest_opened.emit(_rest_session)
 
 
 # 普通与复读都由同一生成事实计评论，等待请求和失败生成不提前入账。
