@@ -58,3 +58,44 @@ FO-06～09 完成神谕选择流程。
 FO-10 等 15. Scripture。
 FO-11 等 16. LoserCard 与 14. Assimilation。
 FO-12 等 18. Rest。
+
+## FO-02 当前候选池接口
+
+- `FinalOracleCandidatePool.build_from_normal_hit_history(normal_hit_history)` 只接收 `HitResolution.get_normal_hit_history()` 返回的普通命中快照。
+- 候选按 `original_sentence_id` 去重，并保留首次出现顺序及 HR-14 的原始记录字段；返回值是独立深拷贝。
+- 普通复读统计和矛盾复读记录不作为候选来源。后续排序只读取 `RepeatGenerationStats.get_normal_count(original_line_id)`，不会从复读记录新增候选。
+- HR-14 已将同一句的普通命中次数和最近命中顺序合并到唯一记录；若输入重复 ID，候选池保留首条记录，不自行汇总第二份统计。
+
+## FO-03 / FO-04 倾向排序接口
+
+- `FinalOracleCandidatePool.select_most_repeated_per_tendency(candidates, repeat_stats)` 对正统、异端、荒谬分别选择普通复读实际生成数最高的一句。
+- 计数通过 `RepeatGenerationStats.get_normal_count(StringName(original_sentence_id))` 读取；矛盾复读统计不参与。
+- 复读数相同时优先最近命中更晚的句子；最近命中顺序仍并列时按稳定原句 ID 升序裁决。
+
+## FO-05 候选补位接口
+
+- `FinalOracleCandidatePool.fill_missing_tendency_candidates(candidates, repeat_stats)` 先保留各倾向领头候选，再从剩余普通命中候选补足，最多返回三句。
+- 补位顺序读取 HR-14 历史：`hit_count` 降序、`last_hit_order` 降序、`original_sentence_id` 升序。这里不使用复读数；若普通话语不足三句，则返回实际数量。
+
+## FO-06 展示快照接口
+
+- 候选展示开放时调用 `snapshot_for_display(final_candidates)` 一次，并保留返回的深拷贝数组作为本次展示列表。
+- 选择期间继续显示该快照的原顺序和内容；后续命中或复读统计变化不会重建或重排当前列表。
+
+## FO-07 倒计时接口
+
+- 候选列表可操作时调用 `FinalOracleSelectionTimer.start()`，从 10 秒开始计时。
+- 每帧调用 `advance(delta_seconds, is_globally_paused)`；当前暂停菜单通过 `get_tree().paused` 管理全局暂停，暂停期间将该值传入，倒计时保持不变。
+- `remaining_time_changed(seconds_remaining)` 可驱动倒计时显示；到期时发出 `expired`，由 FO-08 接入自动选择。
+
+## FO-08 超时自动选择接口
+
+- 计时器 `expired` 后，调用 `select_auto_pick_from_display(display_snapshot, repeat_stats)` 从冻结展示列表选择一条候选。
+- 正式排序为普通复读实际数量降序、最近命中顺序降序、稳定原句 ID 升序；空展示列表返回空 Dictionary。
+
+## FO-09 单次确认接口
+
+- 每个当前周目创建并复用一个 `FinalOracleConfirmationState.new(SaveManager.data)`。
+- 手动选择和超时自动选择都调用 `confirm_selection(level_id, candidate)`；同一周目同一 `level_id` 只接受第一次有效结果。
+- 首次确认发出 `confirmation_committed(run_data, level_id, candidate)`；重复调用返回 `false` 且不会重发信号。`get_confirmed_selection(level_id)` 始终返回首次候选快照。
+- 本版确认不改写三项倾向累计值，额外倾向保持为 0。
