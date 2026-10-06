@@ -8,16 +8,33 @@
 2. 玩家确认的粉丝团名；
 3. 玩家确认的开局身份。
 
-确认后的主播名、粉丝团名和身份需要进入本周目数据，当前关卡重开时继续沿用。后续需要展示玩家身份信息的系统直接读取这些结果；【三项倾向系统】和【结局系统】继续读取开局身份。
+确认后的主播名、粉丝团名和身份需要进入本周目数据，当前关卡重开时继续沿用。后续需要展示玩家侧信息的系统读取对应字段；【三项倾向系统】和【结局系统】读取开局身份。
 
 本系统当前不负责三项倾向的累计，也不负责结局判词。它只把“开局是谁”保存好并提供给后续系统。
 
+## 当前数据约定
+
+- `IdentityOption` 是可编辑的 Godot `Resource`，包含稳定身份 ID、显示名称、`Texture2D` 图标引用和倾向 ID。
+- 倾向 ID 使用 `orthodox`、`heretical`、`absurd`，供后续系统读取；身份系统不负责累计倾向。
+- 身份确认后，身份设置页将所选 `IdentityOption.tendency_id` 交给 `SaveData.tendency_state.initialize_from_identity_option()`，只提供开局比较参照。
+- `data/identity/` 提供三份占位资源。正式身份名称和图标素材尚未进入仓库，资源中的图标目前为空，待正式内容到位后替换。
+- `IdentityNameRules.confirm_streamer_name()` 与 `confirm_fan_group_name()` 共用 `confirm_name()` 规则；空字符串和纯空白回退到各自默认值，其他输入原样保留。
+- 默认主播名目前为临时值“新主播”，正式文案确定后修改 `IdentityNameRules.DEFAULT_STREAMER_NAME`。
+- 默认粉丝团名目前为临时值“新粉丝团”，正式文案确定后修改 `IdentityNameRules.DEFAULT_FAN_GROUP_NAME`。
+- `IdentityConfirmationState` 首次只接受调用方从当前身份资源整理出的有效 ID，之后拒绝覆盖；运行持有者通过 `get_confirmed_identity_id()` 读取结果。
+- `IdentityConfirmationState` 锁定后的身份 ID 可通过 `SaveManager.set_identity_data()` 写入 SaveData，供本周目场景重建后继续读取。
+- `SaveData.streamer_name`、`SaveData.fan_group_name` 与 `SaveData.identity_id` 保存本周目确认结果；新周目初始化为空值，确认后由 `SaveManager.set_identity_data()` 一次写入。
+- 新增字段有明确空值默认，并兼容旧版 SaveData，因此 `SaveData.CURRENT_VERSION` 保持 `1`。
+- `ui/identity_setup/identity_setup.tscn` 提供主播名、粉丝团名、身份选项和当前选中态；确认时调用共享名称规则与身份锁定、写入并保存 SaveData，再由 SceneRouter 进入 Game。
+- 身份图标为空时，页面用倾向字标占位；正式图标可直接由 `IdentityOption.icon` 替换。
+
 ## 当前仓库状态
 
-- 当前没有身份系统代码和身份选择场景。
+- 身份流程已接通：主菜单 Start 新建 SaveData 并进入身份设置；确认后保存主播名、粉丝团名和身份 ID，并初始化三项倾向系统的开局参照，再由 SceneRouter 进入当前 Game 入口。
+- 身份选项数据类型、三份占位资源、名称确认、身份锁定、周目存档字段和身份设置页面已建立。
 - `SaveManager` 已存在，并持有 `SaveData`。
-- `SaveData` 当前只有版本、游玩时间、当前场景和 checkpoint 字段。
-- 主菜单 Start 当前直接调用 `SceneRouter.goto_game()` 进入 sandbox。
+- `SaveData` 包含版本、游玩时间、当前场景、checkpoint、主播名、粉丝团名和身份 ID 字段。
+- 当前 `SceneRouter.goto_game()` 仍指向 Sandbox 技术测试场景，后续替换真实游戏入口时更新。
 - 当前仓库没有独立单元测试框架。
 
 ## 任务顺序
@@ -30,14 +47,14 @@
 | ID-04 | 把姓名和身份写入 SaveData | 无新增自动化测试 |
 | ID-05 | 做身份设置界面 | 无新增自动化测试 |
 | ID-06 | 接通主菜单 → 身份设置 → 游戏 | 无新增自动化测试 |
-| ID-07 | 自定义粉丝团名并写入本周目数据 | 复用 ID-02 的名称确认测试 |
+| ID-07 | 自定义粉丝团名并写入本周目数据 | 复用 ID-02 名称确认测试 |
 
 ## 测试预算
 
 身份系统只给容易被以后改坏、同时可以快速运行的纯逻辑写单元测试：
 
-- 空白名字会回退到默认名字；
-- 正常名字会保留；
+- 空白主播名和粉丝团名会分别回退到各自默认名字；
+- 正常主播名和粉丝团名会保留玩家输入；
 - 第一次身份确认会成功；
 - 本周目已经确认后，第二次选择不会改掉身份。
 
@@ -51,7 +68,7 @@ ID-07 完成后，本周目的主播名、粉丝团名和身份使用稳定数�
 
 后续：
 - 【三项倾向系统】读取开局身份作为比较依据；
-- 直播 UI、休息时刻等需要展示玩家侧信息时可以读取粉丝团名；
+- 直播 UI、休息时刻等需要展示玩家侧信息时读取 `fan_group_name`；
 - 【结局系统】读取主播名和开局身份。
 
 等 17、20 系统开发时再做具体接线，不在身份系统阶段提前实现它们。

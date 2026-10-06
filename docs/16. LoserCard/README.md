@@ -6,6 +6,13 @@
 
 只有“矛盾击破成功 + 终结神谕确认完成”后才发卡。只赢下 PK 不发新卡。
 
+## 当前数据底座
+
+- `LoserCardProfile` Resource 以稳定 `streamer_id` 标识主播，提供 `streamer_name`、`card_art` 和 `card_text` 展示入口。
+- `LoserCardCatalog` 保存资料列表，并通过 `find_profile(streamer_id)` 查找卡片。
+- 当前目录中的 `data/loser_card/loser_card_catalog.tres` 是空资料库；正式主播 ID、卡面素材和文案尚未提供。
+- 本卡只建立静态卡片资料和查找能力；真正击败判定、周目获卡记录与休息展示由后续任务实现。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |

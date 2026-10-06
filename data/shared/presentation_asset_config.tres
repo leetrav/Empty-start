@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PresentationAssetConfig" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://data/shared/presentation_asset_config.gd" id="1_config"]
+[ext_resource type="Theme" path="res://ui/theme/base_theme.tres" id="2_ui_theme"]
+
+[resource]
+script = ExtResource("1_config")
+ui_theme = ExtResource("2_ui_theme")

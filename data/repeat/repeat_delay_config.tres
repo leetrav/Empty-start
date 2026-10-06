@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="RepeatDelayConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/repeat/repeat_delay_config.gd" id="1_repeat_delay_config"]
+
+[resource]
+script = ExtResource("1_repeat_delay_config")
+minimum_delay_seconds = 0.5
+maximum_delay_seconds = 3.0

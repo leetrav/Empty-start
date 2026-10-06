@@ -1,0 +1,82 @@
+[gd_resource type="Resource" script_class="AudioEventConfig" load_steps=22 format=3]
+
+[ext_resource type="Script" path="res://core/audio/audio_event_config.gd" id="1_config"]
+[ext_resource type="Script" path="res://core/audio/audio_event.gd" id="2_event"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/magical/magical_1.ogg" id="3_magical_1"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/magical/magical_2.ogg" id="4_magical_2"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/magical/magical_3.ogg" id="5_magical_3"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/magical/magical_4.ogg" id="6_magical_4"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/magical/magical_5.ogg" id="7_magical_5"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/magical/magical_6.ogg" id="8_magical_6"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/magical/magical_7.ogg" id="9_magical_7"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/interface/confirmation_001.ogg" id="10_confirmation"]
+
+[sub_resource type="Resource" id="event_attack_charge"]
+script = ExtResource("2_event")
+event_id = &"attack_charge"
+audio_type = 1
+stream = ExtResource("3_magical_1")
+
+[sub_resource type="Resource" id="event_attack_ready"]
+script = ExtResource("2_event")
+event_id = &"attack_ready"
+audio_type = 1
+stream = ExtResource("4_magical_2")
+
+[sub_resource type="Resource" id="event_attack_fire"]
+script = ExtResource("2_event")
+event_id = &"attack_fire"
+audio_type = 1
+stream = ExtResource("5_magical_3")
+
+[sub_resource type="Resource" id="event_hit_normal"]
+script = ExtResource("2_event")
+event_id = &"hit_normal"
+audio_type = 1
+stream = ExtResource("6_magical_4")
+
+[sub_resource type="Resource" id="event_hit_trap"]
+script = ExtResource("2_event")
+event_id = &"hit_trap"
+audio_type = 1
+stream = ExtResource("7_magical_5")
+
+[sub_resource type="Resource" id="event_tier_up"]
+script = ExtResource("2_event")
+event_id = &"tier_up"
+audio_type = 1
+stream = ExtResource("8_magical_6")
+
+[sub_resource type="Resource" id="event_contradiction_start"]
+script = ExtResource("2_event")
+event_id = &"contradiction_start"
+audio_type = 1
+stream = ExtResource("9_magical_7")
+
+[sub_resource type="Resource" id="event_contradiction_break"]
+script = ExtResource("2_event")
+event_id = &"contradiction_break"
+audio_type = 1
+stream = ExtResource("9_magical_7")
+
+[sub_resource type="Resource" id="event_oracle_confirm"]
+script = ExtResource("2_event")
+event_id = &"oracle_confirm"
+audio_type = 2
+stream = ExtResource("10_confirmation")
+
+[sub_resource type="Resource" id="event_divine_descent_start"]
+script = ExtResource("2_event")
+event_id = &"divine_descent_start"
+audio_type = 1
+stream = ExtResource("9_magical_7")
+
+[sub_resource type="Resource" id="event_divine_descent_lock"]
+script = ExtResource("2_event")
+event_id = &"divine_descent_lock"
+audio_type = 1
+stream = ExtResource("8_magical_6")
+
+[resource]
+script = ExtResource("1_config")
+events = Array[ExtResource("2_event")]([SubResource("event_attack_charge"), SubResource("event_attack_ready"), SubResource("event_attack_fire"), SubResource("event_hit_normal"), SubResource("event_hit_trap"), SubResource("event_tier_up"), SubResource("event_contradiction_start"), SubResource("event_contradiction_break"), SubResource("event_oracle_confirm"), SubResource("event_divine_descent_start"), SubResource("event_divine_descent_lock")])

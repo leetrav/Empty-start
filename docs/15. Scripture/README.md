@@ -15,6 +15,12 @@
 
 同一关最多一条。没有形成神谕的关卡保留缺章。
 
+## 当前数据底座
+
+- `ScriptureEntry` Resource 保存 `level_id`、`streamer_name`、`original_line_id`、`original_line_text`、`tendency_id`、`chapter_number` 和 `verse_number`。
+- `ScriptureData.entries` 持有当前周目的经文记录；数据由 `SaveData.scripture_data` 保存并随当前周目读写。
+- 当前只建立可创建和读取的数据结构；同关去重、节号生成与固定、排序、提交 / 重开撤回和跨系统读取由后续任务实现。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |

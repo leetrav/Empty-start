@@ -15,10 +15,11 @@ func _ready() -> void:
 
 
 func _on_start_button_pressed() -> void:
-	# 通过 SceneRouter 进入当前项目的游戏入口场景。
-	var error: Error = SceneRouter.goto_game()
+	# 新建本周目数据后进入身份设置；Game 入口留给确认后的身份页面。
+	SaveManager.new_game()
+	var error: Error = SceneRouter.goto_identity_setup()
 	if error != OK:
-		push_error("MainMenu: 无法进入 Game，Error: %s" % error_string(error))
+		push_error("MainMenu: 无法进入身份设置页，Error: %s" % error_string(error))
 
 
 func _on_quit_button_pressed() -> void:
