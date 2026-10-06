@@ -66,7 +66,7 @@ func _verify_layout_and_generation() -> void:
 	_check(is_instance_valid(first_view) and first_view.position.x < opening_x, "普通弹幕持续移动")
 	_check(_views(false).size() > opening_views.size(), "普通弹幕持续生成")
 	_check(_hit().get_player_pk() < opening_pk, "真实回拉按帧降低 PK")
-	_check(_live_comment_label().text == str(SaveManager.data.live_session.comment_count), "Comment HUD 自动刷新")
+	_check(_live_comment_label().get_parsed_text() == "🔊" + str(SaveManager.data.live_session.comment_count), "Comment HUD 自动刷新")
 	var pause_menu: Node = _sandbox.get_node("%PauseMenu")
 	pause_menu.pause_game()
 	await get_tree().process_frame
@@ -343,8 +343,8 @@ func _attempt_tendency_total() -> int:
 	return tendency.attempt_orthodox_total + tendency.attempt_heretical_total + tendency.attempt_absurd_total
 
 
-func _live_comment_label() -> Label:
-	return _sandbox.get_node("%LiveDataHud").find_child("CommentValue", true, false) as Label
+func _live_comment_label() -> RichTextLabel:
+	return _sandbox.get_node("%LiveDataHud").find_child("CommentMetric", true, false) as RichTextLabel
 
 
 func _on_snapshot(snapshot: AttackTargetSnapshot) -> void:

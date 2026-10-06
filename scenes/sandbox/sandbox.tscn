@@ -128,6 +128,7 @@ anchor_bottom = 0.0
 offset_top = 784.0
 offset_right = 448.0
 offset_bottom = 1080.0
+display_side = 0
 
 [node name="BattleArea" type="Control" parent="BattleHud"]
 layout_mode = 0
@@ -345,128 +346,17 @@ text = "主播画面\n美术资源待接入"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="EnemyLiveDataArea" type="Control" parent="BattleHud/OpponentStreamerArea"]
+[node name="OpponentLiveDataHud" parent="BattleHud/OpponentStreamerArea" instance=ExtResource("4_live_data_hud")]
+unique_name_in_owner = true
 layout_mode = 0
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
 offset_top = 784.0
 offset_right = 448.0
 offset_bottom = 1080.0
-mouse_filter = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = 16.0
-offset_right = -16.0
-offset_bottom = -16.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="Rows" type="VBoxContainer" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 8
-
-[node name="DataTitle" type="Label" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"MutedLabel"
-text = "敌方直播数据 · 暂无数据"
-
-[node name="StatsPanel" type="PanelContainer" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"CardPanel"
-
-[node name="Metrics" type="VBoxContainer" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 8
-
-[node name="TopRow" type="HBoxContainer" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 16
-
-[node name="ViewerMetric" type="VBoxContainer" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/TopRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-
-[node name="ViewerTitle" type="Label" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/TopRow/ViewerMetric"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"MutedLabel"
-text = "观看人数"
-horizontal_alignment = 1
-
-[node name="ViewerValue" type="Label" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/TopRow/ViewerMetric"]
-layout_mode = 2
-mouse_filter = 2
-text = "—"
-horizontal_alignment = 1
-
-[node name="LikeMetric" type="VBoxContainer" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/TopRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-
-[node name="LikeTitle" type="Label" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/TopRow/LikeMetric"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"MutedLabel"
-text = "点赞数"
-horizontal_alignment = 1
-
-[node name="LikeValue" type="Label" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/TopRow/LikeMetric"]
-layout_mode = 2
-mouse_filter = 2
-text = "—"
-horizontal_alignment = 1
-
-[node name="BottomRow" type="HBoxContainer" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 16
-
-[node name="CommentMetric" type="VBoxContainer" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/BottomRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-
-[node name="CommentTitle" type="Label" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/BottomRow/CommentMetric"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"MutedLabel"
-text = "评论数"
-horizontal_alignment = 1
-
-[node name="CommentValue" type="Label" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/BottomRow/CommentMetric"]
-layout_mode = 2
-mouse_filter = 2
-text = "—"
-horizontal_alignment = 1
-
-[node name="FanMetric" type="VBoxContainer" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/BottomRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-
-[node name="FanTitle" type="Label" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/BottomRow/FanMetric"]
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"MutedLabel"
-text = "粉丝数"
-horizontal_alignment = 1
-
-[node name="FanValue" type="Label" parent="BattleHud/OpponentStreamerArea/EnemyLiveDataArea/MarginContainer/Rows/StatsPanel/Metrics/BottomRow/FanMetric"]
-layout_mode = 2
-mouse_filter = 2
-text = "—"
-horizontal_alignment = 1
+display_side = 1
+auto_bind_player_session = false
 
 [node name="AimReticle" parent="BattleHud" instance=ExtResource("5_aim_reticle")]
 unique_name_in_owner = true
