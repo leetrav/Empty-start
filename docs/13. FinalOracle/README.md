@@ -65,3 +65,9 @@ FO-12 等 18. Rest。
 - 候选按 `original_sentence_id` 去重，并保留首次出现顺序及 HR-14 的原始记录字段；返回值是独立深拷贝。
 - 普通复读统计和矛盾复读记录不作为候选来源。后续排序只读取 `RepeatGenerationStats.get_normal_count(original_line_id)`，不会从复读记录新增候选。
 - HR-14 已将同一句的普通命中次数和最近命中顺序合并到唯一记录；若输入重复 ID，候选池保留首条记录，不自行汇总第二份统计。
+
+## FO-03 当前倾向排序接口
+
+- `FinalOracleCandidatePool.select_most_repeated_per_tendency(candidates, repeat_stats)` 对正统、异端、荒谬分别选择普通复读实际生成数最高的一句。
+- 计数通过 `RepeatGenerationStats.get_normal_count(StringName(original_sentence_id))` 读取；矛盾复读统计不参与。
+- 复读数相同时暂保留命中历史中先出现的候选；FO-04 按最近命中顺序和稳定原句 ID 完成正式并列裁决。

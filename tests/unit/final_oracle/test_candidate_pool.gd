@@ -2,6 +2,8 @@ extends SceneTree
 
 const HIT_RESOLUTION = preload("res://core/combat/hit_resolution.gd")
 const CANDIDATE_POOL = preload("res://core/final_oracle/final_oracle_candidate_pool.gd")
+const REPEAT_PLAN = preload("res://core/repeat/repeat_plan.gd")
+const REPEAT_STATS = preload("res://core/repeat/repeat_generation_stats.gd")
 
 
 func _init() -> void:
@@ -16,7 +18,10 @@ func _run_tests() -> void:
 	if not _test_only_normal_hit_history_enters_pool():
 		quit(1)
 		return
-	print("通过：FO-02 原句去重与普通历史候选边界")
+	if not _test_highest_normal_repeat_per_tendency():
+		quit(1)
+		return
+	print("通过：FO-02 候选池与 FO-03 倾向内普通复读排序")
 	quit()
 
 
@@ -62,3 +67,54 @@ func _test_only_normal_hit_history_enters_pool() -> bool:
 		push_error("FO-02 候选应保留 HR-14 聚合后的原句命中次数")
 		return false
 	return true
+
+
+# 同倾向选择普通复读数最高者，矛盾复读数不参与比较。
+func _test_highest_normal_repeat_per_tendency() -> bool:
+	var pool = CANDIDATE_POOL.new()
+	var history: Array[Dictionary] = [
+		_make_history_entry("line-a", "orthodox"),
+		_make_history_entry("line-b", "orthodox"),
+		_make_history_entry("line-c", "heretical"),
+		_make_history_entry("line-d", "absurd"),
+	]
+	var candidates: Array[Dictionary] = pool.build_from_normal_hit_history(history)
+	var repeat_stats: RepeatGenerationStats = REPEAT_STATS.new()
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-a"), 2)
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-b"), 5)
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-c"), 3)
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.CONTRADICTION, &"line-a"), 10)
+	var selected: Array[Dictionary] = pool.select_most_repeated_per_tendency(candidates, repeat_stats)
+	if selected.size() != 3:
+		push_error("FO-03 应为每种存在候选的倾向最多选出一句")
+		return false
+	var selected_by_tendency: Dictionary = {}
+	for candidate: Dictionary in selected:
+		selected_by_tendency[str(candidate.get("tendency", ""))] = str(
+			candidate.get("original_sentence_id", "")
+		)
+	if (
+		selected_by_tendency.get("orthodox", "") != "line-b"
+		or selected_by_tendency.get("heretical", "") != "line-c"
+		or selected_by_tendency.get("absurd", "") != "line-d"
+	):
+		push_error("FO-03 没有按每种倾向的实际普通复读数选择最高候选")
+		return false
+	return true
+
+
+func _make_history_entry(original_sentence_id: String, tendency: String) -> Dictionary:
+	return {
+		"original_sentence_id": original_sentence_id,
+		"tendency": tendency,
+		"hit_count": 1,
+		"first_hit_order": 1,
+		"last_hit_order": 1,
+	}
+
+
+func _make_repeat_plan(repeat_type: int, original_line_id: StringName) -> RepeatPlan:
+	var plan: RepeatPlan = REPEAT_PLAN.new()
+	plan.repeat_type = repeat_type
+	plan.original_line_id = original_line_id
+	return plan
