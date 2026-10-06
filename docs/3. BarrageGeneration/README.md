@@ -19,8 +19,8 @@
 
 ## 当前仓库状态
 
-- BG-01～BG-08 核心任务已完成；BG-09 等待 4. BarrageTraits / 6. HitResolution 结果接口，BG-10 消费 RepeatPlan 并维护独立复读容量。
-- Repeat 的延迟队列调用接线由 10. Repeat 的 RP-06 处理；CombatStage 接线、全局暂停、命中移除和布局参数接线仍由后续任务负责。
+- BG-01～BG-08 与 BG-11 核心任务已完成；BG-09 等待 4. BarrageTraits / 6. HitResolution 结果接口，BG-10 消费 RepeatPlan 并维护独立复读容量。
+- Repeat 的延迟队列调用接线由 10. Repeat 的 RP-06 处理；CombatStage 接线、命中移除和布局参数接线仍由后续任务负责。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - 4. BarrageTraits、5. CombatAttack、6. HitResolution、8. CombatStage、12. ContradictionBreak 等缺少真实接口时，对应联调任务仍保留任务卡；10. Repeat 已提供 RepeatPlan 数据，队列发出请求仍待 RP-06。
 
@@ -117,7 +117,7 @@ Sandbox 当前负责调用启动入口；未来战斗阶段可调用相同的启
 
 ### BG-06 生成时固定弹幕寿命
 
-BarrageArea 暴露可编辑的 `base_lifetime_seconds` 临时基础值（默认 10 秒），并提供 `set_lifetime_multiplier()` 接收当前档位寿命倍率。生成新实例时，`BarrageRuntimeRecord` 保存单调时钟毫秒截止时间。倍率变化只影响之后新建的记录，既有截止时间保持不变。公共数值表尚未落地，基础值可在 Inspector 调整；到期移除留给 BG-08，暂停补偿留给 BG-11。
+BarrageArea 暴露可编辑的 `base_lifetime_seconds` 临时基础值（默认 10 秒），并提供 `set_lifetime_multiplier()` 接收当前档位寿命倍率。生成新实例时，`BarrageRuntimeRecord` 保存单调时钟毫秒截止时间。倍率变化只影响之后新建的记录，既有截止时间保持不变。公共数值表尚未落地，基础值可在 Inspector 调整；到期移除由 BG-08 处理，暂停时的截止时间补偿由 BG-11 处理。
 
 ### BG-07 普通弹幕共享同屏上限
 
@@ -125,8 +125,12 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 
 ### BG-08 到期与离开区域自然移除
 
-生成时由 `BarrageArea` 把所属 `Control` 注入 `BarrageView`。视图每帧比较当前单调时钟与 `BarrageRuntimeRecord.expires_at_msec`；到期后调用 `queue_free()`。移动后，视图矩形与所属 Control 当前矩形不相交时也会自然结束。Node 离树触发 BG-07 的容量释放。当前有效区域使用 BarrageArea 实际边界，BG-14 布局读取完成后再接入舞台参数。命中移除由 BG-09 处理，全局暂停补偿由 BG-11 处理。
+生成时由 `BarrageArea` 把所属 `Control` 注入 `BarrageView`。视图每帧比较当前单调时钟与 `BarrageRuntimeRecord.expires_at_msec`；到期后调用 `queue_free()`。移动后，视图矩形与所属 Control 当前矩形不相交时也会自然结束。Node 离树触发 BG-07 的容量释放。当前有效区域使用 BarrageArea 实际边界，BG-14 布局读取完成后再接入舞台参数。命中移除由 BG-09 处理；恢复运行时，BG-11 会补偿暂停时长。
 
 ### BG-10 复读请求与独立同屏上限
 
 `BarrageArea.spawn_repeat_barrage(RepeatPlan)` 接收单条计划，复制原句 ID、display_text 和计划寿命到运行时记录。复读使用独立的 `repeat_barrage_screen_cap`（临时默认 24，可在 Inspector 调整）和独立容量账本；普通容量满时复读仍可生成。复读容量满时方法返回 `null`，Repeat 调用方按既定溢出规则处理。延迟与数量由 RepeatDelayQueue 决定，本系统只显示到期请求。
+
+### BG-11 全局暂停生成与弹幕寿命
+
+`BarrageArea` 沿用场景树默认的可暂停处理模式，普通生成 Timer 在 `SceneTree.paused` 时停止计时。`BarrageView` 使用 `PROCESS_MODE_ALWAYS` 观察暂停状态；暂停期间跳过移动和到期检查，并记录暂停开始时间。恢复时把实际暂停时长补加到 `expires_at_msec`，使已有弹幕按暂停前剩余寿命继续运行。该处理只覆盖弹幕生成和弹幕寿命。
