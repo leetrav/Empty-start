@@ -27,7 +27,10 @@ func _run_tests() -> void:
 	if not _test_stable_sentence_id_breaks_final_tie():
 		quit(1)
 		return
-	print("通过：FO-02 候选池与 FO-03 / FO-04 候选排序")
+	if not _test_fill_candidates_to_three():
+		quit(1)
+		return
+	print("通过：FO-02 至 FO-05 候选生成与排序")
 	quit()
 
 
@@ -119,6 +122,15 @@ func _make_history_entry(original_sentence_id: String, tendency: String) -> Dict
 	}
 
 
+func _make_candidate_history_entry(
+		original_sentence_id: String, tendency: String, hit_count: int, last_hit_order: int
+	) -> Dictionary:
+	var history_entry: Dictionary = _make_history_entry(original_sentence_id, tendency)
+	history_entry["hit_count"] = hit_count
+	history_entry["last_hit_order"] = last_hit_order
+	return history_entry
+
+
 # 普通复读数相同时，最近命中优先级高于原句 ID 顺序。
 func _test_latest_hit_breaks_repeat_tie() -> bool:
 	var earlier_hit: Dictionary = _make_history_entry("line-a", "orthodox")
@@ -151,6 +163,53 @@ func _test_stable_sentence_id_breaks_final_tie() -> bool:
 	var selected: Array[Dictionary] = pool.select_most_repeated_per_tendency(candidates, repeat_stats)
 	if selected.size() != 1 or str(selected[0].get("original_sentence_id", "")) != "line-a":
 		push_error("FO-04 双层并列时应按稳定原句 ID 升序裁决")
+		return false
+	return true
+
+
+# 缺少倾向时按普通命中历史补位，遵守三句上限并保留不足三句时的实际数量。
+func _test_fill_candidates_to_three() -> bool:
+	var pool = CANDIDATE_POOL.new()
+	var history: Array[Dictionary] = [
+		_make_candidate_history_entry("line-main", "orthodox", 1, 1),
+		_make_candidate_history_entry("line-z", "orthodox", 10, 20),
+		_make_candidate_history_entry("line-b", "orthodox", 10, 20),
+		_make_candidate_history_entry("line-a", "orthodox", 10, 21),
+		_make_candidate_history_entry("line-low-hit-new", "orthodox", 9, 100),
+	]
+	var candidates: Array[Dictionary] = pool.build_from_normal_hit_history(history)
+	var repeat_stats: RepeatGenerationStats = REPEAT_STATS.new()
+	repeat_stats.record_generated(
+		_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-main"), 200
+	)
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-z"), 50)
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-a"), 99)
+	repeat_stats.record_generated(
+		_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-low-hit-new"), 199
+	)
+	var final_candidates: Array[Dictionary] = pool.fill_missing_tendency_candidates(
+		candidates, repeat_stats
+	)
+	if final_candidates.size() != 3:
+		push_error("FO-05 候选不足三种倾向时应补位至三句上限")
+		return false
+	var selected_ids: Array[String] = []
+	for candidate: Dictionary in final_candidates:
+		selected_ids.append(str(candidate.get("original_sentence_id", "")))
+	if selected_ids != ["line-main", "line-a", "line-b"]:
+		push_error("FO-05 补位应按命中次数、最近命中时间、原句 ID 排序")
+		return false
+
+	var short_history: Array[Dictionary] = [
+		_make_candidate_history_entry("short-a", "orthodox", 1, 1),
+		_make_candidate_history_entry("short-b", "heretical", 1, 2),
+	]
+	var short_candidates: Array[Dictionary] = pool.build_from_normal_hit_history(short_history)
+	var short_final_candidates: Array[Dictionary] = pool.fill_missing_tendency_candidates(
+		short_candidates, repeat_stats
+	)
+	if short_final_candidates.size() != 2:
+		push_error("FO-05 合格普通话语少于三句时应返回实际数量")
 		return false
 	return true
 

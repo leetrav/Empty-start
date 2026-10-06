@@ -71,3 +71,8 @@ FO-12 等 18. Rest。
 - `FinalOracleCandidatePool.select_most_repeated_per_tendency(candidates, repeat_stats)` 对正统、异端、荒谬分别选择普通复读实际生成数最高的一句。
 - 计数通过 `RepeatGenerationStats.get_normal_count(StringName(original_sentence_id))` 读取；矛盾复读统计不参与。
 - 复读数相同时优先最近命中更晚的句子；最近命中顺序仍并列时按稳定原句 ID 升序裁决。
+
+## FO-05 候选补位接口
+
+- `FinalOracleCandidatePool.fill_missing_tendency_candidates(candidates, repeat_stats)` 先保留各倾向领头候选，再从剩余普通命中候选补足，最多返回三句。
+- 补位顺序读取 HR-14 历史：`hit_count` 降序、`last_hit_order` 降序、`original_sentence_id` 升序。这里不使用复读数；若普通话语不足三句，则返回实际数量。
