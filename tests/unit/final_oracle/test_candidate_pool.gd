@@ -30,7 +30,10 @@ func _run_tests() -> void:
 	if not _test_fill_candidates_to_three():
 		quit(1)
 		return
-	print("通过：FO-02 至 FO-05 候选生成与排序")
+	if not _test_auto_pick_uses_formal_order():
+		quit(1)
+		return
+	print("通过：FO-02 至 FO-08 候选生成、排序与超时选择")
 	quit()
 
 
@@ -210,6 +213,30 @@ func _test_fill_candidates_to_three() -> bool:
 	)
 	if short_final_candidates.size() != 2:
 		push_error("FO-05 合格普通话语少于三句时应返回实际数量")
+		return false
+	return true
+
+
+# 超时自动选择只从展示快照取句，并使用复读数、最近命中、原句 ID 的正式排序。
+func _test_auto_pick_uses_formal_order() -> bool:
+	var pool = CANDIDATE_POOL.new()
+	var history: Array[Dictionary] = [
+		_make_candidate_history_entry("line-b", "orthodox", 1, 9),
+		_make_candidate_history_entry("line-a", "orthodox", 1, 8),
+		_make_candidate_history_entry("line-z", "orthodox", 1, 9),
+	]
+	var candidates: Array[Dictionary] = pool.build_from_normal_hit_history(history)
+	var repeat_stats: RepeatGenerationStats = REPEAT_STATS.new()
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-b"), 5)
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-a"), 5)
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-z"), 5)
+	var final_candidates: Array[Dictionary] = pool.fill_missing_tendency_candidates(
+		candidates, repeat_stats
+	)
+	var display_candidates: Array[Dictionary] = pool.snapshot_for_display(final_candidates)
+	var selected: Dictionary = pool.select_auto_pick_from_display(display_candidates, repeat_stats)
+	if str(selected.get("original_sentence_id", "")) != "line-b":
+		push_error("FO-08 自动选择没有遵循普通复读、最近命中、原句 ID 顺序")
 		return false
 	return true
 
