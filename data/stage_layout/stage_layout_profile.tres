@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="StageLayoutProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/stage_layout/stage_layout_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+base_resolution = Vector2i(1920, 1080)
+player_streamer_area_size = Vector2i(448, 1080)
+opponent_streamer_area_size = Vector2i(448, 1080)
+central_barrage_area_rect = Rect2i(448, 0, 1024, 1080)
+pk_bar_area_size = Vector2i(1024, 72)
+live_data_area_size = Vector2i(448, 296)
