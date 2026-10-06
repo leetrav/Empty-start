@@ -4,6 +4,8 @@ extends RefCounted
 signal opponent_tier_state_changed(pullback_multiplier: float, tier5_desperation_active: bool)
 signal barrage_generation_multipliers_changed(count_multiplier: float, frequency_multiplier: float, movement_speed_multiplier: float)
 signal barrage_lifetime_multiplier_changed(lifetime_multiplier: float)
+signal tier_state_changed(current_tier: int)
+signal audio_event_requested(event_id: StringName)
 
 const INITIAL_TIER: int = 0
 
@@ -56,6 +58,13 @@ func bind_barrage_area(barrage_area: BarrageArea) -> void:
 	_publish_barrage_multipliers()
 
 
+func bind_audio_manager(audio_manager: Node) -> void:
+	# 音效由共享 AudioManager 播放；重复绑定同一管理器不重复连接。
+	var callback: Callable = Callable(audio_manager, "play_event")
+	if not audio_event_requested.is_connected(callback):
+		audio_event_requested.connect(callback)
+
+
 func _on_final_player_pk_updated(final_player_pk: float) -> void:
 	update_tier_for_pk(final_player_pk)
 
@@ -88,6 +97,7 @@ func try_tier_down(final_player_pk: float) -> bool:
 
 func update_tier_for_pk(final_player_pk: float) -> bool:
 	# 重复调用已实现的单档规则，直到该 PK 不再跨越升档或降档阈值。
+	var previous_tier: int = _current_tier
 	var tier_changed: bool = false
 	while try_tier_up(final_player_pk):
 		tier_changed = true
@@ -95,6 +105,9 @@ func update_tier_for_pk(final_player_pk: float) -> bool:
 		tier_changed = true
 	if tier_changed:
 		_publish_current_tier_state()
+		if _current_tier > previous_tier:
+			# 多档上升仍只播放一次本次 Tier 升档事件。
+			audio_event_requested.emit(&"tier_up")
 	return tier_changed
 
 
@@ -102,6 +115,7 @@ func _publish_current_tier_state() -> void:
 	# 先确定唯一当前 Tier，再把同一配置分别交给各系统。
 	_publish_opponent_tier_state()
 	_publish_barrage_multipliers()
+	tier_state_changed.emit(_current_tier)
 
 
 func _publish_opponent_tier_state() -> void:
