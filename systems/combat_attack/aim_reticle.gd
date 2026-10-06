@@ -12,7 +12,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size = Vector2.ONE * reticle_diameter
 	custom_minimum_size = size
-	_update_mouse_position()
+	refresh_mouse_position()
 	queue_redraw()
 
 
@@ -22,25 +22,31 @@ func _input(event: InputEvent) -> void:
 		# 事件位置属于 Viewport；转换到画布后使缩放窗口与注入输入使用同一坐标事实。
 		var mouse_event: InputEventMouseMotion = event as InputEventMouseMotion
 		var canvas_position: Vector2 = get_canvas_transform().affine_inverse() * mouse_event.position
-		global_position = canvas_position - size * 0.5
+		_set_aim_center_global_position(canvas_position)
 
 
-# 显示节点左上角偏移半个准心尺寸，使准心视觉中心与鼠标坐标重合。
-func _update_mouse_position() -> void:
-	global_position = get_global_mouse_position() - size * 0.5
+# 场景布局完成或缩放后重新对齐鼠标，让窗口变化也保持准心中心一致。
+func refresh_mouse_position() -> void:
+	_set_aim_center_global_position(get_global_mouse_position())
+
+
+# 中心偏移使用完整缩放基底，避免父级缩放后仍减去未缩放的半径。
+func _set_aim_center_global_position(center_position: Vector2) -> void:
+	global_position = center_position - get_global_transform().basis_xform(size * 0.5)
 
 
 # 后续瞄准判定读取这个中心，和准心绘制使用同一几何中心。
 func get_aim_center_global_position() -> Vector2:
-	return global_position + size * 0.5
+	return get_global_transform() * (size * 0.5)
 
 
-# 复用准心当前配置尺寸判断弹幕区域，不在攻击系统复制判定常量。
+# 将目标转回准心设计坐标后判断；绘制和判定一起继承父级的等比或非等比缩放。
 func intersects_target_area(target_area: Rect2) -> bool:
+	var local_target_area: Rect2 = get_global_transform().affine_inverse() * target_area
 	return BarrageAimIntersection.circle_overlaps_rect(
-		get_aim_center_global_position(),
+		size * 0.5,
 		reticle_diameter,
-		target_area
+		local_target_area
 	)
 
 

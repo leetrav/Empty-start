@@ -357,7 +357,7 @@ theme_type_variation = &"MutedLabel"
 text = "对手持续回拉 PK\n命中弹幕，把进度推向满值"
 autowrap_mode = 2
 
-[node name="AimReticle" parent="." instance=ExtResource("5_aim_reticle")]
+[node name="AimReticle" parent="BattleHud" instance=ExtResource("5_aim_reticle")]
 unique_name_in_owner = true
 
 [node name="AttackChargeInput" type="Node" parent="."]

@@ -35,7 +35,7 @@
 - 3. BarrageGeneration 已有正式运行时记录与生成入口；它只装配特性组件，不解释特性语义，也暂未把 `LevelProfile.special_trait_ids` 分配到具体弹幕实例。
 - 2. LevelConfiguration 已拆出“本关特殊玩法标识”的配置任务。
 - BT-06 的子话语生成还有待按 3. BarrageGeneration 的正式入口完成场景联调；本系统不自建生成逻辑。
-- CA-09 / INT-01 已将逐目标 Trait Result 交给 HitResolution，并由 Sandbox 按结果结束正常/反弹目标、保留遮挡目标。当前样例使用空 TraitSet；special_trait_ids 的实例分配、12. ContradictionBreak 和14. Assimilation 联调继续等待后续任务。
+- CA-09 / INT-01 已将逐目标 Trait Result 交给 HitResolution，并由 Sandbox 仅保留遮挡未命中的目标；正常、假牌、反击复制品和反弹结果都结束实例。生命周期与普通收益独立判断，假牌/反击/反弹继续跳过普通收益。当前样例使用空 TraitSet；special_trait_ids 的实例分配、12. ContradictionBreak 和14. Assimilation 联调继续等待后续任务。
 
 BT-01 特性 ID：`occlusion`（遮挡）、`retaliation_copy`（水军复制 / 反击）、`fake_card`（假牌）、`unselectable`（不可选）、`split`（分裂）、`reflect`（反弹）。
 

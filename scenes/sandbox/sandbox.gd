@@ -110,8 +110,8 @@ func _on_shot_hit_resolution_submitted(_snapshot: AttackTargetSnapshot, submissi
 		var trait_result := target_result.get("trait_result") as BarrageTraitResult
 		if trait_result == null:
 			continue
-		# 遮挡目标保留；正常和反弹结果结束对应真实实例，容量由弹幕系统归还。
-		if trait_result.kind == BarrageTraitResult.Kind.NORMAL or trait_result.kind == BarrageTraitResult.Kind.REFLECT:
+		# 只有遮挡未命中的目标留场；其余到达结果结束实例，收益由结算结果独立决定。
+		if trait_result.kind != BarrageTraitResult.Kind.OCCLUSION:
 			_barrage_area.end_barrage(int(target_result.get("target_instance_id", -1)))
 		if not bool(target_result.get("is_valid_hit", false)) or not trait_result.receives_normal_reward:
 			continue

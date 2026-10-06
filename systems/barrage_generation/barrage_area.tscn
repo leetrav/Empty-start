@@ -31,15 +31,5 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.113725, 0.129412, 0.152941, 1)
 
-[node name="AreaTitle" type="Label" parent="."]
-layout_mode = 1
-anchor_right = 1.0
-offset_left = 12.0
-offset_top = 4.0
-offset_right = -12.0
-offset_bottom = 28.0
-theme_type_variation = &"MutedLabel"
-text = "普通弹幕区域 · 持续生成预览"
-
 [node name="SpawnTimer" type="Timer" parent="."]
 one_shot = false

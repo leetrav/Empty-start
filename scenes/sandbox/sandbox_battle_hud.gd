@@ -7,6 +7,7 @@ extends Control
 @onready var _battle_area: Control = $BattleArea
 @onready var _opponent_area: Control = $OpponentStreamerArea
 @onready var _barrage_area: BarrageArea = %BarrageArea
+@onready var _aim_reticle: AimReticle = %AimReticle
 @onready var _pk_bar_area: Control = $BattleArea/PKBar
 @onready var _charge_feedback: Control = $BattleArea/ChargeFeedback
 @onready var _battle_state: Label = $BattleArea/BattleStateFeedback
@@ -58,8 +59,6 @@ func _apply_stage_layout() -> void:
 	# 顶部 PK 条和底部蓄力区预留在弹幕有效区之外，所有反馈控件均透传鼠标。
 	_set_design_rect(_barrage_area, Rect2(Vector2(0.0, pk_size.y), Vector2(_battle_area.size.x, maxf(_battle_area.size.y - pk_size.y - CHARGE_FEEDBACK_HEIGHT, 0.0))))
 	_barrage_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var old_area_title: Control = _barrage_area.get_node("AreaTitle") as Control
-	old_area_title.hide()
 
 
 # 使用设计坐标统一缩放文字和容器，窗口变化时保持左右区和中央区的比例。
@@ -68,6 +67,8 @@ func _fit_parent_size() -> void:
 	if parent_control == null or size.x <= 0.0 or size.y <= 0.0:
 		return
 	scale = parent_control.size / size
+	# 准心继承同一设计缩放，布局更新后通过其公开入口重新对齐当前鼠标。
+	_aim_reticle.refresh_mouse_position()
 
 
 # 静态布局只设显示矩形，不保存任何战斗状态。

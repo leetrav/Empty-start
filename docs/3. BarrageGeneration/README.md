@@ -141,9 +141,11 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 
 普通话语和复读都需要找到可放置的位置才算实际生成。所有行入口均有内容时，生成入口返回 `null`，移除尚未公布的视图并归还刚申请的容量；普通生成 Timer 在后续间隔再试，复读继续由现有 RepeatDelayQueue 保留到期请求重试。等待空间期间不发送生成通知，也不提前计评论或实际复读数；位置直接读取当前视图矩形，没有新增占位账本或队列。
 
-`end_barrage(target_instance_id: int) -> bool` 只结束当前区域中的目标，立即离树释放容量，随后排队释放节点。Sandbox 根据最终 `BarrageTraitResult` 决定是否调用：正常命中和反弹结束，遮挡保留。无效、其他区域或已经结束的目标返回 `false`。
+`end_barrage(target_instance_id: int) -> bool` 只结束当前区域中的目标，立即离树释放容量，随后排队释放节点。Sandbox 根据最终 `BarrageTraitResult` 决定是否调用：仅遮挡未命中结果保留，正常、假牌、反击复制品及反弹结果都结束。移除与正常收益分别判断。无效、其他区域或已经结束的目标返回 `false`。
 
 `clear_barrages()` 停止普通生成并结束当前区域全部弹幕，重置可见行轮换；等待中的复读继续由 RepeatDelayQueue 的清理入口处理。重开可立即生成新一局，旧视图不会占用新一局容量。
+
+正式 `barrage_area.tscn` 已移除早期技术预览标题；外层 HUD 通过区域根节点组合组件，保持对子场景内部 NodePath 的独立性。
 
 ### BG-11 全局暂停生成与弹幕寿命
 

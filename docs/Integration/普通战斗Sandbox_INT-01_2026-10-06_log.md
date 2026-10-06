@@ -43,11 +43,11 @@ Sandbox
 │   │   ├── BarrageArea
 │   │   ├── ChargeFeedback
 │   │   └── BattleStateFeedback
-│   └── OpponentStreamerArea
-│       ├── OpponentName / StreamerRole
-│       ├── OpponentPortraitPlaceholder
-│       └── TierFeedback
-├── AimReticle
+│   ├── OpponentStreamerArea
+│   │   ├── OpponentName / StreamerRole
+│   │   ├── OpponentPortraitPlaceholder
+│   │   └── TierFeedback
+│   └── AimReticle
 ├── AttackChargeInput
 │   └── Timer（运行时）
 ├── FailureOverlay
@@ -56,7 +56,7 @@ Sandbox
 └── OpponentPKBar（运行时）
 ```
 
-布局读取已有 `StageLayoutProfile`：1920×1080，左右各448×1080，中央1024×1080，PK条1024×72，直播数据448×296。中央实际弹幕子区域为1024×896，底部蓄力区112高；反馈透传鼠标，弹幕区域裁剪越界内容。BattleHud 按实际窗口整体缩放；GUI 已在1152×648检查。占位立绘等待美术替换。
+布局读取已有 `StageLayoutProfile`：1920×1080，左右各448×1080，中央1024×1080，PK条1024×72，直播数据448×296。中央实际弹幕子区域为1024×896，底部蓄力区112高；反馈透传鼠标，弹幕区域裁剪越界内容。BattleHud 按实际窗口整体缩放，准心继承同一缩放；GUI 已在1152×648检查，32设计像素准心对应19.2屏幕像素。占位立绘等待美术替换。
 
 ## 最小公开接口与数据归属
 
@@ -94,7 +94,7 @@ PK归HitResolution；Tier归CombatStage；回拉与连败归OpponentPKBar；场�
 1. 本场就绪后初始化或复用内存SaveData，显式绑定直播HUD；读取当前LevelRunState配置并新建HitResolution、CombatStage和RepeatDelayQueue。
 2. 绑定CombatStage到结算、生成、回拉和AudioManager，调用begin_combat同步Tier0，注入攻击配置并启动普通生成和回拉。
 3. 鼠标释放记录目标；飞行到达复核和Trait结果进入HitResolution，整发PK同步通知CombatStage更新最终Tier。
-4. 攻击提交后，正常/反弹结果结束对应实例，遮挡结果保留。有效普通结果记录本场倾向，并读取最终Tier与复读数量建立计划。
+4. 攻击提交后，只有遮挡未命中结果保留目标；正常、假牌、反击复制品和反弹结果都结束实例。有效普通结果记录本场倾向，并读取最终Tier与复读数量建立计划。
 5. RepeatDelayQueue推进0.5～3秒等待并请求真实复读；容量或显示位置不足时保留到期请求重试。成功生成才记复读统计和评论。
 6. 复读可以真实命中，PK与倾向为0，不进入普通命中历史，也不产生递归复读。
 7. 暂停冻结生成、移动、寿命、复读等待、蓄力、飞行、硬直和回拉；恢复后继续。
@@ -128,6 +128,26 @@ Android适配、本场完成后的跨关历史提交、真实Sandbox中的特殊
 
 ## 接手入口与文档
 
-从本任务卡、`scenes/sandbox/sandbox.gd`、`data/sandbox/playable_battle_config.tres`及集成runner开始。GUI直接运行正式Sandbox即可试玩；下一阶段从`_complete_normal_combat()`接入矛盾击破。
+从本任务卡、`scenes/sandbox/sandbox.gd`、`data/sandbox/playable_battle_config.tres`及集成runner开始。GUI直接运行正式Sandbox即可试玩；下一阶段从`_complete_normal_combat()`接入矛盾击破。CB 如果切换顶层场景，必须在退出前保留本场暂存或由胜利提交流程接管，并重审当前 `_exit_tree()` 的无条件回滚；当前还没有胜利提交入口，本轮保持该逻辑。
 
 已同步系统2/3/4/5/6/7/8/9/10/17的正式文档。`known_traps.md`新增KT-29（直接启动初始化）、KT-30（headless输入坐标）与KT-31（释放容量重置Timer）。原始资料和其他任务日志保留。
+
+## Review 补做（2026-10-06）
+
+对同一张 INT-01 卡的三项审查反馈完成修正：
+
+1. `sandbox.gd` 的结果移除条件改为 `kind != OCCLUSION`。假牌、反击复制品命中后结束，遮挡目标继续存在；零PK取消与普通收益判断沿用现有边界。
+2. `AimReticle` 移至 `BattleHud` 子节点。中心读取与鼠标定位使用完整变换，全局目标矩形逆变换到准心局部后按32设计像素圆判定，视觉与命中继承同一缩放。布局/窗口更新后 HUD 调用准心公开的 `refresh_mouse_position()`。
+3. 从 `barrage_area.tscn` 删除早期技术标题，去掉 HUD 对子场景 `AreaTitle` 内部 NodePath 的访问。
+
+运行验证发现0.6缩放逆变换会使恰好在圆周的点出现浮点误差；`BarrageAimIntersection` 增加 Godot 原生 `is_equal_approx()` 的边缘比较，保持设计直径和外部点排除规则。
+
+实际验证：
+
+- 临时真实Sandbox smoke通过五种结果的鼠标蓄力/飞行/结算：普通、假牌、反击复制品、反弹结束，遮挡保留，每次都确认真实目标结算。
+- 1920×1080 / 1152×648 / 1280×720 / 1152×864 四种布局尺寸检查通过，准心对应32×32 / 19.2×19.2 / 21.33333×21.33333 / 19.2×25.6屏幕像素；鼠标与圆心一致，水平/竖直视觉边缘相交，边缘外0.5设计像素排除。
+- 复用既有INT-01场景回归：**84/84通过**，既有准心相交单测：2/2通过；两者退出0且stderr为空。
+- Godot-MCP-Native 实际GUI在1152×648运行，确认准心父节点为BattleHud，全局尺寸为19.2×19.2，真实鼠标攻击命中1条并显示`PK +0.12%`；Debugger仅有启动/嵌入窗口提示。截图保存于`.godot/int01-review-gui.png`。
+- 临时smoke源码和场景已清理，本轮没有新增或改写持久测试。单文件解析与`git diff --check`通过。
+
+同步系统3/4/5文档，在系统12记录CB退出/倾向提交边界，并在AGENTS.md写入集成卡测试规模的长期约定。本轮未新增known_traps条目。
