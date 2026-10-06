@@ -26,6 +26,12 @@ func get_current_tier() -> int:
 	return _current_tier
 
 
+func get_current_repeat_count_per_hit() -> int:
+	# 给复读计划创建方读取当前 Tier 的每次命中复读数量。
+	var current_config: CombatStageTierConfig = _tier_catalog.get_tier_config(_current_tier)
+	return current_config.repeat_count_per_hit
+
+
 func bind_hit_resolution(hit_resolution: HitResolution) -> void:
 	# 监听命中结算的最终 PK 事实；整发攻击和每次回拉共用同一入口。
 	hit_resolution.final_player_pk_updated.connect(_on_final_player_pk_updated)

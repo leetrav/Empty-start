@@ -22,6 +22,8 @@ CS-06 的 `bind_hit_resolution(hit_resolution)` 连接 `HitResolution.final_play
 
 CS-07 通过 `bind_barrage_area(barrage_area)` 连接 BarrageArea 的真实倍率入口：`set_generation_multipliers()` 接收生成数量、频率和移动速度倍率，`set_lifetime_multiplier()` 接收寿命倍率。开局和最终 Tier 变化后，CombatStage 从当前 Tier 配置广播四个值；绑定时也立即补发当前配置。倍率具体应用和新弹幕实例仍由 BarrageArea 负责，既有弹幕保留生成时的速度和寿命。Sandbox 组合时由场景拥有者实例化并加入 BarrageArea 后，再调用 `bind_barrage_area()`；Lane C 不修改 Sandbox。
 
+CS-08 提供 `get_current_repeat_count_per_hit()`，返回当前 Tier 配置的 `repeat_count_per_hit`。命中结算完成并更新 Tier 后，普通复读计划创建方读取该数量与 `get_current_tier()`，传给 `RepeatPlan.create_normal_hit_plan()`；RepeatPlan 在创建时保存固定数量和结算档位。CombatStage 不缓存复读计划，也不拥有复读统计。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
@@ -56,7 +58,7 @@ Tier 配置字段、跨系统通知、画面音乐、阶段清理和静音过渡
 CS-01～05 可以先完成纯档位逻辑。
 CS-06 等 6. HitResolution。
 CS-07 已接入 3. BarrageGeneration 的 BarrageArea 公开接口。
-CS-08 等 10. Repeat。
+CS-08 已提供 10. Repeat 创建普通复读计划所需的当前 Tier 数量接口。
 CS-09 等 7. OpponentPKBar。
 CS-10 等 9. LiveDataPresentation / 视听表现。
 CS-11 等 12. ContradictionBreak 有真实入口后联调。
