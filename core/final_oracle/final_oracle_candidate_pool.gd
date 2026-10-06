@@ -100,6 +100,14 @@ func fill_missing_tendency_candidates(
 	return final_candidates
 
 
+# 选择开放时复制当前候选及其顺序；调用方保留快照用于整个选择阶段的显示。
+func snapshot_for_display(candidates: Array[Dictionary]) -> Array[Dictionary]:
+	var display_snapshot: Array[Dictionary] = []
+	for candidate: Dictionary in candidates:
+		display_snapshot.append(candidate.duplicate(true))
+	return display_snapshot
+
+
 # 补位按普通命中次数降序、最近命中降序、原句 ID 升序比较。
 func _is_better_fallback_candidate(candidate: Dictionary, current_best: Dictionary) -> bool:
 	var candidate_hit_count: int = int(candidate.get("hit_count", 0))

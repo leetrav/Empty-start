@@ -76,3 +76,8 @@ FO-12 等 18. Rest。
 
 - `FinalOracleCandidatePool.fill_missing_tendency_candidates(candidates, repeat_stats)` 先保留各倾向领头候选，再从剩余普通命中候选补足，最多返回三句。
 - 补位顺序读取 HR-14 历史：`hit_count` 降序、`last_hit_order` 降序、`original_sentence_id` 升序。这里不使用复读数；若普通话语不足三句，则返回实际数量。
+
+## FO-06 展示快照接口
+
+- 候选展示开放时调用 `snapshot_for_display(final_candidates)` 一次，并保留返回的深拷贝数组作为本次展示列表。
+- 选择期间继续显示该快照的原顺序和内容；后续命中或复读统计变化不会重建或重排当前列表。
