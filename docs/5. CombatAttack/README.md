@@ -15,6 +15,17 @@
 
 它不负责计算 PK，也不负责弹幕自身的生成和寿命。
 
+## 当前实现
+
+- CA-01 提供独立 `AimReticle` 场景并接入当前 sandbox 游戏入口。
+- `reticle_diameter` 保留准心尺寸配置入口；`get_aim_center_global_position()` 返回与绘制中心相同的位置，供后续瞄准判定复用。
+- CA-02 提供 `BarrageAimIntersection.circle_overlaps_rect()`，边缘接触判为相交；`AimReticle.intersects_target_area()` 复用同一准心尺寸。
+- CA-03 提供 `AttackChargeInput` 和纯状态 `AttackChargeProgress`；按住鼠标左键会累积至导出时长（当前默认 0.8 秒），和准心 / 候选目标状态解耦。
+- CA-04 未蓄满松开会清空当前进度，不产生攻击结果。
+- CA-05 提供 `AttackTargetSnapshot.capture_at_release()`，复制候选 Node 的实例 ID 并去重；后续候选变化不会修改已建快照。
+- CA-06 可把快照解析为仍在场景树中的 Node，不按新位置重查准心范围；过期 / 离屏判定等待 3. BarrageGeneration 的真实生命周期接口。
+- 3. BarrageGeneration 尚无正式弹幕运行时碰撞区域接口；与真实弹幕实例的联调待该接口出现。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
