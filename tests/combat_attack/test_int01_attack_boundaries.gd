@@ -23,7 +23,6 @@ func _run_boundaries() -> void:
 	profile.base_move_speed_pixels_per_second = 0.0
 	profile.normal_barrage_screen_cap = 1
 	var area: BarrageArea = BARRAGE_AREA_SCENE.instantiate() as BarrageArea
-	area.stage_layout_profile = null
 	area.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	root.add_child(area)
 	area.size = Vector2(1024.0, 800.0)

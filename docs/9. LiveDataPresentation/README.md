@@ -23,6 +23,7 @@
 - LD-09 的 `LiveDataHud` 只读取 `SaveData.live_session` 并显示四项数值；LiveSessionData 计数属性变化时发出 `Resource.changed`，HUD 随信号刷新。
 - `LiveDataHud.bind_live_session(session)` 为场景组合方提供显式绑定入口：初始化或替换 SaveData 后传入当前 `LiveSessionData`，HUD 断开旧 Resource 的订阅、连接当前 Resource 并立即刷新四项数值；传入 `null` 时显示 0。Sandbox 在创建运行时 SaveData 后调用此入口，避免直接运行场景时 Autoload 初始化顺序使 HUD 留在早期空数据上。
 - 当前 `SceneRouter.goto_game()` 指向可玩 Sandbox，左主播区复用 `ui/live_data/live_data_hud.tscn`。开局及原地重开通过 `initialize_session()` 清空本场数据并保留入关粉丝数；Viewer / Like 的事件增量仍等待策划规则。
+- INT-02 将左下 `448×296` 整理为“我方直播数据”，继续读取真实 LiveSessionData；右下同尺寸的 `EnemyLiveDataArea` 是独立静态占位，四项显示“—”并标明“暂无数据”，等待敌方数据源，不复制玩家计数。
 - 这些值只供表现和展示读取，不作为 PK、倾向或关卡解锁输入。
 
 ## 任务顺序
