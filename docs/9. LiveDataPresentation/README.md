@@ -18,10 +18,11 @@
 - `LiveSessionData` 是直播数据系统唯一持有的四项数据 Resource，字段为 `viewer_count`、`like_count`、`comment_count` 和 `fan_count`。
 - 当前周目通过 `SaveData.live_session` 持有该 Resource；跨场景和存档读写沿用现有 `SaveManager`。
 - `LiveSessionData.initialize_session(initial_fan_count)` 清空本场观看、点赞、评论，并设置本周目当前粉丝数；新周目默认粉丝数为 0，正式起始粉丝值待策划配置。
-- `LiveSessionData.record_generated_comments(actual_generated_count)` 只累计弹幕系统确认成功生成的实例数量；普通弹幕调用方根据 `spawn_normal_barrage()` 是否返回实例传 1，复读调用方传 `advance_and_dispatch()` 返回的成功生成数量。
+- `LiveSessionData.record_generated_comments(actual_generated_count)` 只累计弹幕系统确认成功生成的实例数量。INT-01 Sandbox 统一监听 `BarrageArea.barrage_generated(view)`，普通与复读每个成功实例传 1；队列返回数量不再重复计评论。
 - LD-02 通过 `set_opening_viewers(multiplier)` 以本次开播单次抽取的倍率计算并保存 `viewer_count`；计算将结果截为非负整数。倍率范围待策划提供；此入口接收抽取后的倍率，不负责随机抽取。
 - LD-09 的 `LiveDataHud` 只读取 `SaveData.live_session` 并显示四项数值；LiveSessionData 计数属性变化时发出 `Resource.changed`，HUD 随信号刷新。
-- 当前 `SceneRouter.goto_game()` 指向 Sandbox，Sandbox 已挂载 `ui/live_data/live_data_hud.tscn`；真实战斗场景接入时复用该 HUD。
+- `LiveDataHud.bind_live_session(session)` 为场景组合方提供显式绑定入口：初始化或替换 SaveData 后传入当前 `LiveSessionData`，HUD 断开旧 Resource 的订阅、连接当前 Resource 并立即刷新四项数值；传入 `null` 时显示 0。Sandbox 在创建运行时 SaveData 后调用此入口，避免直接运行场景时 Autoload 初始化顺序使 HUD 留在早期空数据上。
+- 当前 `SceneRouter.goto_game()` 指向可玩 Sandbox，左主播区复用 `ui/live_data/live_data_hud.tscn`。开局及原地重开通过 `initialize_session()` 清空本场数据并保留入关粉丝数；Viewer / Like 的事件增量仍等待策划规则。
 - 这些值只供表现和展示读取，不作为 PK、倾向或关卡解锁输入。
 
 ## 任务顺序

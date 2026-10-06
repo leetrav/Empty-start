@@ -5,6 +5,12 @@ extends RefCounted
 ## 弹幕实际显示的文本，在创建实例时从静态定义复制。
 var text: String = ""
 
+## 保留原句文本；复读的显示前缀与原句身份分开保存。
+var original_sentence_text: String = ""
+
+## 由生成入口标明复读身份，供攻击结算选择零收益规则。
+var is_repeat: bool = false
+
 ## 提供这条内容的来源稳定 ID，例如主播 ID。
 var source_id: String = ""
 

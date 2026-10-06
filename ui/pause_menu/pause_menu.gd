@@ -1,5 +1,8 @@
 extends CanvasLayer
 
+## UI 发出重开请求；本场清理与初始化由战斗场景负责。
+signal restart_requested
+
 @onready var _overlay: Control = %Overlay
 @onready var _pause_actions: VBoxContainer = %PauseActions
 @onready var _resume_button: Button = %ResumeButton
@@ -14,6 +17,7 @@ func _ready() -> void:
 	_settings_panel.hide()
 	_resume_button.pressed.connect(resume_game)
 	_settings_button.pressed.connect(_on_settings_button_pressed)
+	%ReloadButton.pressed.connect(_on_reload_button_pressed)
 	%MainMenuButton.pressed.connect(_on_main_menu_button_pressed)
 	_settings_panel.closed.connect(_on_settings_panel_closed)
 
@@ -76,3 +80,9 @@ func _on_main_menu_button_pressed() -> void:
 		_overlay.show()
 		_pause_actions.show()
 		push_error("PauseMenu: 返回 MainMenu 失败，Error: %s" % error_string(error))
+
+
+func _on_reload_button_pressed() -> void:
+	# 先恢复场景处理，交给战斗场景执行本关重开，避免复制系统清理逻辑。
+	resume_game()
+	restart_requested.emit()

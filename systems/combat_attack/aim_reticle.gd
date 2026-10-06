@@ -19,7 +19,10 @@ func _ready() -> void:
 # 鼠标事件只更新显示位置，不拦截同一事件的其他 UI 处理。
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
-		_update_mouse_position()
+		# 事件位置属于 Viewport；转换到画布后使缩放窗口与注入输入使用同一坐标事实。
+		var mouse_event: InputEventMouseMotion = event as InputEventMouseMotion
+		var canvas_position: Vector2 = get_canvas_transform().affine_inverse() * mouse_event.position
+		global_position = canvas_position - size * 0.5
 
 
 # 显示节点左上角偏移半个准心尺寸，使准心视觉中心与鼠标坐标重合。

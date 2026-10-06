@@ -16,11 +16,12 @@ var _attack_phase: AttackPhase = AttackPhase.READY
 var _phase_timer: Timer
 var _active_snapshot: AttackTargetSnapshot
 var _attack_held: bool = false
+var _combat_active: bool = true
 
 
 # 按住输入且没有暂停或飞行 / 硬直时才推进蓄力。
 func _process(delta: float) -> void:
-	if _charge_progress == null or get_tree().paused:
+	if not _combat_active or _charge_progress == null or get_tree().paused:
 		return
 	if _attack_phase != AttackPhase.READY:
 		# 飞行和硬直期间不推进蓄力。
@@ -67,10 +68,23 @@ func configure_target_query(aim_reticle: AimReticle, barrage_area: BarrageArea) 
 	_aim_reticle = aim_reticle
 	_barrage_area = barrage_area
 
+## 战斗生命周期由场景协调；停止时本组件取消整发和计时，重开可直接回到 READY。
+func set_combat_active(active: bool) -> void:
+	_combat_active = active
+	if active:
+		return
+	_attack_held = false
+	_active_snapshot = null
+	_attack_phase = AttackPhase.READY
+	if _phase_timer != null:
+		_phase_timer.stop()
+	if _attack_timing != null:
+		_charge_progress = AttackChargeProgress.new(_attack_timing.charge_time_s)
+
 
 # 在鼠标松开输入事件上冻结当前候选，之后进入准心的弹幕不加入本发。
 func _input(event: InputEvent) -> void:
-	if not event is InputEventMouseButton:
+	if not _combat_active or not event is InputEventMouseButton:
 		return
 	var mouse_event := event as InputEventMouseButton
 	if mouse_event.button_index != MOUSE_BUTTON_LEFT:
@@ -88,7 +102,7 @@ func _input(event: InputEvent) -> void:
 
 # 未满蓄释放只取消；满蓄释放发送快照事实，不在攻击系统改动 PK。
 func _handle_attack_release() -> void:
-	if _charge_progress == null or _attack_phase != AttackPhase.READY:
+	if not _combat_active or _charge_progress == null or _attack_phase != AttackPhase.READY:
 		return
 	if not _charge_progress.is_fully_charged():
 		_charge_progress.cancel_if_undercharged()
@@ -104,11 +118,19 @@ func _handle_attack_release() -> void:
 
 # 飞行计时结束时复核快照目标并提交到达事实，随后开始硬直计时。
 func _on_attack_phase_timer_timeout() -> void:
+	if not _combat_active:
+		return
 	if _attack_phase == AttackPhase.PROJECTILE_FLIGHT:
-		var valid_targets: Array[Node] = _active_snapshot.resolve_present_targets(_barrage_area)
+		var completed_snapshot: AttackTargetSnapshot = _active_snapshot
+		var valid_targets: Array[Node] = completed_snapshot.resolve_present_targets(_barrage_area)
 		var target_results: Array[Dictionary] = _build_target_trait_results(valid_targets)
-		shot_arrival_resolved.emit(_active_snapshot, target_results)
-		_submit_arrival_to_hit_resolution(_active_snapshot, target_results)
+		shot_arrival_resolved.emit(completed_snapshot, target_results)
+		if not _combat_active or _active_snapshot != completed_snapshot:
+			return
+		_submit_arrival_to_hit_resolution(completed_snapshot, target_results)
+		# PK 更新和整发提交同步发信号；满值 / 失败可能已经停止本发，不能重新启动硬直。
+		if not _combat_active or _active_snapshot != completed_snapshot:
+			return
 		_attack_phase = AttackPhase.RECOVERY
 		_phase_timer.start(_attack_timing.recovery_time_s)
 		return
@@ -168,16 +190,30 @@ func _submit_arrival_to_hit_resolution(
 
 		var hit_resolution_target: Dictionary = trait_target_result.duplicate()
 		var runtime_record: BarrageRuntimeRecord = barrage_view.runtime_record
+		if runtime_record != null:
+			# 复制内容事实，协调方据结算结果驱动复读 / 倾向，无需回读可能已结束的视图。
+			hit_resolution_target["original_sentence_id"] = runtime_record.original_sentence_id
+			hit_resolution_target["original_sentence_text"] = runtime_record.original_sentence_text
+			hit_resolution_target["source_id"] = runtime_record.source_id
+			hit_resolution_target["is_repeat"] = runtime_record.is_repeat
+			hit_resolution_target["tendency_id"] = runtime_record.tendency_id
+		hit_resolution_target["is_valid_hit"] = trait_result.receives_normal_reward
+		hit_resolution_target["tendency_delta"] = 0
 		if trait_result.receives_normal_reward and runtime_record != null:
-			var reward: Dictionary = _hit_resolution.calculate_normal_word_reward(int(runtime_record.strength))
+			var reward: Dictionary
+			if runtime_record.is_repeat:
+				reward = _hit_resolution.calculate_repeat_hit_result()
+			else:
+				reward = _hit_resolution.calculate_normal_word_reward(int(runtime_record.strength))
 			for reward_key in reward:
 				hit_resolution_target[reward_key] = reward[reward_key]
-			normal_hit_records.append(
-				{
-					"original_sentence_id": runtime_record.original_sentence_id,
-					"tendency": runtime_record.tendency_id,
-				}
-			)
+			if not runtime_record.is_repeat:
+				normal_hit_records.append(
+					{
+						"original_sentence_id": runtime_record.original_sentence_id,
+						"tendency": runtime_record.tendency_id,
+					}
+				)
 		hit_resolution_targets.append(hit_resolution_target)
 
 	var target_validity: Array[bool] = []
@@ -255,4 +291,4 @@ func get_attack_phase() -> AttackPhase:
 
 # 蓄力配置有效且未处于飞行或硬直时才能开始下一发。
 func can_start_charging() -> bool:
-	return _charge_progress != null and _attack_phase == AttackPhase.READY and not get_tree().paused
+	return _combat_active and _charge_progress != null and _attack_phase == AttackPhase.READY and not get_tree().paused

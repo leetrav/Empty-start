@@ -10,10 +10,16 @@ var _live_session: LiveSessionData = null
 
 func _ready() -> void:
 	# HUD 只读取当前周目的直播数据；Resource.changed 通知后刷新显示。
-	if SaveManager.data != null:
-		_live_session = SaveManager.data.live_session
-		if _live_session != null:
-			_live_session.changed.connect(_refresh_values)
+	bind_live_session(SaveManager.data.live_session if SaveManager.data != null else null)
+
+
+# 场景初始化或替换周目数据后显式重连，只订阅当前 Resource 并立即刷新显示。
+func bind_live_session(session: LiveSessionData) -> void:
+	if _live_session != null and _live_session.changed.is_connected(_refresh_values):
+		_live_session.changed.disconnect(_refresh_values)
+	_live_session = session
+	if _live_session != null:
+		_live_session.changed.connect(_refresh_values)
 	_refresh_values()
 
 

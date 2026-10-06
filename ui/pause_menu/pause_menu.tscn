@@ -78,5 +78,12 @@ layout_mode = 2
 theme_type_variation = &"SecondaryButton"
 text = "返回主菜单"
 
+[node name="ReloadButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/PauseActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_type_variation = &"SecondaryButton"
+text = "重新开始当前关"
+
 [node name="SettingsPanel" parent="." instance=ExtResource("2_settings_panel")]
 unique_name_in_owner = true

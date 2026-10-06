@@ -29,7 +29,7 @@
 - `RepeatDelayQueue.clear_normal_queue()` 丢弃所有尚未到期的普通复读；进入矛盾阶段时由阶段流程调用，已返回生成请求的弹幕不属于此等待队列。
 - 原计划的 `wait_offsets_seconds` 保存每条复读的相对等待时间；队列不创建或管理屏幕上的弹幕实例。
 - `RepeatGenerationStats.record_generated(plan, actual_generated_count)` 仅根据计划类型把弹幕生成系统确认的实际生成数量按 `original_line_id` 累计；`get_normal_count(id)` 与 `get_contradiction_count(id)` 分别读取两类统计。
-- 普通复读命中计划、延迟队列到期调度、实际生成请求与成功生成统计已具备；普通复读计划的生产事件、矛盾复读、PK 命中规则和历史提交仍由后续联调任务负责。
+- INT-01 Sandbox 在攻击整发提交后读取结算后 Tier 和复读数量，创建普通复读计划并逐帧调度。成功复读进入场上，可被真实攻击选中；命中沿用 HitResolution 的有效零收益结果，不创建后续复读或普通命中历史。失败 / 满值清理等待队列，重开创建新的队列和实际生成统计。矛盾复读与跨关历史提交继续等待后续流程。
 
 ## 任务顺序
 
