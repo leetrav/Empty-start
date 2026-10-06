@@ -4,6 +4,10 @@ const HIT_RESOLUTION = preload("res://core/combat/hit_resolution.gd")
 const CANDIDATE_POOL = preload("res://core/final_oracle/final_oracle_candidate_pool.gd")
 const REPEAT_PLAN = preload("res://core/repeat/repeat_plan.gd")
 const REPEAT_STATS = preload("res://core/repeat/repeat_generation_stats.gd")
+const SAVE_DATA = preload("res://core/save/save_data.gd")
+const CONFIRMATION_STATE = preload("res://core/final_oracle/final_oracle_confirmation_state.gd")
+
+var _confirmation_events: Array[Dictionary] = []
 
 
 func _init() -> void:
@@ -33,7 +37,10 @@ func _run_tests() -> void:
 	if not _test_auto_pick_uses_formal_order():
 		quit(1)
 		return
-	print("通过：FO-02 至 FO-08 候选生成、排序与超时选择")
+	if not _test_same_run_level_confirms_once():
+		quit(1)
+		return
+	print("通过：FO-02 至 FO-09 候选生成、排序、超时选择与单次确认")
 	quit()
 
 
@@ -239,6 +246,45 @@ func _test_auto_pick_uses_formal_order() -> bool:
 		push_error("FO-08 自动选择没有遵循普通复读、最近命中、原句 ID 顺序")
 		return false
 	return true
+
+
+# 手动和自动结果共用同一入口；同一 SaveData 与关卡只广播首次候选。
+func _test_same_run_level_confirms_once() -> bool:
+	_confirmation_events.clear()
+	var run_data: SaveData = SAVE_DATA.new()
+	var confirmation_state = CONFIRMATION_STATE.new(run_data)
+	confirmation_state.confirmation_committed.connect(_record_confirmation_event)
+	var manual_candidate: Dictionary = {"original_sentence_id": "manual-line", "tendency": "orthodox"}
+	var automatic_candidate: Dictionary = {"original_sentence_id": "automatic-line", "tendency": "absurd"}
+	if not confirmation_state.confirm_selection("level_001", manual_candidate):
+		push_error("FO-09 首次手动确认应成功")
+		return false
+	if confirmation_state.confirm_selection("level_001", automatic_candidate):
+		push_error("FO-09 自动确认不得覆盖同一关卡的手动结果")
+		return false
+	if (
+		str(confirmation_state.get_confirmed_selection("level_001").get("original_sentence_id", ""))
+		!= "manual-line"
+		or _confirmation_events.size() != 1
+	):
+		push_error("FO-09 重复确认应保留首条结果且只广播一次")
+		return false
+	if not confirmation_state.confirm_selection("level_002", automatic_candidate):
+		push_error("FO-09 不同关卡应使用独立提交身份")
+		return false
+	var next_run_state = CONFIRMATION_STATE.new(SAVE_DATA.new())
+	if not next_run_state.confirm_selection("level_001", automatic_candidate):
+		push_error("FO-09 新周目应拥有独立提交身份")
+		return false
+	return true
+
+
+func _record_confirmation_event(
+		run_data: SaveData, level_id: String, candidate: Dictionary
+	) -> void:
+	_confirmation_events.append(
+		{"run_data": run_data, "level_id": level_id, "candidate": candidate.duplicate(true)}
+	)
 
 
 func _make_repeat_plan(repeat_type: int, original_line_id: StringName) -> RepeatPlan:

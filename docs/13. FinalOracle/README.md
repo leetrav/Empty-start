@@ -92,3 +92,10 @@ FO-12 等 18. Rest。
 
 - 计时器 `expired` 后，调用 `select_auto_pick_from_display(display_snapshot, repeat_stats)` 从冻结展示列表选择一条候选。
 - 正式排序为普通复读实际数量降序、最近命中顺序降序、稳定原句 ID 升序；空展示列表返回空 Dictionary。
+
+## FO-09 单次确认接口
+
+- 每个当前周目创建并复用一个 `FinalOracleConfirmationState.new(SaveManager.data)`。
+- 手动选择和超时自动选择都调用 `confirm_selection(level_id, candidate)`；同一周目同一 `level_id` 只接受第一次有效结果。
+- 首次确认发出 `confirmation_committed(run_data, level_id, candidate)`；重复调用返回 `false` 且不会重发信号。`get_confirmed_selection(level_id)` 始终返回首次候选快照。
+- 本版确认不改写三项倾向累计值，额外倾向保持为 0。
