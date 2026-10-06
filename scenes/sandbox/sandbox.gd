@@ -57,6 +57,8 @@ func _ready() -> void:
 
 # 原地重开同一关；替换本场结算和队列，保留当前关卡及此前周目成果。
 func restart_current_attempt() -> void:
+	if _hit_resolution != null:
+		_hit_resolution.discard_uncommitted_normal_hit_history()
 	_stop_normal_combat()
 	_contradiction_stage_active = false
 	_oracle_transition_started = false
@@ -294,6 +296,7 @@ func _on_attempt_failed() -> void:
 		return
 	_opponent_pk_bar.record_current_level_failure()
 	_stop_normal_combat()
+	_hit_resolution.discard_uncommitted_normal_hit_history()
 	SaveManager.data.tendency_state.rollback_attempt_tendency()
 	_battle_hud.show_failure()
 
