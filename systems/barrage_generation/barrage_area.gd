@@ -268,6 +268,7 @@ func spawn_repeat_barrage(plan: RepeatPlan) -> BarrageView:
 	repeat_record.text = plan.display_text if not plan.display_text.is_empty() else plan.original_line_text
 	repeat_record.original_sentence_text = plan.original_line_text
 	repeat_record.is_repeat = true
+	repeat_record.is_contradiction_repeat = plan.repeat_type == RepeatPlan.RepeatType.CONTRADICTION
 	repeat_record.source_id = _current_level_profile.streamer_id
 	repeat_record.original_sentence_id = original_line_id
 	repeat_record.strength = 1.0
@@ -289,6 +290,16 @@ func spawn_repeat_barrage(plan: RepeatPlan) -> BarrageView:
 		return null
 	barrage_generated.emit(view)
 	return view
+
+
+## 成功击破后的过渡等待实际可见矛盾复读离场，不把排队项当作已展示。
+func has_visible_contradiction_repeats() -> bool:
+	for child in get_children():
+		if child is BarrageView and not child.is_queued_for_deletion():
+			var view := child as BarrageView
+			if view.runtime_record != null and view.runtime_record.is_contradiction_repeat:
+				return true
+	return false
 
 ## 从轮换行寻找当前真实空位；上一轮横移目标仍占着入口时跳到其他行。
 func _place_new_barrage(view: BarrageView) -> bool:
