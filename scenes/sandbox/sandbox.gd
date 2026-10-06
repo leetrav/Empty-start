@@ -15,6 +15,7 @@ var _opponent_pk_bar: OpponentPKBar
 var _repeat_queue: RepeatDelayQueue
 var _run_state: LevelRunState
 var _normal_combat_active: bool = false
+var _contradiction_stage_active: bool = false
 var _opening_fan_count: int = 0
 
 
@@ -41,6 +42,7 @@ func _ready() -> void:
 # 原地重开同一关；替换本场结算和队列，保留当前关卡及此前周目成果。
 func restart_current_attempt() -> void:
 	_stop_normal_combat()
+	_contradiction_stage_active = false
 	%PauseMenu.resume_game()
 	_opponent_pk_bar.reset_current_attempt()
 	SaveManager.data.tendency_state.rollback_attempt_tendency()
@@ -170,12 +172,13 @@ func _on_attempt_failed() -> void:
 	_battle_hud.show_failure()
 
 
-# 当前 main 尚无矛盾击破运行入口，保留满值并在这里等待下一张集成卡。
+# 普通 PK 满后每场只切换一次；本卡先确立阶段事实，后续卡接入内容与生成。
 func _complete_normal_combat() -> void:
 	if not _normal_combat_active or _hit_resolution.get_player_pk() < battle_config.maximum_player_pk:
 		return
 	_stop_normal_combat()
-	_battle_hud.show_battle_state("普通战斗完成\n等待进入矛盾击破")
+	_contradiction_stage_active = true
+	_battle_hud.show_battle_state("普通战斗完成\n进入矛盾击破阶段")
 
 
 # 阶段结束显式停止系统，避免旧输入或等待请求在下一次尝试继续推进。
