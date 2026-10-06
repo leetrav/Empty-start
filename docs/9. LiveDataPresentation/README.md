@@ -18,6 +18,7 @@
 - `LiveSessionData` 是直播数据系统唯一持有的四项数据 Resource，字段为 `viewer_count`、`like_count`、`comment_count` 和 `fan_count`。
 - 当前周目通过 `SaveData.live_session` 持有该 Resource；跨场景和存档读写沿用现有 `SaveManager`。
 - `LiveSessionData.initialize_session(initial_fan_count)` 清空本场观看、点赞、评论，并设置本周目当前粉丝数；新周目默认粉丝数为 0，正式起始粉丝值待策划配置。
+- `LiveSessionData.record_generated_comments(actual_generated_count)` 只累计弹幕系统确认成功生成的实例数量；普通弹幕调用方根据 `spawn_normal_barrage()` 是否返回实例传 1，复读调用方传 `advance_and_dispatch()` 返回的成功生成数量。
 - LD-02 通过 `set_opening_viewers(multiplier)` 以本次开播单次抽取的倍率计算并保存 `viewer_count`；计算将结果截为非负整数。倍率范围待策划提供；此入口接收抽取后的倍率，不负责随机抽取。
 - LD-09 的 `LiveDataHud` 只读取 `SaveData.live_session` 并显示四项数值；LiveSessionData 计数属性变化时发出 `Resource.changed`，HUD 随信号刷新。
 - 当前 `SceneRouter.goto_game()` 指向 Sandbox，Sandbox 已挂载 `ui/live_data/live_data_hud.tscn`；真实战斗场景接入时复用该 HUD。
