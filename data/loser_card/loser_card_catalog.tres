@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="LoserCardCatalog" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/loser_card/loser_card_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://core/loser_card/loser_card_profile.gd" id="2_profile"]
+
+[resource]
+script = ExtResource("1_catalog")
+profiles = Array[ExtResource("2_profile")]([])

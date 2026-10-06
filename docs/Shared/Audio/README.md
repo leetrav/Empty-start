@@ -12,6 +12,15 @@
 - `AudioManager.play_sfx(stream)`；
 - `AudioManager.play_ui(stream)`。
 
+## AU-01 事件播放
+
+- `AudioEvent` Resource 保存稳定事件 ID、`Music / SFX / UI` 类型和 `AudioStream`。
+- `AudioEventConfig` 集中保存事件列表，配置文件为 `data/shared/audio_event_config.tres`。
+- 玩法系统通过 `AudioManager.play_event(&"attack_fire")` 播放；管理器按事件类型复用现有 Music 播放器或 SFX / UI 播放池。
+- 当前稳定事件 ID 包含 `attack_charge`、`attack_ready`、`attack_fire`、`hit_normal`、`hit_trap`、`tier_up`、`contradiction_start`、`contradiction_break`、`oracle_confirm`、`divine_descent_start` 和 `divine_descent_lock`。
+- 当前音效素材是占位引用；`oracle_confirm` 使用 `assets/audio/sfx/interface/confirmation_001.ogg`，随目录保留 Kenney CC0 授权文本。正式素材到位后只替换各事件的 `stream` 引用，事件 ID 保持稳定。
+- 仓库尚无正式音乐文件，因此配置暂时没有 Music 类型事件；新增音乐事件时，将其类型设为 Music 并引用正式 `AudioStream`。音乐状态切换和淡变仍由 AU-02 处理。
+
 资产目录：
 
 ```text

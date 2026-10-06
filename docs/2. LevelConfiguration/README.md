@@ -67,3 +67,45 @@ LC-08 等【7. 对手 PK 条系统】以及本场需要重置的战斗系统有�
 LC-09 等【18. 休息时刻系统】和【19. 神降临系统】存在真实入口后再做。
 
 这样可以避免现在为了“以后要接”先造一批最后会被推翻的接口。
+
+## 已实现的数据类型
+
+LC-01 使用 `data/level_configuration/level_profile.gd` 定义 `LevelProfile` Resource，并提供 `data/level_configuration/level_001.tres` 作为可编辑示例。
+
+基础资料包含稳定关卡 ID、关卡顺序、主播稳定 ID、主播显示名、主播形象纹理、直播主题、粉丝牌稳定 ID 和粉丝牌纹理。主播形象与粉丝牌纹理使用 `Texture2D` 引用；美术资源缺失时可以暂留空值，后续直接替换。粉丝牌也可先用稳定 ID 标识。
+
+LevelProfile 保存静态关卡资料、普通话语池、倾向比例、特殊玩法标识、真假矛盾、前文线索和基础生成参数；当前周目进度由 LevelRunState 单独保存。
+
+### LC-02 词库与倾向比例
+
+`LevelProfile` 增加 `normal_speech_pool` 和三项比例字段；词库条目使用 `LevelSpeech` Resource，保存稳定 `original_sentence_id`、话语文本、可编辑的 `tendency_id` 字符串和 `appearance_weight` 相对权重。
+
+三项比例字段为 `orthodox_ratio`、`heretical_ratio`、`absurd_ratio`，类型均为浮点数。本数据类型只保存比例，不负责抽取、归一化或玩家倾向累计；具体内容与比例由策划填写。
+
+倾向稳定 ID 沿用身份选项系统 ID-01 的字符串值：`orthodox`、`heretical`、`absurd`。`LevelSpeech.tendency_id` 保持字符串字段，不在关卡配置系统另建枚举。
+
+### LC-03 特殊玩法与矛盾内容
+
+`LevelProfile.special_trait_ids` 保存本关使用的特性稳定 ID 字符串，具体 ID 由弹幕特性系统定义。当前仓库还没有 BT-01 数据定义，所以示例列表留空，本系统不预设一份特性枚举。
+
+真、假矛盾分别保存在 `true_contradictions` 与 `false_contradictions` 中；每项为 `LevelContradiction` Resource，含稳定 `original_sentence_id` 与文本。`contradiction_context_clues` 保存本关前文线索文本。矛盾真假判定和命中流程仍由矛盾击破系统负责。
+
+### LC-04 基础生成参数
+
+`LevelProfile` 提供 `base_batch_count`、`base_spawn_interval_seconds`、`base_move_speed_pixels_per_second` 与 `normal_barrage_screen_cap`。间隔字段单位为秒；普通话语与普通战斗陷阱共用同屏上限，复读上限由弹幕生成系统单独处理。
+
+`LevelSpeech.appearance_weight` 保存同一倾向话语间的相对出现权重，`1.0` 表示默认等权值。三项比例用于倾向类别选择，两者分别配置。
+
+示例值 `3` 条 / 批、`1.0` 秒间隔、`100` 像素 / 秒、同屏 `24` 条与权重 `1.0` 都是临时试玩默认值，等待策划实测调整。本类型不执行生成，也不包含 Tier 倍率和弹幕寿命。
+
+### LC-05 当前普通关卡选择
+
+`LevelCatalog.profiles` 保存普通关卡集合；每个 `LevelProfile.level_order` 使用唯一递增序号表示流程位置。`LevelRunState` 新建时选择序号最小的关卡，通过 `set_current_level_order()` 切换，并由 `get_current_level_profile()` 返回当前配置。
+
+示例目录 `data/level_configuration/level_catalog.tres` 列出 `level_001.tres` 与 `level_002.tres`。本阶段只读取当前关卡，不推进、不结算，也不接入 UI。
+
+### LC-06 同一关只完成一次并推进
+
+`LevelRunState.complete_level(level_id)` 只接受当前关的首次完成：存在更大的 `level_order` 时返回 `ADVANCED` 并推进；重复提交返回 `ALREADY_COMPLETED`；最后一关返回 `ALL_NORMAL_LEVELS_COMPLETED`，`is_all_normal_levels_completed()` 同时报告结束状态。空白或未知 ID 返回 `INVALID_LEVEL`，已知但非当前关返回 `LEVEL_NOT_CURRENT`。
+
+完成记录保存在单个 `LevelRunState` 实例中，以当前周目状态实例 + `level_id` 识别本次提交。去重状态不写入 SaveData；本类不调用休息时刻、终局或奖励系统。
