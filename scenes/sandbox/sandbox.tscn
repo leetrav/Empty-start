@@ -80,8 +80,10 @@ theme_type_variation = &"SecondaryButton"
 text = "返回 MainMenu"
 
 [node name="AimReticle" parent="." instance=ExtResource("5_aim_reticle")]
+unique_name_in_owner = true
 
 [node name="AttackChargeInput" type="Node" parent="."]
+unique_name_in_owner = true
 script = ExtResource("6_attack_charge")
 
 [node name="LiveDataHud" parent="." instance=ExtResource("4_live_data_hud")]

@@ -1,14 +1,35 @@
 extends Control
 
 const SAMPLE_LEVEL_CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
+const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
+# Sandbox 技术验证暂用原始系统案的 PK 初始值；共享数值表接入后替换此来源。
+const SANDBOX_INITIAL_PLAYER_PK: float = 0.5
+const SANDBOX_MINIMUM_PLAYER_PK: float = 0.0
+const SANDBOX_MAXIMUM_PLAYER_PK: float = 1.0
 
 @onready var _barrage_area: BarrageArea = %BarrageArea
+@onready var _aim_reticle: AimReticle = %AimReticle
+@onready var _attack_charge_input: AttackChargeInput = %AttackChargeInput
+
+var _hit_resolution: HitResolution
+var _combat_stage: CombatStage
 
 
 func _ready() -> void:
-	# 连接 Sandbox 的技术验证入口并启动当前关的普通弹幕生成。
+	# Sandbox 只组合本场所有者；PK 值和 Tier 状态分别留在各自系统对象中。
 	%ReloadButton.pressed.connect(_on_reload_button_pressed)
 	%MainMenuButton.pressed.connect(_on_main_menu_button_pressed)
+	_hit_resolution = HitResolution.new(
+		SANDBOX_INITIAL_PLAYER_PK,
+		SANDBOX_MINIMUM_PLAYER_PK,
+		SANDBOX_MAXIMUM_PLAYER_PK
+	)
+	_combat_stage = CombatStage.new(SAMPLE_TIER_CATALOG)
+	_combat_stage.bind_hit_resolution(_hit_resolution)
+	_combat_stage.begin_combat()
+	_attack_charge_input.configure_target_query(_aim_reticle, _barrage_area)
+	if not _attack_charge_input.configure_hit_resolution(_hit_resolution):
+		push_error("Sandbox: 无法将本场 HitResolution 接入 CombatAttack。")
 	_start_sample_barrage_generation()
 
 

@@ -27,6 +27,15 @@ func cancel_if_undercharged() -> bool:
 	return true
 
 
+# 蓄满释放后消费本次进度，为下一次蓄力周期复位。
+func consume_fully_charged() -> bool:
+	if not is_fully_charged():
+		return false
+
+	_elapsed_seconds = 0.0
+	return true
+
+
 # 把累计时长转换为 0 到 1 的蓄力比例。
 func get_progress() -> float:
 	if _duration_seconds <= 0.0:

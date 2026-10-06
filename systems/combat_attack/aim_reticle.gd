@@ -1,3 +1,4 @@
+class_name AimReticle
 extends Control
 
 @export var reticle_diameter: float = 32.0

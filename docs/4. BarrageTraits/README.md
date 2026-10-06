@@ -27,14 +27,15 @@
 - BT-03 已提供 `BarrageTraitSet.get_hit_result()` 和 `BarrageTraitResult`；遮挡结果不发正常话语收益，并携带 `occlusion` 异常类型供后续结算读取。
 - BT-04 已让同一结果接口区分 `FAKE_CARD`；假牌不发正常话语收益，由后续命中结算识别并应用对应惩罚。
 - BT-05 可通过 `mark_as_retaliation_copy()` 标记复制品；`is_retaliation_copy()` 可供 UI 显示反击标记，`can_trigger_copy()` 阻止复制链延续，命中时返回 `RETALIATION_COPY` 结果。
-- BT-06 已实现正常话语的一次性分裂触发判定；两个子话语的生成、配置倾向 / 强度、独立原句 ID 和母体截止时间继承等待 3. BarrageGeneration 的真实入口与数据接口。
+- BT-06 已实现正常话语的一次性分裂触发判定；3. BarrageGeneration 现在有 `spawn_normal_barrage()` 和运行时记录，但两个子话语生成、属性配置与母体截止时间继承仍待联调。
 - BT-07 反弹目标返回 `REFLECT` 结果，不发正常话语收益，并携带 `reflect` 异常类型；反弹优先于遮挡和基础结果。
 - BT-08 将反弹 → 遮挡 → 基础类型固定为唯一结果解析顺序，并新增 3 个关键单元测试。
 - BT-09 提供纯逻辑 `BarrageTraitSet.are_compatible()`，判断不可选、分裂、反弹与外部提供的陷阱 / 复读类别之间已明确的互斥规则。
-- 3. BarrageGeneration 尚无正式弹幕运行时记录或生成入口；该组件暂未挂接到场上弹幕实例，等待真实运行时对象出现后组合接入。
+- CA-08 已将现有 `BarrageTraitSet.is_selectable()` 与 `get_hit_result()` 接入 CombatAttack 的释放扫描和到达结果；`BarrageRuntimeRecord` 为每个实例装配独立特性组件。
+- 3. BarrageGeneration 已有正式运行时记录与生成入口；它只装配特性组件，不解释特性语义，也暂未把 `LevelProfile.special_trait_ids` 分配到具体弹幕实例。
 - 2. LevelConfiguration 已拆出“本关特殊玩法标识”的配置任务。
-- 3. BarrageGeneration 已拆出弹幕运行时记录、生成、生命周期与容量任务。
-- 5. CombatAttack、6. HitResolution、12. ContradictionBreak、14. Assimilation 尚未完成时，对应联调任务只保留任务卡，不提前造临时接口。
+- BT-06 的子话语生成还有待按 3. BarrageGeneration 的正式入口完成场景联调；本系统不自建生成逻辑。
+- CA-09 / BT-11 等待 6. HitResolution 正式单发接收流程；12. ContradictionBreak、14. Assimilation 的联调继续等待各自真实接口。
 
 BT-01 特性 ID：`occlusion`（遮挡）、`retaliation_copy`（水军复制 / 反击）、`fake_card`（假牌）、`unselectable`（不可选）、`split`（分裂）、`reflect`（反弹）。
 
@@ -100,7 +101,7 @@ BT-01 特性 ID：`occlusion`（遮挡）、`retaliation_copy`（水军复制 / 
 
 BT-01～BT-09 可以先完成大部分纯特性规则。
 
-BT-10 等【5. CombatAttack】有真实目标选择流程后再接。
+BT-10 的目标可选过滤与到达结果读取已由 5. CombatAttack CA-08 完成。
 
 BT-11 等【6. HitResolution】有真实结果输入后再接。
 

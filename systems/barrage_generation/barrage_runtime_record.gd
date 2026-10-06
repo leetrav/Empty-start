@@ -17,8 +17,16 @@ var strength: float = 0.0
 ## 普通话语、复读或矛盾派生内容沿用同一个原句 ID。
 var original_sentence_id: String = ""
 
+## 每条运行时弹幕组合自己的特性数据；具体规则继续由 BarrageTraits 负责。
+var trait_set: BarrageTraitSet
+
 ## 生成时捕获的绝对到期时间，使用单调时钟毫秒值供后续生命周期管理读取。
 var expires_at_msec: int = 0
+
+
+# 每个弹幕记录创建独立特性集合，避免不同实例共享特性状态。
+func _init() -> void:
+	trait_set = BarrageTraitSet.new()
 
 ## 只在实例生成时计算一次寿命；之后档位变化不会改写已保存的截止时间。
 func capture_lifetime_at_spawn(spawn_time_msec: int, base_lifetime_seconds: float, lifetime_multiplier: float) -> void:

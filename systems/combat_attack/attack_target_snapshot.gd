@@ -28,17 +28,28 @@ func get_target_instance_ids() -> Array[int]:
 	return _target_instance_ids.duplicate()
 
 
-# 将快照 ID 解析回仍在场景树中的 Node；不按新位置重新检查准心范围。
-func resolve_present_targets() -> Array[Node]:
+# 到达时按 BarrageGeneration 的真实实例状态复核；目标移动不重新检查原准心。
+func resolve_present_targets(active_barrage_area: BarrageArea) -> Array[Node]:
 	var present_targets: Array[Node] = []
+	if not is_instance_valid(active_barrage_area) or not active_barrage_area.is_inside_tree() or active_barrage_area.is_queued_for_deletion():
+		return present_targets
+
+	var current_time_msec: int = Time.get_ticks_msec()
+	var active_area_rect: Rect2 = active_barrage_area.get_global_rect()
 	for instance_id in _target_instance_ids:
 		var target: Object = instance_from_id(instance_id)
-		if not is_instance_valid(target) or not target is Node:
+		if not is_instance_valid(target) or not target is BarrageView:
 			continue
 
-		var target_node := target as Node
-		if not target_node.is_inside_tree() or target_node.is_queued_for_deletion():
+		var barrage_view := target as BarrageView
+		if not barrage_view.is_inside_tree() or barrage_view.is_queued_for_deletion():
+			continue
+		if barrage_view.get_parent() != active_barrage_area or barrage_view.runtime_record == null:
+			continue
+		if current_time_msec >= barrage_view.runtime_record.expires_at_msec:
+			continue
+		if not active_area_rect.intersects(barrage_view.get_global_rect()):
 			continue
 
-		present_targets.append(target_node)
+		present_targets.append(barrage_view)
 	return present_targets
