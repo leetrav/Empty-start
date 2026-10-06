@@ -36,6 +36,7 @@ func _ready() -> void:
 	_barrage_area.barrage_generated.connect(_on_barrage_generated)
 	_attack_charge_input.shot_hit_resolution_submitted.connect(_on_shot_hit_resolution_submitted)
 	_attack_charge_input.shot_snapshot_created.connect(_on_contradiction_shot_created)
+	_attack_charge_input.shot_arrival_resolved.connect(_on_contradiction_shot_arrived)
 	_attack_charge_input.configure_target_query(_aim_reticle, _barrage_area)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
@@ -110,6 +111,20 @@ func _on_contradiction_shot_created(_snapshot: AttackTargetSnapshot) -> void:
 		return
 	if not _contradiction_break.register_launched_shot():
 		_attack_charge_input.set_combat_active(false)
+
+
+# 到达时只取仍存在的矛盾实例原句 ID；落空也交给 12 系统消耗本发机会。
+func _on_contradiction_shot_arrived(_snapshot: AttackTargetSnapshot, target_results: Array[Dictionary]) -> void:
+	if not _contradiction_stage_active or _contradiction_break == null:
+		return
+	var hit_ids: Array[String] = []
+	for target_result: Dictionary in target_results:
+		var view := target_result.get("target") as BarrageView
+		if view == null or view.runtime_record == null or not view.runtime_record.is_contradiction:
+			continue
+		hit_ids.append(view.runtime_record.original_sentence_id)
+		_barrage_area.end_barrage(int(target_result.get("target_instance_id", -1)))
+	_contradiction_break.resolve_shot_hit_ids(hit_ids)
 
 
 # 普通与复读都由同一生成事实计评论，等待请求和失败生成不提前入账。

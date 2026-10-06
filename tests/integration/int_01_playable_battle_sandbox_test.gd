@@ -270,14 +270,15 @@ func _verify_failure_restart_and_full_pk() -> void:
 	_check(break_system != null and break_system.get_remaining_seconds() > 0.0 and break_system.get_remaining_shots() == 1, "矛盾限时窗口和一次发射机会已启动")
 	var contradiction_target: BarrageView = null
 	for view: BarrageView in _views(false):
-		if view.runtime_record.is_contradiction:
+		if view.runtime_record.is_contradiction and view.runtime_record.original_sentence_id == _level().true_contradictions[0].original_sentence_id:
 			contradiction_target = view
 			break
-	_check(contradiction_target != null, "矛盾阶段存在可瞄准目标")
+	_check(contradiction_target != null, "矛盾阶段存在可瞄准真矛盾")
 	if contradiction_target != null:
 		var history_before: int = _hit().get_normal_hit_history().size()
 		await _fire_at(contradiction_target)
 		_check(break_system.get_remaining_shots() == 0 and is_equal_approx(_hit().get_player_pk(), 1.0) and _hit().get_normal_hit_history().size() == history_before, "矛盾真实发射扣机会且不提交普通 PK 或历史")
+		_check(break_system.get_outcome() == ContradictionBreakSystem.Outcome.BREAKTHROUGH, "真实到达命中真矛盾即刻击破")
 
 
 # 仅使用正式公开生成入口；将真实实例放在独立位置便于瞄准。
