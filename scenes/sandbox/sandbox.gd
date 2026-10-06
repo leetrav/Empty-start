@@ -16,6 +16,7 @@ var _repeat_queue: RepeatDelayQueue
 var _run_state: LevelRunState
 var _normal_combat_active: bool = false
 var _contradiction_stage_active: bool = false
+var _contradiction_break: ContradictionBreakSystem
 var _opening_fan_count: int = 0
 
 
@@ -43,6 +44,10 @@ func _ready() -> void:
 func restart_current_attempt() -> void:
 	_stop_normal_combat()
 	_contradiction_stage_active = false
+	if _contradiction_break != null:
+		remove_child(_contradiction_break)
+		_contradiction_break.queue_free()
+		_contradiction_break = null
 	%PauseMenu.resume_game()
 	_opponent_pk_bar.reset_current_attempt()
 	SaveManager.data.tendency_state.rollback_attempt_tendency()
@@ -172,13 +177,26 @@ func _on_attempt_failed() -> void:
 	_battle_hud.show_failure()
 
 
-# 普通 PK 满后每场只切换一次；本卡先确立阶段事实，后续卡接入内容与生成。
+# 普通 PK 满后读取本关矛盾内容，并把当前档位参数下的生成交给弹幕系统。
 func _complete_normal_combat() -> void:
 	if not _normal_combat_active or _hit_resolution.get_player_pk() < battle_config.maximum_player_pk:
 		return
 	_stop_normal_combat()
 	_contradiction_stage_active = true
-	_battle_hud.show_battle_state("普通战斗完成\n进入矛盾击破阶段")
+	_contradiction_break = ContradictionBreakSystem.new()
+	add_child(_contradiction_break)
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	if not _contradiction_break.load_level_content(current_level):
+		push_error("Sandbox: 当前关卡没有可用的矛盾内容。")
+		return
+	if not _barrage_area.start_contradiction_generation(
+		current_level,
+		_contradiction_break.get_true_contradictions(),
+		_contradiction_break.get_false_contradictions()
+	):
+		push_error("Sandbox: 无法启动真假矛盾生成。")
+		return
+	_battle_hud.show_battle_state("矛盾阶段：寻找真正的矛盾")
 
 
 # 阶段结束显式停止系统，避免旧输入或等待请求在下一次尝试继续推进。

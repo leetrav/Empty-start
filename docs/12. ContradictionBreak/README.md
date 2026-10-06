@@ -52,7 +52,7 @@
 
 CB-01 等 8. CombatStage。
 CB-02 可在 2. LevelConfiguration 数据完成后做。
-CB-03 等 3. BarrageGeneration 矛盾生成入口。
+CB-03 使用 BG-12 的 `BarrageArea.start_contradiction_generation()`；Sandbox 在满 PK 清理后，调用 `ContradictionBreakSystem.load_level_content()` 读取当前关真假矛盾并传给弹幕系统。生成倍率继续由当前 `CombatStage` 档位同步，弹幕实例保存稳定原句 ID；真伪判定仍归本系统。
 CB-04～07 可以完成核心判定逻辑。
 CB-08 等 10. Repeat。
 CB-09 等 13. FinalOracle。

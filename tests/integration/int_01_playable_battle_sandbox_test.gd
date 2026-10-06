@@ -252,11 +252,20 @@ func _verify_failure_restart_and_full_pk() -> void:
 	await _fire_at(target)
 	_check(is_equal_approx(_hit().get_player_pk(), 1.0) and not bool(_sandbox.get("_normal_combat_active")), "真实普通命中使 PK 满值并停止普通战斗")
 	_check(bool(_sandbox.get("_contradiction_stage_active")), "满值只进入一次矛盾阶段")
+	var contradiction_ids: Array[String] = []
+	for view: BarrageView in _views(false):
+		if view.runtime_record.is_contradiction:
+			contradiction_ids.append(view.runtime_record.original_sentence_id)
+	_check(contradiction_ids.has(_level().true_contradictions[0].original_sentence_id) and contradiction_ids.has(_level().false_contradictions[0].original_sentence_id), "当前关真假矛盾进入真实弹幕区域")
 	_check(_attempt_tendency_total() == tendency_before + 1 and not _hit().get_normal_hit_history().is_empty(), "满值这一发仍保留倾向与普通命中历史")
 	_check(not _attack.can_start_charging() and _attack.get_attack_phase() == AttackChargeInput.AttackPhase.READY and _queue()._pending_items.is_empty(), "满值清理输入飞行硬直及待复读")
 	var comment_before: int = SaveManager.data.live_session.comment_count
 	await _wait(1.12)
-	_check(is_equal_approx(_hit().get_player_pk(), 1.0) and SaveManager.data.live_session.comment_count == comment_before and _views(false).is_empty(), "满值保持且没有新增普通内容")
+	var normal_view_count: int = 0
+	for view: BarrageView in _views(false):
+		if not view.runtime_record.is_contradiction:
+			normal_view_count += 1
+	_check(is_equal_approx(_hit().get_player_pk(), 1.0) and SaveManager.data.live_session.comment_count >= comment_before and normal_view_count == 0, "满值保持且只生成矛盾内容")
 
 
 # 仅使用正式公开生成入口；将真实实例放在独立位置便于瞄准。
