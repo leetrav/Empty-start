@@ -21,6 +21,7 @@
 
 - BG-01～BG-08 与 BG-11 核心任务已完成；BG-09 等待 4. BarrageTraits / 6. HitResolution 结果接口，BG-10 消费 RepeatPlan 并维护独立复读容量。
 - Repeat 的延迟队列调用接线由 10. Repeat 的 RP-06 处理；CombatStage 接线、命中移除和布局参数接线仍由后续任务负责。
+- BG-12 等待 8. CombatStage 的矛盾阶段入口和 12. ContradictionBreak 的真实矛盾数据接口；当前可见实现尚未提供这两项接口。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - 4. BarrageTraits、5. CombatAttack、6. HitResolution、8. CombatStage、12. ContradictionBreak 等缺少真实接口时，对应联调任务仍保留任务卡；10. Repeat 已提供 RepeatPlan 数据，队列发出请求仍待 RP-06。
 
