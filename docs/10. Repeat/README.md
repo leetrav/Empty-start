@@ -24,11 +24,12 @@
 - `RepeatPlan.apply_display_template(template)` 将模板中的 `{原句}` 替换为原句文本并保存到 `display_text`；模板缺少标记时发出警告并回退显示原句。`original_line_id` 始终独立保留，供生成弹幕关联原句。正式模板内容仍待策划提供。
 - `RepeatDelayConfig` 位于 `data/repeat/repeat_delay_config.tres`，当前等待范围为 0.5～3.0 秒，正式调参可直接改此资源。
 - `RepeatDelayQueue.new(maximum_pending_normal_count)` 接收调用方已解析的普通待生成容量；`enqueue_plan(plan)` 只保留剩余容量内的请求并直接丢弃溢出，返回实际接受数量。
-- `RepeatDelayQueue.advance(delta_seconds)` 返回到期单条请求，之后由 RP-06 交给弹幕生成系统。该待生成队列容量独立于 3. BarrageGeneration 的屏幕弹幕容量。
+- `RepeatDelayQueue.advance(delta_seconds)` 返回到期单条请求；`advance_and_dispatch(delta_seconds, barrage_area)` 则直接调用 3. BarrageGeneration 的 `spawn_repeat_barrage(plan)`。弹幕成功出现后，队列将 1 条实际生成数记入自己持有的 `RepeatGenerationStats`；复读屏幕容量暂满时保留到期请求，等容量释放后重试。待生成队列容量独立于 3. BarrageGeneration 的屏幕弹幕容量。
+- Sandbox / 战斗场景组合方每帧调用 `advance_and_dispatch(delta, barrage_area)`；复读系统只发起实例请求，弹幕实例、寿命与屏幕容量仍由 BarrageGeneration 拥有。
 - `RepeatDelayQueue.clear_normal_queue()` 丢弃所有尚未到期的普通复读；进入矛盾阶段时由阶段流程调用，已返回生成请求的弹幕不属于此等待队列。
 - 原计划的 `wait_offsets_seconds` 保存每条复读的相对等待时间；队列不创建或管理屏幕上的弹幕实例。
 - `RepeatGenerationStats.record_generated(plan, actual_generated_count)` 仅根据计划类型把弹幕生成系统确认的实际生成数量按 `original_line_id` 累计；`get_normal_count(id)` 与 `get_contradiction_count(id)` 分别读取两类统计。
-- 当前只建立数据结构；数量计算、延迟调度、弹幕生成、统计和历史提交分别由后续任务负责。
+- 普通复读命中计划、延迟队列到期调度、实际生成请求与成功生成统计已具备；普通复读计划的生产事件、矛盾复读、PK 命中规则和历史提交仍由后续联调任务负责。
 
 ## 任务顺序
 
