@@ -9,12 +9,14 @@
 ## 当前数据底座
 
 - `TendencyState` 保存 `orthodox_total`、`heretical_total`、`absurd_total` 三个精确累计值和 `opening_identity_tendency_id` 比较参照。
+- `attempt_orthodox_total`、`attempt_heretical_total`、`attempt_absurd_total` 保存当前关尚未提交的普通话语倾向；`record_normal_speech_tendency(tendency_id, tendency_delta)` 按稳定倾向 ID 只增加对应暂存值，不改周目累计值。
+- 当前关失败时调用 `rollback_attempt_tendency()` 清空三个本场暂存，不修改此前已提交总值。
 - 当前周目通过 `SaveData.tendency_state` 持有此 Resource。
-- 身份确认时调用 `initialize_from_identity_option(identity_option)`，从已选 `IdentityOption.tendency_id` 复制开局比较参照，并将三项累计值初始化为 0。
+- 身份确认时调用 `initialize_from_identity_option(identity_option)`，从已选 `IdentityOption.tendency_id` 复制开局比较参照，并将累计值与本场暂存都初始化为 0。
 - `get_primary_tendency_id()` 返回主导倾向 ID；最高值并列时优先并列项中的 `opening_identity_tendency_id`，否则按正统、异端、荒谬顺序裁决。`is_primary_tied()` 即时计算并列标记。
 - `get_secondary_tendency_id()` 从剩余两项选择最高正分项，剩余项并列沿用相同裁决顺序；剩余项都没有正分时返回主导倾向。
 - `has_no_effective_behavior()` 在三项值全零时返回 `true`，主导和次要都沿用 `opening_identity_tendency_id`。
-- 普通命中增量、PK 胜负提交和失败回滚由后续任务接入。
+- HR-10 普通命中事件尚未进入 main；合入后由战斗组合方把事件中的倾向 ID 与增量交给 `record_normal_speech_tendency()`。PK 胜利提交和失败回滚由 TT-03 / TT-04 接入。
 
 本系统需要：
 

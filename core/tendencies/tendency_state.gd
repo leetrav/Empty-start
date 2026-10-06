@@ -5,6 +5,9 @@ extends Resource
 @export var heretical_total: int = 0
 @export var absurd_total: int = 0
 @export var opening_identity_tendency_id: String = ""
+@export var attempt_orthodox_total: int = 0
+@export var attempt_heretical_total: int = 0
+@export var attempt_absurd_total: int = 0
 
 
 # 开始新周目时清零累计值，并从开局 IdentityOption 复制比较参照。
@@ -13,8 +16,35 @@ func initialize_from_identity_option(identity_option: IdentityOption) -> void:
 	heretical_total = 0
 	absurd_total = 0
 	opening_identity_tendency_id = ""
+	attempt_orthodox_total = 0
+	attempt_heretical_total = 0
+	attempt_absurd_total = 0
 	if identity_option != null:
 		opening_identity_tendency_id = identity_option.tendency_id
+
+
+# 仅接收普通话语命中增量，暂存到本场，胜负结算前不修改周目累计值。
+func record_normal_speech_tendency(tendency_id: String, tendency_delta: int) -> bool:
+	if tendency_delta <= 0:
+		return false
+
+	match tendency_id:
+		"orthodox":
+			attempt_orthodox_total += tendency_delta
+		"heretical":
+			attempt_heretical_total += tendency_delta
+		"absurd":
+			attempt_absurd_total += tendency_delta
+		_:
+			return false
+	return true
+
+
+# 当前关失败时撤销本场尝试，不影响此前已经提交的周目累计值。
+func rollback_attempt_tendency() -> void:
+	attempt_orthodox_total = 0
+	attempt_heretical_total = 0
+	attempt_absurd_total = 0
 
 
 # 返回最高分主导倾向；并列时先看开局参照，再按固定倾向顺序裁决。

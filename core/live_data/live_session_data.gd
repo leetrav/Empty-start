@@ -39,6 +39,13 @@ func initialize_session(initial_fan_count: int) -> void:
 	fan_count = initial_fan_count
 
 
+# 只把弹幕系统确认成功生成的实例数量计为评论，待生成请求不提前入账。
+func record_generated_comments(actual_generated_count: int) -> void:
+	if actual_generated_count <= 0:
+		return
+	comment_count += actual_generated_count
+
+
 # 使用调用方本次开播抽取的一次倍率设置观看人数，不在这里重复随机抽取。
 func set_opening_viewers(multiplier: float) -> int:
 	viewer_count = calculate_opening_viewers(fan_count, multiplier)
