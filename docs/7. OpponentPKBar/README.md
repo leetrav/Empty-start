@@ -16,11 +16,13 @@
 
 ## 当前已实现接口
 
+INT-01 Sandbox 创建真实 OpponentPKBar，接入 CombatStage 倍率和唯一 HitResolution。`attempt_failed` 已连接停止战斗、倾向回滚及失败界面。`reset_current_attempt()` 停止回拉、清除失败锁和旧结算绑定，保留本关连败；随后由 Sandbox 注入本次结算对象并启动回拉。原地重开保留 SaveData，已有吞并、圣典及周目倾向累计保持原值。满 PK 时由场景停止回拉并等待矛盾击破入口。
+
 `core/combat/opponent_pk_bar.gd` 是场景内的回拉 Node。OP-02 可通过 `start_pullback(hit_resolution, base_speed)` 在普通战斗开始时注入 6 系统所有者和每秒基础回拉速度；`_process(delta)` 每帧将基础速度乘当前 Tier 倍率，再以负增量调用 `HitResolution.apply_player_pk_delta()`。
 
 OP-01 的 `calculate_pullback_amount(speed, elapsed_seconds)` 返回正的 PK 扣减量，不保存或修改玩家 PK。OP-03 将 Node 设为 `PROCESS_MODE_PAUSABLE`，由 `SceneTree.paused` 自动暂停回拉；阶段结束调用 `stop_pullback()`，普通战斗恢复时调用 `resume_pullback()`。OP-04 通过 `update_pullback_multiplier(multiplier)` 更新后续帧速度；CS-09 通过 `apply_tier_state(multiplier, tier5_desperation_active)` 接收 Tier 配置。
 
-OP-05 在当前唯一 PK 到达 0 时只发出一次 `attempt_failed`，并停止本系统的回拉。失败监听方可据此关闭攻击并显示本场失败；当前真实攻击入口尚未合并。重开状态由 OP-06 处理。
+OP-05 在当前唯一 PK 到达 0 时只发出一次 `attempt_failed`，并停止本系统的回拉。INT-01 的失败监听方已关闭真实攻击并显示失败页，原地重开协调恢复本次战斗。
 
 OP-09 由 OpponentPKBar 记录本关连败：`record_current_level_failure()` 加一，`complete_current_level()` 与 `start_new_run()` 均归零。连败只作为记录，不改变难度参数。
 

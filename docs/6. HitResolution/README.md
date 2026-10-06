@@ -16,15 +16,17 @@
 
 ## 当前已实现接口
 
+INT-01 Sandbox 已接入真实攻击整发结果。CombatAttack 使用本系统计算普通与复读收益，并在结算后把逐目标原句、倾向与结果交给场景协调复读、倾向和弹幕移除。复读不进入普通命中历史。当前关重开创建新的 HitResolution，本次命中历史随旧对象丢弃；跨关提交仍等待正式胜利流程。
+
 HR-01 由 `core/combat/hit_resolution.gd` 持有本场唯一玩家 PK，脚本为场景解耦的 `RefCounted` 对象。创建对象时传入本场初始 PK、下限和上限；重开时可调用 `initialize_player_pk()` 重置。`apply_player_pk_delta()` 统一修改并限制 PK，`get_player_pk()` 提供只读值。
 
-对手占比只从玩家 PK 派生，不在其他系统保存第二份可写 PK。Tier 通知与攻击整发结算仍由后续任务接入。
+对手占比只从玩家 PK 派生，不在其他系统保存第二份可写 PK。Tier 通知与攻击整发结算已接入 INT-01 Sandbox。
 
 HR-02 的 `calculate_normal_word_reward(strength)` 按强度返回 `pk_delta` 和 `tendency_delta`，不修改当前 PK，也不提交三项倾向。PK 奖励从百分比换算为内部 0–1 比例：强度 1 为 `0.0012 / +1`，强度 2 为 `0.002 / +5`，强度 3 为 `0.005 / +10`。Tier 不参与该接口。
 
 HR-04 的 `calculate_repeat_hit_result()` 返回有效命中标记和零 PK、零倾向收益；它不修改 PK 或提交倾向。
 
-HR-05 的 `resolve_shot_results(target_results)` 接收逐目标结算字典，先汇总全部 `pk_delta`，再一次性更新并限制玩家 PK。返回整发的 `total_pk_delta` 与 `final_player_pk`，并深拷贝保留原有 `target_results`，供后续读取每个目标的倾向变化。此处还没有接入 Tier 通知。
+HR-05 的 `resolve_shot_results(target_results)` 接收逐目标结算字典，先汇总全部 `pk_delta`，再一次性更新并限制玩家 PK。返回整发的 `total_pk_delta` 与 `final_player_pk`，并深拷贝保留原有 `target_results`，供后续读取每个目标的倾向变化；最终 PK 信号同步交给 CombatStage。
 
 HR-08 在整发结算前检查当前 PK。若回拉已把 PK 降至下限，返回 `cancelled_by_zero_pk = true`、零 PK 增量和空 `target_results`，本发命中与倾向变化都不再传递；正常结算返回 false。
 
@@ -76,8 +78,7 @@ HR-07 的 `is_shot_fully_missed(target_validity)` 仅在没有任何有效目标
 
 HR-01～08、HR-14 可以先完成纯结算核心和本场命中历史。
 HR-09 等 8. CombatStage。
-HR-10 等 17. ThreeTendencies。
-HR-11 等 5. CombatAttack CA-09 提供真实的一发普通命中结果及其原句 ID / 文本；10. Repeat 的 `RepeatPlan.create_normal_hit_plan()` 已存在，待真实结果进入 HitResolution 后再接。
-HR-12 等 5 / CA-09 提供真实本发结果，并等 9. LiveDataPresentation 提供普通命中与陷阱事件的接收 / 应用接口。
+HR-10 / HR-11 已由 INT-01 组合真实整发结果、本场倾向和普通复读计划。
+HR-12 的普通命中 / 陷阱表现增量继续等待 9. LiveDataPresentation 的数值规则；生成评论已接通。
 HR-13 等 12. ContradictionBreak。
 HR-15 等本场 PK 胜利 / 失败结果。

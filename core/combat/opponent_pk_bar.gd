@@ -56,6 +56,13 @@ func has_attempt_failed() -> bool:
 	return _attempt_failed
 
 
+# 重开当前关只清理失败锁与旧回拉绑定，本关连败继续由此对象保存。
+func reset_current_attempt() -> void:
+	stop_pullback()
+	_attempt_failed = false
+	_hit_resolution = null
+
+
 func record_current_level_failure() -> int:
 	# 每次当前关失败只由失败流程调用一次，并递增本关连败数。
 	_loss_streak_count += 1

@@ -2,6 +2,8 @@
 
 ## 系统目标
 
+INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar 和 AudioManager 的绑定，开局调用 `begin_combat()`。每次最终 PK 更新先同步档位，再由攻击提交回调读取档位创建复读计划；生成倍率只影响新弹幕。Tier 状态已连接可见反馈，Viewer / Like 的档位数值规则仍待配置。PK 满值目前由 Sandbox 停止普通战斗并显示矛盾击破等待提示。
+
 战斗阶段系统负责根据当前 PK 判断普通战斗处于 Tier 0～5 的哪个档位，并把这个档位告诉其他系统。
 
 它负责：
@@ -62,6 +64,6 @@ CS-06 等 6. HitResolution。
 CS-07 已接入 3. BarrageGeneration 的 BarrageArea 公开接口。
 CS-08 已提供 10. Repeat 创建普通复读计划所需的当前 Tier 数量接口。
 CS-09 等 7. OpponentPKBar。
-CS-10 已提供 Tier 状态 signal 与 AU-01 音效绑定入口；LiveData / Tier 表现接收端待 Sandbox 组合时接线。
+CS-10 的 Tier 状态与 AU-01 音效绑定已在 INT-01 Sandbox 接通；直播热度数值变化继续等待具体规则。
 CS-11 等 12. ContradictionBreak 有真实入口后联调。
 CS-12 等 3/5/10 的清理入口存在。

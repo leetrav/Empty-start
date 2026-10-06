@@ -19,12 +19,12 @@
 
 ## 当前仓库状态
 
-- BG-01～BG-08、BG-11 与 BG-14 核心任务已完成；BG-09 等待 4. BarrageTraits / 6. HitResolution 结果接口，BG-10 消费 RepeatPlan 并维护独立复读容量。
-- Repeat 的延迟队列调用接线由 10. Repeat 的 RP-06 处理；CombatStage 接线与命中移除仍由后续任务负责。
+- BG-01～BG-08、BG-11 与 BG-14 核心任务已完成；BG-10 消费 RepeatPlan 并维护独立复读容量。INT-01 提供指定目标结束与场上清理入口，由 Sandbox 根据真实结算结果调用。
+- Repeat 的延迟队列调用接线由 10. Repeat 的 RP-06 提供；INT-01 在 Sandbox 组合 CombatStage、命中移除和复读请求。
 - BG-12 等待 8. CombatStage 的矛盾阶段入口和 12. ContradictionBreak 的真实矛盾数据接口；当前可见实现尚未提供这两项接口。
-- BG-13 等待 8. CombatStage 的阶段清理触发；Repeat 的 `RepeatDelayQueue.clear_normal_queue()` 已在 RP-11 分支提供。
+- INT-01 在普通战斗失败、完成与重开时调用场上清理和 `RepeatDelayQueue.clear_normal_queue()`，完成当前普通战斗阶段的清理接线。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
-- 4. BarrageTraits、5. CombatAttack、6. HitResolution、8. CombatStage、12. ContradictionBreak 等缺少真实接口时，对应联调任务仍保留任务卡；10. Repeat 已提供 RepeatPlan 数据，队列发出请求仍待 RP-06。
+- INT-01 已接入普通战斗的特性结果、攻击、结算、Tier与复读调度；矛盾阶段及其他尚缺真实接口的联调继续保留对应任务卡。
 
 ## 任务顺序
 
@@ -79,13 +79,13 @@
 
 BG-01～BG-08、BG-11、BG-14 可以在大部分后续战斗系统尚未完成时开发。
 
-BG-09 等【4. BarrageTraits】和【6. HitResolution】有真实结果接口后再接。
+INT-01 已组合【4. BarrageTraits】和【6. HitResolution】的逐目标结果与 BG-09 指定目标结束入口。
 
 BG-10 等【10. Repeat】提供真实复读生成请求后再接。
 
 BG-12 等【8. CombatStage】和【12. ContradictionBreak】确定真实阶段入口与矛盾数据后再接。
 
-BG-13 等【8. CombatStage】和【10. Repeat】都存在真实清理接口后再做完整阶段清理。
+INT-01 已组合场上清理与【10. Repeat】的等待队列清理；进入后续矛盾阶段时可复用这些入口。
 
 ## BG-01 已实现的运行时数据
 
@@ -103,13 +103,13 @@ BG-13 等【8. CombatStage】和【10. Repeat】都存在真实清理接口后�
 
 `systems/barrage_generation/barrage_area.tscn` 是可复用弹幕区域，公开 `spawn_normal_barrage(LevelProfile, LevelSpeech)` 入口；调用后创建 `BarrageRuntimeRecord` 并实例化 `barrage_view.tscn`。视图显示原句文本，并按当前关 `base_move_speed_pixels_per_second` 从右向左移动。
 
-当前项目实际游戏入口仍指向技术 Sandbox，BG-03 将弹幕区域接入该场景用于原型验证。强度暂用 `1.0` 占位；没有增加到期、离屏移除、命中或连续生成逻辑，等待对应任务卡。
+当前游戏入口指向 INT-01 可玩 Sandbox，复用 BG-03 的弹幕表现。强度继续使用 `1.0` 原型值；持续生成、到期、离区和真实命中结束已接通。
 
 ### BG-04 普通弹幕持续生成
 
 `BarrageArea.start_normal_generation(LevelProfile)` 打开普通生成，立即生成第一批，随后使用 `base_spawn_interval_seconds` 驱动内置 `Timer`，每批调用 `spawn_normal_barrage()` 共 `base_batch_count` 次。`stop_normal_generation()` 停止后续批次；已经在场的视图继续移动。
 
-Sandbox 当前负责调用启动入口；未来战斗阶段可调用相同的启动 / 停止方法。此卡尚未接入 Tier 倍率、同屏上限、暂停或弹幕移除，因此临时参数下同一通道的话语可能重叠。
+Sandbox 负责调用启动入口；战斗阶段可调用相同的启动 / 停止方法。INT-01 让普通话语与复读从轮换行开始寻找真实空位；候选视图和已有视图按各自矩形外留 8 像素检查相交，避免上一轮横移内容仍在时循环回同一行发生文字重叠。
 
 ### BG-05 后续生成倍率
 
@@ -123,7 +123,7 @@ BarrageArea 暴露可编辑的 `base_lifetime_seconds` 临时基础值（默认 
 
 ### BG-07 普通弹幕共享同屏上限
 
-BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。普通话语创建时自动登记，节点离开场景树时自动释放；陷阱等普通容量占用者通过 `try_register_normal_capacity_occupant()` 和 `release_normal_capacity_occupant()` 复用同一账本。达到上限时普通批次 Timer 暂停，释放容量后继续。BG-07 不实现弹幕特性规则；到期和离屏移除仍由 BG-08 负责。
+BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。普通话语创建时自动登记，节点离开场景树时自动释放；陷阱等普通容量占用者通过 `try_register_normal_capacity_occupant()` 和 `release_normal_capacity_occupant()` 复用同一账本。达到上限时普通批次 Timer 暂停，释放容量后恢复；Timer 已运行时保留当前剩余时间，普通命中或无位置撤销不会重设正在运行的周期。BG-07 不实现弹幕特性规则；到期和离屏移除仍由 BG-08 负责。
 
 ### BG-08 到期与离开区域自然移除
 
@@ -132,6 +132,20 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 ### BG-10 复读请求与独立同屏上限
 
 `BarrageArea.spawn_repeat_barrage(RepeatPlan)` 接收单条计划，复制原句 ID、display_text 和计划寿命到运行时记录。复读使用独立的 `repeat_barrage_screen_cap`（临时默认 24，可在 Inspector 调整）和独立容量账本；普通容量满时复读仍可生成。复读容量满时方法返回 `null`，Repeat 调用方按既定溢出规则处理。延迟与数量由 RepeatDelayQueue 决定，本系统只显示到期请求。
+
+### INT-01 生成事实、内容类别与结束接口
+
+`BarrageRuntimeRecord.is_repeat` 由生成入口写入，普通话语为 `false`、复读为 `true`。`original_sentence_text` 保存原句；`text` 继续保存实际显示内容。CombatAttack 据此选择普通收益或复读零收益，复读不会进入普通命中历史。
+
+`BarrageArea.barrage_generated(view: BarrageView)` 在普通话语或复读成功入树并完成定位后发送一次。协调方统一监听该事实更新 LiveData Comment，避免复读同时按计划与实际生成各计一次。
+
+普通话语和复读都需要找到可放置的位置才算实际生成。所有行入口均有内容时，生成入口返回 `null`，移除尚未公布的视图并归还刚申请的容量；普通生成 Timer 在后续间隔再试，复读继续由现有 RepeatDelayQueue 保留到期请求重试。等待空间期间不发送生成通知，也不提前计评论或实际复读数；位置直接读取当前视图矩形，没有新增占位账本或队列。
+
+`end_barrage(target_instance_id: int) -> bool` 只结束当前区域中的目标，立即离树释放容量，随后排队释放节点。Sandbox 根据最终 `BarrageTraitResult` 决定是否调用：仅遮挡未命中结果保留，正常、假牌、反击复制品及反弹结果都结束。移除与正常收益分别判断。无效、其他区域或已经结束的目标返回 `false`。
+
+`clear_barrages()` 停止普通生成并结束当前区域全部弹幕，重置可见行轮换；等待中的复读继续由 RepeatDelayQueue 的清理入口处理。重开可立即生成新一局，旧视图不会占用新一局容量。
+
+正式 `barrage_area.tscn` 已移除早期技术预览标题；外层 HUD 通过区域根节点组合组件，保持对子场景内部 NodePath 的独立性。
 
 ### BG-11 全局暂停生成与弹幕寿命
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scenes/sandbox/sandbox.gd" id="1_sandbox"]
 [ext_resource type="PackedScene" path="res://ui/pause_menu/pause_menu.tscn" id="2_pause_menu"]
@@ -6,6 +6,36 @@
 [ext_resource type="PackedScene" path="res://ui/live_data/live_data_hud.tscn" id="4_live_data_hud"]
 [ext_resource type="PackedScene" path="res://systems/combat_attack/aim_reticle.tscn" id="5_aim_reticle"]
 [ext_resource type="Script" path="res://systems/combat_attack/attack_charge_input.gd" id="6_attack_charge"]
+[ext_resource type="Script" path="res://scenes/sandbox/sandbox_battle_hud.gd" id="7_battle_hud"]
+[ext_resource type="Resource" path="res://data/stage_layout/stage_layout_profile.tres" id="8_layout"]
+
+[sub_resource type="StyleBoxFlat" id="PKOpponent"]
+bg_color = Color(0.65, 0.34, 0.39, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="PKPlayer"]
+bg_color = Color(0.26, 0.7, 0.65, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="ChargeBackground"]
+bg_color = Color(0.16, 0.19, 0.24, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="ChargeFill"]
+bg_color = Color(0.43, 0.66, 0.99, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [node name="Sandbox" type="Control"]
 layout_mode = 3
@@ -14,6 +44,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_sandbox")
 
 [node name="Background" type="ColorRect" parent="."]
@@ -24,68 +55,368 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.090196, 0.098039, 0.113725, 1)
+color = Color(0.09, 0.098, 0.114, 1)
 
-[node name="BarrageArea" parent="." instance=ExtResource("3_barrage_area")]
+[node name="BattleHud" type="Control" parent="."]
 unique_name_in_owner = true
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+script = ExtResource("7_battle_hud")
+stage_layout_profile = ExtResource("8_layout")
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="PlayerStreamerArea" type="Control" parent="BattleHud"]
+layout_mode = 0
+offset_right = 448.0
+offset_bottom = 1080.0
+mouse_filter = 2
+
+[node name="AreaBackground" type="ColorRect" parent="BattleHud/PlayerStreamerArea"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 48.0
-offset_top = 32.0
-offset_right = -48.0
-offset_bottom = -32.0
-grow_horizontal = 2
-grow_vertical = 2
+mouse_filter = 2
+color = Color(0.09, 0.11, 0.13, 1)
 
-[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
-custom_minimum_size = Vector2(560, 0)
-layout_mode = 2
-theme_type_variation = &"CardPanel"
+[node name="StreamerRole" type="Label" parent="BattleHud/PlayerStreamerArea"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 28.0
+offset_right = 420.0
+offset_bottom = 72.0
+mouse_filter = 2
+theme_type_variation = &"MutedLabel"
+text = "你的直播间"
 
-[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
-layout_mode = 2
+[node name="PlayerName" type="Label" parent="BattleHud/PlayerStreamerArea"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 92.0
+offset_right = 420.0
+offset_bottom = 140.0
+mouse_filter = 2
+theme_type_variation = &"HeadingLabel"
+text = "玩家"
+text_overrun_behavior = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
-layout_mode = 2
+[node name="PlayerPortraitPlaceholder" type="ColorRect" parent="BattleHud/PlayerStreamerArea"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 164.0
+offset_right = 420.0
+offset_bottom = 764.0
+mouse_filter = 2
+color = Color(0.15, 0.19, 0.22, 1)
+
+[node name="PlaceholderLabel" type="Label" parent="BattleHud/PlayerStreamerArea/PlayerPortraitPlaceholder"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_type_variation = &"MutedLabel"
+text = "主播画面\n美术资源待接入"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LiveDataHud" parent="BattleHud/PlayerStreamerArea" instance=ExtResource("4_live_data_hud")]
+unique_name_in_owner = true
+layout_mode = 0
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_top = 784.0
+offset_right = 448.0
+offset_bottom = 1080.0
+
+[node name="BattleArea" type="Control" parent="BattleHud"]
+layout_mode = 0
+offset_left = 448.0
+offset_right = 1472.0
+offset_bottom = 1080.0
+mouse_filter = 2
+
+[node name="BarrageArea" parent="BattleHud/BattleArea" instance=ExtResource("3_barrage_area")]
+unique_name_in_owner = true
+mouse_filter = 2
+
+[node name="PKBar" type="Control" parent="BattleHud/BattleArea"]
+layout_mode = 0
+offset_right = 1024.0
+offset_bottom = 72.0
+mouse_filter = 2
+
+[node name="BarBackground" type="ColorRect" parent="BattleHud/BattleArea/PKBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.12, 0.14, 0.17, 1)
+
+[node name="PlayerPK" type="Label" parent="BattleHud/BattleArea/PKBar"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 24.0
+offset_top = 4.0
+offset_right = 340.0
+offset_bottom = 36.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.43, 0.85, 0.8, 1)
+text = "玩家 PK 50.0%"
+
+[node name="OpponentPK" type="Label" parent="BattleHud/BattleArea/PKBar"]
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340.0
+offset_top = 4.0
+offset_right = -24.0
+offset_bottom = 36.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.91, 0.6, 0.66, 1)
+text = "对手 50.0%"
+horizontal_alignment = 2
+
+[node name="Tier" type="Label" parent="BattleHud/BattleArea/PKBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -110.0
+offset_top = 4.0
+offset_right = 110.0
+offset_bottom = 36.0
+mouse_filter = 2
+text = "Tier 0"
+horizontal_alignment = 1
+
+[node name="PlayerShare" type="ProgressBar" parent="BattleHud/BattleArea/PKBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 43.0
+offset_right = -24.0
+offset_bottom = 61.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("PKOpponent")
+theme_override_styles/fill = SubResource("PKPlayer")
+max_value = 1.0
+step = 0.001
+value = 0.5
+show_percentage = false
+
+[node name="ChargeFeedback" type="Control" parent="BattleHud/BattleArea"]
+layout_mode = 0
+offset_top = 968.0
+offset_right = 1024.0
+offset_bottom = 1080.0
+mouse_filter = 2
+
+[node name="FeedbackBackground" type="ColorRect" parent="BattleHud/BattleArea/ChargeFeedback"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.105, 0.125, 0.15, 1)
+
+[node name="ChargeState" type="Label" parent="BattleHud/BattleArea/ChargeFeedback"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 10.0
+offset_right = 396.0
+offset_bottom = 42.0
+mouse_filter = 2
+text = "蓄力 0%"
+
+[node name="ChargeProgress" type="ProgressBar" parent="BattleHud/BattleArea/ChargeFeedback"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 24.0
+offset_top = 54.0
+offset_right = 396.0
+offset_bottom = 74.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("ChargeBackground")
+theme_override_styles/fill = SubResource("ChargeFill")
+max_value = 1.0
+step = 0.001
+show_percentage = false
+
+[node name="ControlsHint" type="Label" parent="BattleHud/BattleArea/ChargeFeedback"]
+layout_mode = 1
+anchor_right = 1.0
+offset_left = 428.0
+offset_top = 10.0
+offset_right = -24.0
+offset_bottom = 92.0
+mouse_filter = 2
+theme_type_variation = &"MutedLabel"
+text = "移动鼠标准心 · 按住左键蓄力\n蓄满松开发射 · 未满松开取消 · Esc 暂停"
+vertical_alignment = 1
+
+[node name="BattleStateFeedback" type="Label" parent="BattleHud/BattleArea"]
+layout_mode = 1
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 88.0
+offset_right = -24.0
+offset_bottom = 156.0
+mouse_filter = 2
+theme_type_variation = &"MutedLabel"
+text = "瞄准弹幕，蓄满后松开左键"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="OpponentStreamerArea" type="Control" parent="BattleHud"]
+layout_mode = 0
+offset_left = 1472.0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+
+[node name="AreaBackground" type="ColorRect" parent="BattleHud/OpponentStreamerArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.13, 0.105, 0.13, 1)
+
+[node name="StreamerRole" type="Label" parent="BattleHud/OpponentStreamerArea"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 28.0
+offset_right = 420.0
+offset_bottom = 72.0
+mouse_filter = 2
+theme_type_variation = &"MutedLabel"
+text = "对手直播间"
+
+[node name="OpponentName" type="Label" parent="BattleHud/OpponentStreamerArea"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 92.0
+offset_right = 420.0
+offset_bottom = 140.0
+mouse_filter = 2
+theme_type_variation = &"HeadingLabel"
+text = "当前关主播"
+text_overrun_behavior = 3
+
+[node name="OpponentPortraitPlaceholder" type="ColorRect" parent="BattleHud/OpponentStreamerArea"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 164.0
+offset_right = 420.0
+offset_bottom = 764.0
+mouse_filter = 2
+color = Color(0.22, 0.17, 0.2, 1)
+
+[node name="PlaceholderLabel" type="Label" parent="BattleHud/OpponentStreamerArea/OpponentPortraitPlaceholder"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_type_variation = &"MutedLabel"
+text = "主播画面\n美术资源待接入"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TierFeedback" type="VBoxContainer" parent="BattleHud/OpponentStreamerArea"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 816.0
+offset_right = 420.0
+offset_bottom = 1048.0
+mouse_filter = 2
 theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="TierTitle" type="Label" parent="BattleHud/OpponentStreamerArea/TierFeedback"]
 layout_mode = 2
-theme_type_variation = &"TitleLabel"
-text = "SANDBOX"
-horizontal_alignment = 1
-
-[node name="DescriptionLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
+mouse_filter = 2
 theme_type_variation = &"MutedLabel"
-text = "普通弹幕持续生成原型"
-horizontal_alignment = 1
+text = "当前战斗档位"
 
-[node name="ReloadButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="TierValue" type="Label" parent="BattleHud/OpponentStreamerArea/TierFeedback"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
-theme_type_variation = &"SecondaryButton"
-text = "重新加载 Sandbox"
+mouse_filter = 2
+theme_type_variation = &"HeadingLabel"
+text = "Tier 0"
 
-[node name="MainMenuButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
+[node name="PullbackHint" type="Label" parent="BattleHud/OpponentStreamerArea/TierFeedback"]
 layout_mode = 2
-theme_type_variation = &"SecondaryButton"
-text = "返回 MainMenu"
+mouse_filter = 2
+theme_type_variation = &"MutedLabel"
+text = "对手持续回拉 PK\n命中弹幕，把进度推向满值"
+autowrap_mode = 2
 
-[node name="AimReticle" parent="." instance=ExtResource("5_aim_reticle")]
+[node name="AimReticle" parent="BattleHud" instance=ExtResource("5_aim_reticle")]
 unique_name_in_owner = true
 
 [node name="AttackChargeInput" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("6_attack_charge")
 
-[node name="LiveDataHud" parent="." instance=ExtResource("4_live_data_hud")]
+[node name="FailureOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="Dim" type="ColorRect" parent="FailureOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.01, 0.015, 0.03, 0.78)
+
+[node name="CenterContainer" type="CenterContainer" parent="FailureOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="FailureOverlay/CenterContainer"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_type_variation = &"DialogPanel"
+
+[node name="Rows" type="VBoxContainer" parent="FailureOverlay/CenterContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="FailureTitle" type="Label" parent="FailureOverlay/CenterContainer/PanelContainer/Rows"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "本场 PK 失败"
+horizontal_alignment = 1
+
+[node name="FailureHint" type="Label" parent="FailureOverlay/CenterContainer/PanelContainer/Rows"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "对手把玩家 PK 拉回了 0\n重新开始当前关，再试一次"
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="FailureOverlay/CenterContainer/PanelContainer/Rows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+text = "重新开始当前关"
 
 [node name="PauseMenu" parent="." instance=ExtResource("2_pause_menu")]
+unique_name_in_owner = true

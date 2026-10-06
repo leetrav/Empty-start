@@ -10,4 +10,7 @@ static func circle_overlaps_rect(
 ) -> bool:
 	var closest_point: Vector2 = aim_center.clamp(target_area.position, target_area.end)
 	var radius: float = aim_diameter * 0.5
-	return closest_point.distance_squared_to(aim_center) <= radius * radius
+	var distance_squared: float = closest_point.distance_squared_to(aim_center)
+	var radius_squared: float = radius * radius
+	# 缩放逆变换可能让恰好接触边缘的坐标略有误差，近似相等仍按接触处理。
+	return distance_squared <= radius_squared or is_equal_approx(distance_squared, radius_squared)

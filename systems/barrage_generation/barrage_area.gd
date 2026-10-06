@@ -2,6 +2,9 @@
 class_name BarrageArea
 extends Control
 
+## 普通话语与复读均在视图进入场景树并完成定位后通知成功生成。
+signal barrage_generated(view: BarrageView)
+
 @export var barrage_view_scene: PackedScene
 ## 所有舞台区域共享的设计尺寸；本系统只读取中央弹幕区域。
 @export var stage_layout_profile: StageLayoutProfile
@@ -21,6 +24,7 @@ var _lifetime_multiplier: float = 1.0
 ## 普通话语与陷阱共用的容量账本。
 var _normal_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
 var _repeat_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
+var _next_spawn_row: int = 0
 
 ## 连接本组件的批次 Timer 超时信号。
 func _ready() -> void:
@@ -81,7 +85,9 @@ func try_register_normal_capacity_occupant(occupant: Object) -> bool:
 func release_normal_capacity_occupant(occupant: Object) -> bool:
 	if not _normal_capacity_ledger.release(occupant):
 		return false
-	_restart_spawn_timer()
+	# 只有满容量曾暂停计时时才恢复；正在运行的周期保留剩余时间，命中不会推迟下一批。
+	if _spawn_timer.is_stopped():
+		_restart_spawn_timer()
 	return true
 
 ## 以当前关卡的容量限制登记普通弹幕或陷阱占位者。
@@ -114,6 +120,30 @@ func stop_normal_generation() -> void:
 	_normal_generation_enabled = false
 	_spawn_timer.stop()
 
+## 结算协调方按实例 ID 结束本区域目标；立即离树归还容量，重复请求保持无副作用。
+func end_barrage(target_instance_id: int) -> bool:
+	var target: Object = instance_from_id(target_instance_id)
+	if not is_instance_valid(target) or not target is BarrageView:
+		return false
+	var barrage_view: BarrageView = target as BarrageView
+	if barrage_view.get_parent() != self or barrage_view.is_queued_for_deletion():
+		return false
+	remove_child(barrage_view)
+	barrage_view.queue_free()
+	return true
+
+## 重开或阶段结束时停止普通生成并清理当前视图，避免旧实例占用新一局容量。
+func clear_barrages() -> void:
+	stop_normal_generation()
+	for child in get_children():
+		if child is BarrageView:
+			# 自然到期可能已排队释放，仍须立即离树，确保同帧重开归还全部容量。
+			if child.is_queued_for_deletion():
+				remove_child(child)
+			else:
+				end_barrage(child.get_instance_id())
+	_next_spawn_row = 0
+
 ## 由其他系统明确调用，生成一条选中的普通话语。
 func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> BarrageView:
 	if level_profile == null or speech == null:
@@ -129,6 +159,7 @@ func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> B
 
 	var barrage_record: BarrageRuntimeRecord = BarrageRuntimeRecord.new()
 	barrage_record.text = speech.text
+	barrage_record.original_sentence_text = speech.text
 	barrage_record.source_id = level_profile.streamer_id
 	barrage_record.tendency_id = speech.tendency_id
 	barrage_record.strength = 1.0
@@ -145,10 +176,11 @@ func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> B
 		view.free()
 		return null
 	add_child(view)
-	var start_x: float = size.x - view.size.x
-	if start_x < 0.0:
-		start_x = 0.0
-	view.position = Vector2(start_x, maxf((size.y - view.size.y) * 0.5, 0.0))
+	if not _place_new_barrage(view):
+		# 场上没有可见空位时归还刚申请的容量，普通 Timer 后续继续尝试。
+		end_barrage(view.get_instance_id())
+		return null
+	barrage_generated.emit(view)
 	return view
 
 ## 把 RepeatPlan 的单条请求显示为场上复读；容量满时返回 null 供 Repeat 处理溢出。
@@ -167,6 +199,8 @@ func spawn_repeat_barrage(plan: RepeatPlan) -> BarrageView:
 
 	var repeat_record: BarrageRuntimeRecord = BarrageRuntimeRecord.new()
 	repeat_record.text = plan.display_text if not plan.display_text.is_empty() else plan.original_line_text
+	repeat_record.original_sentence_text = plan.original_line_text
+	repeat_record.is_repeat = true
 	repeat_record.source_id = _current_level_profile.streamer_id
 	repeat_record.original_sentence_id = original_line_id
 	repeat_record.strength = 1.0
@@ -182,11 +216,39 @@ func spawn_repeat_barrage(plan: RepeatPlan) -> BarrageView:
 		view.free()
 		return null
 	add_child(view)
-	var start_x: float = size.x - view.size.x
-	if start_x < 0.0:
-		start_x = 0.0
-	view.position = Vector2(start_x, maxf((size.y - view.size.y) * 0.5, 0.0))
+	if not _place_new_barrage(view):
+		# 到期请求继续留在 Repeat 队列，成功定位前不发送实际生成事实。
+		end_barrage(view.get_instance_id())
+		return null
+	barrage_generated.emit(view)
 	return view
+
+## 从轮换行寻找当前真实空位；上一轮横移目标仍占着入口时跳到其他行。
+func _place_new_barrage(view: BarrageView) -> bool:
+	var start_x: float = maxf(size.x - view.size.x, 0.0)
+	var top_margin: float = minf(48.0, maxf(size.y - view.size.y, 0.0))
+	var row_step: float = view.size.y + 16.0
+	var available_height: float = maxf(size.y - view.size.y - top_margin - 16.0, 0.0)
+	var row_count: int = maxi(floori(available_height / row_step) + 1, 1)
+	for row_offset: int in range(row_count):
+		var row_index: int = (_next_spawn_row + row_offset) % row_count
+		var candidate_position: Vector2 = Vector2(start_x, top_margin + float(row_index) * row_step)
+		var candidate_rect: Rect2 = Rect2(candidate_position, view.size).grow(8.0)
+		var overlaps_existing: bool = false
+		for child in get_children():
+			if child == view or not child is BarrageView or child.is_queued_for_deletion():
+				continue
+			var existing_view: BarrageView = child as BarrageView
+			var existing_rect: Rect2 = Rect2(existing_view.position, existing_view.size).grow(8.0)
+			if candidate_rect.intersects(existing_rect):
+				overlaps_existing = true
+				break
+		if overlaps_existing:
+			continue
+		view.position = candidate_position
+		_next_spawn_row = (row_index + 1) % row_count
+		return true
+	return false
 
 ## 复读屏幕容量独立登记，视图离树时自动释放。
 func _try_register_repeat_capacity_occupant(occupant: Object) -> bool:
