@@ -25,6 +25,7 @@
 - CA-05 在 Sandbox 中接入真实 `BarrageArea` / `BarrageView`：满蓄释放时检查当前视图、运行时到期时间和区域内可见矩形，再按准心相交结果创建去重快照；释放后的候选变化不会修改本发目标。
 - CA-06 在到达时按真实 `BarrageRuntimeRecord` / `BarrageView` 状态过滤已释放目标；目标移动后仍保留资格，到期、离开 BarrageArea、脱离所属区域、排队删除或已释放的目标均失效，不再检查原准心范围。
 - CA-07 提供可注入 `AttackTimingConfig` 和普通攻击阶段计时：快照释放后进入飞行，到达时复核并发出结果，再进入硬直；硬直期间不推进蓄力。`tests/fixtures/combat_attack/ca07_short_attack_timing.tres` 只用于计时逻辑验证；正式 Sandbox 仍等共享数值表注入配置。
+- CA-11 让 AttackChargeInput 在全局暂停时冻结蓄力处理，并让飞行 / 硬直 Timer 使用可暂停模式；恢复后沿用暂停前的进度。
 
 ## 任务顺序
 

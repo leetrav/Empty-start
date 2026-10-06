@@ -14,28 +14,26 @@ var _attack_timing: AttackTimingConfig
 var _attack_phase: AttackPhase = AttackPhase.READY
 var _phase_timer: Timer
 var _active_snapshot: AttackTargetSnapshot
+var _attack_held: bool = false
 
 
 # 每帧读取全局按住状态并累计蓄力；松开瞬间由 _input 处理目标快照。
 func _process(delta: float) -> void:
-	if _charge_progress == null:
+	if _charge_progress == null or get_tree().paused:
 		return
-
-	var is_attack_held: bool = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 	if _attack_phase != AttackPhase.READY:
-		# 飞行和硬直期间记录输入状态，但不推进蓄力。
-		_was_attack_held = is_attack_held
+		# 飞行和硬直期间不推进蓄力。
 		return
-	if is_attack_held:
+	if _attack_held:
 		_charge_progress.advance(delta, true)
-	elif _was_attack_held:
-		# 窗口失焦等情况下若收不到释放事件，按全局输入状态兜底处理。
-		_handle_attack_release()
-	_was_attack_held = is_attack_held
 
 
 func _ready() -> void:
+	# 暂停期间仍接收鼠标抬起以清理按住状态，蓄力本身由下方显式跳过。
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_phase_timer = Timer.new()
+	# 计时器沿用 Godot 的暂停处理，在暂停中保留剩余时间。
+	_phase_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_phase_timer.one_shot = true
 	_phase_timer.timeout.connect(_on_attack_phase_timer_timeout)
 	add_child(_phase_timer)
@@ -66,10 +64,17 @@ func _input(event: InputEvent) -> void:
 	if not event is InputEventMouseButton:
 		return
 	var mouse_event := event as InputEventMouseButton
-	if mouse_event.button_index != MOUSE_BUTTON_LEFT or mouse_event.pressed:
+	if mouse_event.button_index != MOUSE_BUTTON_LEFT:
 		return
-	_handle_attack_release()
-	_was_attack_held = false
+	if mouse_event.pressed:
+		if not get_tree().paused and can_start_charging():
+			_attack_held = true
+		return
+
+	var was_attack_held: bool = _attack_held
+	_attack_held = false
+	if was_attack_held and not get_tree().paused:
+		_handle_attack_release()
 
 
 # 未满蓄释放只取消；满蓄释放发送快照事实，不在攻击系统改动 PK。
@@ -146,4 +151,4 @@ func get_attack_phase() -> AttackPhase:
 
 # 蓄力配置有效且未处于飞行或硬直时才能开始下一发。
 func can_start_charging() -> bool:
-	return _charge_progress != null and _attack_phase == AttackPhase.READY
+	return _charge_progress != null and _attack_phase == AttackPhase.READY and not get_tree().paused
