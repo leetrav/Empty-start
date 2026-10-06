@@ -17,6 +17,7 @@ var _phase_timer: Timer
 var _active_snapshot: AttackTargetSnapshot
 var _attack_held: bool = false
 var _combat_active: bool = true
+var _contradiction_mode: bool = false
 
 
 # 按住输入且没有暂停或飞行 / 硬直时才推进蓄力。
@@ -67,6 +68,11 @@ func configure_hit_resolution(hit_resolution: HitResolution) -> bool:
 func configure_target_query(aim_reticle: AimReticle, barrage_area: BarrageArea) -> void:
 	_aim_reticle = aim_reticle
 	_barrage_area = barrage_area
+
+
+# 矛盾阶段只发出到达目标事实；PK 与倾向结算只允许普通战斗调用。
+func set_contradiction_mode(active: bool) -> void:
+	_contradiction_mode = active
 
 ## 战斗生命周期由场景协调；停止时本组件取消整发和计时，重开可直接回到 READY。
 func set_combat_active(active: bool) -> void:
@@ -127,7 +133,8 @@ func _on_attack_phase_timer_timeout() -> void:
 		shot_arrival_resolved.emit(completed_snapshot, target_results)
 		if not _combat_active or _active_snapshot != completed_snapshot:
 			return
-		_submit_arrival_to_hit_resolution(completed_snapshot, target_results)
+		if not _contradiction_mode:
+			_submit_arrival_to_hit_resolution(completed_snapshot, target_results)
 		# PK 更新和整发提交同步发信号；满值 / 失败可能已经停止本发，不能重新启动硬直。
 		if not _combat_active or _active_snapshot != completed_snapshot:
 			return

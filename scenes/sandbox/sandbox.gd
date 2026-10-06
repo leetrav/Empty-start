@@ -2,6 +2,7 @@ extends Control
 
 const SAMPLE_LEVEL_CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
+const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
 @export var battle_config: SandboxBattleConfig = preload("res://data/sandbox/playable_battle_config.tres")
 
 @onready var _barrage_area: BarrageArea = %BarrageArea
@@ -34,6 +35,7 @@ func _ready() -> void:
 	_opponent_pk_bar.attempt_failed.connect(_on_attempt_failed)
 	_barrage_area.barrage_generated.connect(_on_barrage_generated)
 	_attack_charge_input.shot_hit_resolution_submitted.connect(_on_shot_hit_resolution_submitted)
+	_attack_charge_input.shot_snapshot_created.connect(_on_contradiction_shot_created)
 	_attack_charge_input.configure_target_query(_aim_reticle, _barrage_area)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
@@ -48,6 +50,7 @@ func restart_current_attempt() -> void:
 		remove_child(_contradiction_break)
 		_contradiction_break.queue_free()
 		_contradiction_break = null
+	_attack_charge_input.set_contradiction_mode(false)
 	%PauseMenu.resume_game()
 	_opponent_pk_bar.reset_current_attempt()
 	SaveManager.data.tendency_state.rollback_attempt_tendency()
@@ -96,7 +99,17 @@ func restart_current_attempt() -> void:
 func _process(delta: float) -> void:
 	if _normal_combat_active:
 		_repeat_queue.advance_and_dispatch(delta, _barrage_area)
+	elif _contradiction_stage_active and _contradiction_break != null and not _contradiction_break.is_result_locked():
+		_battle_hud.show_battle_state("击破矛盾：%.1f 秒 · 剩余 %d 发" % [_contradiction_break.get_remaining_seconds(), _contradiction_break.get_remaining_shots()])
 	_battle_hud.refresh_attack(_attack_charge_input.get_charge_progress(), _attack_charge_input.get_attack_phase())
+
+
+# 正式满蓄发射才消耗矛盾机会；未蓄满取消没有快照事件。
+func _on_contradiction_shot_created(_snapshot: AttackTargetSnapshot) -> void:
+	if not _contradiction_stage_active or _contradiction_break == null:
+		return
+	if not _contradiction_break.register_launched_shot():
+		_attack_charge_input.set_combat_active(false)
 
 
 # 普通与复读都由同一生成事实计评论，等待请求和失败生成不提前入账。
@@ -196,6 +209,12 @@ func _complete_normal_combat() -> void:
 	):
 		push_error("Sandbox: 无法启动真假矛盾生成。")
 		return
+	if not _contradiction_break.start_window(CONTRADICTION_WINDOW_CONFIG):
+		_barrage_area.stop_contradiction_generation()
+		push_error("Sandbox: 无法启动矛盾限时窗口。")
+		return
+	_attack_charge_input.set_contradiction_mode(true)
+	_attack_charge_input.set_combat_active(true)
 	_battle_hud.show_battle_state("矛盾阶段：寻找真正的矛盾")
 
 
