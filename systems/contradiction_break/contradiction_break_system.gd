@@ -1,6 +1,8 @@
 class_name ContradictionBreakSystem
 extends Node
 
+enum Outcome { PENDING, BREAKTHROUGH, NOT_BROKEN }
+
 ## 当前关卡的静态矛盾内容只由 LevelProfile 提供，不改写原始 Resource。
 var _true_contradictions: Array[LevelContradiction] = []
 var _false_contradictions: Array[LevelContradiction] = []
@@ -9,6 +11,7 @@ var _window_timer: Timer
 var _remaining_shots: int = 0
 var _pending_shots: int = 0
 var _window_active: bool = false
+var _outcome: Outcome = Outcome.PENDING
 
 
 func _ready() -> void:
@@ -50,6 +53,7 @@ func start_window(config: ContradictionWindowConfig) -> bool:
 	_remaining_shots = config.max_shots
 	_pending_shots = 0
 	_window_active = true
+	_outcome = Outcome.PENDING
 	_window_timer.start(config.duration_seconds)
 	return true
 
@@ -64,6 +68,10 @@ func get_remaining_shots() -> int:
 	return _remaining_shots
 
 
+func get_outcome() -> Outcome:
+	return _outcome
+
+
 func can_launch_shot() -> bool:
 	return _window_active and _remaining_shots > 0
 
@@ -74,4 +82,18 @@ func register_launched_shot() -> bool:
 		return false
 	_remaining_shots -= 1
 	_pending_shots += 1
+	return true
+
+
+# 一发到达后只按稳定原句 ID 判定；矛盾命中不提交普通 PK 或倾向收益。
+func resolve_shot_hit_ids(hit_sentence_ids: Array[String]) -> bool:
+	if not _window_active or _pending_shots <= 0:
+		return false
+	_pending_shots -= 1
+	for contradiction in _true_contradictions:
+		if contradiction != null and hit_sentence_ids.has(contradiction.original_sentence_id):
+			_outcome = Outcome.BREAKTHROUGH
+			_window_active = false
+			_window_timer.stop()
+			return true
 	return true
