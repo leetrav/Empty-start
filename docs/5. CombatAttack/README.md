@@ -20,11 +20,11 @@
 - CA-01 提供独立 `AimReticle` 场景并接入当前 sandbox 游戏入口。
 - `reticle_diameter` 保留准心尺寸配置入口；`get_aim_center_global_position()` 返回与绘制中心相同的位置，供后续瞄准判定复用。
 - CA-02 提供 `BarrageAimIntersection.circle_overlaps_rect()`，边缘接触判为相交；`AimReticle.intersects_target_area()` 复用同一准心尺寸。
-- CA-03 提供 `AttackChargeInput` 和纯状态 `AttackChargeProgress`；按住鼠标左键会累积至导出时长（当前默认 0.8 秒），和准心 / 候选目标状态解耦。
+- CA-03 提供 `AttackChargeInput` 和纯状态 `AttackChargeProgress`；按住鼠标左键会累积到 `AttackTimingConfig.charge_time_s`，和准心 / 候选目标状态解耦。
 - CA-04 未蓄满松开会清空当前进度，不产生攻击结果。
 - CA-05 在 Sandbox 中接入真实 `BarrageArea` / `BarrageView`：满蓄释放时检查当前视图、运行时到期时间和区域内可见矩形，再按准心相交结果创建去重快照；释放后的候选变化不会修改本发目标。
 - CA-06 在到达时按真实 `BarrageRuntimeRecord` / `BarrageView` 状态过滤已释放目标；目标移动后仍保留资格，到期、离开 BarrageArea、脱离所属区域、排队删除或已释放的目标均失效，不再检查原准心范围。
-- CA-07 需要共享数值配置提供蓄力、飞行与硬直时长；当前 main 尚无对应 Resource/API，计时流程暂缓，避免在 CombatAttack 私设另一份数值表。
+- CA-07 提供可注入 `AttackTimingConfig` 和普通攻击阶段计时：快照释放后进入飞行，到达时复核并发出结果，再进入硬直；硬直期间不推进蓄力。`tests/fixtures/combat_attack/ca07_short_attack_timing.tres` 只用于计时逻辑验证；正式 Sandbox 仍等共享数值表注入配置。
 
 ## 任务顺序
 
