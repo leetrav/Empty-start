@@ -19,8 +19,8 @@
 
 ## 当前仓库状态
 
-- BG-01～BG-08 与 BG-11 核心任务已完成；BG-09 等待 4. BarrageTraits / 6. HitResolution 结果接口，BG-10 消费 RepeatPlan 并维护独立复读容量。
-- Repeat 的延迟队列调用接线由 10. Repeat 的 RP-06 处理；CombatStage 接线、命中移除和布局参数接线仍由后续任务负责。
+- BG-01～BG-08、BG-11 与 BG-14 核心任务已完成；BG-09 等待 4. BarrageTraits / 6. HitResolution 结果接口，BG-10 消费 RepeatPlan 并维护独立复读容量。
+- Repeat 的延迟队列调用接线由 10. Repeat 的 RP-06 处理；CombatStage 接线与命中移除仍由后续任务负责。
 - BG-12 等待 8. CombatStage 的矛盾阶段入口和 12. ContradictionBreak 的真实矛盾数据接口；当前可见实现尚未提供这两项接口。
 - BG-13 等待 8. CombatStage 的阶段清理触发；Repeat 的 `RepeatDelayQueue.clear_normal_queue()` 已在 RP-11 分支提供。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
@@ -127,7 +127,7 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 
 ### BG-08 到期与离开区域自然移除
 
-生成时由 `BarrageArea` 把所属 `Control` 注入 `BarrageView`。视图每帧比较当前单调时钟与 `BarrageRuntimeRecord.expires_at_msec`；到期后调用 `queue_free()`。移动后，视图矩形与所属 Control 当前矩形不相交时也会自然结束。Node 离树触发 BG-07 的容量释放。当前有效区域使用 BarrageArea 实际边界，BG-14 布局读取完成后再接入舞台参数。命中移除由 BG-09 处理；恢复运行时，BG-11 会补偿暂停时长。
+生成时由 `BarrageArea` 把所属 `Control` 注入 `BarrageView`。视图每帧比较当前单调时钟与 `BarrageRuntimeRecord.expires_at_msec`；到期后调用 `queue_free()`。移动后，视图矩形与所属 Control 当前矩形不相交时也会自然结束。Node 离树触发 BG-07 的容量释放。当前有效区域使用 BarrageArea 实际边界；BG-14 从共享 StageLayoutProfile 读取中央区矩形并换算锚点。命中移除由 BG-09 处理；恢复运行时，BG-11 会补偿暂停时长。
 
 ### BG-10 复读请求与独立同屏上限
 
@@ -136,3 +136,7 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 ### BG-11 全局暂停生成与弹幕寿命
 
 `BarrageArea` 沿用场景树默认的可暂停处理模式，普通生成 Timer 在 `SceneTree.paused` 时停止计时。`BarrageView` 使用 `PROCESS_MODE_ALWAYS` 观察暂停状态；暂停期间跳过移动和到期检查，并记录暂停开始时间。恢复时把实际暂停时长补加到 `expires_at_msec`，使已有弹幕按暂停前剩余寿命继续运行。该处理只覆盖弹幕生成和弹幕寿命。
+
+### BG-14 舞台布局尺寸读取
+
+`data/stage_layout/stage_layout_profile.tres` 是舞台区域尺寸的共享配置；基准分辨率、左右主播区、中央弹幕区、PK 条与直播数据区集中保存在 `StageLayoutProfile`。初始值来自原始系统案数值表：基准 `1920×1080`，左右主播区各 `448×1080`，PK 条 `1024×72`，直播数据区 `448×296`。中央弹幕区初始矩形为 `(448, 0, 1024, 1080)`：宽度为基准分辨率扣除两侧主播区后的剩余宽度；原表未单列中央区高度，当前按完整基准高度配置。需要调整时编辑 Resource，BarrageArea 会按基准分辨率换算锚点，并继续以 Control 的实际边界管理弹幕有效范围。

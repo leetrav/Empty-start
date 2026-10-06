@@ -3,6 +3,8 @@ class_name BarrageArea
 extends Control
 
 @export var barrage_view_scene: PackedScene
+## 所有舞台区域共享的设计尺寸；本系统只读取中央弹幕区域。
+@export var stage_layout_profile: StageLayoutProfile
 ## 临时全局基础寿命，正式数值表接入前可在 Inspector 调整。
 @export var base_lifetime_seconds: float = 10.0
 ## 临时复读同屏上限，正式数值表接入前可在 Inspector 调整。
@@ -23,6 +25,25 @@ var _repeat_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
 ## 连接本组件的批次 Timer 超时信号。
 func _ready() -> void:
 	_spawn_timer.timeout.connect(_on_spawn_timer_timeout)
+	_apply_stage_layout()
+
+## 将资源中的中央弹幕区域转换成相对基准分辨率的 Control 锚点。
+func _apply_stage_layout() -> void:
+	if stage_layout_profile == null:
+		return
+	var base_resolution: Vector2i = stage_layout_profile.base_resolution
+	if base_resolution.x <= 0 or base_resolution.y <= 0:
+		push_error("BarrageArea: 舞台基准分辨率必须大于零。")
+		return
+	var area_rect: Rect2i = stage_layout_profile.central_barrage_area_rect
+	anchor_left = float(area_rect.position.x) / float(base_resolution.x)
+	anchor_top = float(area_rect.position.y) / float(base_resolution.y)
+	anchor_right = float(area_rect.position.x + area_rect.size.x) / float(base_resolution.x)
+	anchor_bottom = float(area_rect.position.y + area_rect.size.y) / float(base_resolution.y)
+	offset_left = 0.0
+	offset_top = 0.0
+	offset_right = 0.0
+	offset_bottom = 0.0
 
 ## 打开普通生成并立即生成第一批，之后按当前关卡间隔与频率倍率循环。
 func start_normal_generation(level_profile: LevelProfile) -> bool:

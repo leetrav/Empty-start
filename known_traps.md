@@ -172,6 +172,11 @@
 <td>headless --script 验证脚本以 record 作为局部变量名时，只加载脚本而未输出用例结果，退出码仍为 0。</td>
 <td>运行时记录使用 runtime_record、barrage_record 等明确变量名；测试检查预期输出和用例结果，不能只看进程退出码。</td>
 </tr>
+<tr>
+<td>KT-27</td>
+<td>新 worktree 首次直接启动 headless 场景时，Global Script Class Cache 尚未生成，出现多个 `Could not find type` / Autoload 脚本解析错误。</td>
+<td>先使用 `--headless --path 项目路径 --import` 完成项目导入，再启动场景；确认 `.godot/global_script_class_cache.cfg` 已包含新增 `class_name`。</td>
+</tr>
 </table>
 ## 六、自查入口
 遇到问题优先按类别检查：
@@ -180,6 +185,7 @@
 - 数据加载 / ID 问题：KT-11～KT-17。
 - `.tres / .tscn` 解析问题：KT-18～KT-20。
 - 重构后编译或引用异常：KT-21～KT-23。
+- 新 worktree 首次 headless 启动出现全局类缺失：KT-27。
 
 ## 附录 A：Godot 生命周期提醒
 
