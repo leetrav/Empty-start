@@ -19,6 +19,7 @@ func _ready() -> void:
 	_window_timer.one_shot = true
 	# Godot 的暂停模式会在全局暂停时保存 Timer 剩余时间。
 	_window_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_window_timer.timeout.connect(_on_window_timeout)
 	add_child(_window_timer)
 
 
@@ -96,4 +97,18 @@ func resolve_shot_hit_ids(hit_sentence_ids: Array[String]) -> bool:
 			_window_active = false
 			_window_timer.stop()
 			return true
+	if _remaining_shots == 0 and _pending_shots == 0:
+		_finish_without_breakthrough()
 	return true
+
+
+# 到期优先形成未击破结果；已结束的成功判定不再被倒计时覆盖。
+func _on_window_timeout() -> void:
+	if _window_active and _outcome == Outcome.PENDING:
+		_finish_without_breakthrough()
+
+
+func _finish_without_breakthrough() -> void:
+	_outcome = Outcome.NOT_BROKEN
+	_window_active = false
+	_window_timer.stop()
