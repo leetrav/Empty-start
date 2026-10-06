@@ -3,6 +3,8 @@ extends Node
 
 enum Outcome { PENDING, BREAKTHROUGH, NOT_BROKEN }
 
+signal outcome_locked(outcome: int)
+
 ## 当前关卡的静态矛盾内容只由 LevelProfile 提供，不改写原始 Resource。
 var _true_contradictions: Array[LevelContradiction] = []
 var _false_contradictions: Array[LevelContradiction] = []
@@ -49,7 +51,7 @@ func get_context_clues() -> Array[String]:
 func start_window(config: ContradictionWindowConfig) -> bool:
 	if config == null or config.duration_seconds <= 0.0 or config.max_shots <= 0:
 		return false
-	if _window_timer == null:
+	if _window_timer == null or _window_active or is_result_locked():
 		return false
 	_remaining_shots = config.max_shots
 	_pending_shots = 0
@@ -73,8 +75,12 @@ func get_outcome() -> Outcome:
 	return _outcome
 
 
+func is_result_locked() -> bool:
+	return _outcome != Outcome.PENDING
+
+
 func can_launch_shot() -> bool:
-	return _window_active and _remaining_shots > 0
+	return _window_active and not is_result_locked() and _remaining_shots > 0
 
 
 # 只接收 AttackChargeInput 真正满蓄发射后产生的快照事实；取消蓄力不调用此入口。
@@ -93,9 +99,7 @@ func resolve_shot_hit_ids(hit_sentence_ids: Array[String]) -> bool:
 	_pending_shots -= 1
 	for contradiction in _true_contradictions:
 		if contradiction != null and hit_sentence_ids.has(contradiction.original_sentence_id):
-			_outcome = Outcome.BREAKTHROUGH
-			_window_active = false
-			_window_timer.stop()
+			_lock_outcome(Outcome.BREAKTHROUGH)
 			return true
 	if _remaining_shots == 0 and _pending_shots == 0:
 		_finish_without_breakthrough()
@@ -109,6 +113,14 @@ func _on_window_timeout() -> void:
 
 
 func _finish_without_breakthrough() -> void:
-	_outcome = Outcome.NOT_BROKEN
+	_lock_outcome(Outcome.NOT_BROKEN)
+
+
+# 第一份结果是本场唯一事实；锁定后关闭计时与攻击入口。
+func _lock_outcome(value: Outcome) -> void:
+	if is_result_locked():
+		return
+	_outcome = value
 	_window_active = false
 	_window_timer.stop()
+	outcome_locked.emit(value)
