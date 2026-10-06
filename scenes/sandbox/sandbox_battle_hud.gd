@@ -3,8 +3,8 @@ extends Control
 
 @onready var _aim_reticle: AimReticle = %AimReticle
 @onready var _battle_state: Label = %BattleStateFeedback
-@onready var _player_name: Label = $PlayerStreamerArea/PlayerName
-@onready var _opponent_name: Label = $OpponentStreamerArea/OpponentName
+@onready var _player_name: Label = $PlayerStreamerArea/PlayerInfoArea/PlayerName
+@onready var _opponent_name: Label = $OpponentStreamerArea/OpponentInfoArea/OpponentName
 @onready var _player_pk_label: Label = %PlayerPK
 @onready var _opponent_pk_label: Label = $BattleArea/TopBattleStatus/PKBar/OpponentPK
 @onready var _pk_progress: ProgressBar = %PlayerShare

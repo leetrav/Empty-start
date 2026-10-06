@@ -21,7 +21,7 @@ BattleStateFeedback 位于 `(24,88)`，尺寸 `976×68`，占用弹幕主体上�
 - 既有测试只做引用适配：中央 Tier 断言、状态 unique-name、我方 Comment 查找范围、删除过时的 fixture 布局资源赋值。检查数量维持84，没有新增持久用例。
 - 系统3、系统9、Shared正式文档及 `known_traps.md`。
 
-未修改攻击判定、PK收益、Tier规则、回拉、复读、倾向或敌方数据公式；未修改关卡、攻击配置、StageLayoutProfile数值及项目显示配置。
+INT-02首轮Scene重构未修改攻击判定、PK收益、Tier规则、回拉、复读或倾向。本次评审核准后更新StageLayoutProfile设计规格，关卡、攻击配置与项目显示配置保持原样。
 
 ## 最终 Scene Tree
 
@@ -30,7 +30,9 @@ Sandbox
 ├── Background
 ├── BattleHud
 │   ├── PlayerStreamerArea
-│   │   ├── PlayerName / PlayerPortraitPlaceholder
+│   │   ├── PlayerInfoArea (448×128)
+│   │   │   ├── StreamerRole / PlayerName
+│   │   ├── PlayerPortraitPlaceholder (448×432)
 │   │   └── LiveDataHud（我方真实数据）
 │   ├── BattleArea
 │   │   ├── TopBattleStatus
@@ -40,7 +42,9 @@ Sandbox
 │   │   ├── BarrageArea
 │   │   └── ChargeFeedback
 │   ├── OpponentStreamerArea
-│   │   ├── OpponentName / OpponentPortraitPlaceholder
+│   │   ├── OpponentInfoArea (448×128)
+│   │   │   ├── StreamerRole / OpponentName
+│   │   ├── OpponentPortraitPlaceholder (448×432)
 │   │   └── EnemyLiveDataArea（静态占位）
 │   └── AimReticle
 ├── AttackChargeInput
@@ -58,13 +62,15 @@ Sandbox
 | BattleArea | BattleHud `(448,0)` | `1024×1080` |
 | OpponentStreamerArea | BattleHud `(1472,0)` | `448×1080` |
 | TopBattleStatus | BattleArea `(0,0)` | `1024×72` |
-| BarrageArea | BattleArea `(0,72)` | `1024×896` |
-| ChargeFeedback | BattleArea `(0,968)` | `1024×112` |
-| 我方 / 敌方直播数据 | 各主播区 `(0,784)` | `448×296` |
+| 信息区 | 各主播区 `(0,0)` | `448×128` |
+| 立绘区 | 各主播区 `(0,128)` | `448×432` |
+| 我方 / 敌方直播数据 | 各主播区 `(0,560)` | `448×520` |
+| BarrageArea | BattleArea `(0,72)` | `1024×760` |
+| ChargeFeedback | BattleArea `(0,832)` | `1024×248` |
 
-顶部第一行显示玩家PK、中央Tier和对手PK；第二行 PlayerShare 横贯中央区，Rect为 `(24,26,976,18)`，两边各留24；第三行战斗状态为 `(24,46,976,26)`。状态保持在顶部72内，弹幕主体从72开始，到968结束。底部显示蓄力、攻击阶段与操作提示。
+顶部第一行显示玩家PK、中央Tier和对手PK；第二行 PlayerShare 横贯中央区，Rect为 `(24,26,976,18)`，两边各留24；第三行战斗状态为 `(24,46,976,26)`。状态保持在顶部72内，弹幕主体从72开始，到832结束。底部显示蓄力、攻击阶段与操作提示。
 
-两侧上部保存主播名和392×600画面占位；左下复用真实 LiveDataHud，右下四项显示“—”并注明“暂无数据”。敌方区域没有脚本、运行数据或增长规则。
+两侧最上方为448×128信息区，之后为448×432立绘占位；下部复用左右两个LiveDataHud，右侧四项显示“—”并注明“暂无数据”。敌方区域没有脚本、运行数据或增长规则。
 
 ## 布局事实与接口
 
@@ -75,10 +81,10 @@ BarrageArea只读取自己的尺寸控制生成和裁剪。被移除的布局资
 ## 实际验证
 
 - Godot：`4.7.2.stable.steam.ed1daf0bf`；通过本地9082的Godot-MCP-Native连接本任务工作树，查看修改前/后实际Scene Tree和Inspector。
-- 编辑器重新打开后，BarrageArea直接为 `(0,72,1024,896)`；顶部、底部及左右数据区域的Inspector位置/尺寸与上表一致。冷启动编辑器确认新LiveDataHud标题和卡片排版已加载，并检查完整三栏截图。
+- INT-02首轮完成时，BarrageArea为`(0,72,1024,896)`。2026-10-07尺寸修订后，Scene Inspector Rect为`(0,72,1024,760)`；顶部、底部及两侧信息、立绘、直播数据区域按现行尺寸表配置，冷启动编辑器验证完整三栏。
 - 真正GUI窗口运行最小临时smoke，检查物理窗口与截图尺寸、同一Scene主体Rect、最终屏幕缩放及准心尺寸：`1920×1080`整体屏幕比例1.0、准心约32px；`1152×648`整体屏幕比例0.6、准心约19.2px。两种尺寸均截图并人工查看，进程退出0、stderr为空。
 - Godot逻辑视口与物理窗口可不同。以上比例包含HUD与Viewport最终变换；仅按窗口像素除设计尺寸比较HUD自身scale的临时检查曾误报，修正检查后通过。隐藏窗口截图显式强制绘制，避免等待未触发的frame_post_draw；生产代码未因此修改。
-- 编辑器与运行时均沿用 `(0,72,1024,896)` 主体Rect，连续的72/896/112中央分区完整。普通弹幕生成、移动和区域裁剪继续正常；真实生成Comment刷新，我方指标与敌方静态占位分离。
+- INT-02首轮Scene与运行时均为`(0,72,1024,896)`和72/896/112。当前设计调整为`(0,72,1024,760)`和72/760/248；两侧信息/立绘/直播区域为128/432/520。弹幕生成、移动、裁剪和直播UI继续使用各自现有接口。
 - 复用INT-01真实场景回归：**84/84通过**，退出0、stderr为空，包含攻击、PK/Tier、回拉、复读、直播、倾向、暂停、失败重开和满值提示。
 - 复用INT-01攻击边界runner：PASS，退出0、stderr为空；BarrageArea与SandboxBattleHud单文件解析通过。
 - Native Debugger仅有引擎启动信息，无新增本卡运行错误。FailureOverlay与PauseMenu层级保持，暂停和失败重开通过既有真实场景回归。
@@ -99,3 +105,13 @@ BarrageArea只读取自己的尺寸控制生成和裁剪。被移除的布局资
 按用户图1参考恢复全宽 PK 条，保留原绿粉圆角和18设计像素高度；战斗提示独占下行。顶部仍为72，弹幕主体及底部区域保持原Rect。
 
 本次只修改Scene排版与本日志。实际字体最小高度为26，首行和状态均使用18字号、26高，确保三行内容在72内无重叠。1152×648真实GUI验证通过：条为976×18设计像素，首行结束于26、条结束于44、状态结束于72；进程退出0，运行stderr为空。截图保存在 `.godot/int02-pk-full-width.png`；临时预览脚本已清理，未增加测试或修改业务逻辑。
+
+## 直播区设计修订（2026-10-07）
+
+评审确认特殊道具框224高从当前展示移除，并将该高度并入原448×296直播数据区。因此两侧调整为信息128、立绘432、直播数据520；中央底部由112扩至248，顶部PK/Tier/状态72保持，弹幕区收为760。`sandbox.tscn` 与 `StageLayoutProfile` 同步这些尺寸，`docs/Original/`继续保留最初的448×224特殊道具与448×296直播数据记录。
+
+## 主播信息层绘制顺序补正（2026-10-07）
+
+复核缩放截图时发现，左右主播信息标签被全区背景盖住：`AreaBackground` 在 Scene 序列化顺序中排在信息区前面，绘制时覆盖了后续信息节点。现已将左右 `AreaBackground` 均排在对应 `PlayerInfoArea` / `OpponentInfoArea` 前，使主播角色与名称绘制在背景之上；所有设计Rect保持不变。
+
+Scene结构检查确认背景先于信息区，信息标签仍位于128高的信息区内。此前84/84普通战斗回归已通过；此处属于纯绘制顺序调整。本轮工作树未发现可运行的Godot引擎程序或已连接的Native编辑器，因此未能为该最后层级改动刷新GUI截图或重跑84项回归，需在PR复核时用Godot重新运行确认。

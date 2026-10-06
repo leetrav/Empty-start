@@ -13,6 +13,6 @@
 
 ## Sandbox 布局事实
 
-INT-02 的实际空间结构以 `scenes/sandbox/sandbox.tscn` 保存的设计 Rect 为准；`StageLayoutProfile` 保留设计规格供编辑场景时核对。运行时 HUD 只按窗口整体缩放，生成组件读取父场景提供的区域边界。调整设计规格时同步保存 Scene，保证直接打开编辑器与运行时的区域层级和尺寸一致。
+当前Sandbox的共享设计规格保存在`StageLayoutProfile`，实际设计Rect保存在`scenes/sandbox/sandbox.tscn`。基准 `1920×1080` 下，左右为 `448×1080`：信息区 `448×128`、立绘区 `448×432`、直播数据区 `448×520`。中央由顶部状态 `1024×72`、BarrageArea `(448,72,1024,760)` 和底部交互 `1024×248` 接续填满。运行时HUD仅整体缩放；尺寸变更时同步更新资源规格与SceneRect。
 
 比较实际屏幕尺寸时，将 HUD 缩放与 Viewport 最终变换合成；Godot 的逻辑视口尺寸可能与窗口物理像素不同，单看节点 `scale` 无法代表最终屏幕比例。

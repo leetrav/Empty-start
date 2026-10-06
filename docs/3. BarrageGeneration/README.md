@@ -153,8 +153,8 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 
 ### BG-14 / INT-02 舞台设计规格与静态布局
 
-`data/stage_layout/stage_layout_profile.tres` 保留共享设计规格：基准 `1920×1080`，左右主播区各 `448×1080`，中央总区域 `(448,0,1024,1080)`，顶部状态区 `1024×72`，直播数据区 `448×296`。中央总区域扣除顶部72和底部蓄力112后，弹幕主体为 `1024×896`。
+`data/stage_layout/stage_layout_profile.tres` 保存共享设计规格：基准 `1920×1080`，左右主播区各 `448×1080`，主播信息区 `448×128`、立绘区 `448×432`、直播数据区 `448×520`；中央 PK / Tier / 状态区 `1024×72`、弹幕区 `(448,72,1024,760)`、底部交互区 `1024×248`。这些区域相接覆盖整张基准舞台。
 
-INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编辑器预览与运行时沿用同一位置/尺寸，HUD 只整体缩放。设计调整时先核对 StageLayoutProfile，再保存相应 Scene，资源修改不会自动重排正在运行的场景。
+INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编辑器预览与运行时沿用同一位置/尺寸，HUD 只整体缩放。StageLayoutProfile 保存区域设计规格；尺寸改变时按相同值编辑 Scene Rect，使配置规格和实际布局保持一致。
 
-`barrage_area.tscn` 根节点为中性 Full Rect，由父场景实例明确设置自己的区域。Sandbox 中为相对 BattleArea 的 `(0,72,1024,896)`；组件继续根据自身 `size` 管理生成、移动边界与裁剪。已删除陈旧的 `stage_layout_profile` 导出字段和内部 `_apply_stage_layout()`，生成/倍率/容量/生命周期公开方法保持原接口。
+`barrage_area.tscn` 根节点为中性 Full Rect，由父场景实例明确设置自己的区域。Sandbox 中为相对 BattleArea 的 `(0,72,1024,760)`；组件继续根据自身 `size` 管理生成、移动边界与裁剪。已删除陈旧的 `stage_layout_profile` 导出字段和内部 `_apply_stage_layout()`，生成/倍率/容量/生命周期公开方法保持原接口。

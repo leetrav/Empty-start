@@ -248,7 +248,7 @@ Sandbox 按现有 `StageLayoutProfile` 组织为直播 PK 主界面。
 右主播区：448 × 1080
 
 PK Bar 区域：1024 × 72
-LiveData 区域：448 × 296
+LiveData 区域：448 × 520（INT-02 当前 Sandbox 布局；早期 448×296 值保留在 docs/Original/ 供历史追溯）
 ```
 
 目标结构参考：
