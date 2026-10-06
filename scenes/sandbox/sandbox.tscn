@@ -160,33 +160,35 @@ mouse_filter = 2
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 24.0
-offset_top = 4.0
 offset_right = 340.0
-offset_bottom = 36.0
+offset_bottom = 26.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.43, 0.85, 0.8, 1)
+theme_override_font_sizes/font_size = 18
 text = "玩家 PK 50.0%"
+vertical_alignment = 1
 
 [node name="OpponentPK" type="Label" parent="BattleHud/BattleArea/TopBattleStatus/PKBar"]
 layout_mode = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -340.0
-offset_top = 4.0
 offset_right = -24.0
-offset_bottom = 36.0
+offset_bottom = 26.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.91, 0.6, 0.66, 1)
+theme_override_font_sizes/font_size = 18
 text = "对手 50.0%"
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="PlayerShare" type="ProgressBar" parent="BattleHud/BattleArea/TopBattleStatus/PKBar"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 24.0
-offset_top = 43.0
-offset_right = 512.0
-offset_bottom = 61.0
+offset_top = 26.0
+offset_right = 1000.0
+offset_bottom = 44.0
 mouse_filter = 2
 theme_override_styles/background = SubResource("PKOpponent")
 theme_override_styles/fill = SubResource("PKPlayer")
@@ -201,23 +203,26 @@ layout_mode = 1
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -110.0
-offset_top = 4.0
 offset_right = 110.0
-offset_bottom = 36.0
+offset_bottom = 26.0
 mouse_filter = 2
+theme_override_font_sizes/font_size = 18
 text = "Tier 0"
 horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="BattleStateFeedback" type="Label" parent="BattleHud/BattleArea/TopBattleStatus"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 528.0
-offset_top = 36.0
+offset_left = 24.0
+offset_top = 46.0
 offset_right = 1000.0
-offset_bottom = 68.0
+offset_bottom = 72.0
 mouse_filter = 2
 theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 18
 text = "瞄准弹幕，蓄满后松开左键"
+horizontal_alignment = 1
 vertical_alignment = 1
 text_overrun_behavior = 3
 
