@@ -177,6 +177,11 @@
 <td>新 worktree 首次直接启动 headless 场景时，Global Script Class Cache 尚未生成，出现多个 `Could not find type` / Autoload 脚本解析错误。</td>
 <td>先使用 `--headless --path 项目路径 --import` 完成项目导入，再启动场景；确认 `.godot/global_script_class_cache.cfg` 已包含新增 `class_name`。</td>
 </tr>
+<tr>
+<td>KT-28</td>
+<td>同时启动多个启用 Godot-MCP-Native 的编辑器时，后启动的实例可能因默认端口 9080 已被占用而无法连接 MCP；仅因 Codex 工具列表未显示 Godot 工具就判断项目 MCP 未启动，也会漏掉正在运行的服务。</td>
+<td>先请求 `http://127.0.0.1:9080/cli/v1/doctor` 检查 `editor_connected` 与 `project_path`，目标编辑器已连接时复用它的本地 MCP 接口；确需启动第二个编辑器时配置独立端口，纯脚本校验仍可使用 Godot CLI。</td>
+</tr>
 </table>
 ## 六、自查入口
 遇到问题优先按类别检查：
@@ -186,6 +191,7 @@
 - `.tres / .tscn` 解析问题：KT-18～KT-20。
 - 重构后编译或引用异常：KT-21～KT-23。
 - 新 worktree 首次 headless 启动出现全局类缺失：KT-27。
+- Godot MCP 连接 / 端口占用：KT-28。
 
 ## 附录 A：Godot 生命周期提醒
 

@@ -14,6 +14,28 @@
 
 矛盾阶段的胜负不在这里判断。
 
+## 当前已实现接口
+
+HR-01 由 `core/combat/hit_resolution.gd` 持有本场唯一玩家 PK，脚本为场景解耦的 `RefCounted` 对象。创建对象时传入本场初始 PK、下限和上限；重开时可调用 `initialize_player_pk()` 重置。`apply_player_pk_delta()` 统一修改并限制 PK，`get_player_pk()` 提供只读值。
+
+对手占比只从玩家 PK 派生，不在其他系统保存第二份可写 PK。Tier 通知与攻击整发结算仍由后续任务接入。
+
+HR-02 的 `calculate_normal_word_reward(strength)` 按强度返回 `pk_delta` 和 `tendency_delta`，不修改当前 PK，也不提交三项倾向。PK 奖励从百分比换算为内部 0–1 比例：强度 1 为 `0.0012 / +1`，强度 2 为 `0.002 / +5`，强度 3 为 `0.005 / +10`。Tier 不参与该接口。
+
+HR-04 的 `calculate_repeat_hit_result()` 返回有效命中标记和零 PK、零倾向收益；它不修改 PK 或提交倾向。
+
+HR-05 的 `resolve_shot_results(target_results)` 接收逐目标结算字典，先汇总全部 `pk_delta`，再一次性更新并限制玩家 PK。返回整发的 `total_pk_delta` 与 `final_player_pk`，并深拷贝保留原有 `target_results`，供后续读取每个目标的倾向变化。此处还没有接入 Tier 通知。
+
+HR-08 在整发结算前检查当前 PK。若回拉已把 PK 降至下限，返回 `cancelled_by_zero_pk = true`、零 PK 增量和空 `target_results`，本发命中与倾向变化都不再传递；正常结算返回 false。
+
+HR-09 由 `apply_player_pk_delta()` 在 clamp 后发出一次 `final_player_pk_updated(final_player_pk)`。HR-05 的整发汇总只调用该入口一次；OpponentPKBar 每次回拉更新也调用该入口一次。CS-06 负责将该信号连接到 CombatStage。
+
+HR-14 由 `record_normal_word_hit(original_sentence_id, tendency)` 记录有效普通命中。历史按原句 ID 归并，保留倾向、命中次数、首次顺序和最近顺序；`get_normal_hit_history()` 返回深拷贝快照。复读与矛盾文本不写入此历史。
+
+HR-06 的 `select_shot_anomaly(has_bounce, has_obstruction, is_miss)` 每发只选择一个异常，顺序为 `BOUNCE > OBSTRUCTION > MISS`；没有异常时返回 `NONE`。调用方把同一反弹目标的重复报告合并为 `has_bounce` 后调用。
+
+HR-07 的 `is_shot_fully_missed(target_validity)` 仅在没有任何有效目标时返回 true。只要有一个有效目标，其余失效目标不会增加落空异常；全失效或空目标列表仍可交给 HR-06 判断落空。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
