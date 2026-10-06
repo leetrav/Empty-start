@@ -279,6 +279,7 @@ func _verify_failure_restart_and_full_pk() -> void:
 		await _fire_at(contradiction_target)
 		_check(break_system.get_remaining_shots() == 0 and is_equal_approx(_hit().get_player_pk(), 1.0) and _hit().get_normal_hit_history().size() == history_before, "矛盾真实发射扣机会且不提交普通 PK 或历史")
 		_check(break_system.get_outcome() == ContradictionBreakSystem.Outcome.BREAKTHROUGH, "真实到达命中真矛盾即刻击破")
+		_check(not _attack.can_start_charging() and _views(false).is_empty(), "判定固定后关闭攻击并清理矛盾弹幕")
 
 
 # 仅使用正式公开生成入口；将真实实例放在独立位置便于瞄准。

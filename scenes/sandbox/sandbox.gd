@@ -127,6 +127,16 @@ func _on_contradiction_shot_arrived(_snapshot: AttackTargetSnapshot, target_resu
 	_contradiction_break.resolve_shot_hit_ids(hit_ids)
 
 
+# 已锁定结果立即停止攻击和矛盾生成；后续分支只读取这一份结果。
+func _on_contradiction_outcome_locked(outcome: int) -> void:
+	_attack_charge_input.set_combat_active(false)
+	_barrage_area.clear_barrages()
+	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		_battle_hud.show_battle_state("矛盾击破成功")
+	else:
+		_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾")
+
+
 # 普通与复读都由同一生成事实计评论，等待请求和失败生成不提前入账。
 func _on_barrage_generated(_view: BarrageView) -> void:
 	SaveManager.data.live_session.record_generated_comments(1)
@@ -213,6 +223,7 @@ func _complete_normal_combat() -> void:
 	_contradiction_stage_active = true
 	_contradiction_break = ContradictionBreakSystem.new()
 	add_child(_contradiction_break)
+	_contradiction_break.outcome_locked.connect(_on_contradiction_outcome_locked)
 	var current_level: LevelProfile = _run_state.get_current_level_profile()
 	if not _contradiction_break.load_level_content(current_level):
 		push_error("Sandbox: 当前关卡没有可用的矛盾内容。")
