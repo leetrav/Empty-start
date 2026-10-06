@@ -2,7 +2,7 @@ class_name AttackChargeInput
 extends Node
 
 signal shot_snapshot_created(snapshot: AttackTargetSnapshot)
-signal shot_arrival_resolved(snapshot: AttackTargetSnapshot, valid_targets: Array[Node])
+signal shot_arrival_resolved(snapshot: AttackTargetSnapshot, target_results: Array[Dictionary])
 
 enum AttackPhase { READY, PROJECTILE_FLIGHT, RECOVERY }
 
@@ -97,8 +97,9 @@ func _handle_attack_release() -> void:
 func _on_attack_phase_timer_timeout() -> void:
 	if _attack_phase == AttackPhase.PROJECTILE_FLIGHT:
 		var valid_targets: Array[Node] = _active_snapshot.resolve_present_targets(_barrage_area)
+		var target_results: Array[Dictionary] = _build_target_trait_results(valid_targets)
 		_attack_phase = AttackPhase.RECOVERY
-		shot_arrival_resolved.emit(_active_snapshot, valid_targets)
+		shot_arrival_resolved.emit(_active_snapshot, target_results)
 		_phase_timer.start(_attack_timing.recovery_time_s)
 		return
 
@@ -107,7 +108,28 @@ func _on_attack_phase_timer_timeout() -> void:
 		_attack_phase = AttackPhase.READY
 
 
-# 只从 BarrageArea 当前真实视图中筛选有效、在区域内且与准心相交的弹幕。
+# 将真实有效目标的最终特性结果随目标一起交给后续结算，不复制 4 系统规则。
+func _build_target_trait_results(valid_targets: Array[Node]) -> Array[Dictionary]:
+	var target_results: Array[Dictionary] = []
+	for target_node in valid_targets:
+		if not target_node is BarrageView:
+			continue
+		var barrage_view := target_node as BarrageView
+		if barrage_view.runtime_record == null or barrage_view.runtime_record.trait_set == null:
+			continue
+
+		var trait_result: BarrageTraitResult = barrage_view.runtime_record.trait_set.get_hit_result()
+		target_results.append(
+			{
+				"target_instance_id": barrage_view.get_instance_id(),
+				"target": barrage_view,
+				"trait_result": trait_result,
+			}
+		)
+	return target_results
+
+
+# 只从 BarrageArea 当前真实视图中筛选有效、可选、在区域内且与准心相交的弹幕。
 func _capture_target_snapshot() -> AttackTargetSnapshot:
 	var candidates: Array[Node] = []
 	if _aim_reticle == null or _barrage_area == null:
@@ -121,7 +143,11 @@ func _capture_target_snapshot() -> AttackTargetSnapshot:
 		var barrage_view := child as BarrageView
 		if not barrage_view.is_inside_tree() or barrage_view.is_queued_for_deletion():
 			continue
-		if barrage_view.runtime_record == null or current_time_msec >= barrage_view.runtime_record.expires_at_msec:
+		if barrage_view.runtime_record == null or barrage_view.runtime_record.trait_set == null:
+			continue
+		if not barrage_view.runtime_record.trait_set.is_selectable():
+			continue
+		if current_time_msec >= barrage_view.runtime_record.expires_at_msec:
 			continue
 
 		var target_rect: Rect2 = barrage_view.get_global_rect()
