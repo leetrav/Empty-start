@@ -3,21 +3,22 @@ extends Node
 
 signal shot_snapshot_created(snapshot: AttackTargetSnapshot)
 signal shot_arrival_resolved(snapshot: AttackTargetSnapshot, target_results: Array[Dictionary])
+signal shot_hit_resolution_submitted(snapshot: AttackTargetSnapshot, submission: Dictionary)
 
 enum AttackPhase { READY, PROJECTILE_FLIGHT, RECOVERY }
 
 var _charge_progress: AttackChargeProgress
-var _was_attack_held: bool = false
 var _aim_reticle: AimReticle
 var _barrage_area: BarrageArea
 var _attack_timing: AttackTimingConfig
+var _hit_resolution: HitResolution
 var _attack_phase: AttackPhase = AttackPhase.READY
 var _phase_timer: Timer
 var _active_snapshot: AttackTargetSnapshot
 var _attack_held: bool = false
 
 
-# 每帧读取全局按住状态并累计蓄力；松开瞬间由 _input 处理目标快照。
+# 按住输入且没有暂停或飞行 / 硬直时才推进蓄力。
 func _process(delta: float) -> void:
 	if _charge_progress == null or get_tree().paused:
 		return
@@ -50,6 +51,14 @@ func configure_attack_timing(timing_config: AttackTimingConfig) -> bool:
 
 	_attack_timing = timing_config
 	_charge_progress = AttackChargeProgress.new(timing_config.charge_time_s)
+	return true
+
+
+# 注入 HitResolution 的现有实例；PK 状态仍由该对象唯一持有。
+func configure_hit_resolution(hit_resolution: HitResolution) -> bool:
+	if hit_resolution == null or _attack_phase != AttackPhase.READY:
+		return false
+	_hit_resolution = hit_resolution
 	return true
 
 
@@ -98,8 +107,9 @@ func _on_attack_phase_timer_timeout() -> void:
 	if _attack_phase == AttackPhase.PROJECTILE_FLIGHT:
 		var valid_targets: Array[Node] = _active_snapshot.resolve_present_targets(_barrage_area)
 		var target_results: Array[Dictionary] = _build_target_trait_results(valid_targets)
-		_attack_phase = AttackPhase.RECOVERY
 		shot_arrival_resolved.emit(_active_snapshot, target_results)
+		_submit_arrival_to_hit_resolution(_active_snapshot, target_results)
+		_attack_phase = AttackPhase.RECOVERY
 		_phase_timer.start(_attack_timing.recovery_time_s)
 		return
 
@@ -127,6 +137,74 @@ func _build_target_trait_results(valid_targets: Array[Node]) -> Array[Dictionary
 			}
 		)
 	return target_results
+
+
+# 用 6 系统公开接口计算正常收益、异常优先级与整发 PK；CombatAttack 只组装输入。
+func _submit_arrival_to_hit_resolution(
+	snapshot: AttackTargetSnapshot,
+	trait_target_results: Array[Dictionary]
+) -> void:
+	if _hit_resolution == null:
+		return
+
+	var valid_instance_ids: Dictionary = {}
+	var hit_resolution_targets: Array[Dictionary] = []
+	var normal_hit_records: Array[Dictionary] = []
+	var has_bounce: bool = false
+	var has_obstruction: bool = false
+
+	for trait_target_result: Dictionary in trait_target_results:
+		var target_instance_id: int = int(trait_target_result.get("target_instance_id", -1))
+		var barrage_view := trait_target_result.get("target") as BarrageView
+		var trait_result := trait_target_result.get("trait_result") as BarrageTraitResult
+		if target_instance_id < 0 or barrage_view == null or trait_result == null:
+			continue
+
+		valid_instance_ids[target_instance_id] = true
+		if trait_result.anomaly_type == &"reflect":
+			has_bounce = true
+		elif trait_result.anomaly_type == &"occlusion":
+			has_obstruction = true
+
+		var hit_resolution_target: Dictionary = trait_target_result.duplicate()
+		var runtime_record: BarrageRuntimeRecord = barrage_view.runtime_record
+		if trait_result.receives_normal_reward and runtime_record != null:
+			var reward: Dictionary = _hit_resolution.calculate_normal_word_reward(int(runtime_record.strength))
+			for reward_key in reward:
+				hit_resolution_target[reward_key] = reward[reward_key]
+			normal_hit_records.append(
+				{
+					"original_sentence_id": runtime_record.original_sentence_id,
+					"tendency": runtime_record.tendency_id,
+				}
+			)
+		hit_resolution_targets.append(hit_resolution_target)
+
+	var target_validity: Array[bool] = []
+	for target_instance_id in snapshot.get_target_instance_ids():
+		target_validity.append(valid_instance_ids.has(target_instance_id))
+	var is_miss: bool = _hit_resolution.is_shot_fully_missed(target_validity)
+	var shot_anomaly: HitResolution.ShotAnomaly = _hit_resolution.select_shot_anomaly(
+		has_bounce,
+		has_obstruction,
+		is_miss
+	)
+	var hit_resolution_result: Dictionary = _hit_resolution.resolve_shot_results(hit_resolution_targets)
+	if not bool(hit_resolution_result.get("cancelled_by_zero_pk", false)):
+		for normal_hit_record: Dictionary in normal_hit_records:
+			_hit_resolution.record_normal_word_hit(
+				normal_hit_record["original_sentence_id"],
+				normal_hit_record["tendency"]
+			)
+
+	shot_hit_resolution_submitted.emit(
+		snapshot,
+		{
+			"target_validity": target_validity,
+			"shot_anomaly": shot_anomaly,
+			"hit_resolution_result": hit_resolution_result,
+		}
+	)
 
 
 # 只从 BarrageArea 当前真实视图中筛选有效、可选、在区域内且与准心相交的弹幕。

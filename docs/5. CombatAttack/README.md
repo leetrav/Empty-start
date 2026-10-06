@@ -28,6 +28,8 @@
 - CA-11 让 AttackChargeInput 在全局暂停时冻结蓄力处理，并让飞行 / 硬直 Timer 使用可暂停模式；恢复后沿用暂停前的进度。
 - CA-08 为每条 `BarrageRuntimeRecord` 装配独立 `BarrageTraitSet`；释放扫描调用 `is_selectable()`，到达复核调用 `get_hit_result()`，并通过 `shot_arrival_resolved` 传递目标 ID、目标节点和原始 `BarrageTraitResult`。
 - 当前生成记录的特性集合默认为空；如何把 `LevelProfile.special_trait_ids` 分配到具体弹幕实例尚无已定规则，本卡不猜分配方式。
+- CA-09 通过注入的 `HitResolution` 调用正常收益、整发落空 / 异常优先级、单次 `resolve_shot_results()` 和普通命中历史接口；HitResolution 持有唯一 PK。Sandbox 用原始系统案的 0.5 初始 PK 组合 HitResolution，并把最终 PK 信号接给 CombatStage。
+- `shot_hit_resolution_submitted` 同发包含目标有效性、`ShotAnomaly`、逐目标 `BarrageTraitResult` / 奖励字典及 HitResolution 返回值。异常惩罚映射等待 HR-03，倾向提交等待 HR-10 / 17，复读请求等待 HR-11 / 10。
 
 ## 任务顺序
 
@@ -62,8 +64,6 @@ UI、飞行表现、硬直、暂停、触摸和跨系统传递全部用最小运
 
 ## 依赖顺序
 
-CA-01～07、CA-11 可以先完成。
-CA-08 等 4. BarrageTraits 有真实接口。
-CA-09 等 6. HitResolution 有真实入口。
+CA-01～09、CA-11 已完成。
 CA-10 等 12. ContradictionBreak 和 10. Repeat 有真实接口。
 CA-12 放到 Android 输入适配阶段。
