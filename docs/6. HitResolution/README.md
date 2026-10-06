@@ -77,7 +77,7 @@ HR-07 的 `is_shot_fully_missed(target_validity)` 仅在没有任何有效目标
 HR-01～08、HR-14 可以先完成纯结算核心和本场命中历史。
 HR-09 等 8. CombatStage。
 HR-10 等 17. ThreeTendencies。
-HR-11 等 10. Repeat。
-HR-12 等 9. LiveDataPresentation。
+HR-11 等 5. CombatAttack CA-09 提供真实的一发普通命中结果及其原句 ID / 文本；10. Repeat 的 `RepeatPlan.create_normal_hit_plan()` 已存在，待真实结果进入 HitResolution 后再接。
+HR-12 等 5 / CA-09 提供真实本发结果，并等 9. LiveDataPresentation 提供普通命中与陷阱事件的接收 / 应用接口。
 HR-13 等 12. ContradictionBreak。
 HR-15 等本场 PK 胜利 / 失败结果。

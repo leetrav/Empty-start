@@ -2,6 +2,10 @@ class_name CombatStage
 extends RefCounted
 
 signal opponent_tier_state_changed(pullback_multiplier: float, tier5_desperation_active: bool)
+signal barrage_generation_multipliers_changed(count_multiplier: float, frequency_multiplier: float, movement_speed_multiplier: float)
+signal barrage_lifetime_multiplier_changed(lifetime_multiplier: float)
+signal tier_state_changed(current_tier: int)
+signal audio_event_requested(event_id: StringName)
 
 const INITIAL_TIER: int = 0
 
@@ -17,11 +21,17 @@ func _init(tier_catalog: CombatStageTierCatalog) -> void:
 func begin_combat() -> void:
 	# 新一场或当前关重开时统一从 Tier 0 开始。
 	_current_tier = INITIAL_TIER
-	_publish_opponent_tier_state()
+	_publish_current_tier_state()
 
 
 func get_current_tier() -> int:
 	return _current_tier
+
+
+func get_current_repeat_count_per_hit() -> int:
+	# 给复读计划创建方读取当前 Tier 的每次命中复读数量。
+	var current_config: CombatStageTierConfig = _tier_catalog.get_tier_config(_current_tier)
+	return current_config.repeat_count_per_hit
 
 
 func bind_hit_resolution(hit_resolution: HitResolution) -> void:
@@ -35,6 +45,24 @@ func bind_opponent_pk_bar(opponent_pk_bar: OpponentPKBar) -> void:
 	if not opponent_tier_state_changed.is_connected(callback):
 		opponent_tier_state_changed.connect(callback)
 	_publish_opponent_tier_state()
+
+
+func bind_barrage_area(barrage_area: BarrageArea) -> void:
+	# 复用弹幕生成系统现有的倍率入口，并在绑定时补发当前 Tier 配置。
+	var generation_callback: Callable = Callable(barrage_area, "set_generation_multipliers")
+	if not barrage_generation_multipliers_changed.is_connected(generation_callback):
+		barrage_generation_multipliers_changed.connect(generation_callback)
+	var lifetime_callback: Callable = Callable(barrage_area, "set_lifetime_multiplier")
+	if not barrage_lifetime_multiplier_changed.is_connected(lifetime_callback):
+		barrage_lifetime_multiplier_changed.connect(lifetime_callback)
+	_publish_barrage_multipliers()
+
+
+func bind_audio_manager(audio_manager: Node) -> void:
+	# 音效由共享 AudioManager 播放；重复绑定同一管理器不重复连接。
+	var callback: Callable = Callable(audio_manager, "play_event")
+	if not audio_event_requested.is_connected(callback):
+		audio_event_requested.connect(callback)
 
 
 func _on_final_player_pk_updated(final_player_pk: float) -> void:
@@ -69,14 +97,25 @@ func try_tier_down(final_player_pk: float) -> bool:
 
 func update_tier_for_pk(final_player_pk: float) -> bool:
 	# 重复调用已实现的单档规则，直到该 PK 不再跨越升档或降档阈值。
+	var previous_tier: int = _current_tier
 	var tier_changed: bool = false
 	while try_tier_up(final_player_pk):
 		tier_changed = true
 	while try_tier_down(final_player_pk):
 		tier_changed = true
 	if tier_changed:
-		_publish_opponent_tier_state()
+		_publish_current_tier_state()
+		if _current_tier > previous_tier:
+			# 多档上升仍只播放一次本次 Tier 升档事件。
+			audio_event_requested.emit(&"tier_up")
 	return tier_changed
+
+
+func _publish_current_tier_state() -> void:
+	# 先确定唯一当前 Tier，再把同一配置分别交给各系统。
+	_publish_opponent_tier_state()
+	_publish_barrage_multipliers()
+	tier_state_changed.emit(_current_tier)
 
 
 func _publish_opponent_tier_state() -> void:
@@ -86,3 +125,14 @@ func _publish_opponent_tier_state() -> void:
 		current_config.opponent_pullback_multiplier,
 		_current_tier == 5
 	)
+
+
+func _publish_barrage_multipliers() -> void:
+	# 弹幕系统只接收倍率，具体生成、速度和寿命应用由 BarrageArea 负责。
+	var current_config: CombatStageTierConfig = _tier_catalog.get_tier_config(_current_tier)
+	barrage_generation_multipliers_changed.emit(
+		current_config.generation_count_multiplier,
+		current_config.generation_frequency_multiplier,
+		current_config.movement_speed_multiplier
+	)
+	barrage_lifetime_multiplier_changed.emit(current_config.lifetime_multiplier)
