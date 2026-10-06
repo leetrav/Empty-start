@@ -1,5 +1,7 @@
 extends Control
 
+signal final_oracle_opened(session: FinalOracleSession)
+
 const SAMPLE_LEVEL_CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
 const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
@@ -18,6 +20,9 @@ var _run_state: LevelRunState
 var _normal_combat_active: bool = false
 var _contradiction_stage_active: bool = false
 var _contradiction_break: ContradictionBreakSystem
+var _final_oracle_session: FinalOracleSession
+var _oracle_transition_timer: Timer
+var _oracle_transition_started: bool = false
 var _opening_fan_count: int = 0
 
 
@@ -38,6 +43,11 @@ func _ready() -> void:
 	_attack_charge_input.shot_snapshot_created.connect(_on_contradiction_shot_created)
 	_attack_charge_input.shot_arrival_resolved.connect(_on_contradiction_shot_arrived)
 	_attack_charge_input.configure_target_query(_aim_reticle, _barrage_area)
+	_oracle_transition_timer = Timer.new()
+	_oracle_transition_timer.one_shot = true
+	_oracle_transition_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_oracle_transition_timer.timeout.connect(_on_oracle_silence_finished)
+	add_child(_oracle_transition_timer)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
 	restart_current_attempt()
@@ -47,6 +57,9 @@ func _ready() -> void:
 func restart_current_attempt() -> void:
 	_stop_normal_combat()
 	_contradiction_stage_active = false
+	_oracle_transition_started = false
+	_oracle_transition_timer.stop()
+	_final_oracle_session = null
 	if _contradiction_break != null:
 		remove_child(_contradiction_break)
 		_contradiction_break.queue_free()
@@ -102,7 +115,40 @@ func _process(delta: float) -> void:
 		_repeat_queue.advance_and_dispatch(delta, _barrage_area)
 	if _contradiction_stage_active and _contradiction_break != null and not _contradiction_break.is_result_locked():
 		_battle_hud.show_battle_state("击破矛盾：%.1f 秒 · 剩余 %d 发" % [_contradiction_break.get_remaining_seconds(), _contradiction_break.get_remaining_shots()])
+	elif _contradiction_stage_active and _contradiction_break != null and _contradiction_break.get_outcome() == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		_try_start_oracle_transition()
 	_battle_hud.refresh_attack(_attack_charge_input.get_charge_progress(), _attack_charge_input.get_attack_phase())
+
+
+# 成功分支必须等本发矛盾复读全部生成并离场，才开始一次静音过渡。
+func _try_start_oracle_transition() -> void:
+	if _oracle_transition_started or _repeat_queue.get_pending_contradiction_count() > 0:
+		return
+	if _barrage_area.has_visible_contradiction_repeats():
+		return
+	_oracle_transition_started = true
+	AudioManager.stop_music()
+	_battle_hud.show_battle_state("矛盾击破 · 静音过渡")
+	_oracle_transition_timer.start(0.5)
+
+
+# 静音过渡结束才把本场普通历史与复读统计交给 13 系统的真实入口。
+func _on_oracle_silence_finished() -> void:
+	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		return
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	if current_level == null:
+		return
+	_final_oracle_session = FinalOracleSession.new()
+	if not _final_oracle_session.open_after_breakthrough(
+		current_level.level_id,
+		_hit_resolution.get_normal_hit_history(),
+		_repeat_queue.get_generation_stats()
+	):
+		push_error("Sandbox: 终结神谕入口拒绝本场击破结果。")
+		return
+	_battle_hud.show_battle_state("终结神谕已开放")
+	final_oracle_opened.emit(_final_oracle_session)
 
 
 # 正式满蓄发射才消耗矛盾机会；未蓄满取消没有快照事件。
@@ -143,7 +189,7 @@ func _on_contradiction_outcome_locked(outcome: int) -> void:
 	_attack_charge_input.set_combat_active(false)
 	_barrage_area.clear_barrages()
 	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
-		_battle_hud.show_battle_state("矛盾击破成功")
+		_battle_hud.show_battle_state("矛盾击破成功 · 等待复读展示")
 	else:
 		_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾")
 
