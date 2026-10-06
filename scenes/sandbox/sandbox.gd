@@ -170,6 +170,8 @@ func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _ca
 		return
 	if not _hit_resolution.commit_normal_hit_history(run_data):
 		push_error("Sandbox: 神谕确认后提交普通命中历史失败。")
+		return
+	run_data.tendency_state.commit_attempt_tendency()
 
 
 # 正式满蓄发射才消耗矛盾机会；未蓄满取消没有快照事件。
@@ -237,6 +239,7 @@ func _open_rest_after_unbroken() -> void:
 	if not _hit_resolution.commit_normal_hit_history(SaveManager.data):
 		push_error("Sandbox: 未击破进入休息时提交普通命中历史失败。")
 		return
+	SaveManager.data.tendency_state.commit_attempt_tendency()
 	_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾 · 休息时刻")
 	rest_opened.emit(_rest_session)
 
