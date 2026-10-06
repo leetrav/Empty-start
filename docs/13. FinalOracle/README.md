@@ -58,3 +58,10 @@ FO-06～09 完成神谕选择流程。
 FO-10 等 15. Scripture。
 FO-11 等 16. LoserCard 与 14. Assimilation。
 FO-12 等 18. Rest。
+
+## FO-02 当前候选池接口
+
+- `FinalOracleCandidatePool.build_from_normal_hit_history(normal_hit_history)` 只接收 `HitResolution.get_normal_hit_history()` 返回的普通命中快照。
+- 候选按 `original_sentence_id` 去重，并保留首次出现顺序及 HR-14 的原始记录字段；返回值是独立深拷贝。
+- 普通复读统计和矛盾复读记录不作为候选来源。后续排序只读取 `RepeatGenerationStats.get_normal_count(original_line_id)`，不会从复读记录新增候选。
+- HR-14 已将同一句的普通命中次数和最近命中顺序合并到唯一记录；若输入重复 ID，候选池保留首条记录，不自行汇总第二份统计。
