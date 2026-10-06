@@ -37,6 +37,7 @@ func _ready() -> void:
 	%LiveDataHud.bind_live_session(SaveManager.data.live_session)
 	_run_state = LevelRunState.new(SAMPLE_LEVEL_CATALOG)
 	_oracle_confirmation_state = FinalOracleConfirmationState.new(SaveManager.data)
+	_oracle_confirmation_state.confirmation_committed.connect(_on_oracle_confirmation_committed)
 	_opening_fan_count = SaveManager.data.live_session.fan_count
 	_opponent_pk_bar = OpponentPKBar.new()
 	_opponent_pk_bar.name = "OpponentPKBar"
@@ -159,6 +160,18 @@ func _on_oracle_silence_finished() -> void:
 	final_oracle_opened.emit(_final_oracle_session)
 
 
+# 成功分支等神谕最终候选确认后，才把本场普通历史并入当前周目。
+func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _candidate: Dictionary) -> void:
+	if run_data != SaveManager.data or _final_oracle_session == null or not _final_oracle_session.is_open():
+		return
+	if level_id != _final_oracle_session.get_level_id():
+		return
+	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		return
+	if not _hit_resolution.commit_normal_hit_history(run_data):
+		push_error("Sandbox: 神谕确认后提交普通命中历史失败。")
+
+
 # 正式满蓄发射才消耗矛盾机会；未蓄满取消没有快照事件。
 func _on_contradiction_shot_created(_snapshot: AttackTargetSnapshot) -> void:
 	if not _contradiction_stage_active or _contradiction_break == null:
@@ -220,6 +233,9 @@ func _open_rest_after_unbroken() -> void:
 		"new_assimilation": [],
 	}):
 		push_error("Sandbox: 休息入口拒绝本场未击破结果。")
+		return
+	if not _hit_resolution.commit_normal_hit_history(SaveManager.data):
+		push_error("Sandbox: 未击破进入休息时提交普通命中历史失败。")
 		return
 	_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾 · 休息时刻")
 	rest_opened.emit(_rest_session)
