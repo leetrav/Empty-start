@@ -52,7 +52,7 @@ UI、10 秒计时器、战斗冻结、奖励系统和休息流程全部做实际
 
 ## 依赖顺序
 
-隔离集成分支新增 `FinalOracleSession.open_after_breakthrough(level_id, normal_hit_history, repeat_stats)` 作为 FO-01 的最小真实接收入口：只接受一次击破完成事实，复用现有候选池并冻结展示快照；战斗冻结仍由调用方负责。当前没有神谕选择 UI，FO-07～12 仍待实现。
+隔离集成分支新增 `FinalOracleSession.open_after_breakthrough(level_id, normal_hit_history, repeat_stats, confirmation_state)` 作为 FO-01 的最小真实接收入口：只接受一次击破完成事实，复用现有候选池并冻结展示快照；战斗冻结仍由调用方负责。`confirm_display_candidate(candidate)` 仅接受本次展示中的原句 ID，并调用周目级 FO-09 确认状态。当前没有神谕选择 UI，FO-07～12 仍待实现。
 
 FO-01 等 12. ContradictionBreak 的成功与过渡完成事件。
 FO-02～05 在【6. HitResolution】HR-14 的本场普通命中历史与【10. Repeat】普通复读统计存在后完成纯候选逻辑。

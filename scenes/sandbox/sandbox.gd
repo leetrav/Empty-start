@@ -22,6 +22,7 @@ var _normal_combat_active: bool = false
 var _contradiction_stage_active: bool = false
 var _contradiction_break: ContradictionBreakSystem
 var _final_oracle_session: FinalOracleSession
+var _oracle_confirmation_state: FinalOracleConfirmationState
 var _rest_session: RestSession
 var _oracle_transition_timer: Timer
 var _oracle_transition_started: bool = false
@@ -35,6 +36,7 @@ func _ready() -> void:
 		SaveManager.new_game()
 	%LiveDataHud.bind_live_session(SaveManager.data.live_session)
 	_run_state = LevelRunState.new(SAMPLE_LEVEL_CATALOG)
+	_oracle_confirmation_state = FinalOracleConfirmationState.new(SaveManager.data)
 	_opening_fan_count = SaveManager.data.live_session.fan_count
 	_opponent_pk_bar = OpponentPKBar.new()
 	_opponent_pk_bar.name = "OpponentPKBar"
@@ -148,7 +150,8 @@ func _on_oracle_silence_finished() -> void:
 	if not _final_oracle_session.open_after_breakthrough(
 		current_level.level_id,
 		_hit_resolution.get_normal_hit_history(),
-		_repeat_queue.get_generation_stats()
+		_repeat_queue.get_generation_stats(),
+		_oracle_confirmation_state
 	):
 		push_error("Sandbox: 终结神谕入口拒绝本场击破结果。")
 		return
