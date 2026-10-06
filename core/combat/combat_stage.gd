@@ -2,6 +2,8 @@ class_name CombatStage
 extends RefCounted
 
 signal opponent_tier_state_changed(pullback_multiplier: float, tier5_desperation_active: bool)
+signal barrage_generation_multipliers_changed(count_multiplier: float, frequency_multiplier: float, movement_speed_multiplier: float)
+signal barrage_lifetime_multiplier_changed(lifetime_multiplier: float)
 
 const INITIAL_TIER: int = 0
 
@@ -17,7 +19,7 @@ func _init(tier_catalog: CombatStageTierCatalog) -> void:
 func begin_combat() -> void:
 	# 新一场或当前关重开时统一从 Tier 0 开始。
 	_current_tier = INITIAL_TIER
-	_publish_opponent_tier_state()
+	_publish_current_tier_state()
 
 
 func get_current_tier() -> int:
@@ -35,6 +37,17 @@ func bind_opponent_pk_bar(opponent_pk_bar: OpponentPKBar) -> void:
 	if not opponent_tier_state_changed.is_connected(callback):
 		opponent_tier_state_changed.connect(callback)
 	_publish_opponent_tier_state()
+
+
+func bind_barrage_area(barrage_area: BarrageArea) -> void:
+	# 复用弹幕生成系统现有的倍率入口，并在绑定时补发当前 Tier 配置。
+	var generation_callback: Callable = Callable(barrage_area, "set_generation_multipliers")
+	if not barrage_generation_multipliers_changed.is_connected(generation_callback):
+		barrage_generation_multipliers_changed.connect(generation_callback)
+	var lifetime_callback: Callable = Callable(barrage_area, "set_lifetime_multiplier")
+	if not barrage_lifetime_multiplier_changed.is_connected(lifetime_callback):
+		barrage_lifetime_multiplier_changed.connect(lifetime_callback)
+	_publish_barrage_multipliers()
 
 
 func _on_final_player_pk_updated(final_player_pk: float) -> void:
@@ -75,8 +88,14 @@ func update_tier_for_pk(final_player_pk: float) -> bool:
 	while try_tier_down(final_player_pk):
 		tier_changed = true
 	if tier_changed:
-		_publish_opponent_tier_state()
+		_publish_current_tier_state()
 	return tier_changed
+
+
+func _publish_current_tier_state() -> void:
+	# 先确定唯一当前 Tier，再把同一配置分别交给各系统。
+	_publish_opponent_tier_state()
+	_publish_barrage_multipliers()
 
 
 func _publish_opponent_tier_state() -> void:
@@ -86,3 +105,14 @@ func _publish_opponent_tier_state() -> void:
 		current_config.opponent_pullback_multiplier,
 		_current_tier == 5
 	)
+
+
+func _publish_barrage_multipliers() -> void:
+	# 弹幕系统只接收倍率，具体生成、速度和寿命应用由 BarrageArea 负责。
+	var current_config: CombatStageTierConfig = _tier_catalog.get_tier_config(_current_tier)
+	barrage_generation_multipliers_changed.emit(
+		current_config.generation_count_multiplier,
+		current_config.generation_frequency_multiplier,
+		current_config.movement_speed_multiplier
+	)
+	barrage_lifetime_multiplier_changed.emit(current_config.lifetime_multiplier)

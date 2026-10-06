@@ -20,6 +20,8 @@ CS-02 的运行时 `CombatStage` 对象通过 `CombatStage.new(tier_catalog)` �
 
 CS-06 的 `bind_hit_resolution(hit_resolution)` 连接 `HitResolution.final_player_pk_updated`，每次收到整发或回拉更新后的最终 PK 时调用 `update_tier_for_pk()`。命中中间计算不会进入该回调。CS-09 在当前 Tier 确定后广播回拉倍率与 Tier 5 状态；OpponentPKBar 通过 `bind_opponent_pk_bar()` 接收。
 
+CS-07 通过 `bind_barrage_area(barrage_area)` 连接 BarrageArea 的真实倍率入口：`set_generation_multipliers()` 接收生成数量、频率和移动速度倍率，`set_lifetime_multiplier()` 接收寿命倍率。开局和最终 Tier 变化后，CombatStage 从当前 Tier 配置广播四个值；绑定时也立即补发当前配置。倍率具体应用和新弹幕实例仍由 BarrageArea 负责，既有弹幕保留生成时的速度和寿命。Sandbox 组合时由场景拥有者实例化并加入 BarrageArea 后，再调用 `bind_barrage_area()`；Lane C 不修改 Sandbox。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
@@ -53,7 +55,7 @@ Tier 配置字段、跨系统通知、画面音乐、阶段清理和静音过渡
 
 CS-01～05 可以先完成纯档位逻辑。
 CS-06 等 6. HitResolution。
-CS-07 等 3. BarrageGeneration。
+CS-07 已接入 3. BarrageGeneration 的 BarrageArea 公开接口。
 CS-08 等 10. Repeat。
 CS-09 等 7. OpponentPKBar。
 CS-10 等 9. LiveDataPresentation / 视听表现。
