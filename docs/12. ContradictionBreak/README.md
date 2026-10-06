@@ -56,6 +56,7 @@ CB-03 使用 BG-12 的 `BarrageArea.start_contradiction_generation()`；Sandbox 
 CB-04 由 Sandbox 从 `contradiction_window_config.tres` 启动窗口，攻击系统满蓄发射的 `shot_snapshot_created` 通知本系统登记一次发射。攻击在矛盾模式只报告到达目标事实，不提交普通 PK 与倾向。
 CB-05 由 Sandbox 从 `shot_arrival_resolved` 的有效矛盾实例读取稳定原句 ID，一发合并成 `Array[String]` 调用 `resolve_shot_hit_ids()`；落空传空数组。命中的矛盾视图由弹幕区域结束，不进入普通结算。
 CB-07 由 Sandbox 订阅 `outcome_locked`，一旦结果固定便关闭 `AttackChargeInput` 并清理剩余矛盾弹幕；后续成功与未击破分支均读取 `get_outcome()`。
+CB-08 对每条有效命中的真 / 假矛盾，都按当前 Sandbox 矛盾复读配置创建 `RepeatPlan.RepeatType.CONTRADICTION` 计划；实际生成和分类统计归 10 系统，矛盾阶段及锁定后继续推进队列。
 CB-04～07 可以完成核心判定逻辑。
 CB-08 等 10. Repeat。
 CB-09 等 13. FinalOracle。

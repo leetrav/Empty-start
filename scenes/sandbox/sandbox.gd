@@ -98,9 +98,9 @@ func restart_current_attempt() -> void:
 
 # 暂停由 SceneTree 冻结此节点，复读等待只使用实际游戏帧时间。
 func _process(delta: float) -> void:
-	if _normal_combat_active:
+	if _normal_combat_active or _contradiction_stage_active:
 		_repeat_queue.advance_and_dispatch(delta, _barrage_area)
-	elif _contradiction_stage_active and _contradiction_break != null and not _contradiction_break.is_result_locked():
+	if _contradiction_stage_active and _contradiction_break != null and not _contradiction_break.is_result_locked():
 		_battle_hud.show_battle_state("击破矛盾：%.1f 秒 · 剩余 %d 发" % [_contradiction_break.get_remaining_seconds(), _contradiction_break.get_remaining_shots()])
 	_battle_hud.refresh_attack(_attack_charge_input.get_charge_progress(), _attack_charge_input.get_attack_phase())
 
@@ -122,7 +122,18 @@ func _on_contradiction_shot_arrived(_snapshot: AttackTargetSnapshot, target_resu
 		var view := target_result.get("target") as BarrageView
 		if view == null or view.runtime_record == null or not view.runtime_record.is_contradiction:
 			continue
-		hit_ids.append(view.runtime_record.original_sentence_id)
+		var runtime_record: BarrageRuntimeRecord = view.runtime_record
+		hit_ids.append(runtime_record.original_sentence_id)
+		# 真 / 假矛盾都以实际命中的这一条为单位创建复读计划，保留原句事实。
+		var plan: RepeatPlan = RepeatPlan.create_contradiction_hit_plan(
+			StringName(runtime_record.original_sentence_id),
+			runtime_record.original_sentence_text,
+			_combat_stage.get_current_tier(),
+			battle_config.contradiction_repeat_count,
+			battle_config.contradiction_repeat_lifetime_seconds
+		)
+		plan.apply_display_template(battle_config.repeat_display_template)
+		_repeat_queue.enqueue_plan(plan)
 		_barrage_area.end_barrage(int(target_result.get("target_instance_id", -1)))
 	_contradiction_break.resolve_shot_hit_ids(hit_ids)
 

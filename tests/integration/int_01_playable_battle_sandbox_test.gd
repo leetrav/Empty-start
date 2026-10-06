@@ -267,6 +267,7 @@ func _verify_failure_restart_and_full_pk() -> void:
 			normal_view_count += 1
 	_check(is_equal_approx(_hit().get_player_pk(), 1.0) and SaveManager.data.live_session.comment_count >= comment_before and normal_view_count == 0, "满值保持且只生成矛盾内容")
 	var break_system := _sandbox.get("_contradiction_break") as ContradictionBreakSystem
+	var repeat_config := _sandbox.get("battle_config") as SandboxBattleConfig
 	_check(break_system != null and break_system.get_remaining_seconds() > 0.0 and break_system.get_remaining_shots() == 1, "矛盾限时窗口和一次发射机会已启动")
 	var contradiction_target: BarrageView = null
 	for view: BarrageView in _views(false):
@@ -280,6 +281,25 @@ func _verify_failure_restart_and_full_pk() -> void:
 		_check(break_system.get_remaining_shots() == 0 and is_equal_approx(_hit().get_player_pk(), 1.0) and _hit().get_normal_hit_history().size() == history_before, "矛盾真实发射扣机会且不提交普通 PK 或历史")
 		_check(break_system.get_outcome() == ContradictionBreakSystem.Outcome.BREAKTHROUGH, "真实到达命中真矛盾即刻击破")
 		_check(not _attack.can_start_charging() and _views(false).is_empty(), "判定固定后关闭攻击并清理矛盾弹幕")
+		_check(_queue().get_pending_contradiction_count() >= repeat_config.contradiction_repeat_count, "真矛盾命中创建独立矛盾复读计划")
+		await _wait(0.7)
+		_check(_area.has_visible_contradiction_repeats() and _queue().get_generation_stats().get_contradiction_count(StringName(_level().true_contradictions[0].original_sentence_id)) > 0, "矛盾复读真实展示并独立计数")
+	_sandbox.restart_current_attempt()
+	_hit().apply_player_pk_delta(1.0 - _hit().get_player_pk())
+	await _wait(0.05)
+	var false_target: BarrageView = null
+	for view: BarrageView in _views(false):
+		if view.runtime_record.is_contradiction and view.runtime_record.original_sentence_id == _level().false_contradictions[0].original_sentence_id and false_target == null:
+			false_target = view
+		else:
+			_area.end_barrage(view.get_instance_id())
+	_check(false_target != null, "重开后存在可瞄准假矛盾")
+	if false_target != null:
+		false_target.position = Vector2(_area.size.x * 0.65, _area.size.y * 0.38)
+		await _fire_at(false_target)
+		var failed_break := _sandbox.get("_contradiction_break") as ContradictionBreakSystem
+		_check(failed_break.get_outcome() == ContradictionBreakSystem.Outcome.NOT_BROKEN and not _attack.can_start_charging(), "假矛盾用尽机会后保持 PK 胜利但未击破")
+		_check(_queue().get_pending_contradiction_count() >= repeat_config.contradiction_repeat_count, "假矛盾命中同样创建独立复读计划")
 
 
 # 仅使用正式公开生成入口；将真实实例放在独立位置便于瞄准。
