@@ -21,7 +21,13 @@ func _run_tests() -> void:
 	if not _test_highest_normal_repeat_per_tendency():
 		quit(1)
 		return
-	print("通过：FO-02 候选池与 FO-03 倾向内普通复读排序")
+	if not _test_latest_hit_breaks_repeat_tie():
+		quit(1)
+		return
+	if not _test_stable_sentence_id_breaks_final_tie():
+		quit(1)
+		return
+	print("通过：FO-02 候选池与 FO-03 / FO-04 候选排序")
 	quit()
 
 
@@ -111,6 +117,42 @@ func _make_history_entry(original_sentence_id: String, tendency: String) -> Dict
 		"first_hit_order": 1,
 		"last_hit_order": 1,
 	}
+
+
+# 普通复读数相同时，最近命中优先级高于原句 ID 顺序。
+func _test_latest_hit_breaks_repeat_tie() -> bool:
+	var earlier_hit: Dictionary = _make_history_entry("line-a", "orthodox")
+	earlier_hit["last_hit_order"] = 7
+	var later_hit: Dictionary = _make_history_entry("line-z", "orthodox")
+	later_hit["last_hit_order"] = 8
+	var pool = CANDIDATE_POOL.new()
+	var candidates: Array[Dictionary] = pool.build_from_normal_hit_history([earlier_hit, later_hit])
+	var repeat_stats: RepeatGenerationStats = REPEAT_STATS.new()
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-a"), 2)
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-z"), 2)
+	var selected: Array[Dictionary] = pool.select_most_repeated_per_tendency(candidates, repeat_stats)
+	if selected.size() != 1 or str(selected[0].get("original_sentence_id", "")) != "line-z":
+		push_error("FO-04 普通复读并列时应优先选择最近命中的原句")
+		return false
+	return true
+
+
+# 普通复读数和最近命中顺序均相同时，按原句 ID 升序稳定裁决。
+func _test_stable_sentence_id_breaks_final_tie() -> bool:
+	var later_id: Dictionary = _make_history_entry("line-z", "orthodox")
+	later_id["last_hit_order"] = 8
+	var earlier_id: Dictionary = _make_history_entry("line-a", "orthodox")
+	earlier_id["last_hit_order"] = 8
+	var pool = CANDIDATE_POOL.new()
+	var candidates: Array[Dictionary] = pool.build_from_normal_hit_history([later_id, earlier_id])
+	var repeat_stats: RepeatGenerationStats = REPEAT_STATS.new()
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-a"), 2)
+	repeat_stats.record_generated(_make_repeat_plan(REPEAT_PLAN.RepeatType.NORMAL, &"line-z"), 2)
+	var selected: Array[Dictionary] = pool.select_most_repeated_per_tendency(candidates, repeat_stats)
+	if selected.size() != 1 or str(selected[0].get("original_sentence_id", "")) != "line-a":
+		push_error("FO-04 双层并列时应按稳定原句 ID 升序裁决")
+		return false
+	return true
 
 
 func _make_repeat_plan(repeat_type: int, original_line_id: StringName) -> RepeatPlan:

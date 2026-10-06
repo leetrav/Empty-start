@@ -22,7 +22,7 @@ func build_from_normal_hit_history(normal_hit_history: Array[Dictionary]) -> Arr
 	return candidates
 
 
-# 每种有候选的倾向保留普通复读数最高的一句；相同数量暂留先出现的候选，FO-04 再处理并列。
+# 每种有候选的倾向保留普通复读数最高的一句，并按最近命中和稳定原句 ID 裁决并列。
 func select_most_repeated_per_tendency(
 		candidates: Array[Dictionary], repeat_stats: RepeatGenerationStats
 	) -> Array[Dictionary]:
@@ -36,10 +36,22 @@ func select_most_repeated_per_tendency(
 		if original_sentence_id == null:
 			continue
 		var repeat_count: int = repeat_stats.get_normal_count(StringName(str(original_sentence_id)))
-		if (
-			not best_candidates_by_tendency.has(tendency_id)
-			or repeat_count > int(best_repeat_counts_by_tendency[tendency_id])
-		):
+		var should_replace: bool = not best_candidates_by_tendency.has(tendency_id)
+		if not should_replace:
+			var best_repeat_count: int = int(best_repeat_counts_by_tendency[tendency_id])
+			if repeat_count > best_repeat_count:
+				should_replace = true
+			elif repeat_count == best_repeat_count:
+				var current_candidate: Dictionary = best_candidates_by_tendency[tendency_id]
+				var candidate_last_hit_order: int = int(candidate.get("last_hit_order", 0))
+				var current_last_hit_order: int = int(current_candidate.get("last_hit_order", 0))
+				if candidate_last_hit_order > current_last_hit_order:
+					should_replace = true
+				elif candidate_last_hit_order == current_last_hit_order:
+					should_replace = str(original_sentence_id) < str(
+						current_candidate.get("original_sentence_id", "")
+					)
+		if should_replace:
 			best_candidates_by_tendency[tendency_id] = candidate
 			best_repeat_counts_by_tendency[tendency_id] = repeat_count
 
