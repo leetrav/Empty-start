@@ -40,6 +40,7 @@ func _ready() -> void:
 	%OpponentLiveDataHud.set_values(0, 0, 0, 0)
 	_run_state = LevelRunState.new(SAMPLE_LEVEL_CATALOG)
 	_oracle_confirmation_state = FinalOracleConfirmationState.new(SaveManager.data)
+	SaveManager.data.scripture_data.bind_confirmation_state(_oracle_confirmation_state, SAMPLE_LEVEL_CATALOG)
 	_oracle_confirmation_state.confirmation_committed.connect(_on_oracle_confirmation_committed)
 	_opening_fan_count = SaveManager.data.live_session.fan_count
 	_opponent_pk_bar = OpponentPKBar.new()
@@ -63,6 +64,9 @@ func _ready() -> void:
 
 # 原地重开同一关；替换本场结算和队列，保留当前关卡及此前周目成果。
 func restart_current_attempt() -> void:
+	var restarting_level: LevelProfile = _run_state.get_current_level_profile()
+	if restarting_level != null:
+		SaveManager.data.scripture_data.rollback_uncommitted(StringName(restarting_level.level_id))
 	if _hit_resolution != null:
 		_hit_resolution.discard_uncommitted_normal_hit_history()
 	_stop_normal_combat()
