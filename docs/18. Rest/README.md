@@ -46,4 +46,6 @@ RS-07 等 17. ThreeTendencies。
 RS-09 等 2. LevelConfiguration。
 RS-10 等 19. DivineDescent。
 
-RS-01 已增加 `RestSession.open_result(result_snapshot)` 作为本场结果入口。快照包含来源 `level_id` 与 `result_kind`（`pk_win_unbroken` 或 `breakthrough_oracle_complete`）；会话只接受首次打开，读取方使用 `get_result_snapshot()` 获得深拷贝。展示与继续入口留给后续任务。
+RS-01 已增加 `RestSession.open_result(result_snapshot)` 作为本场结果入口。快照包含来源 `level_id` 与 `result_kind`（`pk_win_unbroken` 或 `breakthrough_oracle_complete`）；会话只接受首次打开，读取方使用 `get_result_snapshot()` 获得深拷贝。
+
+RS-02 为 `pk_win_unbroken` 增加专属结果面板，显示 PK 胜利但矛盾未击破、没有神谕或击败奖励，并发出继续请求。Sandbox 将继续请求转成 `rest_continue_requested(session)` 信号；下一关切换仍由 RS-09 接入。
