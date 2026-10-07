@@ -14,7 +14,7 @@ assets/
 └── ui/
 ```
 
-共享表现配置为 `data/shared/presentation_asset_config.tres`，目前只引用跨场景共用的 `ui/theme/base_theme.tres`。需要显式读取共享主题的资源可读取 `PresentationAssetConfig.ui_theme`；项目级默认主题仍由 `project.godot` 的 `[gui] theme/custom` 应用。
+共享表现配置为 `data/shared/presentation_asset_config.tres`，保存跨场景共用的 UI Theme 和玩家主角外观引用。需要显式读取共享资源时使用 `PresentationAssetConfig` 对应字段；项目级默认主题仍由 `project.godot` 的 `[gui] theme/custom` 应用。
 
 ## 当前规则
 
@@ -22,8 +22,8 @@ assets/
 
 例如：
 
-- 身份数据保存身份图标和主角头像；
-- 关卡数据保存主播立绘、头像、直播背景和粉丝牌；
+- `IdentityOption.icon` 保存身份图标；玩家主角跨场景复用的立绘、头像、直播背景、房间背景和粉丝牌由 `PresentationAssetConfig` 保存。
+- `LevelProfile` 保存每关主播的立绘、头像、直播背景和粉丝牌；主角固定外观不写入样例对手关卡。
 - 败者卡资料保存卡面；
 - 结局配置保存教派主图；
 - UI Theme 保存通用字体和控件样式。
@@ -37,7 +37,9 @@ assets/
 | `assets/fonts/` | 项目专用字体文件 | 共享 Theme 或排版配置 Resource |
 | `assets/ui/` | 跨场景状态图标、准心和通用 UI 贴图 | 共享表现配置；单系统图标归该系统 Resource |
 
-身份图标继续存放在 `IdentityOption.icon`；主播立绘、头像、背景和粉丝牌跟随关卡/主播数据；败者卡卡面跟随败者卡资料；教派主图跟随结局配置。不要把系统专属资源复制进共享配置。
+身份图标继续存放在 `IdentityOption.icon`；每关主播立绘、头像、背景和粉丝牌跟随 `LevelProfile`；玩家主角固定外观因会跨场景复用而放在 `PresentationAssetConfig`；败者卡卡面跟随败者卡资料；教派主图跟随结局配置。系统专属资源仍由对应系统 Resource 持有。
+
+`player_streamer_avatar` 当前复用主角立绘纹理；交付独立头像后只替换该字段。PA-02 只建立 Resource 引用，Sandbox HUD 与背景的实际视觉接线由 PA-03 处理。
 
 跨多个场景共同使用、并且需要集中替换的表现素材放进共享表现配置。
 

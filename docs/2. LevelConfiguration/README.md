@@ -71,7 +71,7 @@ LC-09 等【18. 休息时刻系统】和【19. 神降临系统】存在真实入
 
 LC-01 使用 `data/level_configuration/level_profile.gd` 定义 `LevelProfile` Resource，并提供 `data/level_configuration/level_001.tres` 作为可编辑示例。
 
-基础资料包含稳定关卡 ID、关卡顺序、主播稳定 ID、主播显示名、主播形象纹理、直播主题、粉丝牌稳定 ID 和粉丝牌纹理。主播形象与粉丝牌纹理使用 `Texture2D` 引用；美术资源缺失时可以暂留空值，后续直接替换。粉丝牌也可先用稳定 ID 标识。
+基础资料包含稳定关卡 ID、关卡顺序、主播稳定 ID、主播显示名、主播立绘、头像、直播背景、直播主题、粉丝牌稳定 ID 和粉丝牌纹理。主播立绘、头像、直播背景分别由 `streamer_portrait`、`streamer_avatar`、`streamer_live_background` 引用；均为 `Texture2D`。对应主播素材未交付时可以暂留空值，资源到位后直接替换。粉丝牌也可先用稳定 ID 标识。
 
 LevelProfile 保存静态关卡资料、普通话语池、倾向比例、特殊玩法标识、真假矛盾、前文线索和基础生成参数；当前周目进度由 LevelRunState 单独保存。
 
