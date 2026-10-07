@@ -247,7 +247,7 @@ mouse_filter = 2
 
 [node name="ChargeFeedback" type="Control" parent="BattleHud/BattleArea"]
 layout_mode = 0
-offset_top = 968.0
+offset_top = 832.0
 offset_right = 1024.0
 offset_bottom = 1080.0
 mouse_filter = 2
