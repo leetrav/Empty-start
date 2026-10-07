@@ -61,3 +61,10 @@ EN-02～03 等 17. ThreeTendencies 的冻结结果与结局配置。
 EN-04 等 15. Scripture。
 EN-05 等 1. Identify 与 17. ThreeTendencies。
 EN-06～09 完成页面数据和显示。
+
+## EN-02 当前主图配置接口
+
+- `data/ending/ending_main_art_config.tres` 是三类教派主图的唯一配置入口。
+- `EndingMainArtConfig` 提供 `orthodox_main_art`、`heretical_main_art`、`absurd_main_art` 三个 `Texture2D` 字段，以及 `get_main_art_for_tendency(tendency_id)` 查询方法。
+- 查询输入沿用 17. ThreeTendencies 的稳定 ID：`orthodox`、`heretical`、`absurd`。未知 ID 返回 `null`。
+- 当前仓库尚未提供正式教派主图，配置字段暂为空；后续美术交付只需更新 `.tres`，结局逻辑无需改路径。
