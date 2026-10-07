@@ -31,12 +31,15 @@
 - 当前生成记录的特性集合默认为空；如何把 `LevelProfile.special_trait_ids` 分配到具体弹幕实例尚无已定规则，本卡不猜分配方式。
 - CA-09 通过注入的 `HitResolution` 调用正常收益、整发落空 / 异常优先级、单次 `resolve_shot_results()` 和普通命中历史接口；HitResolution 持有唯一 PK。INT-01 Sandbox 从独立运行配置读取初始 PK（当前0.5），并把最终 PK 信号接给 CombatStage。
 - `shot_hit_resolution_submitted` 同发包含目标有效性、`ShotAnomaly`、逐目标 `BarrageTraitResult` / 奖励字典及 HitResolution 返回值。异常惩罚映射等待 HR-03；INT-01 由 Sandbox 据逐目标结果连接普通复读与本场倾向暂存。
+- FO-13 增加临时选择目标接口 `set_selection_targets(targets: Array[Control])` / `clear_selection_targets()`。目标模式仍复用同一准心、蓄力、发射和飞行流程；到达时按释放快照的准心中心裁决最近 Control，并发出 `selection_target_hit(target)`，绕过 HitResolution。
 
 ### INT-01 战斗生命周期与结算事实
 
 `AttackChargeInput.set_combat_active(active: bool)` 供场景协调战斗停止与重开。传入 `false` 会禁用攻击输入、清零蓄力、取消飞行 / 硬直和 Timer，并恢复阶段为 READY；传入 `true` 后可开始下一发。暂停继续通过 SceneTree 控制，保留当前蓄力与剩余计时。
 
 矛盾阶段由 Sandbox 调用 `set_contradiction_mode(true)`；满蓄释放的 `shot_snapshot_created` 携带当帧冻结的矛盾原句事实，由 12 系统立即判定并消耗机会。飞行计时只保留演出，不再复核目标或发送到达结算；结果锁定后 `lock_new_attacks()` 禁止下一发而保留当前飞行。进入 Rest / FinalOracle 时停止攻击；重开普通战斗时调用 `set_contradiction_mode(false)`。
+
+FinalOracle 选择阶段由 Sandbox 将中央 `FinalOracleCandidateDisplay` 生成的 Label 控件注入 `set_selection_targets()`。攻击系统只发出释放快照中实际命中的目标；同发多目标时按快照准心中心到控件中心的距离选择最近一句。Sandbox 用该目标 ID 回读 Session 的冻结候选，并提交至唯一确认入口。选择阶段不会调用 HitResolution。
 
 `HitResolution.resolve_shot_results()` 同步发送最终 PK，回调可能在满值或失败时停止攻击。到达处理在回调后检查本发仍有效，保证已停止的战斗不会再次启动硬直 Timer。当前这一发成功结算的提交事实仍会发送，供协调方处理命中与倾向。
 

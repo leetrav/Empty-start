@@ -3,11 +3,15 @@ extends RefCounted
 
 var _target_instance_ids: Array[int] = []
 var _contradiction_facts: Array[Dictionary] = []
+var _aim_center_global_position: Vector2 = Vector2.ZERO
 
 
-# 在释放时复制候选实例 ID 并去重；之后候选列表的变化不会加入本发。
-static func capture_at_release(current_candidates: Array[Node]) -> AttackTargetSnapshot:
+# 在释放时复制候选实例 ID 和准心中心；之后候选列表变化不会加入本发。
+static func capture_at_release(
+		current_candidates: Array[Node], aim_center_global_position: Vector2 = Vector2.ZERO
+) -> AttackTargetSnapshot:
 	var snapshot := AttackTargetSnapshot.new()
+	snapshot._aim_center_global_position = aim_center_global_position
 	var seen_instance_ids: Dictionary = {}
 
 	for target in current_candidates:
@@ -44,6 +48,37 @@ func get_contradiction_facts() -> Array[Dictionary]:
 	for fact: Dictionary in _contradiction_facts:
 		facts.append(fact.duplicate(true))
 	return facts
+
+
+# 返回释放瞬间的准心中心；多神谕同发命中时用它稳定裁决最近目标。
+func get_aim_center_global_position() -> Vector2:
+	return _aim_center_global_position
+
+
+# 复核释放快照中的选择目标仍属于当前可见候选集合。
+func resolve_present_selection_targets(
+		active_selection_targets: Array[Control]
+) -> Array[Control]:
+	var present_targets: Array[Control] = []
+	var selectable_instance_ids: Dictionary = {}
+	for target: Control in active_selection_targets:
+		if target == null or not is_instance_valid(target):
+			continue
+		if not target.is_inside_tree() or target.is_queued_for_deletion() or not target.is_visible_in_tree():
+			continue
+		selectable_instance_ids[target.get_instance_id()] = true
+
+	for instance_id in _target_instance_ids:
+		if not selectable_instance_ids.has(instance_id):
+			continue
+		var target: Object = instance_from_id(instance_id)
+		if not is_instance_valid(target) or not target is Control:
+			continue
+		var control: Control = target as Control
+		if not control.is_inside_tree() or control.is_queued_for_deletion() or not control.is_visible_in_tree():
+			continue
+		present_targets.append(control)
+	return present_targets
 
 
 # 到达时按 BarrageGeneration 的真实实例状态复核；目标移动不重新检查原准心。
