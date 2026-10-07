@@ -25,7 +25,9 @@
 - 节号范围只保存在 `data/scripture/verse_number_config.tres`（当前 1～99）；首条正式写入时抽取一次整数并存入 `ScriptureEntry.verse_number`，读取、重复提交和读档都沿用该值。
 - `get_entry_for_level(level_id)` 返回单关经文独立快照；`get_ordered_entries()` 按经文保存的原章号返回排序快照。
 - `get_chapter_slots(level_catalog)` 为真实目录中的每关返回 `{level_id, chapter_number, entry}`；无经文时 `entry = null`。缺章参与排序，原章号不压缩；全空圣典仍返回目录中的全部空章，章节视图即时生成且不写回保存列表。
-- 未提交暂存和重开撤回由 SC-05 继续实现。
+- `pending_entry` 是现有 ScriptureData 中的单条本场暂存；`stage_oracle(level_profile, candidate)` 保存未确认快照，暂存节号为 0，不进入正式经文 / 章节视图。同关可更新暂存，已有正式经文的关卡拒绝暂存。
+- 正式 `confirmation_committed` 仍直接调用 `write_confirmed_oracle()`，以真实确认候选写入并清掉同关暂存；只有此时抽取并固定节号。
+- `rollback_uncommitted(level_id)` 只撤回匹配当前关的暂存，正式 `entries` 保留。Sandbox 的真实 `restart_current_attempt()` 已调用该入口，读档后的本场暂存也适用。
 - Sandbox 周目初始化已经绑定 Scripture 接收方；场景节点结构保持现状。
 
 ## 任务顺序

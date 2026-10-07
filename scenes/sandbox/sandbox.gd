@@ -64,6 +64,9 @@ func _ready() -> void:
 
 # 原地重开同一关；替换本场结算和队列，保留当前关卡及此前周目成果。
 func restart_current_attempt() -> void:
+	var restarting_level: LevelProfile = _run_state.get_current_level_profile()
+	if restarting_level != null:
+		SaveManager.data.scripture_data.rollback_uncommitted(StringName(restarting_level.level_id))
 	if _hit_resolution != null:
 		_hit_resolution.discard_uncommitted_normal_hit_history()
 	_stop_normal_combat()

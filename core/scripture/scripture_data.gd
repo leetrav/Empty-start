@@ -4,6 +4,8 @@ extends Resource
 const VERSE_CONFIG: ScriptureVerseConfig = preload("res://data/scripture/verse_number_config.tres")
 
 @export var entries: Array[ScriptureEntry] = []
+# 当前尝试只有一条未提交结果；正式经文继续只放在 entries。
+@export var pending_entry: ScriptureEntry = null
 
 
 # 由周目组合方绑定真实神谕确认事件，关卡来源信息继续读取关卡目录。
@@ -26,9 +28,41 @@ func write_confirmed_oracle(level_profile: LevelProfile, candidate: Dictionary) 
 		return false
 	# 只在首条正式写入时抽取一次，读档和读取继续使用经文已保存的节号。
 	entry.verse_number = randi_range(VERSE_CONFIG.minimum_verse_number, VERSE_CONFIG.maximum_verse_number)
+	if pending_entry != null and pending_entry.level_id == entry.level_id:
+		pending_entry = null
 	entries.append(entry)
 	emit_changed()
 	return true
+
+
+# 正式确认前保存当前关候选快照；暂存不抽节号，也不会进入正式章节读取。
+func stage_oracle(level_profile: LevelProfile, candidate: Dictionary) -> bool:
+	if level_profile == null or _find_entry(StringName(level_profile.level_id)) != null:
+		return false
+	if pending_entry != null and pending_entry.level_id != StringName(level_profile.level_id):
+		return false
+	var entry: ScriptureEntry = _build_entry(level_profile, candidate)
+	if entry == null:
+		return false
+	pending_entry = entry
+	emit_changed()
+	return true
+
+
+# 重开只撤回匹配当前关的未提交结果；已保存经文与其他关暂存保持原样。
+func rollback_uncommitted(level_id: StringName) -> bool:
+	if pending_entry == null or pending_entry.level_id != level_id:
+		return false
+	pending_entry = null
+	emit_changed()
+	return true
+
+
+# 返回本场暂存快照，调用方通过正式确认入口决定最终写入内容。
+func get_pending_entry_for_level(level_id: StringName) -> ScriptureEntry:
+	if pending_entry == null or pending_entry.level_id != level_id:
+		return null
+	return pending_entry.duplicate(true) as ScriptureEntry
 
 
 # 返回经文快照，读取方修改返回资源时不会改写圣典原记录。

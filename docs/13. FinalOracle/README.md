@@ -106,3 +106,4 @@ FO-12 等 18. Rest。
 
 - SC-02 已由 `run_data.scripture_data.bind_confirmation_state(confirmation_state, level_catalog)` 订阅正式确认事实；Sandbox 在创建确认状态后完成绑定。
 - 当前候选仅有原句 ID 和倾向，Scripture 从注入的真实关卡目录解析原句文本、主播名和章号，保存首条经文；同关重复提交保持首条。
+- Scripture 的未确认快照由 `stage_oracle()` 单独暂存；正式确认按本次候选写入并清同关暂存，重开只撤回暂存，已经确认的经文和节号保留。
