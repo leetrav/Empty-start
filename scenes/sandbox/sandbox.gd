@@ -12,6 +12,7 @@ const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://sy
 @onready var _aim_reticle: AimReticle = %AimReticle
 @onready var _attack_charge_input: AttackChargeInput = %AttackChargeInput
 @onready var _battle_hud = %BattleHud
+@onready var _debug_panel: CanvasLayer = %DebugPanel
 
 var _hit_resolution: HitResolution
 var _combat_stage: CombatStage
@@ -56,6 +57,7 @@ func _ready() -> void:
 	add_child(_oracle_transition_timer)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
+	_debug_panel.call("bind_sandbox", self)
 	restart_current_attempt()
 
 
@@ -127,6 +129,92 @@ func _process(delta: float) -> void:
 	elif _contradiction_stage_active and _contradiction_break != null and _contradiction_break.get_outcome() == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		_try_start_oracle_transition()
 	_battle_hud.refresh_attack(_attack_charge_input.get_charge_progress(), _attack_charge_input.get_attack_phase())
+
+
+# DEBUG 面板每次刷新时从现有系统即时收集快照，不把可变业务值保存在 UI。
+func get_debug_snapshot() -> Dictionary:
+	if SaveManager.data == null or _run_state == null or _hit_resolution == null or _combat_stage == null:
+		return {}
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	var live_session: LiveSessionData = SaveManager.data.live_session
+	var tendency_state: TendencyState = SaveManager.data.tendency_state
+	var barrage_counts: Dictionary = _barrage_area.get_current_barrage_counts()
+	var battle_phase: String = "普通战斗中（NORMAL_COMBAT）" if _normal_combat_active else "普通战斗未运行（INACTIVE）"
+	if _contradiction_stage_active:
+		battle_phase = "矛盾击破（CONTRADICTION_BREAK）"
+	elif _final_oracle_session != null and _final_oracle_session.is_open():
+		battle_phase = "终结神谕（FINAL_ORACLE）"
+	elif _rest_session != null and _rest_session.is_open():
+		battle_phase = "休息时刻（REST）"
+	elif _hit_resolution.get_player_pk() >= battle_config.maximum_player_pk:
+		battle_phase = "普通战斗完成（NORMAL_COMBAT_COMPLETE）"
+	if get_tree().paused:
+		battle_phase += " · 暂停中"
+	return {
+		"level": "第%d关" % current_level.level_order if current_level != null else "无关卡",
+		"player_streamer": SaveManager.data.streamer_name if not SaveManager.data.streamer_name.is_empty() else "玩家主播",
+		"opponent_streamer": current_level.streamer_name if current_level != null else "无对手",
+		"battle_phase": battle_phase,
+		"player_pk": _hit_resolution.get_player_pk(),
+		"tier": _combat_stage.get_current_tier(),
+		"attack_phase": _attack_charge_input.get_attack_phase(),
+		"is_charging": _attack_charge_input.is_charge_held(),
+		"normal_barrage_count": int(barrage_counts.get("normal", 0)),
+		"repeat_barrage_count": int(barrage_counts.get("repeat", 0)),
+		"normal_generation_enabled": _barrage_area.is_normal_generation_enabled(),
+		"viewer_count": live_session.viewer_count,
+		"like_count": live_session.like_count,
+		"comment_count": live_session.comment_count,
+		"fan_count": live_session.fan_count,
+		"attempt_orthodox": tendency_state.attempt_orthodox_total,
+		"attempt_heretical": tendency_state.attempt_heretical_total,
+		"attempt_absurd": tendency_state.attempt_absurd_total,
+	}
+
+
+# F3 调试入口经 HitResolution 正式更新 PK，让 CombatStage 和 HUD 收到同一变化信号。
+func debug_set_player_pk(player_pk: float) -> float:
+	if _hit_resolution == null:
+		return 0.0
+	return _hit_resolution.set_player_pk_for_debug(player_pk)
+
+
+# 直播调试值仍写入本场 LiveSessionData，由 Resource.changed 刷新当前 HUD。
+func debug_set_live_data(viewer: int, likes: int, comments: int, fans: int) -> void:
+	if SaveManager.data == null or SaveManager.data.live_session == null:
+		return
+	var live_session: LiveSessionData = SaveManager.data.live_session
+	live_session.viewer_count = maxi(viewer, 0)
+	live_session.like_count = maxi(likes, 0)
+	live_session.comment_count = maxi(comments, 0)
+	live_session.fan_count = maxi(fans, 0)
+
+
+# 调试倾向只写当前关暂存值，不碰已提交的周目累计。
+func debug_set_attempt_tendencies(orthodox: int, heretical: int, absurd: int) -> void:
+	if SaveManager.data == null or SaveManager.data.tendency_state == null:
+		return
+	SaveManager.data.tendency_state.set_attempt_tendencies_for_debug(orthodox, heretical, absurd)
+
+
+# 清空当前画面弹幕并取消尚未出现的复读请求，但保留普通生成开关状态。
+func debug_clear_barrages() -> void:
+	_barrage_area.clear_current_barrages()
+	if _repeat_queue != null:
+		_repeat_queue.clear_normal_queue()
+
+
+# 使用当前关卡和 Tier 参数立即生成一批普通弹幕。
+func debug_spawn_normal_batch() -> int:
+	return _barrage_area.spawn_normal_batch_now()
+
+
+# DEBUG 操作只切换 BarrageArea 的真实普通生成状态。
+func debug_set_normal_generation_enabled(enabled: bool) -> bool:
+	if enabled:
+		return _barrage_area.resume_normal_generation()
+	_barrage_area.stop_normal_generation()
+	return true
 
 
 # 成功分支必须等本发矛盾复读全部生成并离场，才开始一次静音过渡。
