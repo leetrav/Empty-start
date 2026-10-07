@@ -70,3 +70,10 @@ DD-02 等【6. HitResolution】HR-15 的已提交普通命中历史与【10. Rep
 DD-03 等 14. Assimilation。
 DD-04～16 完成终局逻辑。
 DD-17 等 20. Ending。
+
+## DD-02 历史候选接口
+
+- `DivineDescentCandidateFilter.filter_three_tendency_history(committed_history)` 是普通历史进入终局前的唯一三项倾向边界，Neutral 仍保留在存档但不会进入候选。
+- `DivineDescentCandidateFilter.build_history_candidates(committed_history)` 复用上述边界，按 `original_sentence_id` 归并候选，保持第一次出现的顺序。
+- 候选字段为 `original_sentence_id`、`original_sentence_text`、`tendency`、`hit_count`、`normal_repeat_count` 和 `first_committed_hit_order`，供 DD-06 以后直接读取。
+- `hit_count` 与 `normal_repeat_count` 会对同一原句的多条已提交快照累加；复读字段优先读取 `normal_repeat_count`，兼容旧快照中的 `repeat_count`。
