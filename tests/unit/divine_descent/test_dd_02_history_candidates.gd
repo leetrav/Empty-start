@@ -9,13 +9,12 @@ func _init() -> void:
 
 func _run_test() -> void:
 	var filter = CANDIDATE_FILTER.new()
-	var committed_history: Array[Dictionary] = [
+	var committed_hit_history: Array[Dictionary] = [
 		{
 			"original_sentence_id": "line-a",
 			"original_sentence_text": "第一句",
 			"tendency": "orthodox",
 			"hit_count": 2,
-			"normal_repeat_count": 3,
 			"first_committed_hit_order": 2,
 		},
 		{
@@ -23,7 +22,6 @@ func _run_test() -> void:
 			"original_sentence_text": "第一句",
 			"tendency": "orthodox",
 			"hit_count": 1,
-			"normal_repeat_count": 2,
 			"first_committed_hit_order": 5,
 		},
 		{
@@ -31,19 +29,24 @@ func _run_test() -> void:
 			"original_sentence_text": "中性句",
 			"tendency": "neutral",
 			"hit_count": 9,
-			"normal_repeat_count": 8,
 		},
 		{
 			"original_sentence_id": "line-b",
 			"original_sentence_text": "第二句",
 			"tendency": "absurd",
 			"hit_count": 1,
-			"repeat_count": 4,
 			"first_committed_hit_order": 7,
 		},
 	]
+	var normal_repeat_counts_by_line_id: Dictionary = {
+		"line-a": 5,
+		StringName("neutral-line"): 8,
+		StringName("line-b"): 4,
+	}
 
-	var candidates: Array[Dictionary] = filter.build_history_candidates(committed_history)
+	var candidates: Array[Dictionary] = filter.build_history_candidates(
+		committed_hit_history, normal_repeat_counts_by_line_id
+	)
 	var passed: bool = candidates.size() == 2
 	passed = passed and str(candidates[0].get("original_sentence_id", "")) == "line-a"
 	passed = passed and int(candidates[0].get("hit_count", 0)) == 3

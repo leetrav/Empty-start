@@ -17,9 +17,11 @@ static func filter_three_tendency_history(committed_history: Array[Dictionary]) 
 	return eligible
 
 
-# 复用三项倾向边界，把已提交历史按稳定原句 ID 汇总成终局候选。
-func build_history_candidates(committed_history: Array[Dictionary]) -> Array[Dictionary]:
-	var eligible_history: Array[Dictionary] = filter_three_tendency_history(committed_history)
+# 复用三项倾向边界，把命中历史和复读统计按稳定原句 ID 汇总成终局候选。
+func build_history_candidates(
+		committed_hit_history: Array[Dictionary], normal_repeat_counts_by_line_id: Dictionary
+) -> Array[Dictionary]:
+	var eligible_history: Array[Dictionary] = filter_three_tendency_history(committed_hit_history)
 	var candidates_by_sentence_id: Dictionary = {}
 	var candidate_order: Array[String] = []
 
@@ -34,17 +36,16 @@ func build_history_candidates(committed_history: Array[Dictionary]) -> Array[Dic
 				"original_sentence_text": str(history_entry.get("original_sentence_text", "")),
 				"tendency": str(history_entry.get("tendency", "")),
 				"hit_count": 0,
-				"normal_repeat_count": 0,
+				"normal_repeat_count": _read_repeat_count(
+					normal_repeat_counts_by_line_id, sentence_id
+				),
 				"first_committed_hit_order": int(history_entry.get("first_committed_hit_order", 0)),
 			}
 			candidate_order.append(sentence_id)
 
 		var candidate: Dictionary = candidates_by_sentence_id[sentence_id]
-		candidate["hit_count"] = int(candidate["hit_count"]) + _read_positive_count(
-			history_entry, "hit_count"
-		)
-		candidate["normal_repeat_count"] = int(candidate["normal_repeat_count"]) + _read_positive_count(
-			history_entry, "normal_repeat_count", "repeat_count"
+		candidate["hit_count"] = int(candidate["hit_count"]) + maxi(
+			int(history_entry.get("hit_count", 0)), 0
 		)
 		if str(candidate.get("original_sentence_text", "")).is_empty():
 			candidate["original_sentence_text"] = str(history_entry.get("original_sentence_text", ""))
@@ -61,12 +62,11 @@ func build_history_candidates(committed_history: Array[Dictionary]) -> Array[Dic
 	return candidates
 
 
-# 读取提交记录中的非负计数；缺少字段时按零处理，兼容旧历史快照。
-static func _read_positive_count(
-		entry: Dictionary, primary_key: String, fallback_key: String = ""
-) -> int:
-	if entry.has(primary_key):
-		return maxi(int(entry.get(primary_key, 0)), 0)
-	if not fallback_key.is_empty() and entry.has(fallback_key):
-		return maxi(int(entry.get(fallback_key, 0)), 0)
+# 从 Repeat 的独立按原句统计边界读取普通复读数，不把它写回命中历史。
+static func _read_repeat_count(counts_by_line_id: Dictionary, sentence_id: String) -> int:
+	if counts_by_line_id.has(sentence_id):
+		return maxi(int(counts_by_line_id.get(sentence_id, 0)), 0)
+	var string_name_id := StringName(sentence_id)
+	if counts_by_line_id.has(string_name_id):
+		return maxi(int(counts_by_line_id.get(string_name_id, 0)), 0)
 	return 0
