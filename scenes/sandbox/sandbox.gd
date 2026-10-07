@@ -2,11 +2,13 @@ extends Control
 
 signal final_oracle_opened(session: FinalOracleSession)
 signal rest_opened(session: RestSession)
+signal rest_continue_requested(session: RestSession)
 
 const SAMPLE_LEVEL_CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
 const PRESENTATION_ASSETS: PresentationAssetConfig = preload("res://data/shared/presentation_asset_config.tres")
 const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
+const REST_RESULT_VIEW_SCENE: PackedScene = preload("res://ui/rest/rest_result_view.tscn")
 @export var battle_config: SandboxBattleConfig = preload("res://data/sandbox/playable_battle_config.tres")
 
 @onready var _barrage_area: BarrageArea = %BarrageArea
@@ -28,6 +30,7 @@ var _final_oracle_session: FinalOracleSession
 var _oracle_selection_timer: FinalOracleSelectionTimer
 var _oracle_confirmation_state: FinalOracleConfirmationState
 var _rest_session: RestSession
+var _rest_result_view: RestResultView
 var _oracle_transition_timer: Timer
 var _oracle_transition_started: bool = false
 var _opening_fan_count: int = 0
@@ -60,6 +63,9 @@ func _ready() -> void:
 	_oracle_transition_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_oracle_transition_timer.timeout.connect(_on_oracle_silence_finished)
 	add_child(_oracle_transition_timer)
+	_rest_result_view = REST_RESULT_VIEW_SCENE.instantiate() as RestResultView
+	add_child(_rest_result_view)
+	_rest_result_view.continue_requested.connect(_on_rest_continue_requested)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
 	_debug_panel.call("bind_sandbox", self)
@@ -82,6 +88,7 @@ func restart_current_attempt() -> void:
 	_attack_charge_input.clear_selection_targets()
 	_oracle_candidate_display.clear_display()
 	_rest_session = null
+	_rest_result_view.hide_result()
 	if _contradiction_break != null:
 		remove_child(_contradiction_break)
 		_contradiction_break.queue_free()
@@ -436,7 +443,17 @@ func _open_rest_after_unbroken() -> void:
 	_repeat_queue.clear_contradiction_queue()
 	_attack_charge_input.set_combat_active(false)
 	_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾 · 休息时刻")
+	if not _rest_result_view.show_unbroken_result(_rest_session):
+		push_error("Sandbox: 无法显示本场未击破结果。")
+		return
 	rest_opened.emit(_rest_session)
+
+
+# 休息界面只上报继续意图，下一关路由由后续流程任务接入。
+func _on_rest_continue_requested() -> void:
+	if _rest_session == null or not _rest_session.is_open():
+		return
+	rest_continue_requested.emit(_rest_session)
 
 
 # 普通与复读都由同一生成事实计评论，等待请求和失败生成不提前入账。
