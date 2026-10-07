@@ -305,6 +305,11 @@ func get_attack_phase() -> AttackPhase:
 	return _attack_phase
 
 
+func is_charge_held() -> bool:
+	# 调试状态读取真实鼠标蓄力输入，不从进度或界面文字反推按住状态。
+	return _attack_held
+
+
 # 蓄力配置有效且未处于飞行或硬直时才能开始下一发。
 func can_start_charging() -> bool:
 	return _combat_active and not _new_attacks_locked and _charge_progress != null and _attack_phase == AttackPhase.READY and not get_tree().paused
