@@ -106,9 +106,11 @@ FO-12 等 18. Rest。
 - 手动选择和超时自动选择都调用 `confirm_selection(level_id, candidate)`；同一周目同一 `level_id` 只接受第一次有效结果。
 - 首次确认发出 `confirmation_committed(run_data, level_id, candidate)`；重复调用返回 `false` 且不会重发信号。`get_confirmed_selection(level_id)` 始终返回首次候选快照。
 - 本版确认不改写三项倾向累计值，额外倾向保持为 0。
-
 ## Scripture 确认接收
 
 - SC-02 已由 `run_data.scripture_data.bind_confirmation_state(confirmation_state, level_catalog)` 订阅正式确认事实；Sandbox 在创建确认状态后完成绑定。
 - 当前候选仅有原句 ID 和倾向，Scripture 从注入的真实关卡目录解析原句文本、主播名和章号，保存首条经文；同关重复提交保持首条。
 - Scripture 的未确认快照由 `stage_oracle()` 单独暂存；正式确认按本次候选写入并清同关暂存，重开只撤回暂存，已经确认的经文和节号保留。
+
+- 每张候选卡的手动按钮和 FO-08 超时结果都通过 `FinalOracleScreen.selection_requested(candidate)`，再进入同一个 `_confirm_candidate()` → `FinalOracleSession.confirm_display_candidate()`；确认成功后停止倒计时并锁定按钮。
+- 同一周目同一关卡已经确认时，Session 返回原确认快照，页面直接进入锁定状态。
