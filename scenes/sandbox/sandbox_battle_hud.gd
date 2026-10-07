@@ -5,6 +5,14 @@ extends Control
 @onready var _battle_state: Label = %BattleStateFeedback
 @onready var _player_name: Label = $PlayerStreamerArea/PlayerInfoArea/PlayerName
 @onready var _opponent_name: Label = $OpponentStreamerArea/OpponentInfoArea/OpponentName
+@onready var _player_portrait: TextureRect = $PlayerStreamerArea/PlayerPortraitPlaceholder/PlayerPortraitArt
+@onready var _player_live_background: TextureRect = $PlayerStreamerArea/PlayerPortraitPlaceholder/PlayerLiveBackground
+@onready var _player_fan_badge: TextureRect = $PlayerStreamerArea/PlayerInfoArea/PlayerFanBadge
+@onready var _player_portrait_placeholder: Label = $PlayerStreamerArea/PlayerPortraitPlaceholder/PlaceholderLabel
+@onready var _opponent_portrait: TextureRect = $OpponentStreamerArea/OpponentPortraitPlaceholder/OpponentPortraitArt
+@onready var _opponent_live_background: TextureRect = $OpponentStreamerArea/OpponentPortraitPlaceholder/OpponentLiveBackground
+@onready var _opponent_fan_badge: TextureRect = $OpponentStreamerArea/OpponentInfoArea/OpponentFanBadge
+@onready var _opponent_portrait_placeholder: Label = $OpponentStreamerArea/OpponentPortraitPlaceholder/PlaceholderLabel
 @onready var _player_pk_label: Label = %PlayerPK
 @onready var _opponent_pk_label: Label = $BattleArea/TopBattleStatus/PKBar/OpponentPK
 @onready var _pk_progress: ProgressBar = %PlayerShare
@@ -37,6 +45,34 @@ func _fit_parent_size() -> void:
 func configure_streamers(player_name: String, opponent_name: String) -> void:
 	_player_name.text = player_name
 	_opponent_name.text = opponent_name
+
+
+# 只显示 PA-02 已接入 Resource 的主播素材；空资源继续保留文字占位。
+func configure_streamer_assets(
+	player_portrait: Texture2D,
+	player_live_background: Texture2D,
+	player_fan_badge: Texture2D,
+	opponent_portrait: Texture2D,
+	opponent_live_background: Texture2D,
+	opponent_fan_badge: Texture2D
+) -> void:
+	_set_texture_rect(_player_live_background, player_live_background, TextureRect.STRETCH_KEEP_ASPECT_COVERED)
+	_set_texture_rect(_player_portrait, player_portrait, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+	_set_texture_rect(_player_fan_badge, player_fan_badge, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+	_player_portrait_placeholder.visible = player_portrait == null
+
+	_set_texture_rect(_opponent_live_background, opponent_live_background, TextureRect.STRETCH_KEEP_ASPECT_COVERED)
+	_set_texture_rect(_opponent_portrait, opponent_portrait, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+	_set_texture_rect(_opponent_fan_badge, opponent_fan_badge, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+	_opponent_portrait_placeholder.visible = opponent_portrait == null
+
+
+# TextureRect 沿用当前设计框尺寸，背景裁切铺满，立绘和粉丝牌保留完整比例。
+func _set_texture_rect(texture_rect: TextureRect, texture: Texture2D, stretch_mode: int) -> void:
+	texture_rect.texture = texture
+	texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	texture_rect.stretch_mode = stretch_mode
+	texture_rect.visible = texture != null
 
 
 # PK 唯一值归 HitResolution，HUD 只将它映射为玩家占比和对手占比。

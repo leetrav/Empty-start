@@ -89,7 +89,7 @@ mouse_filter = 2
 layout_mode = 0
 offset_left = 28.0
 offset_top = 16.0
-offset_right = 420.0
+offset_right = 320.0
 offset_bottom = 44.0
 mouse_filter = 2
 theme_type_variation = &"MutedLabel"
@@ -99,12 +99,22 @@ text = "你的直播间"
 layout_mode = 0
 offset_left = 28.0
 offset_top = 52.0
-offset_right = 420.0
+offset_right = 340.0
 offset_bottom = 116.0
 mouse_filter = 2
 theme_type_variation = &"HeadingLabel"
 text = "玩家"
 text_overrun_behavior = 3
+
+[node name="PlayerFanBadge" type="TextureRect" parent="BattleHud/PlayerStreamerArea/PlayerInfoArea"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 356.0
+offset_top = 52.0
+offset_right = 420.0
+offset_bottom = 88.0
+mouse_filter = 2
+visible = false
 
 [node name="PlayerPortraitPlaceholder" type="ColorRect" parent="BattleHud/PlayerStreamerArea"]
 layout_mode = 0
@@ -113,6 +123,28 @@ offset_right = 448.0
 offset_bottom = 560.0
 mouse_filter = 2
 color = Color(0.15, 0.19, 0.22, 1)
+
+[node name="PlayerLiveBackground" type="TextureRect" parent="BattleHud/PlayerStreamerArea/PlayerPortraitPlaceholder"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+visible = false
+
+[node name="PlayerPortraitArt" type="TextureRect" parent="BattleHud/PlayerStreamerArea/PlayerPortraitPlaceholder"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+visible = false
 
 [node name="PlaceholderLabel" type="Label" parent="BattleHud/PlayerStreamerArea/PlayerPortraitPlaceholder"]
 layout_mode = 1
@@ -321,7 +353,7 @@ mouse_filter = 2
 layout_mode = 0
 offset_left = 28.0
 offset_top = 16.0
-offset_right = 420.0
+offset_right = 320.0
 offset_bottom = 44.0
 mouse_filter = 2
 theme_type_variation = &"MutedLabel"
@@ -331,12 +363,22 @@ text = "对手直播间"
 layout_mode = 0
 offset_left = 28.0
 offset_top = 52.0
-offset_right = 420.0
+offset_right = 340.0
 offset_bottom = 116.0
 mouse_filter = 2
 theme_type_variation = &"HeadingLabel"
 text = "当前关主播"
 text_overrun_behavior = 3
+
+[node name="OpponentFanBadge" type="TextureRect" parent="BattleHud/OpponentStreamerArea/OpponentInfoArea"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 356.0
+offset_top = 52.0
+offset_right = 420.0
+offset_bottom = 88.0
+mouse_filter = 2
+visible = false
 
 [node name="OpponentPortraitPlaceholder" type="ColorRect" parent="BattleHud/OpponentStreamerArea"]
 layout_mode = 0
@@ -346,6 +388,28 @@ offset_right = 448.0
 offset_bottom = 560.0
 mouse_filter = 2
 color = Color(0.22, 0.17, 0.2, 1)
+
+[node name="OpponentLiveBackground" type="TextureRect" parent="BattleHud/OpponentStreamerArea/OpponentPortraitPlaceholder"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+visible = false
+
+[node name="OpponentPortraitArt" type="TextureRect" parent="BattleHud/OpponentStreamerArea/OpponentPortraitPlaceholder"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+visible = false
 
 [node name="PlaceholderLabel" type="Label" parent="BattleHud/OpponentStreamerArea/OpponentPortraitPlaceholder"]
 layout_mode = 1

@@ -5,6 +5,7 @@ signal rest_opened(session: RestSession)
 
 const SAMPLE_LEVEL_CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
+const PRESENTATION_ASSETS: PresentationAssetConfig = preload("res://data/shared/presentation_asset_config.tres")
 const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
 @export var battle_config: SandboxBattleConfig = preload("res://data/sandbox/playable_battle_config.tres")
 
@@ -104,6 +105,14 @@ func restart_current_attempt() -> void:
 		return
 	var player_name: String = SaveManager.data.streamer_name
 	_battle_hud.configure_streamers(player_name if not player_name.is_empty() else "玩家主播", current_level.streamer_name)
+	_battle_hud.configure_streamer_assets(
+		PRESENTATION_ASSETS.player_streamer_portrait,
+		PRESENTATION_ASSETS.player_live_background,
+		PRESENTATION_ASSETS.player_fan_badge,
+		current_level.streamer_portrait,
+		current_level.streamer_live_background,
+		current_level.fan_badge_texture
+	)
 	if not _attack_charge_input.configure_attack_timing(battle_config.attack_timing):
 		push_error("Sandbox: 攻击时长配置无效。")
 		return
