@@ -15,6 +15,9 @@ var _opponent_pk_bar: OpponentPKBar
 # 应用 Tier 5 初始表现并停止普通战斗的持续驱动；场上弹幕实例由表现方继续管理。
 func enter_terminal_mode(
 		tier_catalog: CombatStageTierCatalog,
+		hit_resolution: HitResolution = null,
+		combat_stage: CombatStage = null,
+		contradiction_break: ContradictionBreakSystem = null,
 		barrage_area: BarrageArea = null,
 		opponent_pk_bar: OpponentPKBar = null
 	) -> bool:
@@ -23,11 +26,18 @@ func enter_terminal_mode(
 	var tier5_config: CombatStageTierConfig = tier_catalog.get_tier_config(TERMINAL_TIER)
 	if tier5_config == null:
 		return false
+	if combat_stage != null and not combat_stage.enter_terminal_tier(TERMINAL_TIER):
+		return false
 
 	_active = true
 	_tier5_config = tier5_config
 	_barrage_area = barrage_area
 	_opponent_pk_bar = opponent_pk_bar
+	if hit_resolution != null:
+		# 终局命中仍可由后续表现流程读取，但普通 PK 数值不再变化。
+		hit_resolution.set_normal_pk_resolution_enabled(false)
+	if contradiction_break != null:
+		contradiction_break.set_contradiction_break_enabled(false)
 	if _barrage_area != null:
 		# 只切换后续表现参数；不清理现有视图，后续终局流程仍可复用生成入口。
 		_barrage_area.set_generation_multipliers(

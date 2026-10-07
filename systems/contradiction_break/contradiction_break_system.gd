@@ -14,6 +14,7 @@ var _remaining_shots: int = 0
 var _pending_shots: int = 0
 var _window_active: bool = false
 var _outcome: Outcome = Outcome.PENDING
+var _contradiction_break_enabled: bool = true
 
 
 func _ready() -> void:
@@ -51,6 +52,8 @@ func get_context_clues() -> Array[String]:
 func start_window(config: ContradictionWindowConfig) -> bool:
 	if config == null or config.duration_seconds <= 0.0 or config.max_shots <= 0:
 		return false
+	if not _contradiction_break_enabled:
+		return false
 	if _window_timer == null or _window_active or is_result_locked():
 		return false
 	_remaining_shots = config.max_shots
@@ -59,6 +62,21 @@ func start_window(config: ContradictionWindowConfig) -> bool:
 	_outcome = Outcome.PENDING
 	_window_timer.start(config.duration_seconds)
 	return true
+
+
+# 终局模式关闭矛盾流程；已经存在的窗口也立即停止，避免继续消耗发射机会。
+func set_contradiction_break_enabled(enabled: bool) -> void:
+	_contradiction_break_enabled = enabled
+	if not enabled:
+		_window_active = false
+		_pending_shots = 0
+		_remaining_shots = 0
+		if _window_timer != null:
+			_window_timer.stop()
+
+
+func allows_contradiction_break() -> bool:
+	return _contradiction_break_enabled
 
 
 func get_remaining_seconds() -> float:

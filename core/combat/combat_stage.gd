@@ -12,6 +12,7 @@ const INITIAL_TIER: int = 0
 
 var _tier_catalog: CombatStageTierCatalog
 var _current_tier: int = INITIAL_TIER
+var _tier_changes_enabled: bool = true
 
 
 func _init(tier_catalog: CombatStageTierCatalog) -> void:
@@ -21,12 +22,27 @@ func _init(tier_catalog: CombatStageTierCatalog) -> void:
 
 func begin_combat() -> void:
 	# 新一场或当前关重开时统一从 Tier 0 开始。
+	_tier_changes_enabled = true
 	_current_tier = INITIAL_TIER
 	_publish_current_tier_state()
 
 
 func get_current_tier() -> int:
 	return _current_tier
+
+
+# 终局把当前表现固定到指定 Tier，并关闭后续普通升降档入口。
+func enter_terminal_tier(tier: int) -> bool:
+	if _tier_catalog == null or _tier_catalog.get_tier_config(tier) == null:
+		return false
+	_tier_changes_enabled = false
+	_current_tier = tier
+	_publish_current_tier_state()
+	return true
+
+
+func allows_tier_changes() -> bool:
+	return _tier_changes_enabled
 
 
 func get_current_repeat_count_per_hit() -> int:
@@ -75,7 +91,7 @@ func _on_final_player_pk_updated(final_player_pk: float) -> void:
 
 func try_tier_up(final_player_pk: float) -> bool:
 	# 达到当前档位配置的升档阈值时最多升一档，Tier 5 留给矛盾阶段处理。
-	if _current_tier >= 5:
+	if not _tier_changes_enabled or _current_tier >= 5:
 		return false
 
 	var current_config: CombatStageTierConfig = _tier_catalog.get_tier_config(_current_tier)
@@ -88,7 +104,7 @@ func try_tier_up(final_player_pk: float) -> bool:
 
 func try_tier_down(final_player_pk: float) -> bool:
 	# 只有 PK 严格低于当前档位的降档阈值时才下降一档。
-	if _current_tier <= INITIAL_TIER:
+	if not _tier_changes_enabled or _current_tier <= INITIAL_TIER:
 		return false
 
 	var current_config: CombatStageTierConfig = _tier_catalog.get_tier_config(_current_tier)
@@ -101,6 +117,8 @@ func try_tier_down(final_player_pk: float) -> bool:
 
 func update_tier_for_pk(final_player_pk: float) -> bool:
 	# 重复调用已实现的单档规则，直到该 PK 不再跨越升档或降档阈值。
+	if not _tier_changes_enabled:
+		return false
 	var previous_tier: int = _current_tier
 	var tier_changed: bool = false
 	while try_tier_up(final_player_pk):
