@@ -1,0 +1,19 @@
+{
+  "source_path": "docs/16. LoserCard/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "16. LoserCard 败者卡系统任务拆分",
+  "summary": "败者卡系统负责记录本周目真正击败过哪些主播。 只有“矛盾击破成功 + 终结神谕确认完成”后才发卡。只赢下 PK 不发新卡。 - `LoserCardProfile` Resource 以稳定 `streamer_id` 标识主播，提供 `streamer_name`、`card_art` 和 `card_text` 展示入口。 - `LoserCardCatalog` 保存资料列表，并通过 `find_profile(streamer_id)` 查找卡片。 - 当前目录中的 `data/loser_card/loser_card_catalog.tres` 是空资料库；正式主播 ID、卡面素材和文案尚未提供。",
+  "scope": [
+    "系统目标",
+    "当前数据底座",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

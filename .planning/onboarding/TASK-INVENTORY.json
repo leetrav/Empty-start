@@ -1,0 +1,1874 @@
+{
+  "snapshot_commit": "6f440382c859c661470b893f825089a887807d82",
+  "purpose": "任务卡与历史日志检索快照；不代表当前完成状态",
+  "date": "2026-10-08",
+  "task_count": 222,
+  "with_matching_log": 155,
+  "tasks": [
+    {
+      "task_id": "ID-01",
+      "path": "docs/1. Identify/tasks/ID-01_identity-option-data.md",
+      "logs": [
+        "docs/1. Identify/身份系统_ID-01_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "ID-02",
+      "path": "docs/1. Identify/tasks/ID-02_player-name-confirmation.md",
+      "logs": [
+        "docs/1. Identify/身份系统_ID-02_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "ID-03",
+      "path": "docs/1. Identify/tasks/ID-03_identity-confirm-lock.md",
+      "logs": [
+        "docs/1. Identify/身份系统_ID-03_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "ID-04",
+      "path": "docs/1. Identify/tasks/ID-04_identity-save-data.md",
+      "logs": [
+        "docs/1. Identify/身份系统_ID-04_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "ID-05",
+      "path": "docs/1. Identify/tasks/ID-05_identity-setup-ui.md",
+      "logs": [
+        "docs/1. Identify/身份系统_ID-05_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "ID-06",
+      "path": "docs/1. Identify/tasks/ID-06_identity-flow-wiring.md",
+      "logs": [
+        "docs/1. Identify/身份系统_ID-06_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "ID-07",
+      "path": "docs/1. Identify/tasks/ID-07_custom-fan-group-name.md",
+      "logs": [
+        "docs/1. Identify/身份系统_ID-07_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-01",
+      "path": "docs/10. Repeat/tasks/RP-01_repeat-plan-data.md",
+      "logs": [
+        "docs/10. Repeat/复读系统_RP-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-02",
+      "path": "docs/10. Repeat/tasks/RP-02_normal-hit-plan.md",
+      "logs": [
+        "docs/10. Repeat/复读系统_RP-02_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-03",
+      "path": "docs/10. Repeat/tasks/RP-03_repeat-template.md",
+      "logs": [
+        "docs/10. Repeat/复读系统_RP-03_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-04",
+      "path": "docs/10. Repeat/tasks/RP-04_normal-delay-queue.md",
+      "logs": [
+        "docs/10. Repeat/复读系统_RP-04_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-05",
+      "path": "docs/10. Repeat/tasks/RP-05_normal-repeat-cap.md",
+      "logs": [
+        "docs/10. Repeat/复读系统_RP-05_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-06",
+      "path": "docs/10. Repeat/tasks/RP-06_spawn-request-integration.md",
+      "logs": [
+        "docs/10. Repeat/复读系统_RP-06_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-07",
+      "path": "docs/10. Repeat/tasks/RP-07_repeat-hit-integration.md",
+      "logs": [
+        "docs/10. Repeat/复读系统_RP-07_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-08",
+      "path": "docs/10. Repeat/tasks/RP-08_contradiction-repeat.md",
+      "logs": [
+        "docs/10. Repeat/复读系统_RP-08_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-09",
+      "path": "docs/10. Repeat/tasks/RP-09_repeat-stats.md",
+      "logs": [
+        "docs/10. Repeat/复读系统_RP-09_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-10",
+      "path": "docs/10. Repeat/tasks/RP-10_commit-and-rollback.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-11",
+      "path": "docs/10. Repeat/tasks/RP-11_clear-normal-queue.md",
+      "logs": [
+        "docs/10. Repeat/复读系统_RP-11_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RP-12",
+      "path": "docs/10. Repeat/tasks/RP-12_stats-consumers.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-01",
+      "path": "docs/12. ContradictionBreak/tasks/CB-01_enter-stage.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-02",
+      "path": "docs/12. ContradictionBreak/tasks/CB-02_load-contradiction-content.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-02_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-03",
+      "path": "docs/12. ContradictionBreak/tasks/CB-03_spawn-contradictions.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-03_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-04",
+      "path": "docs/12. ContradictionBreak/tasks/CB-04_window-and-shot-limit.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-04_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-05",
+      "path": "docs/12. ContradictionBreak/tasks/CB-05_shot-result.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-05_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-06",
+      "path": "docs/12. ContradictionBreak/tasks/CB-06_timeout-result.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-06_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-07",
+      "path": "docs/12. ContradictionBreak/tasks/CB-07_lock-result.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-07_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-08",
+      "path": "docs/12. ContradictionBreak/tasks/CB-08_repeat-integration.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-08_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-09",
+      "path": "docs/12. ContradictionBreak/tasks/CB-09_success-to-oracle.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-09_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-10",
+      "path": "docs/12. ContradictionBreak/tasks/CB-10_failure-to-rest.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-10_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-11",
+      "path": "docs/12. ContradictionBreak/tasks/CB-11_pause-countdown.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-11_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CB-12",
+      "path": "docs/12. ContradictionBreak/tasks/CB-12_submit-normal-history.md",
+      "logs": [
+        "docs/12. ContradictionBreak/矛盾击破系统_CB-12_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-01",
+      "path": "docs/13. FinalOracle/tasks/FO-01_enter-and-freeze.md",
+      "logs": [
+        "docs/13. FinalOracle/终结神谕系统_FO-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-02",
+      "path": "docs/13. FinalOracle/tasks/FO-02_candidate-pool.md",
+      "logs": [
+        "docs/13. FinalOracle/终结神谕系统_FO-02_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-03",
+      "path": "docs/13. FinalOracle/tasks/FO-03_best-per-tendency.md",
+      "logs": [
+        "docs/13. FinalOracle/终结神谕系统_FO-03_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-04",
+      "path": "docs/13. FinalOracle/tasks/FO-04_tie-break.md",
+      "logs": [
+        "docs/13. FinalOracle/终结神谕系统_FO-04_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-05",
+      "path": "docs/13. FinalOracle/tasks/FO-05_fill-to-three.md",
+      "logs": [
+        "docs/13. FinalOracle/终结神谕系统_FO-05_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-06",
+      "path": "docs/13. FinalOracle/tasks/FO-06_freeze-display-list.md",
+      "logs": [
+        "docs/13. FinalOracle/终结神谕系统_FO-06_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-07",
+      "path": "docs/13. FinalOracle/tasks/FO-07_selection-timer.md",
+      "logs": [
+        "docs/13. FinalOracle/终结神谕系统_FO-07_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-08",
+      "path": "docs/13. FinalOracle/tasks/FO-08_timeout-auto-pick.md",
+      "logs": [
+        "docs/13. FinalOracle/终结神谕系统_FO-08_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-09",
+      "path": "docs/13. FinalOracle/tasks/FO-09_confirm-once.md",
+      "logs": [
+        "docs/13. FinalOracle/终结神谕系统_FO-09_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-10",
+      "path": "docs/13. FinalOracle/tasks/FO-10_scripture-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-11",
+      "path": "docs/13. FinalOracle/tasks/FO-11_rewards-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-12",
+      "path": "docs/13. FinalOracle/tasks/FO-12_to-rest.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "FO-13",
+      "path": "docs/13. FinalOracle/tasks/FO-13_battle-area-attack-selection.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AS-01",
+      "path": "docs/14. Assimilation/tasks/AS-01_assimilation-data.md",
+      "logs": [
+        "docs/14. Assimilation/吞并系统_AS-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AS-02",
+      "path": "docs/14. Assimilation/tasks/AS-02_defeated-streamer-once.md",
+      "logs": [
+        "docs/14. Assimilation/吞并系统_AS-02_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AS-03",
+      "path": "docs/14. Assimilation/tasks/AS-03_inherited-word-pool.md",
+      "logs": [
+        "docs/14. Assimilation/吞并系统_AS-03_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AS-04",
+      "path": "docs/14. Assimilation/tasks/AS-04_inherited-trait.md",
+      "logs": [
+        "docs/14. Assimilation/吞并系统_AS-04_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AS-05",
+      "path": "docs/14. Assimilation/tasks/AS-05_clear-vs-defeat.md",
+      "logs": [
+        "docs/14. Assimilation/吞并系统_AS-05_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AS-06",
+      "path": "docs/14. Assimilation/tasks/AS-06_level-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AS-07",
+      "path": "docs/14. Assimilation/tasks/AS-07_preserve-on-restart.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AS-08",
+      "path": "docs/14. Assimilation/tasks/AS-08_rest-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AS-09",
+      "path": "docs/14. Assimilation/tasks/AS-09_divine-descent-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "SC-01",
+      "path": "docs/15. Scripture/tasks/SC-01_scripture-entry.md",
+      "logs": [
+        "docs/15. Scripture/圣典系统_SC-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "SC-02",
+      "path": "docs/15. Scripture/tasks/SC-02_save-one-per-level.md",
+      "logs": [
+        "docs/15. Scripture/圣典系统_SC-02_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "SC-03",
+      "path": "docs/15. Scripture/tasks/SC-03_fixed-verse-number.md",
+      "logs": [
+        "docs/15. Scripture/圣典系统_SC-03_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "SC-04",
+      "path": "docs/15. Scripture/tasks/SC-04_chapter-order-and-gaps.md",
+      "logs": [
+        "docs/15. Scripture/圣典系统_SC-04_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "SC-05",
+      "path": "docs/15. Scripture/tasks/SC-05_rollback-uncommitted.md",
+      "logs": [
+        "docs/15. Scripture/圣典系统_SC-05_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "SC-06",
+      "path": "docs/15. Scripture/tasks/SC-06_rest-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "SC-07",
+      "path": "docs/15. Scripture/tasks/SC-07_divine-descent-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "SC-08",
+      "path": "docs/15. Scripture/tasks/SC-08_ending-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LCARD-01",
+      "path": "docs/16. LoserCard/tasks/LCARD-01_card-data.md",
+      "logs": [
+        "docs/16. LoserCard/败者卡系统_LCARD-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LCARD-02",
+      "path": "docs/16. LoserCard/tasks/LCARD-02_grant-on-defeat.md",
+      "logs": [
+        "docs/16. LoserCard/败者卡系统_LCARD-02_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LCARD-03",
+      "path": "docs/16. LoserCard/tasks/LCARD-03_one-per-streamer.md",
+      "logs": [
+        "docs/16. LoserCard/败者卡系统_LCARD-03_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LCARD-04",
+      "path": "docs/16. LoserCard/tasks/LCARD-04_no-card-on-pk-only.md",
+      "logs": [
+        "docs/16. LoserCard/败者卡系统_LCARD-04_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LCARD-05",
+      "path": "docs/16. LoserCard/tasks/LCARD-05_save-in-run.md",
+      "logs": [
+        "docs/16. LoserCard/败者卡系统_LCARD-05_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LCARD-06",
+      "path": "docs/16. LoserCard/tasks/LCARD-06_reset-new-run.md",
+      "logs": [
+        "docs/16. LoserCard/败者卡系统_LCARD-06_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LCARD-07",
+      "path": "docs/16. LoserCard/tasks/LCARD-07_rest-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-01",
+      "path": "docs/17. ThreeTendencies/tasks/TT-01_tendency-state.md",
+      "logs": [
+        "docs/17. ThreeTendencies/三项倾向系统_TT-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-02",
+      "path": "docs/17. ThreeTendencies/tasks/TT-02_attempt-accumulate.md",
+      "logs": [
+        "docs/17. ThreeTendencies/三项倾向系统_TT-02_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-03",
+      "path": "docs/17. ThreeTendencies/tasks/TT-03_commit-on-win.md",
+      "logs": [
+        "docs/17. ThreeTendencies/三项倾向系统_TT-03_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-04",
+      "path": "docs/17. ThreeTendencies/tasks/TT-04_rollback-on-fail.md",
+      "logs": [
+        "docs/17. ThreeTendencies/三项倾向系统_TT-04_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-05",
+      "path": "docs/17. ThreeTendencies/tasks/TT-05_primary-tendency.md",
+      "logs": [
+        "docs/17. ThreeTendencies/三项倾向系统_TT-05_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-06",
+      "path": "docs/17. ThreeTendencies/tasks/TT-06_primary-tie-break.md",
+      "logs": [
+        "docs/17. ThreeTendencies/三项倾向系统_TT-06_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-07",
+      "path": "docs/17. ThreeTendencies/tasks/TT-07_secondary-tendency.md",
+      "logs": [
+        "docs/17. ThreeTendencies/三项倾向系统_TT-07_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-08",
+      "path": "docs/17. ThreeTendencies/tasks/TT-08_all-zero.md",
+      "logs": [
+        "docs/17. ThreeTendencies/三项倾向系统_TT-08_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-09",
+      "path": "docs/17. ThreeTendencies/tasks/TT-09_oracle-zero-extra.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-10",
+      "path": "docs/17. ThreeTendencies/tasks/TT-10_rest-environment.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-11",
+      "path": "docs/17. ThreeTendencies/tasks/TT-11_freeze-final.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-12",
+      "path": "docs/17. ThreeTendencies/tasks/TT-12_final-consumers.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-13",
+      "path": "docs/17. ThreeTendencies/tasks/TT-13_neutral-speech.md",
+      "logs": [
+        "docs/17. ThreeTendencies/三项倾向系统_TT-13_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "TT-14",
+      "path": "docs/17. ThreeTendencies/tasks/TT-14_neutral-tier-decay.md",
+      "logs": [
+        "docs/17. ThreeTendencies/三项倾向系统_TT-14_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-01",
+      "path": "docs/18. Rest/tasks/RS-01_result-snapshot.md",
+      "logs": [
+        "docs/18. Rest/休息时刻系统_RS-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-02",
+      "path": "docs/18. Rest/tasks/RS-02_unbroken-result.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-03",
+      "path": "docs/18. Rest/tasks/RS-03_read-new-rewards.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-04",
+      "path": "docs/18. Rest/tasks/RS-04_empty-state.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-05",
+      "path": "docs/18. Rest/tasks/RS-05_scripture-history.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-06",
+      "path": "docs/18. Rest/tasks/RS-06_card-history.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-07",
+      "path": "docs/18. Rest/tasks/RS-07_tendency-environment.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-08",
+      "path": "docs/18. Rest/tasks/RS-08_reopen-idempotent.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-09",
+      "path": "docs/18. Rest/tasks/RS-09_next-level.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-10",
+      "path": "docs/18. Rest/tasks/RS-10_to-divine-descent.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "RS-11",
+      "path": "docs/18. Rest/tasks/RS-11_input-switch.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-01",
+      "path": "docs/19. DivineDescent/tasks/DD-01_enter-and-freeze.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-02",
+      "path": "docs/19. DivineDescent/tasks/DD-02_history-candidates.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-03",
+      "path": "docs/19. DivineDescent/tasks/DD-03_assimilation-input.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-04",
+      "path": "docs/19. DivineDescent/tasks/DD-04_terminal-combat-mode.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-05",
+      "path": "docs/19. DivineDescent/tasks/DD-05_new-word-decay.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-06",
+      "path": "docs/19. DivineDescent/tasks/DD-06_base-weight.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-07",
+      "path": "docs/19. DivineDescent/tasks/DD-07_scripture-bonus.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-08",
+      "path": "docs/19. DivineDescent/tasks/DD-08_spread-auto-repeat.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-09",
+      "path": "docs/19. DivineDescent/tasks/DD-09_lock-highest.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-10",
+      "path": "docs/19. DivineDescent/tasks/DD-10_lock-tie-break.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-11",
+      "path": "docs/19. DivineDescent/tasks/DD-11_locked-generation.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-12",
+      "path": "docs/19. DivineDescent/tasks/DD-12_visible-ratio.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-13",
+      "path": "docs/19. DivineDescent/tasks/DD-13_converge-at-90.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-14",
+      "path": "docs/19. DivineDescent/tasks/DD-14_locked-input-presentation.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-15",
+      "path": "docs/19. DivineDescent/tasks/DD-15_empty-history.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-16",
+      "path": "docs/19. DivineDescent/tasks/DD-16_trait-boundary.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DD-17",
+      "path": "docs/19. DivineDescent/tasks/DD-17_to-ending.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LC-01",
+      "path": "docs/2. LevelConfiguration/tasks/LC-01_level-profile-data.md",
+      "logs": [
+        "docs/2. LevelConfiguration/关卡配置_LC-01_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LC-02",
+      "path": "docs/2. LevelConfiguration/tasks/LC-02_word-pool-tendency-data.md",
+      "logs": [
+        "docs/2. LevelConfiguration/关卡配置_LC-02_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LC-03",
+      "path": "docs/2. LevelConfiguration/tasks/LC-03_special-and-contradiction-data.md",
+      "logs": [
+        "docs/2. LevelConfiguration/关卡配置_LC-03_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LC-04",
+      "path": "docs/2. LevelConfiguration/tasks/LC-04_generation-config.md",
+      "logs": [
+        "docs/2. LevelConfiguration/关卡配置_LC-04_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LC-05",
+      "path": "docs/2. LevelConfiguration/tasks/LC-05_current-level-selection.md",
+      "logs": [
+        "docs/2. LevelConfiguration/关卡配置_LC-05_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LC-06",
+      "path": "docs/2. LevelConfiguration/tasks/LC-06_level-complete-once.md",
+      "logs": [
+        "docs/2. LevelConfiguration/关卡配置_LC-06_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LC-07",
+      "path": "docs/2. LevelConfiguration/tasks/LC-07_inherited-content.md",
+      "logs": [
+        "docs/2. LevelConfiguration/关卡配置_LC-07_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LC-08",
+      "path": "docs/2. LevelConfiguration/tasks/LC-08_restart-current-level.md",
+      "logs": [
+        "docs/2. LevelConfiguration/关卡配置_LC-08_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LC-09",
+      "path": "docs/2. LevelConfiguration/tasks/LC-09_rest-next-or-final.md",
+      "logs": [
+        "docs/2. LevelConfiguration/关卡配置_LC-09_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "EN-01",
+      "path": "docs/20. Ending/tasks/EN-01_receive-final-state.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "EN-02",
+      "path": "docs/20. Ending/tasks/EN-02_main-art.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "EN-03",
+      "path": "docs/20. Ending/tasks/EN-03_religion-name.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "EN-04",
+      "path": "docs/20. Ending/tasks/EN-04_scripture-display-data.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "EN-05",
+      "path": "docs/20. Ending/tasks/EN-05_identity-result-class.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "EN-06",
+      "path": "docs/20. Ending/tasks/EN-06_judgement-text.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "EN-07",
+      "path": "docs/20. Ending/tasks/EN-07_empty-scripture.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "EN-08",
+      "path": "docs/20. Ending/tasks/EN-08_compose-ending-page.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "EN-09",
+      "path": "docs/20. Ending/tasks/EN-09_zero-collection-complete.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-01",
+      "path": "docs/3. BarrageGeneration/tasks/BG-01_barrage-runtime-record.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-01_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-02",
+      "path": "docs/3. BarrageGeneration/tasks/BG-02_weighted-word-pick.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-02_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-03",
+      "path": "docs/3. BarrageGeneration/tasks/BG-03_spawn-one-normal-barrage.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-03_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-04",
+      "path": "docs/3. BarrageGeneration/tasks/BG-04_normal-spawn-loop.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-04_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-05",
+      "path": "docs/3. BarrageGeneration/tasks/BG-05_tier-multiplier-future-spawn.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-05_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-06",
+      "path": "docs/3. BarrageGeneration/tasks/BG-06_fixed-lifetime-on-spawn.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-06_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-07",
+      "path": "docs/3. BarrageGeneration/tasks/BG-07_normal-screen-cap.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-07_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-08",
+      "path": "docs/3. BarrageGeneration/tasks/BG-08_natural-removal.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-08_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-09",
+      "path": "docs/3. BarrageGeneration/tasks/BG-09_hit-removal.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-09_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-10",
+      "path": "docs/3. BarrageGeneration/tasks/BG-10_repeat-request-and-cap.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-10_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-11",
+      "path": "docs/3. BarrageGeneration/tasks/BG-11_global-pause.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-11_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-12",
+      "path": "docs/3. BarrageGeneration/tasks/BG-12_contradiction-generation-mode.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成系统_BG-12_2026-10-06_log.md",
+        "docs/3. BarrageGeneration/弹幕生成_BG-12_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-13",
+      "path": "docs/3. BarrageGeneration/tasks/BG-13_normal-stage-cleanup.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-13_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BG-14",
+      "path": "docs/3. BarrageGeneration/tasks/BG-14_stage-layout-read.md",
+      "logs": [
+        "docs/3. BarrageGeneration/弹幕生成_BG-14_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-01",
+      "path": "docs/4. BarrageTraits/tasks/BT-01_trait-types-and-attachment.md",
+      "logs": [
+        "docs/4. BarrageTraits/弹幕特性系统_BT-01_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-02",
+      "path": "docs/4. BarrageTraits/tasks/BT-02_unselectable-trait.md",
+      "logs": [
+        "docs/4. BarrageTraits/弹幕特性系统_BT-02_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-03",
+      "path": "docs/4. BarrageTraits/tasks/BT-03_blocked-result.md",
+      "logs": [
+        "docs/4. BarrageTraits/弹幕特性系统_BT-03_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-04",
+      "path": "docs/4. BarrageTraits/tasks/BT-04_fake-card-result.md",
+      "logs": [
+        "docs/4. BarrageTraits/弹幕特性系统_BT-04_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-05",
+      "path": "docs/4. BarrageTraits/tasks/BT-05_retaliation-copy.md",
+      "logs": [
+        "docs/4. BarrageTraits/弹幕特性系统_BT-05_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-06",
+      "path": "docs/4. BarrageTraits/tasks/BT-06_split-once.md",
+      "logs": [
+        "docs/4. BarrageTraits/弹幕特性系统_BT-06_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-07",
+      "path": "docs/4. BarrageTraits/tasks/BT-07_reflect-result.md",
+      "logs": [
+        "docs/4. BarrageTraits/弹幕特性系统_BT-07_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-08",
+      "path": "docs/4. BarrageTraits/tasks/BT-08_trait-result-priority.md",
+      "logs": [
+        "docs/4. BarrageTraits/弹幕特性系统_BT-08_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-09",
+      "path": "docs/4. BarrageTraits/tasks/BT-09_trait-compatibility.md",
+      "logs": [
+        "docs/4. BarrageTraits/弹幕特性系统_BT-09_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-10",
+      "path": "docs/4. BarrageTraits/tasks/BT-10_attack-selectable-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-11",
+      "path": "docs/4. BarrageTraits/tasks/BT-11_hit-resolution-integration.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-12",
+      "path": "docs/4. BarrageTraits/tasks/BT-12_contradiction-boundary.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "BT-13",
+      "path": "docs/4. BarrageTraits/tasks/BT-13_inherited-traits.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-01",
+      "path": "docs/5. CombatAttack/tasks/CA-01_mouse-aim.md",
+      "logs": [
+        "docs/5. CombatAttack/战斗攻击系统_CA-01_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-02",
+      "path": "docs/5. CombatAttack/tasks/CA-02_aim-overlap.md",
+      "logs": [
+        "docs/5. CombatAttack/战斗攻击系统_CA-02_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-03",
+      "path": "docs/5. CombatAttack/tasks/CA-03_charge-progress.md",
+      "logs": [
+        "docs/5. CombatAttack/战斗攻击系统_CA-03_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-04",
+      "path": "docs/5. CombatAttack/tasks/CA-04_cancel-undercharge.md",
+      "logs": [
+        "docs/5. CombatAttack/战斗攻击系统_CA-04_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-05",
+      "path": "docs/5. CombatAttack/tasks/CA-05_release-target-snapshot.md",
+      "logs": [
+        "docs/5. CombatAttack/战斗攻击系统_CA-05_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-06",
+      "path": "docs/5. CombatAttack/tasks/CA-06_arrival-revalidate.md",
+      "logs": [
+        "docs/5. CombatAttack/战斗攻击系统_CA-06_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-07",
+      "path": "docs/5. CombatAttack/tasks/CA-07_attack-recovery.md",
+      "logs": [
+        "docs/5. CombatAttack/战斗攻击系统_CA-07_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-08",
+      "path": "docs/5. CombatAttack/tasks/CA-08_trait-integration.md",
+      "logs": [
+        "docs/5. CombatAttack/战斗攻击系统_CA-08_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-09",
+      "path": "docs/5. CombatAttack/tasks/CA-09_normal-result-to-hit-resolution.md",
+      "logs": [
+        "docs/5. CombatAttack/战斗攻击系统_CA-09_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-10",
+      "path": "docs/5. CombatAttack/tasks/CA-10_contradiction-attack.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-11",
+      "path": "docs/5. CombatAttack/tasks/CA-11_pause.md",
+      "logs": [
+        "docs/5. CombatAttack/战斗攻击系统_CA-11_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CA-12",
+      "path": "docs/5. CombatAttack/tasks/CA-12_touch-input.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-01",
+      "path": "docs/6. HitResolution/tasks/HR-01_pk-state-and-clamp.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-01_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-02",
+      "path": "docs/6. HitResolution/tasks/HR-02_normal-word-reward.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-02_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-03",
+      "path": "docs/6. HitResolution/tasks/HR-03_trap-penalties.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-03_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-04",
+      "path": "docs/6. HitResolution/tasks/HR-04_repeat-zero-reward.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-04_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-05",
+      "path": "docs/6. HitResolution/tasks/HR-05_shot-aggregate.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-05_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-06",
+      "path": "docs/6. HitResolution/tasks/HR-06_anomaly-priority.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-06_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-07",
+      "path": "docs/6. HitResolution/tasks/HR-07_partial-invalid-target.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-07_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-08",
+      "path": "docs/6. HitResolution/tasks/HR-08_pullback-zero-priority.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-08_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-09",
+      "path": "docs/6. HitResolution/tasks/HR-09_stage-integration.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-09_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-10",
+      "path": "docs/6. HitResolution/tasks/HR-10_tendency-integration.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-10_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-11",
+      "path": "docs/6. HitResolution/tasks/HR-11_repeat-integration.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-11_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-12",
+      "path": "docs/6. HitResolution/tasks/HR-12_live-data-broadcast.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-12_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-13",
+      "path": "docs/6. HitResolution/tasks/HR-13_contradiction-boundary.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-14",
+      "path": "docs/6. HitResolution/tasks/HR-14_normal-hit-history.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-14_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "HR-15",
+      "path": "docs/6. HitResolution/tasks/HR-15_history-commit-rollback.md",
+      "logs": [
+        "docs/6. HitResolution/命中结算_HR-15_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "OP-01",
+      "path": "docs/7. OpponentPKBar/tasks/OP-01_pullback-delta.md",
+      "logs": [
+        "docs/7. OpponentPKBar/对手PK条_OP-01_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "OP-02",
+      "path": "docs/7. OpponentPKBar/tasks/OP-02_continuous-pullback.md",
+      "logs": [
+        "docs/7. OpponentPKBar/对手PK条_OP-02_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "OP-03",
+      "path": "docs/7. OpponentPKBar/tasks/OP-03_stop-pullback.md",
+      "logs": [
+        "docs/7. OpponentPKBar/对手PK条_OP-03_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "OP-04",
+      "path": "docs/7. OpponentPKBar/tasks/OP-04_tier-pullback-speed.md",
+      "logs": [
+        "docs/7. OpponentPKBar/对手PK条_OP-04_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "OP-05",
+      "path": "docs/7. OpponentPKBar/tasks/OP-05_zero-pk-failure.md",
+      "logs": [
+        "docs/7. OpponentPKBar/对手PK条_OP-05_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "OP-06",
+      "path": "docs/7. OpponentPKBar/tasks/OP-06_restart-current-level.md",
+      "logs": [
+        "docs/7. OpponentPKBar/对手PK条_OP-06_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "OP-07",
+      "path": "docs/7. OpponentPKBar/tasks/OP-07_attempt-rollback.md",
+      "logs": [
+        "docs/7. OpponentPKBar/对手PK条_OP-07_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "OP-08",
+      "path": "docs/7. OpponentPKBar/tasks/OP-08_preserve-committed-history.md",
+      "logs": [
+        "docs/7. OpponentPKBar/对手PK条_OP-08_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "OP-09",
+      "path": "docs/7. OpponentPKBar/tasks/OP-09_loss-streak.md",
+      "logs": [
+        "docs/7. OpponentPKBar/对手PK条_OP-09_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-01",
+      "path": "docs/8. CombatStage/tasks/CS-01_tier-config.md",
+      "logs": [
+        "docs/8. CombatStage/战斗阶段_CS-01_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-02",
+      "path": "docs/8. CombatStage/tasks/CS-02_initial-tier-zero.md",
+      "logs": [
+        "docs/8. CombatStage/战斗阶段_CS-02_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-03",
+      "path": "docs/8. CombatStage/tasks/CS-03_tier-up.md",
+      "logs": [
+        "docs/8. CombatStage/战斗阶段_CS-03_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-04",
+      "path": "docs/8. CombatStage/tasks/CS-04_tier-down.md",
+      "logs": [
+        "docs/8. CombatStage/战斗阶段_CS-04_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-05",
+      "path": "docs/8. CombatStage/tasks/CS-05_multi-tier-change.md",
+      "logs": [
+        "docs/8. CombatStage/战斗阶段_CS-05_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-06",
+      "path": "docs/8. CombatStage/tasks/CS-06_post-shot-update.md",
+      "logs": [
+        "docs/8. CombatStage/战斗阶段_CS-06_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-07",
+      "path": "docs/8. CombatStage/tasks/CS-07_barrage-multipliers.md",
+      "logs": [
+        "docs/8. CombatStage/战斗阶段_CS-07_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-08",
+      "path": "docs/8. CombatStage/tasks/CS-08_repeat-config.md",
+      "logs": [
+        "docs/8. CombatStage/战斗阶段_CS-08_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-09",
+      "path": "docs/8. CombatStage/tasks/CS-09_opponent-pullback-and-tier5.md",
+      "logs": [
+        "docs/8. CombatStage/战斗阶段_CS-09_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-10",
+      "path": "docs/8. CombatStage/tasks/CS-10_presentation-broadcast.md",
+      "logs": [
+        "docs/8. CombatStage/战斗阶段_CS-10_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-11",
+      "path": "docs/8. CombatStage/tasks/CS-11_enter-contradiction.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "CS-12",
+      "path": "docs/8. CombatStage/tasks/CS-12_contradiction-cleanup.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LD-01",
+      "path": "docs/9. LiveDataPresentation/tasks/LD-01_live-session-state.md",
+      "logs": [
+        "docs/9. LiveDataPresentation/直播数据表现系统_LD-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LD-02",
+      "path": "docs/9. LiveDataPresentation/tasks/LD-02_opening-viewers.md",
+      "logs": [
+        "docs/9. LiveDataPresentation/直播数据表现系统_LD-02_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LD-03",
+      "path": "docs/9. LiveDataPresentation/tasks/LD-03_hit-event-effects.md",
+      "logs": [
+        "docs/9. LiveDataPresentation/直播数据表现系统_LD-03_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LD-04",
+      "path": "docs/9. LiveDataPresentation/tasks/LD-04_tier-heat-effects.md",
+      "logs": [
+        "docs/9. LiveDataPresentation/直播数据表现系统_LD-04_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LD-05",
+      "path": "docs/9. LiveDataPresentation/tasks/LD-05_comment-generation-events.md",
+      "logs": [
+        "docs/9. LiveDataPresentation/直播数据表现系统_LD-05_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LD-06",
+      "path": "docs/9. LiveDataPresentation/tasks/LD-06_break-oracle-boost.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LD-07",
+      "path": "docs/9. LiveDataPresentation/tasks/LD-07_fan-settlement-once.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LD-08",
+      "path": "docs/9. LiveDataPresentation/tasks/LD-08_restart-session-reset.md",
+      "logs": [
+        "docs/9. LiveDataPresentation/直播数据表现系统_LD-08_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LD-09",
+      "path": "docs/9. LiveDataPresentation/tasks/LD-09_live-data-ui.md",
+      "logs": [
+        "docs/9. LiveDataPresentation/直播数据表现系统_LD-09_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "LD-10",
+      "path": "docs/9. LiveDataPresentation/tasks/LD-10_rest-result-display.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "INT-01",
+      "path": "docs/Integration/tasks/INT-01_playable-battle-sandbox.md",
+      "logs": [
+        "docs/Integration/普通战斗Sandbox_INT-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "INT-02",
+      "path": "docs/Integration/tasks/INT-02_sandbox-layout-source-of-truth.md",
+      "logs": [
+        "docs/Integration/Sandbox布局_INT-02_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "INT-03",
+      "path": "docs/Integration/tasks/INT-03_live-data-richtext-overlay.md",
+      "logs": [
+        "docs/Integration/直播数据富文本_INT-03_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AU-01",
+      "path": "docs/Shared/Audio/tasks/AU-01_audio-event-config.md",
+      "logs": [
+        "docs/Shared/Audio/Audio_AU-01_2026-10-06_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "AU-02",
+      "path": "docs/Shared/Audio/tasks/AU-02_music-state-transitions.md",
+      "logs": [],
+      "has_log": false,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "DBG-01",
+      "path": "docs/Shared/Debug/tasks/DBG-01_debug-panel.md",
+      "logs": [
+        "docs/Shared/Debug/DBG-01_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "PA-01",
+      "path": "docs/Shared/PresentationAssets/tasks/PA-01_presentation-asset-references.md",
+      "logs": [
+        "docs/Shared/PresentationAssets/表现资产_PA-01_2026-10-05_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "PA-02",
+      "path": "docs/Shared/PresentationAssets/tasks/PA-02_art-assets-import-and-resource-wiring.md",
+      "logs": [
+        "docs/Shared/PresentationAssets/表现资产_PA-02_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    },
+    {
+      "task_id": "PA-03",
+      "path": "docs/Shared/PresentationAssets/tasks/PA-03_battle-ui-art-integration.md",
+      "logs": [
+        "docs/Shared/PresentationAssets/表现资产_PA-03_2026-10-07_log.md"
+      ],
+      "has_log": true,
+      "status_basis": "日志匹配只是历史证据，最终状态需核对当前代码和验收记录"
+    }
+  ]
+}

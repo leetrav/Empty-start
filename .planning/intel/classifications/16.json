@@ -1,0 +1,20 @@
+{
+  "source_path": "docs/5. CombatAttack/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "5. CombatAttack 战斗攻击系统任务拆分",
+  "summary": "战斗攻击系统负责玩家从“移动准心”到“一发攻击完成”的过程。 它负责： 1. 鼠标 / 触摸输入； 2. 准心位置与判定范围； 3. 蓄力；",
+  "scope": [
+    "系统目标",
+    "当前实现",
+    "INT-01 战斗生命周期与结算事实",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

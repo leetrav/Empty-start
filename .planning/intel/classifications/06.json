@@ -1,0 +1,19 @@
+{
+  "source_path": "docs/14. Assimilation/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "14. Assimilation 吞并系统任务拆分",
+  "summary": "吞并系统负责保存“真正击败对手以后，玩家从对方那里带走了什么”。 它保存两类长期成果： - 可继承词库与出现权重； - 可继承弹幕特性。 同时区分“关卡通关”和“真正击败”，并把已获得内容提供给后续关卡、休息时刻和神降临。",
+  "scope": [
+    "系统目标",
+    "当前数据底座",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

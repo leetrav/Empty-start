@@ -1,0 +1,18 @@
+{
+  "source_path": "docs/Shared/Audio/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Audio 共用音频接入",
+  "summary": "项目已经有： - `AudioManager` Autoload； - `Music`、`SFX`、`UI` 三条 Audio Bus； - Master / Music / SFX / UI 独立音量设置； - `AudioManager.play_music(stream)`；",
+  "scope": [
+    "当前底座",
+    "AU-01 事件播放",
+    "本阶段需要补的能力",
+    "任务"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

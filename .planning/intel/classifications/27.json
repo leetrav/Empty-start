@@ -1,0 +1,16 @@
+{
+  "source_path": "docs/Shared/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Shared 共用任务",
+  "summary": "这里保存多个系统共同使用、又不属于某一个玩法系统的横向任务。 当前分为： - `PresentationAssets/`：美术与表现资产引用。 - `Audio/`：音乐、音效和 UI 音频接入。 - `Debug/`：开发期间读取真实玩法状态并经系统公开入口执行调试操作。",
+  "scope": [
+    "Sandbox 布局事实",
+    "游戏内 Debug 面板"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

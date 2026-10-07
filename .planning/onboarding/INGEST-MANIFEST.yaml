@@ -1,0 +1,85 @@
+docs:
+  - path: 'AGENTS.md'
+    type: SPEC
+    precedence: 0
+  - path: 'docs/1. Identify/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/10. Repeat/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/12. ContradictionBreak/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/13. FinalOracle/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/14. Assimilation/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/15. Scripture/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/16. LoserCard/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/17. ThreeTendencies/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/18. Rest/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/19. DivineDescent/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/2. LevelConfiguration/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/20. Ending/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/3. BarrageGeneration/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/4. BarrageTraits/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/5. CombatAttack/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/6. HitResolution/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/7. OpponentPKBar/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/8. CombatStage/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/9. LiveDataPresentation/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/Original/程序需求汇总.md'
+    type: PRD
+    precedence: 30
+  - path: 'docs/Original/美术需求汇总.md'
+    type: PRD
+    precedence: 30
+  - path: 'docs/Original/系统案_协作交付版_文本导出.md'
+    type: PRD
+    precedence: 30
+  - path: 'docs/Shared/Audio/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/Shared/Debug/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/Shared/PresentationAssets/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'docs/Shared/README.md'
+    type: SPEC
+    precedence: 10
+  - path: 'known_traps.md'
+    type: DOC
+    precedence: 20
