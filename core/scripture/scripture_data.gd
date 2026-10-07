@@ -37,6 +37,48 @@ func get_entry_for_level(level_id: StringName) -> ScriptureEntry:
 	return entry.duplicate(true) as ScriptureEntry if entry != null else null
 
 
+# 按首次写入时保存的原章号返回经文快照，读取时不重排内部保存列表。
+func get_ordered_entries() -> Array[ScriptureEntry]:
+	var ordered_entries: Array[ScriptureEntry] = []
+	for entry: ScriptureEntry in entries:
+		if entry != null:
+			ordered_entries.append(entry.duplicate(true) as ScriptureEntry)
+	ordered_entries.sort_custom(_entry_precedes)
+	return ordered_entries
+
+
+# 为目录中的每关保留一个章节位置；无正式经文时 entry 为 null，章号保持原值。
+func get_chapter_slots(level_catalog: LevelCatalog) -> Array[Dictionary]:
+	var chapter_slots: Array[Dictionary] = []
+	if level_catalog == null:
+		return chapter_slots
+	for level_profile: LevelProfile in level_catalog.profiles:
+		if level_profile == null:
+			continue
+		var entry: ScriptureEntry = get_entry_for_level(StringName(level_profile.level_id))
+		chapter_slots.append({
+			"level_id": StringName(level_profile.level_id),
+			"chapter_number": entry.chapter_number if entry != null else level_profile.level_order,
+			"entry": entry,
+		})
+	chapter_slots.sort_custom(_chapter_precedes)
+	return chapter_slots
+
+
+# 原章号相同时按稳定关卡 ID 排列，保证读取结果顺序一致。
+func _entry_precedes(first: ScriptureEntry, second: ScriptureEntry) -> bool:
+	if first.chapter_number != second.chapter_number:
+		return first.chapter_number < second.chapter_number
+	return str(first.level_id) < str(second.level_id)
+
+
+# 章节位置与经文采用相同的原序号规则，缺章参与排列且不压缩编号。
+func _chapter_precedes(first: Dictionary, second: Dictionary) -> bool:
+	if int(first["chapter_number"]) != int(second["chapter_number"]):
+		return int(first["chapter_number"]) < int(second["chapter_number"])
+	return str(first["level_id"]) < str(second["level_id"])
+
+
 # 接收方只处理绑定到自身的当前周目，并按关卡 ID 解析真实来源配置。
 func _on_confirmation_committed(run_data: SaveData, level_id: String, candidate: Dictionary, level_catalog: LevelCatalog) -> void:
 	if run_data == null or run_data.scripture_data != self:

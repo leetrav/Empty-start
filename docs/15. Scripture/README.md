@@ -23,7 +23,9 @@
 - `write_confirmed_oracle(level_profile, candidate)` 将首次正式确认写入 `entries`，同周目同关后续提交保持首条记录；去重直接查询保存列表，重建确认状态或读档后仍生效。
 - 候选当前提供 `original_sentence_id` 和 `tendency`；原句文本从该关 `normal_speech_pool` 按 ID 匹配，主播名和章号复制自 `LevelProfile.streamer_name` / `level_order`。未知原句拒绝写入。
 - 节号范围只保存在 `data/scripture/verse_number_config.tres`（当前 1～99）；首条正式写入时抽取一次整数并存入 `ScriptureEntry.verse_number`，读取、重复提交和读档都沿用该值。
-- `get_entry_for_level(level_id)` 返回经文 Resource 的独立快照；章节视图和未提交回滚由 SC-04～05 继续实现。
+- `get_entry_for_level(level_id)` 返回单关经文独立快照；`get_ordered_entries()` 按经文保存的原章号返回排序快照。
+- `get_chapter_slots(level_catalog)` 为真实目录中的每关返回 `{level_id, chapter_number, entry}`；无经文时 `entry = null`。缺章参与排序，原章号不压缩；全空圣典仍返回目录中的全部空章，章节视图即时生成且不写回保存列表。
+- 未提交暂存和重开撤回由 SC-05 继续实现。
 - Sandbox 周目初始化已经绑定 Scripture 接收方；场景节点结构保持现状。
 
 ## 任务顺序
