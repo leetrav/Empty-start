@@ -114,12 +114,15 @@ func discard_uncommitted_normal_hit_history() -> void:
 	_normal_hit_order = 0
 
 
-func calculate_normal_word_reward(strength: int) -> Dictionary:
-	# 固定收益只由话语强度决定；Tier 不参与计算，本方法也不直接更新 PK 或倾向。
+func calculate_normal_word_reward(strength: int, tendency_id: String = "") -> Dictionary:
+	# PK 收益由内容强度决定；neutral 是有效普通话语，但不给三项倾向增量。
 	if not _NORMAL_WORD_REWARDS_BY_STRENGTH.has(strength):
 		push_error("Normal word strength must be 1, 2, or 3; received %d." % strength)
 		return {}
-	return _NORMAL_WORD_REWARDS_BY_STRENGTH[strength].duplicate()
+	var reward: Dictionary = _NORMAL_WORD_REWARDS_BY_STRENGTH[strength].duplicate()
+	if tendency_id == "neutral":
+		reward["tendency_delta"] = 0
+	return reward
 
 
 func calculate_repeat_hit_result() -> Dictionary:

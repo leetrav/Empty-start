@@ -368,7 +368,8 @@ func _on_shot_hit_resolution_submitted(_snapshot: AttackTargetSnapshot, submissi
 			str(target_result.get("original_sentence_text", "")),
 			_combat_stage.get_current_tier(),
 			_combat_stage.get_current_repeat_count_per_hit(),
-			battle_config.repeat_lifetime_seconds
+			battle_config.repeat_lifetime_seconds,
+			str(target_result.get("tendency_id", ""))
 		)
 		plan.apply_display_template(battle_config.repeat_display_template)
 		_repeat_queue.enqueue_plan(plan)
