@@ -1,4 +1,6 @@
 {
+  "snapshot_commit": "6f440382c859c661470b893f825089a887807d82",
+  "purpose": "任务卡与历史日志检索快照；不代表当前完成状态",
   "date": "2026-10-08",
   "task_count": 222,
   "with_matching_log": 155,
