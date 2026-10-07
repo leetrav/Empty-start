@@ -26,6 +26,8 @@
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - INT-01 已接入普通战斗的特性结果、攻击、结算、Tier与复读调度；矛盾阶段及其他尚缺真实接口的联调继续保留对应任务卡。
 
+DBG-01 提供只读 `get_current_barrage_counts()`，从当前真实 `BarrageView` 汇总普通、复读与矛盾弹幕；开发操作使用 `clear_current_barrages()` 保持当前生成开关、`spawn_normal_batch_now()` 单次生成、`stop_normal_generation()` 与 `resume_normal_generation()` 控制普通批次。Paradox 阶段继续由矛盾专属生成器接管。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
