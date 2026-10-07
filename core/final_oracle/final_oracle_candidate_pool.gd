@@ -10,6 +10,9 @@ func build_from_normal_hit_history(normal_hit_history: Array[Dictionary]) -> Arr
 	var candidates: Array[Dictionary] = []
 	var seen_sentence_ids: Dictionary = {}
 	for history_entry: Dictionary in normal_hit_history:
+		# neutral 可留在普通历史，但不能成为神谕及圣典候选。
+		if not _TENDENCY_ORDER.has(str(history_entry.get("tendency", ""))):
+			continue
 		if not history_entry.has("original_sentence_id"):
 			continue
 		var original_sentence_id: Variant = history_entry["original_sentence_id"]

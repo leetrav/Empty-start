@@ -77,11 +77,11 @@ LevelProfile 保存静态关卡资料、普通话语池、倾向比例、特殊�
 
 ### LC-02 词库与倾向比例
 
-`LevelProfile` 增加 `normal_speech_pool` 和三项比例字段；词库条目使用 `LevelSpeech` Resource，保存稳定 `original_sentence_id`、话语文本、可编辑的 `tendency_id` 字符串和 `appearance_weight` 相对权重。
+`LevelProfile` 保存 `normal_speech_pool` 和普通话语类别比例；词库条目使用 `LevelSpeech` Resource，保存稳定 `original_sentence_id`、话语文本、可编辑的 `tendency_id`、`strength` 强度和 `appearance_weight` 相对权重。未填写强度的旧内容默认强度 1。
 
-三项比例字段为 `orthodox_ratio`、`heretical_ratio`、`absurd_ratio`，类型均为浮点数。本数据类型只保存比例，不负责抽取、归一化或玩家倾向累计；具体内容与比例由策划填写。
+普通话语比例字段为 `orthodox_ratio`、`heretical_ratio`、`absurd_ratio`、`neutral_ratio`，类型均为浮点数；`neutral_ratio` 默认 0，旧关卡保持原生成结果。本数据类型只保存比例，不负责抽取、归一化或玩家倾向累计；具体内容与比例由策划填写。
 
-倾向稳定 ID 沿用身份选项系统 ID-01 的字符串值：`orthodox`、`heretical`、`absurd`。`LevelSpeech.tendency_id` 保持字符串字段，不在关卡配置系统另建枚举。
+前三项稳定 ID 沿用身份选项系统 ID-01 的字符串值：`orthodox`、`heretical`、`absurd`。普通话语额外允许 `neutral`，只表示内容类别，不作为开局身份或玩家三项倾向。`LevelSpeech.tendency_id` 保持字符串字段，不在关卡配置系统另建枚举。
 
 ### LC-03 特殊玩法与矛盾内容
 

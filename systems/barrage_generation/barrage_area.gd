@@ -240,7 +240,7 @@ func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> B
 	barrage_record.original_sentence_text = speech.text
 	barrage_record.source_id = level_profile.streamer_id
 	barrage_record.tendency_id = speech.tendency_id
-	barrage_record.strength = 1.0
+	barrage_record.strength = float(speech.strength)
 	barrage_record.original_sentence_id = speech.original_sentence_id
 	barrage_record.capture_lifetime_at_spawn(Time.get_ticks_msec(), base_lifetime_seconds, _lifetime_multiplier)
 
@@ -311,6 +311,7 @@ func spawn_repeat_barrage(plan: RepeatPlan) -> BarrageView:
 	repeat_record.is_contradiction_repeat = plan.repeat_type == RepeatPlan.RepeatType.CONTRADICTION
 	repeat_record.source_id = _current_level_profile.streamer_id
 	repeat_record.original_sentence_id = original_line_id
+	repeat_record.tendency_id = plan.tendency_id
 	repeat_record.strength = 1.0
 	repeat_record.capture_lifetime_at_spawn(Time.get_ticks_msec(), plan.lifetime_seconds, 1.0)
 

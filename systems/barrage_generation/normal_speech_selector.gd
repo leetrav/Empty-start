@@ -15,7 +15,7 @@ func select_next_normal_speech(current_level: LevelProfile) -> LevelSpeech:
 	var active_tendency_ids: Array[String] = []
 	var active_tendency_weights: Array[float] = []
 	var total_tendency_weight: float = 0.0
-	var tendency_ids: Array[String] = ["orthodox", "heretical", "absurd"]
+	var tendency_ids: Array[String] = ["orthodox", "heretical", "absurd", "neutral"]
 
 	for tendency_id in tendency_ids:
 		var ratio: float = _get_tendency_ratio(current_level, tendency_id)
@@ -62,6 +62,8 @@ func _get_tendency_ratio(current_level: LevelProfile, tendency_id: String) -> fl
 			return current_level.heretical_ratio
 		"absurd":
 			return current_level.absurd_ratio
+		"neutral":
+			return current_level.neutral_ratio
 	return 0.0
 
 ## 按话语相对权重抽取同一倾向内的一句。

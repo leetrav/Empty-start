@@ -24,7 +24,7 @@ DBG-01 增加 `set_player_pk_for_debug(value)` 作为开发调试入口。它按
 
 对手占比只从玩家 PK 派生，不在其他系统保存第二份可写 PK。Tier 通知与攻击整发结算已接入 INT-01 Sandbox。
 
-HR-02 的 `calculate_normal_word_reward(strength)` 按强度返回 `pk_delta` 和 `tendency_delta`，不修改当前 PK，也不提交三项倾向。PK 奖励从百分比换算为内部 0–1 比例：强度 1 为 `0.0012 / +1`，强度 2 为 `0.002 / +5`，强度 3 为 `0.005 / +10`。Tier 不参与该接口。
+HR-02 的 `calculate_normal_word_reward(strength, tendency_id)` 按内容强度返回 `pk_delta` 和 `tendency_delta`，不修改当前 PK，也不提交三项倾向。PK 奖励从百分比换算为内部 0–1 比例：强度 1 为 `0.0012 / +1`，强度 2 为 `0.002 / +5`，强度 3 为 `0.005 / +10`；普通 `neutral` 命中保留对应强度的 PK 收益，但倾向增量固定为 0。Tier 不参与该接口。
 
 HR-04 的 `calculate_repeat_hit_result()` 返回有效命中标记和零 PK、零倾向收益；它不修改 PK 或提交倾向。
 
@@ -34,7 +34,7 @@ HR-08 在整发结算前检查当前 PK。若回拉已把 PK 降至下限，返�
 
 HR-09 由 `apply_player_pk_delta()` 在 clamp 后发出一次 `final_player_pk_updated(final_player_pk)`。HR-05 的整发汇总只调用该入口一次；OpponentPKBar 每次回拉更新也调用该入口一次。CS-06 负责将该信号连接到 CombatStage。
 
-HR-14 由 `record_normal_word_hit(original_sentence_id, tendency)` 记录有效普通命中。历史按原句 ID 归并，保留倾向、命中次数、首次顺序和最近顺序；`get_normal_hit_history()` 返回深拷贝快照。复读与矛盾文本不写入此历史。
+HR-14 由 `record_normal_word_hit(original_sentence_id, tendency)` 记录有效普通命中，包含 `neutral`。历史按原句 ID 归并，保留内容类别、命中次数、首次顺序和最近顺序；`get_normal_hit_history()` 返回深拷贝快照。复读与矛盾文本不写入此历史。
 
 HR-15 由 `HitResolution.commit_normal_hit_history(SaveData)` 在最终 PK 胜利结果提交本场普通命中一次。`SaveData.committed_normal_hit_history` 按原句累计次数，用 `first_committed_hit_order` 保存第一次正式提交的跨关顺序；再次命中旧句不改变该顺序。失败或手动重开调用 `discard_uncommitted_normal_hit_history()` 丢弃本场暂存，之前已提交的周目历史保持不变。读取方使用 `SaveData.get_committed_normal_hit_history()` 的深拷贝。
 

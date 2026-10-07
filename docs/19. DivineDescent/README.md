@@ -18,6 +18,8 @@
 
 终局期间不再运行普通 PK 胜负、档位升降和矛盾击破。
 
+TT-13 提供 `DivineDescentCandidateFilter.filter_three_tendency_history(committed_history)` 作为未来 DD-02 候选归并前的输入边界：已提交普通命中历史中的 neutral 仍保留在存档，但只将正统、异端、荒谬原句交给终局候选与锁句流程。当前神降临运行阶段尚未实现；DD-02 接入时必须复用此筛选入口，再处理归并和权重。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
