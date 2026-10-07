@@ -57,7 +57,7 @@ UI、10 秒计时器、战斗冻结、奖励系统和休息流程全部做实际
 FO-01 等 12. ContradictionBreak 的成功与过渡完成事件。
 FO-02～05 在【6. HitResolution】HR-14 的本场普通命中历史与【10. Repeat】普通复读统计存在后完成纯候选逻辑。
 FO-06～09 完成神谕选择流程。
-FO-10 等 15. Scripture。
+FO-10 可复用 SC-02 已接入的 Scripture 正式确认接口。
 FO-11 等 16. LoserCard 与 14. Assimilation。
 FO-12 等 18. Rest。
 
@@ -101,3 +101,8 @@ FO-12 等 18. Rest。
 - 手动选择和超时自动选择都调用 `confirm_selection(level_id, candidate)`；同一周目同一 `level_id` 只接受第一次有效结果。
 - 首次确认发出 `confirmation_committed(run_data, level_id, candidate)`；重复调用返回 `false` 且不会重发信号。`get_confirmed_selection(level_id)` 始终返回首次候选快照。
 - 本版确认不改写三项倾向累计值，额外倾向保持为 0。
+
+## Scripture 确认接收
+
+- SC-02 已由 `run_data.scripture_data.bind_confirmation_state(confirmation_state, level_catalog)` 订阅正式确认事实；Sandbox 在创建确认状态后完成绑定。
+- 当前候选仅有原句 ID 和倾向，Scripture 从注入的真实关卡目录解析原句文本、主播名和章号，保存首条经文；同关重复提交保持首条。

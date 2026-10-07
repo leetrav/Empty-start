@@ -19,7 +19,11 @@
 
 - `ScriptureEntry` Resource 保存 `level_id`、`streamer_name`、`original_line_id`、`original_line_text`、`tendency_id`、`chapter_number` 和 `verse_number`。
 - `ScriptureData.entries` 持有当前周目的经文记录；数据由 `SaveData.scripture_data` 保存并随当前周目读写。
-- 当前只建立可创建和读取的数据结构；同关去重、节号生成与固定、排序、提交 / 重开撤回和跨系统读取由后续任务实现。
+- `bind_confirmation_state(confirmation_state, level_catalog)` 接收真实 `confirmation_committed(run_data, level_id, candidate)`；只处理所属 `SaveData.scripture_data`，并按关卡目录解析来源。
+- `write_confirmed_oracle(level_profile, candidate)` 将首次正式确认写入 `entries`，同周目同关后续提交保持首条记录；去重直接查询保存列表，重建确认状态或读档后仍生效。
+- 候选当前提供 `original_sentence_id` 和 `tendency`；原句文本从该关 `normal_speech_pool` 按 ID 匹配，主播名和章号复制自 `LevelProfile.streamer_name` / `level_order`。未知原句拒绝写入。
+- `get_entry_for_level(level_id)` 返回经文 Resource 的独立快照；节号生成、章节视图和未提交回滚由 SC-03～05 继续实现。
+- Sandbox 周目初始化已经绑定 Scripture 接收方；场景节点结构保持现状。
 
 ## 任务顺序
 

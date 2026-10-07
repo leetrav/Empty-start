@@ -368,6 +368,8 @@ PK 胜利但未击破
 
 同一场结果只提交一次。
 
+当前 `FinalOracleConfirmationState.confirmation_committed(run_data, level_id, candidate)` 是正式确认事实。圣典通过 `ScriptureData.bind_confirmation_state()` 接收，同关首次写入后以保存列表去重；候选原句 ID / 倾向与关卡目录中的文本、主播名、原关卡序号组成经文快照。
+
 ---
 
 ## 11. 三项倾向什么时候保存

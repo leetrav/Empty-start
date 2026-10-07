@@ -40,6 +40,7 @@ func _ready() -> void:
 	%OpponentLiveDataHud.set_values(0, 0, 0, 0)
 	_run_state = LevelRunState.new(SAMPLE_LEVEL_CATALOG)
 	_oracle_confirmation_state = FinalOracleConfirmationState.new(SaveManager.data)
+	SaveManager.data.scripture_data.bind_confirmation_state(_oracle_confirmation_state, SAMPLE_LEVEL_CATALOG)
 	_oracle_confirmation_state.confirmation_committed.connect(_on_oracle_confirmation_committed)
 	_opening_fan_count = SaveManager.data.live_session.fan_count
 	_opponent_pk_bar = OpponentPKBar.new()
