@@ -68,3 +68,10 @@ EN-06～09 完成页面数据和显示。
 - `EndingMainArtConfig` 提供 `orthodox_main_art`、`heretical_main_art`、`absurd_main_art` 三个 `Texture2D` 字段，以及 `get_main_art_for_tendency(tendency_id)` 查询方法。
 - 查询输入沿用 17. ThreeTendencies 的稳定 ID：`orthodox`、`heretical`、`absurd`。未知 ID 返回 `null`。
 - 当前仓库尚未提供正式教派主图，配置字段暂为空；后续美术交付只需更新 `.tres`，结局逻辑无需改路径。
+
+## EN-03 当前教名配置接口
+
+- `data/ending/ending_religion_name_config.tres` 是九个教名的策划配置入口。
+- `EndingReligionNameConfig` 提供三种纯倾向字段和六种主导 → 次要混合字段；`get_religion_name(primary_tendency_id, secondary_tendency_id)` 按稳定 ID 与顺序读取文本。
+- 纯组合键为 `orthodox/orthodox`、`heretical/heretical`、`absurd/absurd`；混合组合覆盖六个有序组合。`has_complete_mapping()` 可检查九个配置槽位是否都有文本。
+- 当前九个字段均为空，等待策划填写正式教名；逻辑不猜测或写入教名文本。
