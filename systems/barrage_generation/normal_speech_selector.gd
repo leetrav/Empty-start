@@ -8,17 +8,20 @@ func _init() -> void:
 	_random.randomize()
 
 ## 每次都读取传入配置的当前词库，不缓存，保证有效内容变化后立即生效。
-func select_next_normal_speech(current_level: LevelProfile) -> LevelSpeech:
+func select_next_normal_speech(current_level: LevelProfile, neutral_weight_multiplier: float = 1.0) -> LevelSpeech:
 	if current_level == null:
 		return null
 
 	var active_tendency_ids: Array[String] = []
 	var active_tendency_weights: Array[float] = []
 	var total_tendency_weight: float = 0.0
-	var tendency_ids: Array[String] = ["orthodox", "heretical", "absurd"]
+	var tendency_ids: Array[String] = ["orthodox", "heretical", "absurd", "neutral"]
 
 	for tendency_id in tendency_ids:
 		var ratio: float = _get_tendency_ratio(current_level, tendency_id)
+		if tendency_id == "neutral":
+			# 只缩放本次 neutral 类别权重，其他三类继续使用关卡原始比例。
+			ratio *= maxf(neutral_weight_multiplier, 0.0)
 		if ratio <= 0.0:
 			continue
 		if _collect_candidates(current_level, tendency_id).is_empty():
@@ -62,6 +65,8 @@ func _get_tendency_ratio(current_level: LevelProfile, tendency_id: String) -> fl
 			return current_level.heretical_ratio
 		"absurd":
 			return current_level.absurd_ratio
+		"neutral":
+			return current_level.neutral_ratio
 	return 0.0
 
 ## 按话语相对权重抽取同一倾向内的一句。

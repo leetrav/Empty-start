@@ -21,10 +21,11 @@ extends Resource
 ## 普通话语池保留原句定义，供弹幕生成系统读取。
 @export var normal_speech_pool: Array[LevelSpeech] = []
 
-## 三项比例只保存配置值；本类型不抽取话语或累计玩家倾向。
+## 普通话语类别比例只保存配置值；neutral 不计入玩家三项倾向。
 @export var orthodox_ratio: float = 0.0
 @export var heretical_ratio: float = 0.0
 @export var absurd_ratio: float = 0.0
+@export var neutral_ratio: float = 0.0
 
 ## 特性 ID 的正式取值由弹幕特性系统定义，关卡只保存本关选择的 ID。
 @export var special_trait_ids: Array[String] = []

@@ -18,6 +18,8 @@
 - `get_primary_tendency_id()` 返回主导倾向 ID；最高值并列时优先并列项中的 `opening_identity_tendency_id`，否则按正统、异端、荒谬顺序裁决。`is_primary_tied()` 即时计算并列标记。
 - `get_secondary_tendency_id()` 从剩余两项选择最高正分项，剩余项并列沿用相同裁决顺序；剩余项都没有正分时返回主导倾向。
 - `has_no_effective_behavior()` 在三项值全零时返回 `true`，主导和次要都沿用 `opening_identity_tendency_id`。
+- TT-13 的 `neutral` 是普通话语内容类别，不是第四项玩家倾向。命中 neutral 仍有普通 PK、历史、复读和直播表现，`tendency_delta = 0`，所以本场与周目三项值不变；只命中 neutral 时 `has_no_effective_behavior()` 仍为 `true`。开局身份、主导、次要和并列裁决仍只使用原三项。
+- TT-14 让 Neutral 的生成类别权重随当前战斗 Tier 衰减：有效权重为关卡 `neutral_ratio × CombatStageTierConfig.neutral_weight_multiplier`。Tier 0～5 的倍率为 `1.00 / 0.99 / 0.70 / 0.40 / 0.15 / 0.00`；仅影响新生成话语，不改变已在场弹幕或 TT-13 的命中、倾向及候选过滤规则。
 - INT-01 Sandbox 已把 HitResolution 整发逐目标结果中的 `tendency_id` / `tendency_delta` 交给 `record_normal_speech_tendency()`；复读和遮挡等结果跳过普通倾向。失败、重开及离开验收场调用 `rollback_attempt_tendency()`，此前周目累计保持原值。PK 满值停在矛盾击破接入点，本场记录尚未跨关提交。精确值继续隐藏，仅由调试和验收测试读取。
 
 本系统需要：
@@ -47,8 +49,8 @@
 | TT-10 | 提供休息时刻环境结果 | 无新增自动化测试 |
 | TT-11 | 进入神降临时冻结最终倾向 | 1 个关键单元测试 |
 | TT-12 | 提供给神降临与结局 | 无新增自动化测试 |
-| TT-13 | Neutral 普通闲聊接入 | 3 个最小验证 |
-| TT-14 | Neutral 随 Tier 衰减 | 3 个最小验证 |
+| TT-13 | Neutral 普通闲聊接入 | 3 个最小规则测试及 Sandbox 冒烟 |
+| TT-14 | Neutral 随 Tier 衰减 | Tier 配置、类别抽取与切档后新批次的最小验证 |
 
 ## 测试预算
 

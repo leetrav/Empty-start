@@ -260,7 +260,7 @@ func _submit_arrival_to_hit_resolution(
 			if runtime_record.is_repeat:
 				reward = _hit_resolution.calculate_repeat_hit_result()
 			else:
-				reward = _hit_resolution.calculate_normal_word_reward(int(runtime_record.strength))
+				reward = _hit_resolution.calculate_normal_word_reward(int(runtime_record.strength), runtime_record.tendency_id)
 			for reward_key in reward:
 				hit_resolution_target[reward_key] = reward[reward_key]
 			if not runtime_record.is_repeat:

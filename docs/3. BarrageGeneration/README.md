@@ -7,7 +7,7 @@
 它主要负责：
 
 1. 从【关卡配置系统】读取当前关卡可用内容；
-2. 按三项倾向比例选择普通话语；
+2. 按三项倾向及 neutral 类别比例选择普通话语；
 3. 按当前生成参数持续创建弹幕；
 4. 给每个实例保存来源、倾向、强度和唯一原句标识；
 5. 管理寿命、同屏上限、暂停和移除；
@@ -103,7 +103,7 @@ INT-01 已组合场上清理与【10. Repeat】的等待队列清理；进入后
 
 ## BG-02 普通话语抽取
 
-`NormalSpeechSelector.select_next_normal_speech(current_level)` 每次直接读取传入关卡的当前词库与倾向比例，不缓存旧内容。倾向 ID 使用 `orthodox`、`heretical`、`absurd`；先按关卡比例选择倾向，再按该倾向下各条 `LevelSpeech.appearance_weight` 选择话语。
+`NormalSpeechSelector.select_next_normal_speech(current_level, neutral_weight_multiplier = 1.0)` 每次直接读取传入关卡的当前词库与类别比例，不缓存旧内容。普通话语类别为 `orthodox`、`heretical`、`absurd`、`neutral`；先按类别有效权重选择，再按该类别下各条 `LevelSpeech.appearance_weight` 选择话语。`neutral_ratio` 默认 0；Neutral 的有效类别权重为 `neutral_ratio × 当前 Tier 的 neutral_weight_multiplier`，其余三类仍用关卡原始比例，最后共同归一化。Tier 5 的倍率为 0，Neutral 不参与抽取。
 
 返回值是原始 `LevelSpeech` Resource，可继续读取文本、倾向和稳定原句 ID；没有有效候选时返回 `null`。本步骤不创建场上实例。
 
@@ -111,7 +111,7 @@ INT-01 已组合场上清理与【10. Repeat】的等待队列清理；进入后
 
 `systems/barrage_generation/barrage_area.tscn` 是可复用弹幕区域，公开 `spawn_normal_barrage(LevelProfile, LevelSpeech)` 入口；调用后创建 `BarrageRuntimeRecord` 并实例化 `barrage_view.tscn`。视图显示原句文本，并按当前关 `base_move_speed_pixels_per_second` 从右向左移动。
 
-当前游戏入口指向 INT-01 可玩 Sandbox，复用 BG-03 的弹幕表现。强度继续使用 `1.0` 原型值；持续生成、到期、离区和真实命中结束已接通。
+当前游戏入口指向 INT-01 可玩 Sandbox，复用 BG-03 的弹幕表现。普通弹幕强度从 `LevelSpeech.strength` 读取，旧内容默认为 1；持续生成、到期、离区和真实命中结束已接通。
 
 ### BG-04 普通弹幕持续生成
 
@@ -122,6 +122,8 @@ Sandbox 负责调用启动入口；战斗阶段可调用相同的启动 / 停止
 ### BG-05 后续生成倍率
 
 `BarrageArea.set_generation_multipliers(generation_count_multiplier, generation_frequency_multiplier, movement_speed_multiplier)` 提供给 CombatStage 的倍率更新入口，字段语义对应 `CombatStageTierConfig`，但当前不直接依赖 8 号系统脚本。
+
+`BarrageArea.set_neutral_weight_multiplier(multiplier)` 接收 CombatStage 当前 Tier 的 Neutral 权重倍率。普通生成每次选新话语时传给 `NormalSpeechSelector`；升降档后下一批立即使用新值，场上已经生成的弹幕不变。
 
 后续批次数量按 `roundi(base_batch_count * generation_count_multiplier)` 取整；Timer 间隔为 `base_spawn_interval_seconds / generation_frequency_multiplier`；新视图速度为 `base_move_speed_pixels_per_second * movement_speed_multiplier`。倍率更新重置下一批计时，已生成视图保留创建时的速度。BG-06 的寿命倍率同样只作用于新实例。
 
@@ -139,7 +141,7 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 
 ### BG-10 复读请求与独立同屏上限
 
-`BarrageArea.spawn_repeat_barrage(RepeatPlan)` 接收单条计划，复制原句 ID、display_text 和计划寿命到运行时记录。复读使用独立的 `repeat_barrage_screen_cap`（临时默认 24，可在 Inspector 调整）和独立容量账本；普通容量满时复读仍可生成。复读容量满时方法返回 `null`，Repeat 调用方按既定溢出规则处理。延迟与数量由 RepeatDelayQueue 决定，本系统只显示到期请求。
+`BarrageArea.spawn_repeat_barrage(RepeatPlan)` 接收单条计划，复制原句 ID、内容类别、display_text 和计划寿命到运行时记录。复读使用独立的 `repeat_barrage_screen_cap`（临时默认 24，可在 Inspector 调整）和独立容量账本；普通容量满时复读仍可生成。复读容量满时方法返回 `null`，Repeat 调用方按既定溢出规则处理。延迟与数量由 RepeatDelayQueue 决定，本系统只显示到期请求。
 
 ### INT-01 生成事实、内容类别与结束接口
 

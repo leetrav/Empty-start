@@ -7,6 +7,7 @@ extends Resource
 @export var generation_frequency_multiplier: float = 1.0
 @export var movement_speed_multiplier: float = 1.0
 @export var lifetime_multiplier: float = 1.0
+@export var neutral_weight_multiplier: float = 1.0
 @export var opponent_pullback_multiplier: float = 1.0
 @export var repeat_count_per_hit: int = 0
 @export var opponent_portrait_state_id: StringName = &""

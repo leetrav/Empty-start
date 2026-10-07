@@ -18,6 +18,8 @@ INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar �
 
 `data/combat_stage/tier_catalog.tres` 为 Tier 0～5 的静态配置来源。`CombatStageTierCatalog.get_tier_config(tier)` 按档位读取各自的升/降档阈值、生成数量/频率/移动/寿命倍率、对手回拉倍率、每次命中复读数和对手立绘状态标识。
 
+TT-14 在 `CombatStageTierConfig` 增加 `neutral_weight_multiplier`（默认 1.0）；正式 Tier 0～5 分别为 `1.00 / 0.99 / 0.70 / 0.40 / 0.15 / 0.00`。CombatStage 随当前 Tier 通过 `neutral_weight_multiplier_changed` 把该倍率交给 BarrageArea，绑定时也补发。它只改变后续普通话语类别抽取，不改动静态关卡比例或已有弹幕。
+
 CS-02 的运行时 `CombatStage` 对象通过 `CombatStage.new(tier_catalog)` 接收 Tier 配置目录；`begin_combat()` 在新一场或当前关重开时把当前 Tier 设为 0，`get_current_tier()` 只读该状态。CS-03 的 `try_tier_up(final_player_pk)` 按当前 Tier 配置，在最终 PK 达到升档阈值时升一档；CS-04 的 `try_tier_down(final_player_pk)` 在最终 PK 严格低于降档阈值时降一档。CS-05 的 `update_tier_for_pk(final_player_pk)` 循环应用这两条既有规则，直到最终 Tier 与 PK 所在区间一致。
 
 CS-06 的 `bind_hit_resolution(hit_resolution)` 连接 `HitResolution.final_player_pk_updated`，每次收到整发或回拉更新后的最终 PK 时调用 `update_tier_for_pk()`。命中中间计算不会进入该回调。CS-09 在当前 Tier 确定后广播回拉倍率与 Tier 5 状态；OpponentPKBar 通过 `bind_opponent_pk_bar()` 接收。

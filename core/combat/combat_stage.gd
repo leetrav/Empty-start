@@ -4,6 +4,7 @@ extends RefCounted
 signal opponent_tier_state_changed(pullback_multiplier: float, tier5_desperation_active: bool)
 signal barrage_generation_multipliers_changed(count_multiplier: float, frequency_multiplier: float, movement_speed_multiplier: float)
 signal barrage_lifetime_multiplier_changed(lifetime_multiplier: float)
+signal neutral_weight_multiplier_changed(multiplier: float)
 signal tier_state_changed(current_tier: int)
 signal audio_event_requested(event_id: StringName)
 
@@ -55,6 +56,9 @@ func bind_barrage_area(barrage_area: BarrageArea) -> void:
 	var lifetime_callback: Callable = Callable(barrage_area, "set_lifetime_multiplier")
 	if not barrage_lifetime_multiplier_changed.is_connected(lifetime_callback):
 		barrage_lifetime_multiplier_changed.connect(lifetime_callback)
+	var neutral_callback: Callable = Callable(barrage_area, "set_neutral_weight_multiplier")
+	if not neutral_weight_multiplier_changed.is_connected(neutral_callback):
+		neutral_weight_multiplier_changed.connect(neutral_callback)
 	_publish_barrage_multipliers()
 
 
@@ -136,3 +140,5 @@ func _publish_barrage_multipliers() -> void:
 		current_config.movement_speed_multiplier
 	)
 	barrage_lifetime_multiplier_changed.emit(current_config.lifetime_multiplier)
+	# Neutral 只按当前档位影响下一次普通话语抽取，不改写关卡基础权重。
+	neutral_weight_multiplier_changed.emit(current_config.neutral_weight_multiplier)
