@@ -23,6 +23,7 @@ var _count_multiplier: float = 1.0
 var _frequency_multiplier: float = 1.0
 var _movement_speed_multiplier: float = 1.0
 var _lifetime_multiplier: float = 1.0
+var _neutral_weight_multiplier: float = 1.0
 ## 普通话语与陷阱共用的容量账本。
 var _normal_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
 var _repeat_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
@@ -94,6 +95,10 @@ func set_generation_multipliers(generation_count_multiplier: float, generation_f
 ## 保存当前寿命倍率；它只参与之后新建弹幕的截止时间计算。
 func set_lifetime_multiplier(lifetime_multiplier: float) -> void:
 	_lifetime_multiplier = lifetime_multiplier
+
+## 当前 Tier 的 Neutral 权重只影响之后新生成的普通话语。
+func set_neutral_weight_multiplier(multiplier: float) -> void:
+	_neutral_weight_multiplier = maxf(multiplier, 0.0)
 
 ## 申请普通弹幕共享容量；未设置当前关卡或容量满时返回 false。
 func try_register_normal_capacity_occupant(occupant: Object) -> bool:
@@ -398,7 +403,7 @@ func _spawn_normal_batch(allow_when_stopped: bool = false) -> int:
 		return 0
 	var generated_count: int = 0
 	for _index in range(batch_count):
-		var speech: LevelSpeech = _speech_selector.select_next_normal_speech(_current_level_profile)
+		var speech: LevelSpeech = _speech_selector.select_next_normal_speech(_current_level_profile, _neutral_weight_multiplier)
 		if speech == null:
 			return generated_count
 		var barrage_view: BarrageView = spawn_normal_barrage(_current_level_profile, speech)
