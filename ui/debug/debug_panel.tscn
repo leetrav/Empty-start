@@ -1,0 +1,377 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/debug/debug_panel.gd" id="1_debug"]
+
+[node name="DebugPanel" type="CanvasLayer"]
+unique_name_in_owner = true
+visible = false
+layer = 20
+process_mode = 3
+script = ExtResource("1_debug")
+
+[node name="Background" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+color = Color(0.015, 0.02, 0.03, 0.78)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(1080, 940)
+layout_mode = 2
+mouse_filter = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="ScrollContainer" type="ScrollContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitleRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TitleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"HeadingLabel"
+text = "DEBUG 调试面板"
+
+[node name="CloseButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TitleRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "关闭（F3）"
+
+[node name="HintLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "面板开启时战斗继续运行；再次按 F3 关闭。"
+
+[node name="StatusTitle" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "当前状态"
+
+[node name="LevelLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "当前关卡："
+
+[node name="StreamerLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "我方主播：    对手主播："
+
+[node name="BattlePhaseLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "战斗阶段："
+
+[node name="PKTierRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="PKLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKTierRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "玩家 PK："
+
+[node name="TierLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKTierRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "当前 Tier："
+
+[node name="AttackLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "攻击阶段："
+
+[node name="BarrageLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "普通弹幕：0    复读弹幕：0"
+
+[node name="PKTitle" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "设置玩家 PK（按正式规则同步 Tier）"
+
+[node name="PKPresetGrid" type="GridContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 7
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="PK0" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "0%"
+
+[node name="PK55" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "55%"
+
+[node name="PK56" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "56%"
+
+[node name="PK63" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "63%"
+
+[node name="PK64" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "64%"
+
+[node name="PK70" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "70%"
+
+[node name="PK71" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "71%"
+
+[node name="PK78" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "78%"
+
+[node name="PK79" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "79%"
+
+[node name="PK89" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "89%"
+
+[node name="PK90" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "90%"
+
+[node name="PK99" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "99%"
+
+[node name="PK100" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/PKPresetGrid"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "100%"
+
+[node name="BarrageTitle" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "弹幕与战斗操作"
+
+[node name="GenerationLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "普通弹幕生成："
+
+[node name="BattleButtons" type="HFlowContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ClearBarragesButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/BattleButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "清空当前弹幕"
+
+[node name="SpawnBatchButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/BattleButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "立即生成一批普通弹幕"
+
+[node name="StopGenerationButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/BattleButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "停止普通弹幕生成"
+
+[node name="ResumeGenerationButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/BattleButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "恢复普通弹幕生成"
+
+[node name="RestartButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "重新开始当前战斗"
+
+[node name="LiveDataTitle" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "我方直播数据"
+
+[node name="LiveDataLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "观看 0    点赞 0    评论 0    粉丝 0"
+
+[node name="LiveInputs" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ViewerColumn" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ViewerLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs/ViewerColumn"]
+layout_mode = 2
+text = "观看人数"
+
+[node name="ViewerInput" type="SpinBox" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs/ViewerColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000000000.0
+step = 1.0
+
+[node name="LikeColumn" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LikeLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs/LikeColumn"]
+layout_mode = 2
+text = "点赞数"
+
+[node name="LikeInput" type="SpinBox" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs/LikeColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000000000.0
+step = 1.0
+
+[node name="CommentColumn" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CommentLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs/CommentColumn"]
+layout_mode = 2
+text = "评论数"
+
+[node name="CommentInput" type="SpinBox" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs/CommentColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000000000.0
+step = 1.0
+
+[node name="FanColumn" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FanLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs/FanColumn"]
+layout_mode = 2
+text = "粉丝数"
+
+[node name="FanInput" type="SpinBox" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/LiveInputs/FanColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000000000.0
+step = 1.0
+
+[node name="ApplyLiveDataButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "应用直播数据"
+
+[node name="TendencyTitle" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "设置本场倾向"
+
+[node name="TendencyLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "本场倾向：正统 0    异端 0    荒谬 0"
+
+[node name="TendencyInputs" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="OrthodoxColumn" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TendencyInputs"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="OrthodoxLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TendencyInputs/OrthodoxColumn"]
+layout_mode = 2
+text = "正统"
+
+[node name="OrthodoxInput" type="SpinBox" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TendencyInputs/OrthodoxColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000000000.0
+step = 1.0
+
+[node name="HereticalColumn" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TendencyInputs"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HereticalLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TendencyInputs/HereticalColumn"]
+layout_mode = 2
+text = "异端"
+
+[node name="HereticalInput" type="SpinBox" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TendencyInputs/HereticalColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000000000.0
+step = 1.0
+
+[node name="AbsurdColumn" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TendencyInputs"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AbsurdLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TendencyInputs/AbsurdColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "荒谬"
+
+[node name="AbsurdInput" type="SpinBox" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content/TendencyInputs/AbsurdColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000000000.0
+step = 1.0
+
+[node name="ApplyTendenciesButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "应用本场倾向"
+
+[node name="MessageLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = ""

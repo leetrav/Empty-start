@@ -99,6 +99,44 @@ func stop_normal_generation() -> void:
 	_normal_generation_enabled = false
 	_spawn_timer.stop()
 
+
+func resume_normal_generation() -> bool:
+	# 恢复已配置关卡的批次计时，不额外生成一批，避免恢复按钮产生突发弹幕。
+	if _current_level_profile == null or _current_level_profile.base_spawn_interval_seconds <= 0.0:
+		return false
+	_normal_generation_enabled = true
+	_restart_spawn_timer()
+	return true
+
+
+func is_normal_generation_enabled() -> bool:
+	return _normal_generation_enabled
+
+
+func clear_current_barrages() -> int:
+	# 调试清屏保留自动生成开关；正常阶段结束仍使用会同时停止生成的 clear_barrages。
+	return _clear_barrage_views()
+
+
+func spawn_normal_batch_now() -> int:
+	# 立即生成一批使用当前关卡和 Tier 参数；即使自动计时暂停也可单次调试。
+	return _spawn_normal_batch(true)
+
+
+func get_current_barrage_counts() -> Dictionary:
+	# 从当前真实 BarrageView 汇总普通与复读数量，不保存重复计数。
+	var normal_count: int = 0
+	var repeat_count: int = 0
+	for child in get_children():
+		if not child is BarrageView or child.is_queued_for_deletion():
+			continue
+		var view: BarrageView = child as BarrageView
+		if view.runtime_record != null and view.runtime_record.is_repeat:
+			repeat_count += 1
+		else:
+			normal_count += 1
+	return {"normal": normal_count, "repeat": repeat_count}
+
 ## 结算协调方按实例 ID 结束本区域目标；立即离树归还容量，重复请求保持无副作用。
 func end_barrage(target_instance_id: int) -> bool:
 	var target: Object = instance_from_id(target_instance_id)
@@ -114,6 +152,12 @@ func end_barrage(target_instance_id: int) -> bool:
 ## 重开或阶段结束时停止普通生成并清理当前视图，避免旧实例占用新一局容量。
 func clear_barrages() -> void:
 	stop_normal_generation()
+	_clear_barrage_views()
+
+
+# 移除当前所有弹幕视图并释放容量；调用方决定是否停止普通生成。
+func _clear_barrage_views() -> int:
+	var cleared_count: int = 0
 	for child in get_children():
 		if child is BarrageView:
 			# 自然到期可能已排队释放，仍须立即离树，确保同帧重开归还全部容量。
@@ -121,7 +165,9 @@ func clear_barrages() -> void:
 				remove_child(child)
 			else:
 				end_barrage(child.get_instance_id())
+			cleared_count += 1
 	_next_spawn_row = 0
+	return cleared_count
 
 ## 由其他系统明确调用，生成一条选中的普通话语。
 func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> BarrageView:
@@ -246,23 +292,26 @@ func _try_register_repeat_capacity_occupant(occupant: Object) -> bool:
 func _on_repeat_capacity_occupant_tree_exited(occupant: Object) -> void:
 	_repeat_capacity_ledger.release(occupant)
 
-## 按四舍五入后的批次数量倍率生成当前批次。
-func _spawn_normal_batch() -> void:
-	if not _normal_generation_enabled or _current_level_profile == null or _frequency_multiplier <= 0.0:
-		return
+## 按四舍五入后的批次数量倍率生成一批；调试调用可显式允许在计时停止时单次生成。
+func _spawn_normal_batch(allow_when_stopped: bool = false) -> int:
+	if (not _normal_generation_enabled and not allow_when_stopped) or _current_level_profile == null or _frequency_multiplier <= 0.0:
+		return 0
 	if not _has_normal_capacity_for(_current_level_profile):
 		_pause_normal_generation_timer()
-		return
+		return 0
 	var batch_count: int = roundi(float(_current_level_profile.base_batch_count) * _count_multiplier)
 	if batch_count <= 0:
-		return
+		return 0
+	var generated_count: int = 0
 	for _index in range(batch_count):
 		var speech: LevelSpeech = _speech_selector.select_next_normal_speech(_current_level_profile)
 		if speech == null:
-			return
+			return generated_count
 		var barrage_view: BarrageView = spawn_normal_barrage(_current_level_profile, speech)
 		if barrage_view == null:
-			return
+			return generated_count
+		generated_count += 1
+	return generated_count
 
 ## 按传入关卡的上限判断普通话语与陷阱的共享容量。
 func _has_normal_capacity_for(level_profile: LevelProfile) -> bool:

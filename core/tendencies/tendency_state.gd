@@ -47,6 +47,13 @@ func rollback_attempt_tendency() -> void:
 	attempt_absurd_total = 0
 
 
+func set_attempt_tendencies_for_debug(orthodox: int, heretical: int, absurd: int) -> void:
+	# 调试入口只改本场暂存值，周目累计值仍由正式胜负结算拥有。
+	attempt_orthodox_total = maxi(orthodox, 0)
+	attempt_heretical_total = maxi(heretical, 0)
+	attempt_absurd_total = maxi(absurd, 0)
+
+
 # 返回最高分主导倾向；并列时先看开局参照，再按固定倾向顺序裁决。
 func get_primary_tendency_id() -> String:
 	if has_no_effective_behavior():

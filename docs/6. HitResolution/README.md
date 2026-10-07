@@ -20,6 +20,8 @@ INT-01 Sandbox 已接入真实攻击整发结果。CombatAttack 使用本系统�
 
 HR-01 由 `core/combat/hit_resolution.gd` 持有本场唯一玩家 PK，脚本为场景解耦的 `RefCounted` 对象。创建对象时传入本场初始 PK、下限和上限；重开时可调用 `initialize_player_pk()` 重置。`apply_player_pk_delta()` 统一修改并限制 PK，`get_player_pk()` 提供只读值。
 
+DBG-01 增加 `set_player_pk_for_debug(value)` 作为开发调试入口。它按既有范围限制目标值，并复用 `apply_player_pk_delta()` 发出最终 PK 更新信号，因此 CombatStage 与 HUD 仍沿正式联动链刷新；常规玩法继续使用命中、惩罚和回拉入口。
+
 对手占比只从玩家 PK 派生，不在其他系统保存第二份可写 PK。Tier 通知与攻击整发结算已接入 INT-01 Sandbox。
 
 HR-02 的 `calculate_normal_word_reward(strength)` 按强度返回 `pk_delta` 和 `tendency_delta`，不修改当前 PK，也不提交三项倾向。PK 奖励从百分比换算为内部 0–1 比例：强度 1 为 `0.0012 / +1`，强度 2 为 `0.002 / +5`，强度 3 为 `0.005 / +10`。Tier 不参与该接口。
