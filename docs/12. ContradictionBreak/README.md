@@ -52,13 +52,13 @@
 
 CB-01 等 8. CombatStage。
 CB-02 可在 2. LevelConfiguration 数据完成后做。
-CB-03 使用 BG-12 的 `BarrageArea.start_contradiction_generation()`；Sandbox 在满 PK 清理后，调用 `ContradictionBreakSystem.load_level_content()` 读取当前关真假矛盾并传给弹幕系统。生成倍率继续由当前 `CombatStage` 档位同步，弹幕实例保存稳定原句 ID；真伪判定仍归本系统。
-CB-04 由 Sandbox 从 `contradiction_window_config.tres` 启动窗口，攻击系统满蓄发射的 `shot_snapshot_created` 通知本系统登记一次发射。攻击在矛盾模式只报告到达目标事实，不提交普通 PK 与倾向。
-CB-05 由 Sandbox 从 `shot_arrival_resolved` 的有效矛盾实例读取稳定原句 ID，一发合并成 `Array[String]` 调用 `resolve_shot_hit_ids()`；落空传空数组。命中的矛盾视图由弹幕区域结束，不进入普通结算。
-CB-07 由 Sandbox 订阅 `outcome_locked`，一旦结果固定便关闭 `AttackChargeInput` 并清理剩余矛盾弹幕；后续成功与未击破分支均读取 `get_outcome()`。
-CB-08 对每条有效命中的真 / 假矛盾，都按当前 Sandbox 矛盾复读配置创建 `RepeatPlan.RepeatType.CONTRADICTION` 计划；实际生成和分类统计归 10 系统，矛盾阶段及锁定后继续推进队列。
+CB-03 使用 BG-12 的 `BarrageArea.start_contradiction_generation()`；Sandbox 在满 PK 清理后，调用 `ContradictionBreakSystem.load_level_content()` 读取当前关真假矛盾并传给弹幕系统。Paradox 配置独立指定每批数量 ×2、生成频率 ×3、移动速度 ×2.5 和 10 秒寿命；弹幕实例保存稳定原句 ID，真伪判定仍归本系统。
+CB-04 由 Sandbox 从 `contradiction_window_config.tres` 启动 10 秒窗口，攻击系统满蓄释放的 `shot_snapshot_created` 通知本系统登记一次发射。矛盾模式不提交普通 PK 与倾向。
+CB-05 由 Sandbox 从释放瞬间冻结的 `AttackTargetSnapshot.get_contradiction_facts()` 读取稳定原句 ID，一发合并成 `Array[String]` 立即调用 `resolve_shot_hit_ids()`；落空传空数组。目标在飞行期间移动或消失不改变结果，飞行只做演出；命中的矛盾视图由弹幕区域结束，不进入普通结算。
+CB-07 由 Sandbox 订阅 `outcome_locked`，一旦结果固定便禁止新攻击并清理剩余矛盾弹幕；后续成功与未击破分支均读取 `get_outcome()`。
+CB-08 对每条有效命中的真 / 假矛盾，都按当前 Sandbox 矛盾复读配置创建 `RepeatPlan.RepeatType.CONTRADICTION` 计划；实际生成和分类统计归 10 系统。成功时等展示完成；未击破直接进入 Rest 时撤销尚未展示的队列。
 CB-09 成功结果等待矛盾复读队列及场上可见实例全部结束，再调用 `AudioManager.stop_music()` 完成 0.5 秒可暂停的过渡；随后向 `FinalOracleSession.open_after_breakthrough()` 交付当前关和本场普通历史 / 普通复读统计，并发出 `Sandbox.final_oracle_opened`。13 系统的选句 UI 和奖励仍由其后续任务卡实现。
-CB-10 未击破结果直接将当前关 ID、PK 胜利且未击破标记与空新增奖励交给 `RestSession.open_result()`，并发出 `Sandbox.rest_opened`。18 系统后续负责展示与继续流程。
+CB-10 未击破结果直接将当前关 ID、PK 胜利且未击破标记与空新增奖励交给 `RestSession.open_result()`，结束 CB 阶段并发出 `Sandbox.rest_opened`。成功分支在 `FinalOracleSession.open_after_breakthrough()` 接受结果后同样结束 CB 阶段。18 系统后续负责展示与继续流程。
 CB-12 调用 HR-15 的 `HitResolution.commit_normal_hit_history(SaveManager.data)`：未击破分支在休息入口接受结果后提交；成功分支等 `FinalOracleConfirmationState.confirmation_committed` 发出且当前关与当前周目匹配后提交。两条路径均由 HR-15 保证本场仅提交一次，失败重开只丢弃本场暂存。
 CB-04～07 可以完成核心判定逻辑。
 CB-08 等 10. Repeat。

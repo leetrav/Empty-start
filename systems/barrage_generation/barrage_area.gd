@@ -18,6 +18,7 @@ var _normal_generation_enabled: bool = false
 var _contradiction_generation_enabled: bool = false
 var _contradiction_lines: Array[LevelContradiction] = []
 var _next_contradiction_index: int = 0
+var _contradiction_config: ContradictionWindowConfig
 var _count_multiplier: float = 1.0
 var _frequency_multiplier: float = 1.0
 var _movement_speed_multiplier: float = 1.0
@@ -46,13 +47,16 @@ func start_normal_generation(level_profile: LevelProfile) -> bool:
 	_restart_spawn_timer()
 	return true
 
-## 矛盾阶段复用当前档位的数量、频率、速度和寿命倍率；静态内容由关卡提供。
+## 矛盾阶段读取 Paradox 专属倍率和窗口寿命，不复用普通档位参数。
 func start_contradiction_generation(
 	level_profile: LevelProfile,
 	true_lines: Array[LevelContradiction],
-	false_lines: Array[LevelContradiction]
+	false_lines: Array[LevelContradiction],
+	config: ContradictionWindowConfig
 ) -> bool:
-	if level_profile == null or level_profile.base_spawn_interval_seconds <= 0.0:
+	if level_profile == null or level_profile.base_spawn_interval_seconds <= 0.0 or config == null:
+		return false
+	if config.duration_seconds <= 0.0 or config.generation_count_multiplier <= 0.0 or config.generation_frequency_multiplier <= 0.0 or config.movement_speed_multiplier <= 0.0:
 		return false
 	var lines: Array[LevelContradiction] = []
 	for line: LevelContradiction in true_lines + false_lines:
@@ -65,10 +69,10 @@ func start_contradiction_generation(
 	stop_contradiction_generation()
 	_current_level_profile = level_profile
 	_contradiction_lines = lines
+	_contradiction_config = config
 	_next_contradiction_index = 0
 	_contradiction_generation_enabled = true
-	if _frequency_multiplier > 0.0:
-		_spawn_contradiction_batch()
+	_spawn_contradiction_batch()
 	_restart_spawn_timer()
 	return true
 
@@ -77,6 +81,7 @@ func start_contradiction_generation(
 func stop_contradiction_generation() -> void:
 	_contradiction_generation_enabled = false
 	_contradiction_lines.clear()
+	_contradiction_config = null
 	_spawn_timer.stop()
 
 ## 更新倍率只影响后续批次和新弹幕；已有实例保留创建时的移动速度。
@@ -201,9 +206,9 @@ func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> B
 	return view
 
 
-## 单条矛盾使用与普通弹幕相同的容量、定位和当前档位参数，不附加普通陷阱特性。
+## 单条矛盾沿用区域容量与定位，但速度和寿命只读取 Paradox 配置。
 func spawn_contradiction_barrage(level_profile: LevelProfile, line: LevelContradiction) -> BarrageView:
-	if level_profile == null or line == null or barrage_view_scene == null:
+	if level_profile == null or line == null or barrage_view_scene == null or _contradiction_config == null:
 		return null
 	if not _normal_capacity_ledger.has_capacity(level_profile.normal_barrage_screen_cap):
 		_pause_normal_generation_timer()
@@ -214,11 +219,11 @@ func spawn_contradiction_barrage(level_profile: LevelProfile, line: LevelContrad
 	barrage_record.original_sentence_id = line.original_sentence_id
 	barrage_record.source_id = level_profile.streamer_id
 	barrage_record.is_contradiction = true
-	barrage_record.capture_lifetime_at_spawn(Time.get_ticks_msec(), base_lifetime_seconds, _lifetime_multiplier)
+	barrage_record.capture_lifetime_at_spawn(Time.get_ticks_msec(), _contradiction_config.duration_seconds, 1.0)
 	var view := barrage_view_scene.instantiate() as BarrageView
 	if view == null:
 		return null
-	view.setup(barrage_record, level_profile.base_move_speed_pixels_per_second * _movement_speed_multiplier, self)
+	view.setup(barrage_record, level_profile.base_move_speed_pixels_per_second * _contradiction_config.movement_speed_multiplier, self)
 	if not _try_register_normal_capacity_occupant(view, level_profile.normal_barrage_screen_cap):
 		view.free()
 		return null
@@ -345,12 +350,12 @@ func _spawn_normal_batch() -> void:
 
 ## 每批轮换当前关真假矛盾；同一稳定 ID 可再次出现，但真假归属只由关卡定义。
 func _spawn_contradiction_batch() -> void:
-	if not _contradiction_generation_enabled or _current_level_profile == null or _contradiction_lines.is_empty():
+	if not _contradiction_generation_enabled or _current_level_profile == null or _contradiction_config == null or _contradiction_lines.is_empty():
 		return
 	if not _has_normal_capacity_for(_current_level_profile):
 		_pause_normal_generation_timer()
 		return
-	var batch_count: int = roundi(float(_current_level_profile.base_batch_count) * _count_multiplier)
+	var batch_count: int = roundi(float(_current_level_profile.base_batch_count) * _contradiction_config.generation_count_multiplier)
 	for _index in range(maxi(batch_count, 0)):
 		var line: LevelContradiction = _contradiction_lines[_next_contradiction_index]
 		if spawn_contradiction_barrage(_current_level_profile, line) == null:
@@ -363,18 +368,24 @@ func _has_normal_capacity_for(level_profile: LevelProfile) -> bool:
 
 ## 根据当前频率倍率更新时间间隔；零频率时保留已开启状态并暂停 Timer。
 func _restart_spawn_timer() -> void:
-	if not is_inside_tree() or (not _normal_generation_enabled and not _contradiction_generation_enabled) or _current_level_profile == null or _frequency_multiplier <= 0.0 or not _has_normal_capacity_for(_current_level_profile):
+	if not is_inside_tree() or (not _normal_generation_enabled and not _contradiction_generation_enabled) or _current_level_profile == null or _active_frequency_multiplier() <= 0.0 or not _has_normal_capacity_for(_current_level_profile):
 		_spawn_timer.stop()
 		return
 	_spawn_timer.wait_time = _get_effective_spawn_interval()
 	_spawn_timer.start()
 
 func _get_effective_spawn_interval() -> float:
-	return _current_level_profile.base_spawn_interval_seconds / _frequency_multiplier
+	return _current_level_profile.base_spawn_interval_seconds / _active_frequency_multiplier()
+
+## 普通战斗使用档位频率；Paradox 生成始终使用自身频率。
+func _active_frequency_multiplier() -> float:
+	if _contradiction_generation_enabled and _contradiction_config != null:
+		return _contradiction_config.generation_frequency_multiplier
+	return _frequency_multiplier
 
 ## Timer 每到间隔触发一批，关闭状态下保持静默。
 func _on_spawn_timer_timeout() -> void:
-	if (not _normal_generation_enabled and not _contradiction_generation_enabled) or _current_level_profile == null or _frequency_multiplier <= 0.0:
+	if (not _normal_generation_enabled and not _contradiction_generation_enabled) or _current_level_profile == null or _active_frequency_multiplier() <= 0.0:
 		return
 	if not _has_normal_capacity_for(_current_level_profile):
 		_pause_normal_generation_timer()

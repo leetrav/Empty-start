@@ -87,7 +87,7 @@ BG-12 使用 Sandbox 的满 PK 阶段入口与 `ContradictionBreakSystem` 当前
 
 ## BG-12 矛盾生成接口
 
-`BarrageArea.start_contradiction_generation(level_profile, true_lines, false_lines)` 停止普通生成，轮换两组矛盾原句，并沿用当前 `set_generation_multipliers()` 和 `set_lifetime_multiplier()` 的档位数值。每个实例保留稳定 `original_sentence_id` 和 `is_contradiction` 标识；真伪由 12 系统按照关卡列表判断，不在弹幕系统结算。`stop_contradiction_generation()` 只停止新批次，`clear_barrages()` 清理场上内容并同时停止两种生成模式。
+`BarrageArea.start_contradiction_generation(level_profile, true_lines, false_lines, config)` 停止普通生成，轮换两组矛盾原句，按 Paradox 配置使用每批数量 ×2、生成频率 ×3、移动速度 ×2.5，以及 10 秒实例寿命，不沿用当前普通 Tier 倍率。每个实例保留稳定 `original_sentence_id` 和 `is_contradiction` 标识；真伪由 12 系统按照关卡列表判断，不在弹幕系统结算。`stop_contradiction_generation()` 只停止新批次，`clear_barrages()` 清理场上内容并同时停止两种生成模式。
 
 复读实例额外保存 `is_contradiction_repeat`，`has_visible_contradiction_repeats()` 只读取当前仍在场的矛盾复读视图；等待队列是否为空继续由 10 系统负责。
 

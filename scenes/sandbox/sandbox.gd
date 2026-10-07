@@ -48,7 +48,6 @@ func _ready() -> void:
 	_barrage_area.barrage_generated.connect(_on_barrage_generated)
 	_attack_charge_input.shot_hit_resolution_submitted.connect(_on_shot_hit_resolution_submitted)
 	_attack_charge_input.shot_snapshot_created.connect(_on_contradiction_shot_created)
-	_attack_charge_input.shot_arrival_resolved.connect(_on_contradiction_shot_arrived)
 	_attack_charge_input.configure_target_query(_aim_reticle, _barrage_area)
 	_oracle_transition_timer = Timer.new()
 	_oracle_transition_timer.one_shot = true
@@ -158,6 +157,9 @@ func _on_oracle_silence_finished() -> void:
 	):
 		push_error("Sandbox: 终结神谕入口拒绝本场击破结果。")
 		return
+	_contradiction_stage_active = false
+	_attack_charge_input.set_combat_active(false)
+	_repeat_queue.clear_contradiction_queue()
 	_battle_hud.show_battle_state("终结神谕已开放")
 	final_oracle_opened.emit(_final_oracle_session)
 
@@ -176,42 +178,36 @@ func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _ca
 	run_data.tendency_state.commit_attempt_tendency()
 
 
-# 正式满蓄发射才消耗矛盾机会；未蓄满取消没有快照事件。
-func _on_contradiction_shot_created(_snapshot: AttackTargetSnapshot) -> void:
+# 正式满蓄释放时立即按冻结的矛盾原句判定；飞行计时只保留演出。
+func _on_contradiction_shot_created(snapshot: AttackTargetSnapshot) -> void:
 	if not _contradiction_stage_active or _contradiction_break == null:
 		return
 	if not _contradiction_break.register_launched_shot():
 		_attack_charge_input.set_combat_active(false)
-
-
-# 到达时只取仍存在的矛盾实例原句 ID；落空也交给 12 系统消耗本发机会。
-func _on_contradiction_shot_arrived(_snapshot: AttackTargetSnapshot, target_results: Array[Dictionary]) -> void:
-	if not _contradiction_stage_active or _contradiction_break == null:
 		return
 	var hit_ids: Array[String] = []
-	for target_result: Dictionary in target_results:
-		var view := target_result.get("target") as BarrageView
-		if view == null or view.runtime_record == null or not view.runtime_record.is_contradiction:
+	for fact: Dictionary in snapshot.get_contradiction_facts():
+		var sentence_id: String = str(fact.get("original_sentence_id", ""))
+		if sentence_id.is_empty():
 			continue
-		var runtime_record: BarrageRuntimeRecord = view.runtime_record
-		hit_ids.append(runtime_record.original_sentence_id)
-		# 真 / 假矛盾都以实际命中的这一条为单位创建复读计划，保留原句事实。
+		hit_ids.append(sentence_id)
+		# 真 / 假矛盾都按释放时冻结的原句事实创建复读计划。
 		var plan: RepeatPlan = RepeatPlan.create_contradiction_hit_plan(
-			StringName(runtime_record.original_sentence_id),
-			runtime_record.original_sentence_text,
+			StringName(sentence_id),
+			str(fact.get("original_sentence_text", "")),
 			_combat_stage.get_current_tier(),
 			battle_config.contradiction_repeat_count,
 			battle_config.contradiction_repeat_lifetime_seconds
 		)
 		plan.apply_display_template(battle_config.repeat_display_template)
 		_repeat_queue.enqueue_plan(plan)
-		_barrage_area.end_barrage(int(target_result.get("target_instance_id", -1)))
+		_barrage_area.end_barrage(int(fact.get("target_instance_id", -1)))
 	_contradiction_break.resolve_shot_hit_ids(hit_ids)
 
 
 # 已锁定结果立即停止攻击和矛盾生成；后续分支只读取这一份结果。
 func _on_contradiction_outcome_locked(outcome: int) -> void:
-	_attack_charge_input.set_combat_active(false)
+	_attack_charge_input.lock_new_attacks()
 	_barrage_area.clear_barrages()
 	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		_battle_hud.show_battle_state("矛盾击破成功 · 等待复读展示")
@@ -242,6 +238,9 @@ func _open_rest_after_unbroken() -> void:
 		push_error("Sandbox: 未击破进入休息时提交普通命中历史失败。")
 		return
 	SaveManager.data.tendency_state.commit_attempt_tendency()
+	_contradiction_stage_active = false
+	_repeat_queue.clear_contradiction_queue()
+	_attack_charge_input.set_combat_active(false)
 	_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾 · 休息时刻")
 	rest_opened.emit(_rest_session)
 
@@ -325,7 +324,7 @@ func _on_attempt_failed() -> void:
 	_battle_hud.show_failure()
 
 
-# 普通 PK 满后读取本关矛盾内容，并把当前档位参数下的生成交给弹幕系统。
+# 普通 PK 满后读取本关矛盾内容，并以 Paradox 专属数值启动生成。
 func _complete_normal_combat() -> void:
 	if not _normal_combat_active or _hit_resolution.get_player_pk() < battle_config.maximum_player_pk:
 		return
@@ -341,7 +340,8 @@ func _complete_normal_combat() -> void:
 	if not _barrage_area.start_contradiction_generation(
 		current_level,
 		_contradiction_break.get_true_contradictions(),
-		_contradiction_break.get_false_contradictions()
+		_contradiction_break.get_false_contradictions(),
+		CONTRADICTION_WINDOW_CONFIG
 	):
 		push_error("Sandbox: 无法启动真假矛盾生成。")
 		return

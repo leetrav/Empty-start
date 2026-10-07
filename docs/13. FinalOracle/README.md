@@ -77,7 +77,7 @@ FO-12 等 18. Rest。
 ## FO-05 候选补位接口
 
 - `FinalOracleCandidatePool.fill_missing_tendency_candidates(candidates, repeat_stats)` 先保留各倾向领头候选，再从剩余普通命中候选补足，最多返回三句。
-- 补位顺序读取 HR-14 历史：`hit_count` 降序、`last_hit_order` 降序、`original_sentence_id` 升序。这里不使用复读数；若普通话语不足三句，则返回实际数量。
+- 补位顺序读取普通复读实际生成数降序、HR-14 的 `last_hit_order` 降序、`original_sentence_id` 升序；复读数由 `RepeatGenerationStats.get_normal_count()` 提供，矛盾复读不参与。若普通话语不足三句，则返回实际数量。
 
 ## FO-06 展示快照接口
 

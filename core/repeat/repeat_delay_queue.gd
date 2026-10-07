@@ -105,6 +105,19 @@ func clear_normal_queue() -> int:
 	return cleared_count
 
 
+# 未击破直接进入休息时撤销尚未展示的矛盾复读，避免休息阶段继续出弹幕。
+func clear_contradiction_queue() -> int:
+	var cleared_count: int = 0
+	var retained_items: Array[Dictionary] = []
+	for pending_item: Dictionary in _pending_items:
+		if (pending_item["plan"] as RepeatPlan).repeat_type == RepeatPlan.RepeatType.CONTRADICTION:
+			cleared_count += 1
+		else:
+			retained_items.append(pending_item)
+	_pending_items = retained_items
+	return cleared_count
+
+
 # 神谕过渡只等待本次矛盾复读；普通队列不参与完成条件。
 func get_pending_contradiction_count() -> int:
 	var count: int = 0

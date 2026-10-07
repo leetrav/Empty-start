@@ -2,6 +2,7 @@ extends Node
 
 const SANDBOX_SCENE: PackedScene = preload("res://scenes/sandbox/sandbox.tscn")
 const TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
+const CONTRADICTION_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
 
 var _sandbox: Control
 var _area: BarrageArea
@@ -257,6 +258,15 @@ func _verify_failure_restart_and_full_pk() -> void:
 		if view.runtime_record.is_contradiction:
 			contradiction_ids.append(view.runtime_record.original_sentence_id)
 	_check(contradiction_ids.has(_level().true_contradictions[0].original_sentence_id) and contradiction_ids.has(_level().false_contradictions[0].original_sentence_id), "当前关真假矛盾进入真实弹幕区域")
+	var first_contradiction: BarrageView = null
+	for view: BarrageView in _views(false):
+		if view.runtime_record.is_contradiction:
+			first_contradiction = view
+			break
+	if first_contradiction != null:
+		_check(is_equal_approx(float(first_contradiction.get("_move_speed_pixels_per_second")), _level().base_move_speed_pixels_per_second * CONTRADICTION_CONFIG.movement_speed_multiplier), "矛盾弹幕使用 Paradox 速度倍率")
+		_check(absf(float(first_contradiction.runtime_record.expires_at_msec - Time.get_ticks_msec()) / 1000.0 - CONTRADICTION_CONFIG.duration_seconds) < 0.5, "矛盾弹幕寿命使用 10 秒窗口")
+	_check(is_equal_approx(float(_area.call("_get_effective_spawn_interval")), _level().base_spawn_interval_seconds / CONTRADICTION_CONFIG.generation_frequency_multiplier), "矛盾批次使用 Paradox 频率倍率")
 	_check(_attempt_tendency_total() == tendency_before + 1 and not _hit().get_normal_hit_history().is_empty(), "满值这一发仍保留倾向与普通命中历史")
 	_check(_attack.can_start_charging() and _attack.get_attack_phase() == AttackChargeInput.AttackPhase.READY and _queue()._pending_items.is_empty(), "满值清理旧攻击并开放矛盾阶段蓄力")
 	var comment_before: int = SaveManager.data.live_session.comment_count
@@ -279,11 +289,16 @@ func _verify_failure_restart_and_full_pk() -> void:
 		var history_before: int = _hit().get_normal_hit_history().size()
 		await _fire_at(contradiction_target)
 		_check(break_system.get_remaining_shots() == 0 and is_equal_approx(_hit().get_player_pk(), 1.0) and _hit().get_normal_hit_history().size() == history_before, "矛盾真实发射扣机会且不提交普通 PK 或历史")
-		_check(break_system.get_outcome() == ContradictionBreakSystem.Outcome.BREAKTHROUGH, "真实到达命中真矛盾即刻击破")
+		_check(break_system.get_outcome() == ContradictionBreakSystem.Outcome.BREAKTHROUGH, "释放瞬间命中真矛盾即刻击破")
 		_check(not _attack.can_start_charging() and _views(false).is_empty(), "判定固定后关闭攻击并清理矛盾弹幕")
 		_check(_queue().get_pending_contradiction_count() >= repeat_config.contradiction_repeat_count, "真矛盾命中创建独立矛盾复读计划")
 		await _wait(0.7)
 		_check(_area.has_visible_contradiction_repeats() and _queue().get_generation_stats().get_contradiction_count(StringName(_level().true_contradictions[0].original_sentence_id)) > 0, "矛盾复读真实展示并独立计数")
+		# 已验证复读实际出现；缩短测试等待，模拟本场剩余展示全部结束。
+		_queue().clear_contradiction_queue()
+		_area.clear_barrages()
+		await _wait(0.65)
+		_check(not bool(_sandbox.get("_contradiction_stage_active")) and (_sandbox.get("_final_oracle_session") as FinalOracleSession).is_open(), "神谕接管后结束矛盾阶段")
 	_sandbox.restart_current_attempt()
 	_hit().apply_player_pk_delta(1.0 - _hit().get_player_pk())
 	await _wait(0.05)
@@ -299,7 +314,8 @@ func _verify_failure_restart_and_full_pk() -> void:
 		await _fire_at(false_target)
 		var failed_break := _sandbox.get("_contradiction_break") as ContradictionBreakSystem
 		_check(failed_break.get_outcome() == ContradictionBreakSystem.Outcome.NOT_BROKEN and not _attack.can_start_charging(), "假矛盾用尽机会后保持 PK 胜利但未击破")
-		_check(_queue().get_pending_contradiction_count() >= repeat_config.contradiction_repeat_count, "假矛盾命中同样创建独立复读计划")
+		_check(not bool(_sandbox.get("_contradiction_stage_active")) and (_sandbox.get("_rest_session") as RestSession).is_open(), "未击破交给休息入口后结束矛盾阶段")
+		_check(_queue().get_pending_contradiction_count() == 0 and not _area.has_visible_contradiction_repeats(), "休息阶段不再推进矛盾复读")
 
 
 # 仅使用正式公开生成入口；将真实实例放在独立位置便于瞄准。
@@ -316,7 +332,10 @@ func _fire_at(target: BarrageView) -> void:
 	await _wait(0.24)
 	_check(_attack.is_fully_charged(), "正式配置蓄力达到 100%")
 	_aim_at(target)
+	var was_contradiction_stage: bool = bool(_sandbox.get("_contradiction_stage_active"))
 	_mouse_button(false)
+	if was_contradiction_stage:
+		_check((_sandbox.get("_contradiction_break") as ContradictionBreakSystem).is_result_locked(), "矛盾在释放同帧判定，不等待飞行到达")
 	await _wait(0.29)
 
 
