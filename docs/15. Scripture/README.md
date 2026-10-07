@@ -22,7 +22,8 @@
 - `bind_confirmation_state(confirmation_state, level_catalog)` 接收真实 `confirmation_committed(run_data, level_id, candidate)`；只处理所属 `SaveData.scripture_data`，并按关卡目录解析来源。
 - `write_confirmed_oracle(level_profile, candidate)` 将首次正式确认写入 `entries`，同周目同关后续提交保持首条记录；去重直接查询保存列表，重建确认状态或读档后仍生效。
 - 候选当前提供 `original_sentence_id` 和 `tendency`；原句文本从该关 `normal_speech_pool` 按 ID 匹配，主播名和章号复制自 `LevelProfile.streamer_name` / `level_order`。未知原句拒绝写入。
-- `get_entry_for_level(level_id)` 返回经文 Resource 的独立快照；节号生成、章节视图和未提交回滚由 SC-03～05 继续实现。
+- 节号范围只保存在 `data/scripture/verse_number_config.tres`（当前 1～99）；首条正式写入时抽取一次整数并存入 `ScriptureEntry.verse_number`，读取、重复提交和读档都沿用该值。
+- `get_entry_for_level(level_id)` 返回经文 Resource 的独立快照；章节视图和未提交回滚由 SC-04～05 继续实现。
 - Sandbox 周目初始化已经绑定 Scripture 接收方；场景节点结构保持现状。
 
 ## 任务顺序

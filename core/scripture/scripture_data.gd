@@ -1,6 +1,8 @@
 class_name ScriptureData
 extends Resource
 
+const VERSE_CONFIG: ScriptureVerseConfig = preload("res://data/scripture/verse_number_config.tres")
+
 @export var entries: Array[ScriptureEntry] = []
 
 
@@ -20,6 +22,10 @@ func write_confirmed_oracle(level_profile: LevelProfile, candidate: Dictionary) 
 	var entry: ScriptureEntry = _build_entry(level_profile, candidate)
 	if entry == null:
 		return false
+	if VERSE_CONFIG.minimum_verse_number <= 0 or VERSE_CONFIG.maximum_verse_number < VERSE_CONFIG.minimum_verse_number:
+		return false
+	# 只在首条正式写入时抽取一次，读档和读取继续使用经文已保存的节号。
+	entry.verse_number = randi_range(VERSE_CONFIG.minimum_verse_number, VERSE_CONFIG.maximum_verse_number)
 	entries.append(entry)
 	emit_changed()
 	return true
