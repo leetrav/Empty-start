@@ -21,6 +21,7 @@ var _minimum_player_pk: float = 0.0
 var _maximum_player_pk: float = 1.0
 var _normal_hit_history: Array[Dictionary] = []
 var _normal_hit_order: int = 0
+var _normal_history_committed: bool = false
 
 
 func _init(initial_pk: float, minimum_pk: float, maximum_pk: float) -> void:
@@ -73,6 +74,39 @@ func get_normal_hit_history() -> Array[Dictionary]:
 	for history_record: Dictionary in _normal_hit_history:
 		history_copy.append(history_record.duplicate(true))
 	return history_copy
+
+
+# PK 胜利后只合入本场普通命中一次；旧原句沿用首次正式提交顺序。
+func commit_normal_hit_history(run_data: SaveData) -> bool:
+	if run_data == null or _normal_history_committed:
+		return false
+	for attempt_entry: Dictionary in _normal_hit_history:
+		var sentence_id: Variant = attempt_entry.get("original_sentence_id")
+		var committed_entry: Dictionary = {}
+		for previous_entry: Dictionary in run_data.committed_normal_hit_history:
+			if previous_entry.get("original_sentence_id") == sentence_id:
+				committed_entry = previous_entry
+				break
+		if committed_entry.is_empty():
+			run_data.committed_normal_hit_history.append({
+				"original_sentence_id": sentence_id,
+				"tendency": attempt_entry.get("tendency"),
+				"hit_count": int(attempt_entry.get("hit_count", 0)),
+				"first_committed_hit_order": run_data.next_normal_hit_commit_order,
+			})
+			run_data.next_normal_hit_commit_order += 1
+		else:
+			committed_entry["hit_count"] = int(committed_entry.get("hit_count", 0)) + int(attempt_entry.get("hit_count", 0))
+	_normal_history_committed = true
+	return true
+
+
+# 失败重开只撤销本场暂存；以前关卡已提交历史仍由 SaveData 持有。
+func discard_uncommitted_normal_hit_history() -> void:
+	if _normal_history_committed:
+		return
+	_normal_hit_history.clear()
+	_normal_hit_order = 0
 
 
 func calculate_normal_word_reward(strength: int) -> Dictionary:

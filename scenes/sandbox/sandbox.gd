@@ -1,7 +1,11 @@
 extends Control
 
+signal final_oracle_opened(session: FinalOracleSession)
+signal rest_opened(session: RestSession)
+
 const SAMPLE_LEVEL_CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
+const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
 @export var battle_config: SandboxBattleConfig = preload("res://data/sandbox/playable_battle_config.tres")
 
 @onready var _barrage_area: BarrageArea = %BarrageArea
@@ -15,6 +19,13 @@ var _opponent_pk_bar: OpponentPKBar
 var _repeat_queue: RepeatDelayQueue
 var _run_state: LevelRunState
 var _normal_combat_active: bool = false
+var _contradiction_stage_active: bool = false
+var _contradiction_break: ContradictionBreakSystem
+var _final_oracle_session: FinalOracleSession
+var _oracle_confirmation_state: FinalOracleConfirmationState
+var _rest_session: RestSession
+var _oracle_transition_timer: Timer
+var _oracle_transition_started: bool = false
 var _opening_fan_count: int = 0
 
 
@@ -27,6 +38,8 @@ func _ready() -> void:
 	# 敌方尚无数据所有者，本卡仅显式提供四个显示占位值。
 	%OpponentLiveDataHud.set_values(0, 0, 0, 0)
 	_run_state = LevelRunState.new(SAMPLE_LEVEL_CATALOG)
+	_oracle_confirmation_state = FinalOracleConfirmationState.new(SaveManager.data)
+	_oracle_confirmation_state.confirmation_committed.connect(_on_oracle_confirmation_committed)
 	_opening_fan_count = SaveManager.data.live_session.fan_count
 	_opponent_pk_bar = OpponentPKBar.new()
 	_opponent_pk_bar.name = "OpponentPKBar"
@@ -34,7 +47,14 @@ func _ready() -> void:
 	_opponent_pk_bar.attempt_failed.connect(_on_attempt_failed)
 	_barrage_area.barrage_generated.connect(_on_barrage_generated)
 	_attack_charge_input.shot_hit_resolution_submitted.connect(_on_shot_hit_resolution_submitted)
+	_attack_charge_input.shot_snapshot_created.connect(_on_contradiction_shot_created)
+	_attack_charge_input.shot_arrival_resolved.connect(_on_contradiction_shot_arrived)
 	_attack_charge_input.configure_target_query(_aim_reticle, _barrage_area)
+	_oracle_transition_timer = Timer.new()
+	_oracle_transition_timer.one_shot = true
+	_oracle_transition_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_oracle_transition_timer.timeout.connect(_on_oracle_silence_finished)
+	add_child(_oracle_transition_timer)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
 	restart_current_attempt()
@@ -42,7 +62,19 @@ func _ready() -> void:
 
 # 原地重开同一关；替换本场结算和队列，保留当前关卡及此前周目成果。
 func restart_current_attempt() -> void:
+	if _hit_resolution != null:
+		_hit_resolution.discard_uncommitted_normal_hit_history()
 	_stop_normal_combat()
+	_contradiction_stage_active = false
+	_oracle_transition_started = false
+	_oracle_transition_timer.stop()
+	_final_oracle_session = null
+	_rest_session = null
+	if _contradiction_break != null:
+		remove_child(_contradiction_break)
+		_contradiction_break.queue_free()
+		_contradiction_break = null
+	_attack_charge_input.set_contradiction_mode(false)
 	%PauseMenu.resume_game()
 	_opponent_pk_bar.reset_current_attempt()
 	SaveManager.data.tendency_state.rollback_attempt_tendency()
@@ -89,9 +121,129 @@ func restart_current_attempt() -> void:
 
 # 暂停由 SceneTree 冻结此节点，复读等待只使用实际游戏帧时间。
 func _process(delta: float) -> void:
-	if _normal_combat_active:
+	if _normal_combat_active or _contradiction_stage_active:
 		_repeat_queue.advance_and_dispatch(delta, _barrage_area)
+	if _contradiction_stage_active and _contradiction_break != null and not _contradiction_break.is_result_locked():
+		_battle_hud.show_battle_state("击破矛盾：%.1f 秒 · 剩余 %d 发" % [_contradiction_break.get_remaining_seconds(), _contradiction_break.get_remaining_shots()])
+	elif _contradiction_stage_active and _contradiction_break != null and _contradiction_break.get_outcome() == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		_try_start_oracle_transition()
 	_battle_hud.refresh_attack(_attack_charge_input.get_charge_progress(), _attack_charge_input.get_attack_phase())
+
+
+# 成功分支必须等本发矛盾复读全部生成并离场，才开始一次静音过渡。
+func _try_start_oracle_transition() -> void:
+	if _oracle_transition_started or _repeat_queue.get_pending_contradiction_count() > 0:
+		return
+	if _barrage_area.has_visible_contradiction_repeats():
+		return
+	_oracle_transition_started = true
+	AudioManager.stop_music()
+	_battle_hud.show_battle_state("矛盾击破 · 静音过渡")
+	_oracle_transition_timer.start(0.5)
+
+
+# 静音过渡结束才把本场普通历史与复读统计交给 13 系统的真实入口。
+func _on_oracle_silence_finished() -> void:
+	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		return
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	if current_level == null:
+		return
+	_final_oracle_session = FinalOracleSession.new()
+	if not _final_oracle_session.open_after_breakthrough(
+		current_level.level_id,
+		_hit_resolution.get_normal_hit_history(),
+		_repeat_queue.get_generation_stats(),
+		_oracle_confirmation_state
+	):
+		push_error("Sandbox: 终结神谕入口拒绝本场击破结果。")
+		return
+	_battle_hud.show_battle_state("终结神谕已开放")
+	final_oracle_opened.emit(_final_oracle_session)
+
+
+# 成功分支等神谕最终候选确认后，才把本场普通历史并入当前周目。
+func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _candidate: Dictionary) -> void:
+	if run_data != SaveManager.data or _final_oracle_session == null or not _final_oracle_session.is_open():
+		return
+	if level_id != _final_oracle_session.get_level_id():
+		return
+	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		return
+	if not _hit_resolution.commit_normal_hit_history(run_data):
+		push_error("Sandbox: 神谕确认后提交普通命中历史失败。")
+		return
+	run_data.tendency_state.commit_attempt_tendency()
+
+
+# 正式满蓄发射才消耗矛盾机会；未蓄满取消没有快照事件。
+func _on_contradiction_shot_created(_snapshot: AttackTargetSnapshot) -> void:
+	if not _contradiction_stage_active or _contradiction_break == null:
+		return
+	if not _contradiction_break.register_launched_shot():
+		_attack_charge_input.set_combat_active(false)
+
+
+# 到达时只取仍存在的矛盾实例原句 ID；落空也交给 12 系统消耗本发机会。
+func _on_contradiction_shot_arrived(_snapshot: AttackTargetSnapshot, target_results: Array[Dictionary]) -> void:
+	if not _contradiction_stage_active or _contradiction_break == null:
+		return
+	var hit_ids: Array[String] = []
+	for target_result: Dictionary in target_results:
+		var view := target_result.get("target") as BarrageView
+		if view == null or view.runtime_record == null or not view.runtime_record.is_contradiction:
+			continue
+		var runtime_record: BarrageRuntimeRecord = view.runtime_record
+		hit_ids.append(runtime_record.original_sentence_id)
+		# 真 / 假矛盾都以实际命中的这一条为单位创建复读计划，保留原句事实。
+		var plan: RepeatPlan = RepeatPlan.create_contradiction_hit_plan(
+			StringName(runtime_record.original_sentence_id),
+			runtime_record.original_sentence_text,
+			_combat_stage.get_current_tier(),
+			battle_config.contradiction_repeat_count,
+			battle_config.contradiction_repeat_lifetime_seconds
+		)
+		plan.apply_display_template(battle_config.repeat_display_template)
+		_repeat_queue.enqueue_plan(plan)
+		_barrage_area.end_barrage(int(target_result.get("target_instance_id", -1)))
+	_contradiction_break.resolve_shot_hit_ids(hit_ids)
+
+
+# 已锁定结果立即停止攻击和矛盾生成；后续分支只读取这一份结果。
+func _on_contradiction_outcome_locked(outcome: int) -> void:
+	_attack_charge_input.set_combat_active(false)
+	_barrage_area.clear_barrages()
+	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		_battle_hud.show_battle_state("矛盾击破成功 · 等待复读展示")
+	else:
+		_open_rest_after_unbroken()
+
+
+# 未击破已是本场最终结果，直接把无神谕奖励的 PK 胜利快照交给休息入口。
+func _open_rest_after_unbroken() -> void:
+	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.NOT_BROKEN:
+		return
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	if current_level == null:
+		return
+	_rest_session = RestSession.new()
+	if not _rest_session.open_result({
+		"level_id": current_level.level_id,
+		"result_kind": "pk_win_unbroken",
+		"pk_won": true,
+		"contradiction_broken": false,
+		"new_scripture_entries": [],
+		"new_loser_cards": [],
+		"new_assimilation": [],
+	}):
+		push_error("Sandbox: 休息入口拒绝本场未击破结果。")
+		return
+	if not _hit_resolution.commit_normal_hit_history(SaveManager.data):
+		push_error("Sandbox: 未击破进入休息时提交普通命中历史失败。")
+		return
+	SaveManager.data.tendency_state.commit_attempt_tendency()
+	_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾 · 休息时刻")
+	rest_opened.emit(_rest_session)
 
 
 # 普通与复读都由同一生成事实计评论，等待请求和失败生成不提前入账。
@@ -168,16 +320,38 @@ func _on_attempt_failed() -> void:
 		return
 	_opponent_pk_bar.record_current_level_failure()
 	_stop_normal_combat()
+	_hit_resolution.discard_uncommitted_normal_hit_history()
 	SaveManager.data.tendency_state.rollback_attempt_tendency()
 	_battle_hud.show_failure()
 
 
-# 当前 main 尚无矛盾击破运行入口，保留满值并在这里等待下一张集成卡。
+# 普通 PK 满后读取本关矛盾内容，并把当前档位参数下的生成交给弹幕系统。
 func _complete_normal_combat() -> void:
 	if not _normal_combat_active or _hit_resolution.get_player_pk() < battle_config.maximum_player_pk:
 		return
 	_stop_normal_combat()
-	_battle_hud.show_battle_state("普通战斗完成\n等待进入矛盾击破")
+	_contradiction_stage_active = true
+	_contradiction_break = ContradictionBreakSystem.new()
+	add_child(_contradiction_break)
+	_contradiction_break.outcome_locked.connect(_on_contradiction_outcome_locked)
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	if not _contradiction_break.load_level_content(current_level):
+		push_error("Sandbox: 当前关卡没有可用的矛盾内容。")
+		return
+	if not _barrage_area.start_contradiction_generation(
+		current_level,
+		_contradiction_break.get_true_contradictions(),
+		_contradiction_break.get_false_contradictions()
+	):
+		push_error("Sandbox: 无法启动真假矛盾生成。")
+		return
+	if not _contradiction_break.start_window(CONTRADICTION_WINDOW_CONFIG):
+		_barrage_area.stop_contradiction_generation()
+		push_error("Sandbox: 无法启动矛盾限时窗口。")
+		return
+	_attack_charge_input.set_contradiction_mode(true)
+	_attack_charge_input.set_combat_active(true)
+	_battle_hud.show_battle_state("矛盾阶段：寻找真正的矛盾")
 
 
 # 阶段结束显式停止系统，避免旧输入或等待请求在下一次尝试继续推进。

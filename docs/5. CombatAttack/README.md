@@ -36,6 +36,8 @@
 
 `AttackChargeInput.set_combat_active(active: bool)` 供场景协调战斗停止与重开。传入 `false` 会禁用攻击输入、清零蓄力、取消飞行 / 硬直和 Timer，并恢复阶段为 READY；传入 `true` 后可开始下一发。暂停继续通过 SceneTree 控制，保留当前蓄力与剩余计时。
 
+矛盾阶段由 Sandbox 调用 `set_contradiction_mode(true)`，满蓄释放仍发送 `shot_snapshot_created`，飞行到达仍发送 `shot_arrival_resolved`，但到达不会进入普通 `HitResolution`。重开普通战斗时调用 `set_contradiction_mode(false)`。实际命中 ID 的判定与机会消耗归 12 系统。
+
 `HitResolution.resolve_shot_results()` 同步发送最终 PK，回调可能在满值或失败时停止攻击。到达处理在回调后检查本发仍有效，保证已停止的战斗不会再次启动硬直 Timer。当前这一发成功结算的提交事实仍会发送，供协调方处理命中与倾向。
 
 `submission.hit_resolution_result.target_results` 每个目标除 `target_instance_id`、`target`、`trait_result` 外，携带 `original_sentence_id`、`original_sentence_text`、`source_id`、`is_repeat`、`tendency_id`、`tendency_delta`、`is_valid_hit`。内容事实在提交前从运行时记录复制，协调方无需回读可能已结束的弹幕节点。正常普通话语取得 HitResolution 计算的奖励并记录普通命中历史；复读调用 `calculate_repeat_hit_result()`，有效命中、PK 与倾向增量为零，且不会记录普通命中历史。整发在 PK 下限作废时，HitResolution 返回空目标结果。
