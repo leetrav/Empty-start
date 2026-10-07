@@ -53,7 +53,7 @@ UI、10 秒计时器、战斗冻结、奖励系统和休息流程全部做实际
 
 ## 依赖顺序
 
-隔离集成分支新增 `FinalOracleSession.open_after_breakthrough(level_id, normal_hit_history, repeat_stats, confirmation_state)` 作为 FO-01 的最小真实接收入口：只接受一次击破完成事实，复用现有候选池并冻结展示快照；战斗冻结仍由调用方负责。`confirm_display_candidate(candidate)` 仅接受本次展示中的原句 ID，并调用周目级 FO-09 确认状态。当前没有神谕选择 UI，FO-07～12 仍待实现。
+`FinalOracleSession.open_after_breakthrough(level_id, normal_hit_history, repeat_stats, confirmation_state)` 是 FO-01 的真实接收入口：只接受一次击破完成事实，复用候选池并冻结展示快照；普通战斗冻结由 Sandbox 协调。FO-06～09 的候选快照、倒计时、自动排序和单次确认均已完成；FO-13 将展示与手动操作接入中央主游戏区的普通攻击链。FO-10～12 按依赖顺序继续接入奖励与休息系统。
 
 FO-01 等 12. ContradictionBreak 的成功与过渡完成事件。
 FO-02～05 在【6. HitResolution】HR-14 的本场普通命中历史与【10. Repeat】普通复读统计存在后完成纯候选逻辑。
@@ -85,24 +85,37 @@ FO-12 等 18. Rest。
 
 - 候选展示开放时调用 `snapshot_for_display(final_candidates)` 一次，并保留返回的深拷贝数组作为本次展示列表。
 - 选择期间继续显示该快照的原顺序和内容；后续命中或复读统计变化不会重建或重排当前列表。
+- Sandbox 在 `final_oracle_opened` 后将 Session 的展示快照交给 `FinalOracleCandidateDisplay.show_candidates()`；正文从当前 `LevelProfile.normal_speech_pool` 按稳定 ID 补到 HitResolution 返回的深拷贝，不写回命中历史。
+- FO-13 的候选显示为中央 `BattleArea` 内的普通 Label，最多三条，文字框也是普通攻击的目标区域；不显示倾向、序号、卡片或选择按钮。
 
 ## FO-07 倒计时接口
 
 - 候选列表可操作时调用 `FinalOracleSelectionTimer.start()`，从 10 秒开始计时。
-- 每帧调用 `advance(delta_seconds, is_globally_paused)`；当前暂停菜单通过 `get_tree().paused` 管理全局暂停，暂停期间将该值传入，倒计时保持不变。
-- `remaining_time_changed(seconds_remaining)` 可驱动倒计时显示；到期时发出 `expired`，由 FO-08 接入自动选择。
+- Sandbox 在候选显示且普通攻击目标配置成功后启动计时器，并在 `_process()` 中调用 `advance(delta, get_tree().paused)`。
+- PauseMenu 暂停 `SceneTree` 时 Sandbox 不推进计时；`remaining_time_changed(seconds_remaining)` 更新既有战斗状态栏。
+- 到期时发出 `expired`，由 Sandbox 执行 FO-08 自动候选选择。
 
 ## FO-08 超时自动选择接口
 
 - 计时器 `expired` 后，调用 `select_auto_pick_from_display(display_snapshot, repeat_stats)` 从冻结展示列表选择一条候选。
 - 正式排序为普通复读实际数量降序、最近命中顺序降序、稳定原句 ID 升序；空展示列表返回空 Dictionary。
+- 计时器到期后 Sandbox 调用 `FinalOracleSession.select_timeout_candidate()`，从冻结展示快照和 Repeat 统计中选句，再交给 FO-09 共同确认入口。
 
 ## FO-09 单次确认接口
 
 - 每个当前周目创建并复用一个 `FinalOracleConfirmationState.new(SaveManager.data)`。
-- 手动选择和超时自动选择都调用 `confirm_selection(level_id, candidate)`；同一周目同一 `level_id` 只接受第一次有效结果。
+- 手动攻击命中和超时自动选择都调用 `confirm_display_candidate(candidate)` → `confirm_selection(level_id, candidate)`；同一周目同一 `level_id` 只接受第一次有效结果。
 - 首次确认发出 `confirmation_committed(run_data, level_id, candidate)`；重复调用返回 `false` 且不会重发信号。`get_confirmed_selection(level_id)` 始终返回首次候选快照。
 - 本版确认不改写三项倾向累计值，额外倾向保持为 0。
+
+## FO-13 主游戏区攻击选择
+
+- `FinalOracleCandidateDisplay` 位于 `BattleHud/BattleArea` 内，候选控件固定排布，原句正文直接使用 Label 显示。
+- Sandbox 将这些 `Control` 注入 `AttackChargeInput.set_selection_targets()`；玩家仍使用现有准心、蓄力、发射和飞行阶段。
+- `AttackTargetSnapshot` 在释放时冻结命中候选 ID 和准心中心；到达时只复核仍可见的冻结目标。同发命中多句时只发出准心中心最近的一句，等距时保留展示顺序。
+- 选择模式不会调用 HitResolution、PK、倾向或普通复读结算；普通弹幕生成和对手回拉在进入神谕时保持停止。
+- 手动攻击命中和超时自动选择统一进入 `Sandbox._confirm_oracle_candidate()`，最终由 FO-09 的当前周目 `SaveData + level_id` 确认器防重。
+- 旧 `FinalOracleScreen` Panel / Button 页面已删除；Sandbox 保留 `final_oracle_opened(session)` 作为阶段事实通知。
 
 ## Scripture 确认接收
 

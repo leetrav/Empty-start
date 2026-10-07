@@ -39,6 +39,8 @@ func _ready() -> void:
 	await _verify_tier_and_new_barrage_parameters()
 	await _verify_pause_in_each_attack_phase()
 	await _verify_failure_restart_and_full_pk()
+	await _verify_three_candidate_overlap_selection()
+	await _verify_oracle_timeout_pause_and_auto_pick()
 	get_tree().paused = false
 	_sandbox.queue_free()
 	await get_tree().process_frame
@@ -298,7 +300,38 @@ func _verify_failure_restart_and_full_pk() -> void:
 		_queue().clear_contradiction_queue()
 		_area.clear_barrages()
 		await _wait(0.65)
-		_check(not bool(_sandbox.get("_contradiction_stage_active")) and (_sandbox.get("_final_oracle_session") as FinalOracleSession).is_open(), "神谕接管后结束矛盾阶段")
+		var oracle_session := _sandbox.get("_final_oracle_session") as FinalOracleSession
+		var candidate_display := _sandbox.get_node("%OracleCandidateDisplay") as FinalOracleCandidateDisplay
+		_check(not bool(_sandbox.get("_contradiction_stage_active")) and oracle_session.is_open(), "击破成功和静音过渡后开放神谕")
+		_check(candidate_display.visible and candidate_display.get_child_count() == 1, "一条真实普通命中候选显示在中央主游戏区")
+		_check(not _area.is_normal_generation_enabled() and _views(false).is_empty() and _views(true).is_empty(), "神谕阶段停止普通生成并清除战斗弹幕")
+		if candidate_display.get_child_count() == 1:
+			var candidate_target := candidate_display.get_child(0) as Control
+			var candidate_id: String = candidate_display.get_candidate_id_for_target(candidate_target)
+			var history_before_oracle_shot: Array[Dictionary] = _hit().get_normal_hit_history()
+			var pk_before_oracle_shot: float = _hit().get_player_pk()
+			await _wait(0.2)
+			_check(is_equal_approx(_hit().get_player_pk(), pk_before_oracle_shot), "神谕倒计时期间对手 PK 回拉停止")
+			var tendency_total_before_oracle_shot: int = _get_total_tendency_points()
+			var normal_generation_stats: RepeatGenerationStats = _queue().get_generation_stats()
+			var repeat_count_before_oracle_shot: int = normal_generation_stats.get_normal_count(StringName(candidate_id))
+			var submissions_before_oracle_shot: int = _submissions.size()
+			await _fire_at(candidate_target)
+			var confirmation_state := _sandbox.get("_oracle_confirmation_state") as FinalOracleConfirmationState
+			var selected_candidate: Dictionary = confirmation_state.get_confirmed_selection(oracle_session.get_level_id())
+			_check(not candidate_id.is_empty() and str(selected_candidate.get("original_sentence_id", "")) == candidate_id, "普通攻击命中唯一候选并完成正式神谕确认")
+			_check(is_equal_approx(_hit().get_player_pk(), pk_before_oracle_shot), "神谕选择攻击不改变玩家 PK")
+			_check(_hit().get_normal_hit_history() == history_before_oracle_shot, "神谕选择攻击不追加普通命中历史")
+			_check(_get_total_tendency_points() == tendency_total_before_oracle_shot, "神谕选择攻击不产生倾向收益")
+			_check(normal_generation_stats.get_normal_count(StringName(candidate_id)) == repeat_count_before_oracle_shot and _submissions.size() == submissions_before_oracle_shot, "神谕选择攻击不生成复读或 HitResolution 提交")
+			_check(_sandbox.get("_oracle_selection_timer") == null and not _attack.can_start_charging(), "确认后停止倒计时并锁住后续攻击")
+			var confirmed_label := candidate_display.get_child(0) as Control
+			_check(
+				candidate_display.get_child_count() == 1
+				and candidate_display.get_candidate_id_for_target(confirmed_label).is_empty()
+				and str((confirmed_label as Label).text) == str(selected_candidate.get("original_sentence_text", "")),
+				"确认后中央区域只保留最终神谕正文"
+			)
 	_sandbox.restart_current_attempt()
 	_hit().apply_player_pk_delta(1.0 - _hit().get_player_pk())
 	await _wait(0.05)
@@ -318,6 +351,114 @@ func _verify_failure_restart_and_full_pk() -> void:
 		_check(_queue().get_pending_contradiction_count() == 0 and not _area.has_visible_contradiction_repeats(), "休息阶段不再推进矛盾复读")
 
 
+# 用真实 Sandbox/AttackChargeInput 验证三句显示、同发多目标最近中心裁决。
+func _verify_three_candidate_overlap_selection() -> void:
+	await _replace_sandbox()
+	var session: FinalOracleSession = await _open_oracle_with_hit_history(3)
+	var display := _sandbox.get_node("%OracleCandidateDisplay") as FinalOracleCandidateDisplay
+	var labels: Array[Control] = []
+	for child: Node in display.get_children():
+		if child is Control:
+			labels.append(child as Control)
+	_check(session.is_open() and display.visible and labels.size() == 3, "三个普通命中候选固定显示在中央主游戏区")
+	if labels.size() != 3:
+		return
+	var first_target: Control = labels[0]
+	var second_target: Control = labels[1]
+	var first_candidate_id: String = display.get_candidate_id_for_target(first_target)
+	var first_rect: Rect2 = first_target.get_global_rect()
+	var second_rect: Rect2 = second_target.get_global_rect()
+	var overlap_midpoint: float = (first_rect.end.y + second_rect.position.y) * 0.5
+	var aim_point: Vector2 = Vector2(first_rect.get_center().x, overlap_midpoint - 4.0)
+	var first_instance_id: int = first_target.get_instance_id()
+	var second_instance_id: int = second_target.get_instance_id()
+	var submissions_before: int = _submissions.size()
+	var snapshots_before: int = _snapshots.size()
+	var pk_before: float = _hit().get_player_pk()
+	_aim_at_point(aim_point)
+	_mouse_button(true)
+	await _wait(0.24)
+	_mouse_button(false)
+	await _wait(0.29)
+	if _snapshots.size() <= snapshots_before:
+		_check(false, "选择攻击产生释放快照")
+		return
+	var oracle_shot: AttackTargetSnapshot = _snapshots.back()
+	var target_ids: Array[int] = oracle_shot.get_target_instance_ids()
+	_check(target_ids.has(first_instance_id) and target_ids.has(second_instance_id), "同一发快照覆盖相邻两条神谕候选")
+	var confirmation_state := _sandbox.get("_oracle_confirmation_state") as FinalOracleConfirmationState
+	var selected_candidate: Dictionary = confirmation_state.get_confirmed_selection(session.get_level_id())
+	_check(str(selected_candidate.get("original_sentence_id", "")) == first_candidate_id, "同发命中多句时只确认准心中心最近的一句")
+	_check(_submissions.size() == submissions_before and is_equal_approx(_hit().get_player_pk(), pk_before), "多目标神谕攻击不进入 HitResolution 或改变 PK")
+
+
+# 暂停冻结 10 秒计时；恢复后超时按现有候选池正式排序自动确认。
+func _verify_oracle_timeout_pause_and_auto_pick() -> void:
+	await _replace_sandbox()
+	var session: FinalOracleSession = await _open_oracle_with_hit_history(3)
+	var timer := _sandbox.get("_oracle_selection_timer") as FinalOracleSelectionTimer
+	var pause_menu: Node = _sandbox.get_node("%PauseMenu")
+	var expected_candidate: Dictionary = session.select_timeout_candidate()
+	var submissions_before: int = _submissions.size()
+	var time_before_pause: float = timer.get_remaining_seconds()
+	var status_before_pause: String = (_sandbox.get_node("%BattleStateFeedback") as Label).text
+	pause_menu.pause_game()
+	await _wait(0.25)
+	_check(is_equal_approx(timer.get_remaining_seconds(), time_before_pause), "全局暂停期间神谕倒计时冻结")
+	_check((_sandbox.get_node("%BattleStateFeedback") as Label).text == status_before_pause, "暂停时战斗状态栏保留剩余时间")
+	pause_menu.resume_game()
+	await _wait(10.2)
+	var confirmation_state := _sandbox.get("_oracle_confirmation_state") as FinalOracleConfirmationState
+	var selected_candidate: Dictionary = confirmation_state.get_confirmed_selection(session.get_level_id())
+	_check(str(selected_candidate.get("original_sentence_id", "")) == str(expected_candidate.get("original_sentence_id", "")), "10 秒到期后按 FO-08 顺序自动确认正确原句")
+	_check(_sandbox.get("_oracle_selection_timer") == null and not _attack.can_start_charging(), "自动确认后停表并关闭攻击选择")
+	_check(_hit().get_player_pk() >= 1.0 and _submissions.size() == submissions_before, "超时神谕确认不提交普通命中 PK")
+
+
+# 每个运行场景使用新的周目对象，候选事实仍由真实 HitResolution 生成。
+func _replace_sandbox() -> void:
+	get_tree().paused = false
+	if _sandbox != null:
+		remove_child(_sandbox)
+		_sandbox.queue_free()
+		await get_tree().process_frame
+		await get_tree().process_frame
+	SaveManager.new_game()
+	_sandbox = SANDBOX_SCENE.instantiate() as Control
+	_sandbox.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(_sandbox)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_area = _sandbox.get_node("%BarrageArea") as BarrageArea
+	_attack = _sandbox.get_node("%AttackChargeInput") as AttackChargeInput
+	_aim = _sandbox.get_node("%AimReticle") as AimReticle
+	_attack.shot_snapshot_created.connect(_on_snapshot)
+	_attack.shot_hit_resolution_submitted.connect(_on_submission)
+
+
+# 通过真实击破结果和静音过渡开放 FinalOracle，历史由 HitResolution 保存。
+func _open_oracle_with_hit_history(candidate_count: int) -> FinalOracleSession:
+	var level: LevelProfile = _level()
+	var history_count: int = mini(candidate_count, level.normal_speech_pool.size())
+	for index in range(history_count):
+		var speech: LevelSpeech = level.normal_speech_pool[index]
+		_hit().record_normal_word_hit(speech.original_sentence_id, speech.tendency_id)
+	_sandbox.call("debug_set_player_pk", 1.0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var break_system := _sandbox.get("_contradiction_break") as ContradictionBreakSystem
+	if break_system == null:
+		_check(false, "普通 PK 满值后进入矛盾阶段")
+		return null
+	break_system.register_launched_shot()
+	var hit_ids: Array[String] = [break_system.get_true_contradictions()[0].original_sentence_id]
+	break_system.resolve_shot_hit_ids(hit_ids)
+	await _wait(0.7)
+	var session := _sandbox.get("_final_oracle_session") as FinalOracleSession
+	_check(session != null and session.is_open(), "矛盾击破成功和静音过渡后开放 FinalOracle")
+	return session
+
+
 # 仅使用正式公开生成入口；将真实实例放在独立位置便于瞄准。
 func _spawn_test_normal() -> BarrageView:
 	var view: BarrageView = _area.spawn_normal_barrage(_level(), _level().normal_speech_pool[0])
@@ -326,7 +467,7 @@ func _spawn_test_normal() -> BarrageView:
 
 
 # 发射前重新瞄准移动中的真实目标，整个攻击经 MouseButton 输入事件推进。
-func _fire_at(target: BarrageView) -> void:
+func _fire_at(target: Control) -> void:
 	_aim_at(target)
 	_mouse_button(true)
 	await _wait(0.24)
@@ -339,8 +480,12 @@ func _fire_at(target: BarrageView) -> void:
 	await _wait(0.29)
 
 
-func _aim_at(target: BarrageView) -> void:
-	_mouse_position = target.get_global_rect().get_center()
+func _aim_at(target: Control) -> void:
+	_aim_at_point(target.get_global_rect().get_center())
+
+
+func _aim_at_point(canvas_position: Vector2) -> void:
+	_mouse_position = canvas_position
 	var event: InputEventMouseMotion = InputEventMouseMotion.new()
 	# parse_input_event 接收窗口坐标，headless 窗口仍会按 final_transform 转回逻辑视口。
 	var window_position: Vector2 = get_viewport().get_final_transform() * (_aim.get_canvas_transform() * _mouse_position)
@@ -364,6 +509,19 @@ func _mouse_button(pressed: bool) -> void:
 # 验收等待继续处理暂停中的测试节点，业务 Timer 仍遵循 SceneTree 暂停。
 func _wait(seconds: float) -> void:
 	await get_tree().create_timer(seconds, true, false, true).timeout
+
+
+# 统计已提交与本场暂存之和，确认时提交转移不能被误判为新增倾向。
+func _get_total_tendency_points() -> int:
+	var tendency_state: TendencyState = SaveManager.data.tendency_state
+	return (
+		tendency_state.orthodox_total
+		+ tendency_state.heretical_total
+		+ tendency_state.absurd_total
+		+ tendency_state.attempt_orthodox_total
+		+ tendency_state.attempt_heretical_total
+		+ tendency_state.attempt_absurd_total
+	)
 
 
 func _wait_until_phase(phase: AttackChargeInput.AttackPhase) -> void:

@@ -12,6 +12,7 @@ const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://sy
 @onready var _barrage_area: BarrageArea = %BarrageArea
 @onready var _aim_reticle: AimReticle = %AimReticle
 @onready var _attack_charge_input: AttackChargeInput = %AttackChargeInput
+@onready var _oracle_candidate_display: FinalOracleCandidateDisplay = %OracleCandidateDisplay
 @onready var _battle_hud = %BattleHud
 @onready var _debug_panel: CanvasLayer = %DebugPanel
 
@@ -24,6 +25,7 @@ var _normal_combat_active: bool = false
 var _contradiction_stage_active: bool = false
 var _contradiction_break: ContradictionBreakSystem
 var _final_oracle_session: FinalOracleSession
+var _oracle_selection_timer: FinalOracleSelectionTimer
 var _oracle_confirmation_state: FinalOracleConfirmationState
 var _rest_session: RestSession
 var _oracle_transition_timer: Timer
@@ -51,6 +53,7 @@ func _ready() -> void:
 	_barrage_area.barrage_generated.connect(_on_barrage_generated)
 	_attack_charge_input.shot_hit_resolution_submitted.connect(_on_shot_hit_resolution_submitted)
 	_attack_charge_input.shot_snapshot_created.connect(_on_contradiction_shot_created)
+	_attack_charge_input.selection_target_hit.connect(_on_oracle_selection_target_hit)
 	_attack_charge_input.configure_target_query(_aim_reticle, _barrage_area)
 	_oracle_transition_timer = Timer.new()
 	_oracle_transition_timer.one_shot = true
@@ -75,6 +78,9 @@ func restart_current_attempt() -> void:
 	_oracle_transition_started = false
 	_oracle_transition_timer.stop()
 	_final_oracle_session = null
+	_oracle_selection_timer = null
+	_attack_charge_input.clear_selection_targets()
+	_oracle_candidate_display.clear_display()
 	_rest_session = null
 	if _contradiction_break != null:
 		remove_child(_contradiction_break)
@@ -137,6 +143,8 @@ func restart_current_attempt() -> void:
 func _process(delta: float) -> void:
 	if _normal_combat_active or _contradiction_stage_active:
 		_repeat_queue.advance_and_dispatch(delta, _barrage_area)
+	if _oracle_selection_timer != null:
+		_oracle_selection_timer.advance(delta, get_tree().paused)
 	if _contradiction_stage_active and _contradiction_break != null and not _contradiction_break.is_result_locked():
 		_battle_hud.show_battle_state("击破矛盾：%.1f 秒 · 剩余 %d 发" % [_contradiction_break.get_remaining_seconds(), _contradiction_break.get_remaining_shots()])
 	elif _contradiction_stage_active and _contradiction_break != null and _contradiction_break.get_outcome() == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
@@ -252,17 +260,102 @@ func _on_oracle_silence_finished() -> void:
 	_final_oracle_session = FinalOracleSession.new()
 	if not _final_oracle_session.open_after_breakthrough(
 		current_level.level_id,
-		_hit_resolution.get_normal_hit_history(),
+		_get_oracle_history_with_sentence_text(current_level),
 		_repeat_queue.get_generation_stats(),
 		_oracle_confirmation_state
 	):
 		push_error("Sandbox: 终结神谕入口拒绝本场击破结果。")
 		return
 	_contradiction_stage_active = false
-	_attack_charge_input.set_combat_active(false)
 	_repeat_queue.clear_contradiction_queue()
-	_battle_hud.show_battle_state("终结神谕已开放")
+	_barrage_area.stop_normal_generation()
+	_barrage_area.stop_contradiction_generation()
+	_barrage_area.clear_barrages()
+	_opponent_pk_bar.stop_pullback()
+	var confirmed_candidate: Dictionary = _final_oracle_session.get_confirmed_selection()
+	if not confirmed_candidate.is_empty():
+		_attack_charge_input.clear_selection_targets()
+		_attack_charge_input.set_combat_active(false)
+		_oracle_candidate_display.show_confirmed_candidate(confirmed_candidate)
+		_battle_hud.show_battle_state("终结神谕已确认")
+		final_oracle_opened.emit(_final_oracle_session)
+		return
+	var candidates: Array[Dictionary] = _final_oracle_session.get_display_candidates()
+	var target_controls: Array[Control] = _oracle_candidate_display.show_candidates(candidates)
+	if target_controls.size() != candidates.size():
+		push_error("Sandbox: 神谕候选正文未能显示到主游戏区。")
+		return
+	if not _attack_charge_input.set_selection_targets(target_controls):
+		_oracle_candidate_display.clear_display()
+		push_error("Sandbox: 神谕候选没有可攻击的目标控件。")
+		return
+	_attack_charge_input.set_contradiction_mode(false)
+	_attack_charge_input.set_combat_active(true)
+	_oracle_selection_timer = FinalOracleSelectionTimer.new()
+	_oracle_selection_timer.remaining_time_changed.connect(_on_oracle_selection_time_changed)
+	_oracle_selection_timer.expired.connect(_on_oracle_selection_expired)
+	_battle_hud.show_battle_state("神谕选择 · 10.0 秒")
+	_oracle_selection_timer.start()
 	final_oracle_opened.emit(_final_oracle_session)
+
+
+# 给展示快照补上静态关卡原句文本，不把展示字段写回 HitResolution 历史。
+func _get_oracle_history_with_sentence_text(current_level: LevelProfile) -> Array[Dictionary]:
+	var normal_hit_history: Array[Dictionary] = _hit_resolution.get_normal_hit_history()
+	var sentence_text_by_id: Dictionary = {}
+	if current_level != null:
+		for speech: LevelSpeech in current_level.normal_speech_pool:
+			if speech != null and not speech.original_sentence_id.is_empty():
+				sentence_text_by_id[speech.original_sentence_id] = speech.text
+
+	for history_entry: Dictionary in normal_hit_history:
+		var sentence_id: String = str(history_entry.get("original_sentence_id", ""))
+		var sentence_text: String = str(sentence_text_by_id.get(sentence_id, ""))
+		if sentence_text.is_empty():
+			push_error("Sandbox: 无法从当前关卡解析神谕原句正文：%s" % sentence_id)
+		history_entry["original_sentence_text"] = sentence_text
+	return normal_hit_history
+
+
+# 准心命中候选控件后按稳定原句 ID 读取 Session 冻结候选。
+func _on_oracle_selection_target_hit(target: Control) -> void:
+	if _final_oracle_session == null or not _final_oracle_session.is_open():
+		return
+	var sentence_id: String = _oracle_candidate_display.get_candidate_id_for_target(target)
+	if sentence_id.is_empty():
+		return
+	for candidate: Dictionary in _final_oracle_session.get_display_candidates():
+		if str(candidate.get("original_sentence_id", "")) == sentence_id:
+			_confirm_oracle_candidate(candidate)
+			return
+
+
+# 自动选择只改变请求来源；手动攻击和超时都复用 Session 的同一确认方法。
+func _on_oracle_selection_expired() -> void:
+	if _final_oracle_session == null or not _final_oracle_session.is_open():
+		return
+	var candidate: Dictionary = _final_oracle_session.select_timeout_candidate()
+	if candidate.is_empty():
+		push_error("Sandbox: 神谕倒计时结束，但没有可自动确认的候选。")
+		return
+	_confirm_oracle_candidate(candidate)
+
+
+# 首次确认后停表、锁住攻击，并保留已确认的原句正文供玩家查看。
+func _confirm_oracle_candidate(candidate: Dictionary) -> void:
+	if _final_oracle_session == null or not _final_oracle_session.confirm_display_candidate(candidate):
+		return
+	_oracle_selection_timer = null
+	_attack_charge_input.clear_selection_targets()
+	_attack_charge_input.lock_new_attacks()
+	_attack_charge_input.set_combat_active(false)
+	_oracle_candidate_display.show_confirmed_candidate(candidate)
+	_battle_hud.show_battle_state("终结神谕已确认")
+
+
+# 计时器剩余时间显示在现有战斗状态栏，中央候选仍只呈现原句正文。
+func _on_oracle_selection_time_changed(seconds_remaining: float) -> void:
+	_battle_hud.show_battle_state("神谕选择 · %.1f 秒" % seconds_remaining)
 
 
 # 成功分支等神谕最终候选确认后，才把本场普通历史并入当前周目。

@@ -370,6 +370,8 @@ PK 胜利但未击破
 
 当前 `FinalOracleConfirmationState.confirmation_committed(run_data, level_id, candidate)` 是正式确认事实。圣典通过 `ScriptureData.bind_confirmation_state()` 接收，同关首次写入后以保存列表去重；候选原句 ID / 倾向与关卡目录中的文本、主播名、原关卡序号组成经文快照。
 
+FO-13 的选择表现保留战斗 HUD：Sandbox 在中央 BattleArea 展示 FinalOracleSession 的冻结原句；AttackChargeInput 复用普通准心和蓄力发射过程，仅把命中候选交给 Sandbox，不调用 HitResolution。Sandbox 将攻击命中和 FO-08 超时结果都交给同一个 `FinalOracleSession.confirm_display_candidate()`；PK、倾向与复读收益在选择阶段保持冻结。
+
 圣典的尚未确认结果单独保存在同一 `SaveData.scripture_data.pending_entry`，不会进入正式章节视图。真实当前关重开流程调用 `rollback_uncommitted(level_id)` 撤回该关暂存，之前已确认的 `entries` 保留。
 
 ---
@@ -558,7 +560,7 @@ PK 胜利但未击破
 | 当前关卡配置 | 关卡配置系统 | 读取 |
 | 当前场上有哪些弹幕 | 弹幕生成系统 | 攻击系统读取目标 |
 | 弹幕特殊规则 | 弹幕特性模块系统 | 攻击和结算读取 |
-| 当前一次攻击过程 | 战斗攻击系统 | 结束后提交命中集合 |
+| 当前一次攻击过程 | 战斗攻击系统 | 普通战斗提交命中集合；FinalOracle 只提交候选命中请求 |
 | 当前 PK | 命中结算系统统一更新 | 战斗阶段读取；对手 PK 条提交回拉变化 |
 | 当前 Tier | 战斗阶段系统 | 生成、回拉、复读、表现读取 |
 | 观看 / 点赞 / 评论 / 粉丝 | 直播数据表现系统 | 通过 `SaveData.live_session` 读取，供 UI 和休息展示使用 |

@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/final_oracle/final_oracle_candidate_display.gd" id="1_display"]
+
+[node name="FinalOracleCandidateDisplay" type="Control"]
+visible = false
+mouse_filter = 2
+script = ExtResource("1_display")

@@ -4,6 +4,7 @@ extends Node
 signal shot_snapshot_created(snapshot: AttackTargetSnapshot)
 signal shot_arrival_resolved(snapshot: AttackTargetSnapshot, target_results: Array[Dictionary])
 signal shot_hit_resolution_submitted(snapshot: AttackTargetSnapshot, submission: Dictionary)
+signal selection_target_hit(target: Control)
 
 enum AttackPhase { READY, PROJECTILE_FLIGHT, RECOVERY }
 
@@ -18,6 +19,8 @@ var _active_snapshot: AttackTargetSnapshot
 var _attack_held: bool = false
 var _combat_active: bool = true
 var _contradiction_mode: bool = false
+var _selection_mode_active: bool = false
+var _selection_targets: Array[Control] = []
 var _new_attacks_locked: bool = false
 
 
@@ -69,6 +72,23 @@ func configure_hit_resolution(hit_resolution: HitResolution) -> bool:
 func configure_target_query(aim_reticle: AimReticle, barrage_area: BarrageArea) -> void:
 	_aim_reticle = aim_reticle
 	_barrage_area = barrage_area
+
+
+# 注入临时可选目标；命中只发选择事实，不进入 HitResolution。
+func set_selection_targets(targets: Array[Control]) -> bool:
+	_selection_targets.clear()
+	for target: Control in targets:
+		if target == null or not is_instance_valid(target):
+			continue
+		_selection_targets.append(target)
+	_selection_mode_active = not _selection_targets.is_empty()
+	return _selection_mode_active
+
+
+# 选择结束后移除目标来源，恢复普通攻击的弹幕查询路径。
+func clear_selection_targets() -> void:
+	_selection_targets.clear()
+	_selection_mode_active = false
 
 
 # 矛盾阶段在释放时交付快照；飞行不再复核目标或提交普通收益。
@@ -137,7 +157,9 @@ func _on_attack_phase_timer_timeout() -> void:
 		return
 	if _attack_phase == AttackPhase.PROJECTILE_FLIGHT:
 		var completed_snapshot: AttackTargetSnapshot = _active_snapshot
-		if not _contradiction_mode:
+		if _selection_mode_active:
+			_resolve_selection_target_hit(completed_snapshot)
+		elif not _contradiction_mode:
 			var valid_targets: Array[Node] = completed_snapshot.resolve_present_targets(_barrage_area)
 			var target_results: Array[Dictionary] = _build_target_trait_results(valid_targets)
 			shot_arrival_resolved.emit(completed_snapshot, target_results)
@@ -154,6 +176,24 @@ func _on_attack_phase_timer_timeout() -> void:
 	if _attack_phase == AttackPhase.RECOVERY:
 		_active_snapshot = null
 		_attack_phase = AttackPhase.READY
+
+
+# 同发覆盖多条候选时只命中快照准心中心最近的一条；等距时保留展示顺序。
+func _resolve_selection_target_hit(snapshot: AttackTargetSnapshot) -> void:
+	if snapshot == null:
+		return
+	var present_targets: Array[Control] = snapshot.resolve_present_selection_targets(_selection_targets)
+	var selected_target: Control
+	var closest_distance_squared: float = INF
+	var aim_center: Vector2 = snapshot.get_aim_center_global_position()
+	for target: Control in present_targets:
+		var target_center: Vector2 = target.get_global_rect().get_center()
+		var distance_squared: float = target_center.distance_squared_to(aim_center)
+		if distance_squared < closest_distance_squared:
+			selected_target = target
+			closest_distance_squared = distance_squared
+	if selected_target != null:
+		selection_target_hit.emit(selected_target)
 
 
 # 将真实有效目标的最终特性结果随目标一起交给后续结算，不复制 4 系统规则。
@@ -262,8 +302,20 @@ func _submit_arrival_to_hit_resolution(
 # 只从 BarrageArea 当前真实视图中筛选有效、可选、在区域内且与准心相交的弹幕。
 func _capture_target_snapshot() -> AttackTargetSnapshot:
 	var candidates: Array[Node] = []
+	var aim_center: Vector2 = _aim_reticle.get_aim_center_global_position() if _aim_reticle != null else Vector2.ZERO
+	if _selection_mode_active:
+		if _aim_reticle == null:
+			return AttackTargetSnapshot.capture_at_release(candidates, aim_center)
+		for target: Control in _selection_targets:
+			if target == null or not is_instance_valid(target):
+				continue
+			if not target.is_inside_tree() or target.is_queued_for_deletion() or not target.is_visible_in_tree():
+				continue
+			if _aim_reticle.intersects_target_area(target.get_global_rect()):
+				candidates.append(target)
+		return AttackTargetSnapshot.capture_at_release(candidates, aim_center)
 	if _aim_reticle == null or _barrage_area == null:
-		return AttackTargetSnapshot.capture_at_release(candidates)
+		return AttackTargetSnapshot.capture_at_release(candidates, aim_center)
 
 	var current_time_msec: int = Time.get_ticks_msec()
 	var area_rect: Rect2 = _barrage_area.get_global_rect()
@@ -287,7 +339,7 @@ func _capture_target_snapshot() -> AttackTargetSnapshot:
 		if _aim_reticle.intersects_target_area(visible_target_rect):
 			candidates.append(barrage_view)
 
-	return AttackTargetSnapshot.capture_at_release(candidates)
+	return AttackTargetSnapshot.capture_at_release(candidates, aim_center)
 
 
 # 提供给后续攻击反馈和释放流程读取当前蓄力比例。
