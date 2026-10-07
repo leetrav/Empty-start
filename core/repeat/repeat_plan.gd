@@ -7,6 +7,7 @@ enum RepeatType { NORMAL, CONTRADICTION }
 
 @export var original_line_id: StringName = &""
 @export var original_line_text: String = ""
+@export var tendency_id: String = ""
 @export var display_text: String = ""
 @export var repeat_type: RepeatType = RepeatType.NORMAL
 @export var planned_repeat_count: int = 0
@@ -23,11 +24,13 @@ static func create_normal_hit_plan(
 		original_line_text: String,
 		settled_tier: int,
 		configured_repeat_count: int,
-		configured_lifetime_seconds: float
+		configured_lifetime_seconds: float,
+		original_tendency_id: String = ""
 	) -> RepeatPlan:
 	var plan := RepeatPlan.new()
 	plan.original_line_id = original_line_id
 	plan.original_line_text = original_line_text
+	plan.tendency_id = original_tendency_id
 	plan.repeat_type = RepeatType.NORMAL
 	plan.planned_repeat_count = configured_repeat_count
 	plan.generation_tier = settled_tier
