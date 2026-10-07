@@ -141,6 +141,53 @@ func stop_normal_generation() -> void:
 	if not _contradiction_generation_enabled:
 		_spawn_timer.stop()
 
+func resume_normal_generation() -> bool:
+	# 矛盾阶段由专属生成器接管；普通调试恢复只作用于普通战斗。
+	if _contradiction_generation_enabled:
+		return false
+	if _current_level_profile == null or _current_level_profile.base_spawn_interval_seconds <= 0.0:
+		return false
+	_normal_generation_enabled = true
+	_restart_spawn_timer()
+	return true
+
+
+func is_normal_generation_enabled() -> bool:
+	return _normal_generation_enabled
+
+
+func clear_current_barrages() -> int:
+	# 调试清屏保留当前生成开关；阶段结束仍使用 clear_barrages。
+	return _clear_barrage_views()
+
+
+func spawn_normal_batch_now() -> int:
+	# Paradox 阶段由专属生成器接管，不从调试入口插入普通话语。
+	if _contradiction_generation_enabled:
+		return 0
+	return _spawn_normal_batch(true)
+
+
+func get_current_barrage_counts() -> Dictionary:
+	# 从当前真实 BarrageView 汇总，不保存第二份计数。
+	var normal_count: int = 0
+	var repeat_count: int = 0
+	var contradiction_count: int = 0
+	for child in get_children():
+		if not child is BarrageView or child.is_queued_for_deletion():
+			continue
+		var view: BarrageView = child as BarrageView
+		if view.runtime_record == null:
+			continue
+		if view.runtime_record.is_repeat:
+			repeat_count += 1
+		elif view.runtime_record.is_contradiction:
+			contradiction_count += 1
+		else:
+			normal_count += 1
+	return {"normal": normal_count, "repeat": repeat_count, "contradiction": contradiction_count}
+
+
 ## 结算协调方按实例 ID 结束本区域目标；立即离树归还容量，重复请求保持无副作用。
 func end_barrage(target_instance_id: int) -> bool:
 	var target: Object = instance_from_id(target_instance_id)
@@ -157,14 +204,23 @@ func end_barrage(target_instance_id: int) -> bool:
 func clear_barrages() -> void:
 	stop_normal_generation()
 	stop_contradiction_generation()
+	_clear_barrage_views()
+
+
+# 移除当前所有弹幕视图并释放容量；调用方决定是否停止生成器。
+func _clear_barrage_views() -> int:
+	var cleared_count: int = 0
 	for child in get_children():
 		if child is BarrageView:
-			# 自然到期可能已排队释放，仍须立即离树，确保同帧重开归还全部容量。
 			if child.is_queued_for_deletion():
 				remove_child(child)
+				child.queue_free()
 			else:
 				end_barrage(child.get_instance_id())
+			cleared_count += 1
 	_next_spawn_row = 0
+	return cleared_count
+
 
 ## 由其他系统明确调用，生成一条选中的普通话语。
 func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> BarrageView:
@@ -330,22 +386,25 @@ func _on_repeat_capacity_occupant_tree_exited(occupant: Object) -> void:
 	_repeat_capacity_ledger.release(occupant)
 
 ## 按四舍五入后的批次数量倍率生成当前批次。
-func _spawn_normal_batch() -> void:
-	if not _normal_generation_enabled or _current_level_profile == null or _frequency_multiplier <= 0.0:
-		return
+func _spawn_normal_batch(allow_when_stopped: bool = false) -> int:
+	if (not _normal_generation_enabled and not allow_when_stopped) or _current_level_profile == null or _frequency_multiplier <= 0.0:
+		return 0
 	if not _has_normal_capacity_for(_current_level_profile):
 		_pause_normal_generation_timer()
-		return
+		return 0
 	var batch_count: int = roundi(float(_current_level_profile.base_batch_count) * _count_multiplier)
 	if batch_count <= 0:
-		return
+		return 0
+	var generated_count: int = 0
 	for _index in range(batch_count):
 		var speech: LevelSpeech = _speech_selector.select_next_normal_speech(_current_level_profile)
 		if speech == null:
-			return
+			return generated_count
 		var barrage_view: BarrageView = spawn_normal_barrage(_current_level_profile, speech)
 		if barrage_view == null:
-			return
+			return generated_count
+		generated_count += 1
+	return generated_count
 
 
 ## 每批轮换当前关真假矛盾；同一稳定 ID 可再次出现，但真假归属只由关卡定义。
