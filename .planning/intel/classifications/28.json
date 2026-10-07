@@ -1,0 +1,21 @@
+{
+  "source_path": "known_traps.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "known_traps",
+  "summary": "> 职责：Godot、资源、状态边界和回归问题的编号化排错记录。 遇到问题优先按类别检查： - UI 不响应 / 空引用：KT-02、KT-04、KT-05。 - 状态不同步 / 重复：KT-06～KT-10。 - 数据加载 / ID 问题：KT-11～KT-17。",
+  "scope": [
+    "一、Godot / 生命周期",
+    "二、状态与系统边界",
+    "三、数据 / ID / 测试资产",
+    "四、Resource / Scene 文件",
+    "五、代码修改与验证",
+    "六、自查入口",
+    "附录 A：Godot 生命周期提醒"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 20,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

@@ -1,0 +1,18 @@
+{
+  "source_path": "docs/Shared/PresentationAssets/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "PresentationAssets 表现资产接入",
+  "summary": "让程序可以稳定接入美术正式资源，同时保持占位素材和正式素材可以直接替换。 当前资产目录： ```text assets/ ├── characters/",
+  "scope": [
+    "目标",
+    "当前规则",
+    "替换约定",
+    "任务"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

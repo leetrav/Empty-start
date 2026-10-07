@@ -1,0 +1,18 @@
+{
+  "source_path": "docs/18. Rest/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "18. Rest 休息时刻系统任务拆分",
+  "summary": "休息时刻系统负责一场直播结束后的结算与过渡。 它读取本场结果，展示已经真正提交的成果，并决定： - 还有下一名主播时，进入下一关； - 普通关卡全部完成时，进入神降临。 它还提供历史经文、败者卡查看入口，以及当前倾向对应的房间表现。",
+  "scope": [
+    "系统目标",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

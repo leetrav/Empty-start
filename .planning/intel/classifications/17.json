@@ -1,0 +1,19 @@
+{
+  "source_path": "docs/6. HitResolution/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "6. HitResolution 命中结算系统任务拆分",
+  "summary": "命中结算系统是普通战斗的统一结算中心。 它负责： 1. 维护唯一玩家 PK 值； 2. 计算正常话语收益和陷阱惩罚； 3. 把同一发所有结果合并后一次性更新 PK；",
+  "scope": [
+    "系统目标",
+    "当前已实现接口",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

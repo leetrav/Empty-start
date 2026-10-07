@@ -1,0 +1,19 @@
+{
+  "source_path": "docs/8. CombatStage/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "8. CombatStage 战斗阶段系统任务拆分",
+  "summary": "INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar 和 AudioManager 的绑定，开局调用 `begin_combat()`。每次最终 PK 更新先同步档位，再由攻击提交回调读取档位创建复读计划；生成倍率只影响新弹幕。Tier 状态已连接可见反馈，Viewer / Like 的档位数值规则仍待配置。PK 满值目前由 Sandbox 停止普通战斗并显示矛盾击破等待提示。 战斗阶段系统负责根据当前 PK 判断普通战斗处于 Tier 0～5 的哪个档位，并把这个档位告诉其他系统。 它负责： 1. 开局 Tier 0； 2. 升档、降档和跨多档；",
+  "scope": [
+    "系统目标",
+    "当前已实现数据",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

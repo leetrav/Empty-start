@@ -1,0 +1,19 @@
+{
+  "source_path": "docs/15. Scripture/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "15. Scripture 圣典系统任务拆分",
+  "summary": "圣典系统保存玩家每关最终确认的神谕句子。 每条经文需要保存： - 原关卡； - 主播； - 原句；",
+  "scope": [
+    "系统目标",
+    "当前数据底座",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

@@ -1,0 +1,19 @@
+{
+  "source_path": "docs/10. Repeat/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "10. Repeat 复读系统任务拆分",
+  "summary": "复读系统负责把“某句话被打中以后，大家跟着重复”变成可执行的数据和生成请求。 它负责： 1. 接收普通话语和矛盾命中记录； 2. 根据数值配置决定复读数量； 3. 普通复读在 0.5～3 秒内陆续出现；",
+  "scope": [
+    "系统目标",
+    "当前数据底座",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

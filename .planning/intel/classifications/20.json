@@ -1,0 +1,19 @@
+{
+  "source_path": "docs/9. LiveDataPresentation/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "9. LiveDataPresentation 直播数据表现系统任务拆分",
+  "summary": "直播数据表现系统只负责把直播间表现做得像“真的在涨热度”。 它保存并显示四项数据： - 观看人数； - 点赞数； - 评论数；",
+  "scope": [
+    "系统目标",
+    "当前数据底座",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

@@ -1,0 +1,18 @@
+{
+  "source_path": "docs/19. DivineDescent/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "19. DivineDescent 神降临系统任务拆分",
+  "summary": "神降临系统是普通关卡全部结束后的终局演出。 进入时，它会固定整局已经提交的倾向、圣典、普通话语命中历史、复读历史和吞并成果。 终局依次经历： 1. 扩散； 2. 新话生成率逐渐降到 0；",
+  "scope": [
+    "系统目标",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

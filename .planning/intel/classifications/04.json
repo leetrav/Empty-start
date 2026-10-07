@@ -1,0 +1,18 @@
+{
+  "source_path": "docs/12. ContradictionBreak/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "12. ContradictionBreak 矛盾击破系统任务拆分",
+  "summary": "矛盾击破系统负责普通 PK 条打满后的特殊阶段。 它需要： 1. 读取当前主播的真矛盾、假矛盾和前文线索； 2. 启动限时窗口和有限发射次数； 3. 接收战斗攻击系统的一发命中集合；",
+  "scope": [
+    "系统目标",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}
