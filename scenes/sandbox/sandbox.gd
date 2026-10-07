@@ -24,6 +24,8 @@ func _ready() -> void:
 	if SaveManager.data == null:
 		SaveManager.new_game()
 	%LiveDataHud.bind_live_session(SaveManager.data.live_session)
+	# 敌方尚无数据所有者，本卡仅显式提供四个显示占位值。
+	%OpponentLiveDataHud.set_values(0, 0, 0, 0)
 	_run_state = LevelRunState.new(SAMPLE_LEVEL_CATALOG)
 	_opening_fan_count = SaveManager.data.live_session.fan_count
 	_opponent_pk_bar = OpponentPKBar.new()

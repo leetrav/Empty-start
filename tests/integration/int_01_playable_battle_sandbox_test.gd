@@ -66,7 +66,7 @@ func _verify_layout_and_generation() -> void:
 	_check(is_instance_valid(first_view) and first_view.position.x < opening_x, "普通弹幕持续移动")
 	_check(_views(false).size() > opening_views.size(), "普通弹幕持续生成")
 	_check(_hit().get_player_pk() < opening_pk, "真实回拉按帧降低 PK")
-	_check(_live_comment_label().text == str(SaveManager.data.live_session.comment_count), "Comment HUD 自动刷新")
+	_check(_live_comment_label().get_parsed_text() == "🔊" + str(SaveManager.data.live_session.comment_count), "Comment HUD 自动刷新")
 	var pause_menu: Node = _sandbox.get_node("%PauseMenu")
 	pause_menu.pause_game()
 	await get_tree().process_frame
@@ -154,7 +154,7 @@ func _verify_tier_and_new_barrage_parameters() -> void:
 	var old_expiry: int = old_view.runtime_record.expires_at_msec
 	_hit().apply_player_pk_delta(0.22)
 	_check(_stage().get_current_tier() == 3, "PK 更新同步跨档到 Tier 3")
-	_check((_sandbox.get_node("%Tier") as Label).text.contains("3") and (_sandbox.get_node("%TierValue") as Label).text.contains("3"), "PK 与对手区域同步显示当前 Tier")
+	_check((_sandbox.get_node("%Tier") as Label).text.contains("3"), "中央顶部同步显示当前 Tier")
 	var tier: CombatStageTierConfig = TIER_CATALOG.get_tier_config(3)
 	_check(is_equal_approx(_opponent()._pullback_multiplier, tier.opponent_pullback_multiplier), "Tier 同步真实回拉倍率")
 	var before_spawn_msec: int = Time.get_ticks_msec()
@@ -251,7 +251,7 @@ func _verify_failure_restart_and_full_pk() -> void:
 	var tendency_before: int = _attempt_tendency_total()
 	await _fire_at(target)
 	_check(is_equal_approx(_hit().get_player_pk(), 1.0) and not bool(_sandbox.get("_normal_combat_active")), "真实普通命中使 PK 满值并停止普通战斗")
-	_check((_sandbox.get_node("BattleHud/BattleArea/BattleStateFeedback") as Label).text.contains("等待进入矛盾击破"), "满值显示矛盾击破接入提示")
+	_check((_sandbox.get_node("%BattleStateFeedback") as Label).text.contains("等待进入矛盾击破"), "满值显示矛盾击破接入提示")
 	_check(_attempt_tendency_total() == tendency_before + 1 and not _hit().get_normal_hit_history().is_empty(), "满值这一发仍保留倾向与普通命中历史")
 	_check(not _attack.can_start_charging() and _attack.get_attack_phase() == AttackChargeInput.AttackPhase.READY and _queue()._pending_items.is_empty(), "满值清理输入飞行硬直及待复读")
 	var comment_before: int = SaveManager.data.live_session.comment_count
@@ -343,8 +343,8 @@ func _attempt_tendency_total() -> int:
 	return tendency.attempt_orthodox_total + tendency.attempt_heretical_total + tendency.attempt_absurd_total
 
 
-func _live_comment_label() -> Label:
-	return _sandbox.find_child("CommentValue", true, false) as Label
+func _live_comment_label() -> RichTextLabel:
+	return _sandbox.get_node("%LiveDataHud").find_child("CommentMetric", true, false) as RichTextLabel
 
 
 func _on_snapshot(snapshot: AttackTargetSnapshot) -> void:
