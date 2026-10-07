@@ -42,6 +42,8 @@
 
 `submission.hit_resolution_result.target_results` 每个目标除 `target_instance_id`、`target`、`trait_result` 外，携带 `original_sentence_id`、`original_sentence_text`、`source_id`、`is_repeat`、`tendency_id`、`tendency_delta`、`is_valid_hit`。内容事实在提交前从运行时记录复制，协调方无需回读可能已结束的弹幕节点。正常普通话语取得 HitResolution 计算的奖励并记录普通命中历史；复读调用 `calculate_repeat_hit_result()`，有效命中、PK 与倾向增量为零，且不会记录普通命中历史。整发在 PK 下限作废时，HitResolution 返回空目标结果。
 
+- DBG-01 增加 `AttackChargeInput.is_charge_held()`，供调试面板读取真实按住状态并显示“蓄力中”；阶段和蓄力比例仍由 `get_attack_phase()`、`get_charge_progress()` 提供。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
