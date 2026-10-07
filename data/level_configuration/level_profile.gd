@@ -10,6 +10,8 @@ extends Resource
 @export var streamer_id: String = ""
 @export var streamer_name: String = ""
 @export var streamer_portrait: Texture2D
+@export var streamer_avatar: Texture2D
+@export var streamer_live_background: Texture2D
 @export_multiline var stream_topic: String = ""
 
 ## 美术资源尚未提供时可先填稳定 ID，Texture2D 字段可直接替换为正式素材。
