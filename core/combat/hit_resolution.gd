@@ -48,6 +48,11 @@ func get_player_pk() -> float:
 	return _player_pk
 
 
+func set_player_pk_for_debug(player_pk: float) -> float:
+	# 调试改值仍通过正式 PK 更新入口发信号，让 Tier 和 HUD 使用真实联动链。
+	return apply_player_pk_delta(_clamp_player_pk(player_pk) - _player_pk)
+
+
 func record_normal_word_hit(original_sentence_id: Variant, tendency: Variant) -> void:
 	# 每次有效普通命中递增顺序；同一原句只保留一条记录并更新次数和最近顺序。
 	_normal_hit_order += 1
