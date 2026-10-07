@@ -1,0 +1,26 @@
+{
+  "source_path": "docs/13. FinalOracle/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "13. FinalOracle 终结神谕系统任务拆分",
+  "summary": "终结神谕系统只在矛盾击破成功后出现。 它负责： 1. 等待击破后的过渡与复读展示完成； 2. 冻结战斗； 3. 从本场成功命中的普通话语中生成最多三句候选；",
+  "scope": [
+    "系统目标",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序",
+    "FO-02 当前候选池接口",
+    "FO-03 / FO-04 倾向排序接口",
+    "FO-05 候选补位接口",
+    "FO-06 展示快照接口",
+    "FO-07 倒计时接口",
+    "FO-08 超时自动选择接口",
+    "FO-09 单次确认接口",
+    "Scripture 确认接收"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

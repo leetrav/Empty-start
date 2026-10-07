@@ -1,0 +1,18 @@
+{
+  "source_path": "docs/20. Ending/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "20. Ending 结局系统任务拆分",
+  "summary": "结局系统负责把整局已经固定的结果组合成最终页面。 它读取： - 神降临完成结果； - 三项倾向的主导、次要、并列和全零状态； - 圣典完整内容；",
+  "scope": [
+    "系统目标",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

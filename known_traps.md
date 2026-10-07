@@ -203,6 +203,14 @@
 <td>核对实际子节点与 Inspector；重新加载相关子场景，或重启本任务拥有的编辑器后再次打开父场景。验收截图必须来自重新加载后的真实节点树。</td>
 </tr>
 </table>
+## GSD 接入工具
+
+### KT-33：GSD 自动发现漏掉 Godot 与中文规格
+
+- **现象**：GSD 1.15.0 的 `init onboard` 对本仓库返回 `has_existing_code: false` 和 `doc_candidate_count: 0`，实际存在 GDScript 源码、系统 README 和 `docs/Original/`。
+- **触发原因**：已检查本地 `onboard-projection.cjs`：代码扩展名集合未包含 `.gd`，包入口列表未包含 `project.godot`；文档候选只按 ADR/PRD/SPEC/RFC、四位编号及 REQUIREMENTS 命名/目录发现，当前中文文件名和系统 README 未匹配。
+- **规避**：以工程及正式文档核对真实状态，复用 codebase map，通过显式 ingest manifest 纳入资料。`.planning/onboarding/INGEST-MANIFEST.yaml` 保存本次清单；自动检测的缺失结果不能据此判定工程为空。核心规划建立后再检查 GSD 状态路由。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。

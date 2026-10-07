@@ -1,0 +1,19 @@
+{
+  "source_path": "docs/7. OpponentPKBar/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "7. OpponentPKBar 对手 PK 条系统任务拆分",
+  "summary": "对手 PK 条系统负责“对手一直把玩家 PK 往回拉”和“玩家 PK 归零后的失败流程”。 它负责： 1. 按当前档位读取回拉速度； 2. 普通战斗期间持续产生回拉变化； 3. 暂停 / 阶段结束时停止；",
+  "scope": [
+    "系统目标",
+    "当前已实现接口",
+    "任务顺序",
+    "测试预算",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

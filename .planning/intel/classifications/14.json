@@ -1,0 +1,26 @@
+{
+  "source_path": "docs/3. BarrageGeneration/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "3. BarrageGeneration 弹幕生成系统任务拆分",
+  "summary": "弹幕生成系统负责把“这一关允许出现的内容”真正变成场上的弹幕，并管理这些弹幕从出现到消失的生命周期。 它主要负责： 1. 从【关卡配置系统】读取当前关卡可用内容； 2. 按三项倾向及 neutral 类别比例选择普通话语； 3. 按当前生成参数持续创建弹幕；",
+  "scope": [
+    "系统目标",
+    "当前仓库状态",
+    "任务顺序",
+    "测试预算",
+    "寿命边界",
+    "同屏上限",
+    "依赖顺序",
+    "BG-12 矛盾生成接口",
+    "BG-01 已实现的运行时数据",
+    "BG-02 普通话语抽取",
+    "BG-03 单条普通弹幕实例",
+    "BG-04 普通弹幕持续生成"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

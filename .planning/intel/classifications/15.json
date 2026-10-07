@@ -1,0 +1,21 @@
+{
+  "source_path": "docs/4. BarrageTraits/README.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "4. BarrageTraits 弹幕特性模块系统任务拆分",
+  "summary": "弹幕特性模块系统负责给弹幕追加特殊规则。 当前需求中的特性包括： - 遮挡； - 水军复制 / 反击弹幕； - 假牌；",
+  "scope": [
+    "系统目标",
+    "当前仓库状态",
+    "任务顺序",
+    "测试预算",
+    "特性结果优先级",
+    "特性兼容边界",
+    "依赖顺序"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 10,
+  "notes": "显式清单分类。正式系统文档优先于原始资料；AGENTS.md 是仓库级规则。原始资料保留作为来源，不代表所有需求已实现。"
+}

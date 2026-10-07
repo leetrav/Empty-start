@@ -22,6 +22,7 @@ var _maximum_player_pk: float = 1.0
 var _normal_hit_history: Array[Dictionary] = []
 var _normal_hit_order: int = 0
 var _normal_history_committed: bool = false
+var _normal_pk_resolution_enabled: bool = true
 
 
 func _init(initial_pk: float, minimum_pk: float, maximum_pk: float) -> void:
@@ -38,9 +39,20 @@ func initialize_player_pk(initial_pk: float, minimum_pk: float, maximum_pk: floa
 
 func apply_player_pk_delta(delta: float) -> float:
 	# 命中、惩罚或回拉都通过这里修改唯一 PK；clamp 后发送一次最终值事实。
+	if not _normal_pk_resolution_enabled:
+		return _player_pk
 	_player_pk = _clamp_player_pk(_player_pk + delta)
 	final_player_pk_updated.emit(_player_pk)
 	return _player_pk
+
+
+# 终局模式关闭普通 PK 结算；关闭后保留当前 PK 快照，不再发出 Tier 驱动信号。
+func set_normal_pk_resolution_enabled(enabled: bool) -> void:
+	_normal_pk_resolution_enabled = enabled
+
+
+func allows_normal_pk_resolution() -> bool:
+	return _normal_pk_resolution_enabled
 
 
 func get_player_pk() -> float:
@@ -152,6 +164,14 @@ func is_shot_fully_missed(target_validity: Array[bool]) -> bool:
 func resolve_shot_results(target_results: Array[Dictionary]) -> Dictionary:
 	# 保留逐目标结算数据，只把 PK 增量求和后统一更新一次并应用范围限制。
 	# 回拉已使 PK 到达下限时整发作废，避免提交命中收益或倾向结果。
+	if not _normal_pk_resolution_enabled:
+		return {
+			"cancelled_by_zero_pk": false,
+			"terminal_mode": true,
+			"total_pk_delta": 0.0,
+			"final_player_pk": _player_pk,
+			"target_results": target_results.duplicate(true),
+		}
 	if _player_pk <= _minimum_player_pk:
 		return {
 			"cancelled_by_zero_pk": true,
