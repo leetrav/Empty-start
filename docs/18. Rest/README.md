@@ -50,4 +50,6 @@ RS-01 已增加 `RestSession.open_result(result_snapshot)` 作为本场结果入
 
 RS-02 为 `pk_win_unbroken` 增加专属结果面板，显示 PK 胜利但矛盾未击破、没有神谕或击败奖励，并发出继续请求。Sandbox 将继续请求转成 `rest_continue_requested(session)` 信号；下一关切换仍由 RS-09 接入。
 
-RS-03 增加 `RestSession.read_committed_rewards(save_data, level_catalog, loser_card_catalog)`：经文按当前 `level_id` 读取 `ScriptureData.get_entry_for_level()`；败者卡按 `rewarded_level_ids` / `acquired_streamer_ids` 确认后从静态 Catalog 读取。该接口只读，不执行任何奖励写入。吞并部分等待 14 提供按关卡归属的词库 / 特性结果；`AssimilationData` 当前只有这些内容的周目总量，无法识别本场新增条目。
+RS-03 增加 `RestSession.read_committed_rewards(save_data, level_catalog, loser_card_catalog)`：经文按当前 `level_id` 读取 `ScriptureData.get_entry_for_level()`；败者卡按 `rewarded_level_ids` / `acquired_streamer_ids` 确认后从静态 Catalog 读取。该接口只读，不执行任何奖励写入。
+
+吞并读取等待 14 提供真实来源接口。最小语义：按本场 `level_id` / `streamer_id` 查询已经提交的新增词库（稳定 ID 与权重）和特性 ID，无新增时返回空结果；发放条件、提交时机、数据结构与来源归属均由 14 持有。Rest 不从 `AssimilationData` 周目总量差值推断本场内容。
