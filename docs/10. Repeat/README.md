@@ -72,7 +72,7 @@ RP-06 等 3. BarrageGeneration 复读入口。
 RP-07 等 6. HitResolution。
 RP-08 等 12. ContradictionBreak。
 RP-10 等 7. OpponentPKBar / 本场结果提交。
-RP-12 等 13. FinalOracle 与 19. DivineDescent。
+RP-12 已复用 13 的本场读取链，并提供 19 已有候选入口可消费的已提交普通数量查询。
 
 ## RP-10 普通复读历史提交与回滚
 
@@ -81,4 +81,12 @@ RP-12 等 13. FinalOracle 与 19. DivineDescent。
 - `discard_uncommitted_normal_repeat_history()` 只清本场未提交普通统计；已提交本场统计仍保留供神谕读取，SaveData 中以前关卡快照保持原值。重开继续创建新的 RepeatDelayQueue / RepeatGenerationStats。
 - Sandbox 在 `_complete_normal_combat()` 停止普通生成与等待队列后提交普通统计，时点为 PK 满值进入矛盾阶段；击破成功、未击破、神谕确认分支均沿用同一份已提交历史。失败和当前关重开显式调用回滚接口。
 - 本场统计由 RepeatDelayQueue 持有，历史由当前周目 SaveData 保存、Repeat 写入；现有 SaveManager 原生 Resource 存读自动包含该导出字段，新周目与缺少该字段的旧存档默认为空。没有把普通复读数写入普通命中历史。
-- 本卡没有执行 RP-12，没有修改 DivineDescent / Ending；后续可将各关已提交普通统计汇总为 DD-02 已有独立复读来源。
+- RP-10 只建立保存与回滚生命周期；RP-12 的只读聚合与消费边界见下节。
+
+## RP-12 正式只读消费边界
+
+- 13 继续通过 `FinalOracleSession.open_after_breakthrough(..., repeat_stats, ...)` 接收本场队列的同一个 `RepeatGenerationStats`。候选排序与超时选择只调用现有 `get_normal_count(original_line_id)` 读取实际普通数；不创建统计副本，矛盾计数不参与。
+- 19 的独立复读来源由 `RepeatGenerationStats.get_committed_normal_counts_by_line_id(run_data)` 提供。该静态查询只遍历真实 `SaveData.committed_normal_repeat_history_by_level`，将各关相同原句数量相加，返回 `{StringName 原句 ID: int 实际普通总数}`；空周目或空历史返回 `{}`。
+- 返回字典是即时派生结果，修改它不会写回 SaveData，也不影响之后的查询；未提交本场统计与矛盾统计均不读取，重复查询不会增加历史。
+- 调用组合：`DivineDescentCandidateFilter.build_history_candidates(run_data.get_committed_normal_hit_history(), RepeatGenerationStats.get_committed_normal_counts_by_line_id(run_data))`。命中历史与复读历史仍为两个来源；Neutral 继续由已有候选过滤入口处理。
+- RP-12 不新增自动化测试，不修改 DD-06 / DD-07 规则；终局进入与冻结生命周期继续等待 DD-01，本卡只提供现有候选入口可消费的只读数据。

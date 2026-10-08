@@ -74,6 +74,7 @@ FO-12 等 18. Rest。
 
 - `FinalOracleCandidatePool.select_most_repeated_per_tendency(candidates, repeat_stats)` 对正统、异端、荒谬分别选择普通复读实际生成数最高的一句。
 - 计数通过 `RepeatGenerationStats.get_normal_count(StringName(original_sentence_id))` 读取；矛盾复读统计不参与。
+- RP-12 已复用并验证这条正式只读链：Sandbox 将本场队列持有的统计直接传入 Session，13 只读取实际普通计数；没有另存复读统计或从周目总量替代本场数量。
 - 复读数相同时优先最近命中更晚的句子；最近命中顺序仍并列时按稳定原句 ID 升序裁决。
 
 ## FO-05 候选补位接口
