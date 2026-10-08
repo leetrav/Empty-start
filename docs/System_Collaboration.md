@@ -403,6 +403,8 @@ FO-13 的选择表现保留战斗 HUD：Sandbox 在中央 BattleArea 展示 Fina
 
 最终倾向会给【休息时刻系统】【神降临系统】【结局系统】使用。
 
+TT-10 已核实休息环境读取方式：正式提交完成后，Rest 从所属 `SaveData.tendency_state` 调用 `get_primary_tendency_id()`、`get_secondary_tendency_id()`、`is_primary_tied()`、`has_no_effective_behavior()`，只消费稳定倾向 ID 与布尔标记。查询排除本场未提交值，全零时主导 / 次要沿用开局身份且全零 / 并列标记同时为真；消费方先识别全零状态。房间素材和实际环境切换属于 RS-07，精确累计值保持隐藏。
+
 ---
 
 ## 12. 休息时刻系统负责什么
