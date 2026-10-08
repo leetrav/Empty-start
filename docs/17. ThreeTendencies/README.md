@@ -20,7 +20,7 @@
 - `has_no_effective_behavior()` 在三项值全零时返回 `true`，主导和次要都沿用 `opening_identity_tendency_id`。
 - TT-13 的 `neutral` 是普通话语内容类别，不是第四项玩家倾向。命中 neutral 仍有普通 PK、历史、复读和直播表现，`tendency_delta = 0`，所以本场与周目三项值不变；只命中 neutral 时 `has_no_effective_behavior()` 仍为 `true`。开局身份、主导、次要和并列裁决仍只使用原三项。
 - TT-14 让 Neutral 的生成类别权重随当前战斗 Tier 衰减：有效权重为关卡 `neutral_ratio × CombatStageTierConfig.neutral_weight_multiplier`。Tier 0～5 的倍率为 `1.00 / 0.99 / 0.70 / 0.40 / 0.15 / 0.00`；仅影响新生成话语，不改变已在场弹幕或 TT-13 的命中、倾向及候选过滤规则。
-- INT-01 Sandbox 已把 HitResolution 整发逐目标结果中的 `tendency_id` / `tendency_delta` 交给 `record_normal_speech_tendency()`；复读和遮挡等结果跳过普通倾向。失败、重开及离开验收场调用 `rollback_attempt_tendency()`，此前周目累计保持原值。PK 满值停在矛盾击破接入点，本场记录尚未跨关提交。精确值继续隐藏，仅由调试和验收测试读取。
+- INT-01 Sandbox 已把 HitResolution 整发逐目标结果中的 `tendency_id` / `tendency_delta` 交给 `record_normal_speech_tendency()`；复读和遮挡等结果跳过普通倾向。失败、重开及离开验收场调用 `rollback_attempt_tendency()`，此前周目累计保持原值。PK 满值后进入矛盾阶段，本场普通倾向在最终未击破休息或神谕正式确认时提交。精确值继续隐藏，仅由调试和验收读取。
 
 本系统需要：
 
@@ -32,6 +32,14 @@
 6. 向休息时刻提供环境表现结果；
 7. 进入神降临时冻结最终倾向；
 8. 向神降临和结局提供同一份最终结果。
+
+## TT-09 神谕选择额外倾向边界（已核实）
+
+- 本版正式神谕选择额外倾向为 0；选中候选的 `tendency` 用于记录神谕内容，不作为普通命中增量输入。
+- `FinalOracleSession.confirm_display_candidate()` → `FinalOracleConfirmationState.confirm_selection()` 冻结并广播首次确认，确认器本身不修改 `TendencyState`。
+- 真实 Sandbox 的 `_on_oracle_confirmation_committed(run_data, level_id, _candidate)` 在验证同场击破成功后调用 `commit_attempt_tendency()`，只提交此前普通命中累积的三个 `attempt_*_total`，没有根据候选增加分数。
+- 若确认前累计为 C、本场普通命中暂存为 A，则确认后的累计为 C + A，神谕选择额外增量仍为 0。A 为全零时三项累计原样保留；A 非零时正常提交并清空暂存。该 0 规则继续允许普通命中提交。
+- 当前实现已满足边界，TT-09 没有新增运行接口或单元测试；Godot 4.7.2 真实 Sandbox / Session 确认 smoke 已覆盖三类候选、普通命中暂存提交和同关重复确认。
 
 ## 任务顺序
 
