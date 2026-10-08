@@ -10,6 +10,8 @@ const PRESENTATION_ASSETS: PresentationAssetConfig = preload("res://data/shared/
 const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
 const REST_RESULT_VIEW_SCENE: PackedScene = preload("res://ui/rest/rest_result_view.tscn")
 @export var battle_config: SandboxBattleConfig = preload("res://data/sandbox/playable_battle_config.tres")
+# 只从正式败者卡目录发卡；目录缺少资料时由 16 的写入接口拒绝。
+@export var loser_card_catalog: LoserCardCatalog = preload("res://data/loser_card/loser_card_catalog.tres")
 
 @onready var _barrage_area: BarrageArea = %BarrageArea
 @onready var _aim_reticle: AimReticle = %AimReticle
@@ -365,7 +367,7 @@ func _on_oracle_selection_time_changed(seconds_remaining: float) -> void:
 	_battle_hud.show_battle_state("神谕选择 · %.1f 秒" % seconds_remaining)
 
 
-# 成功分支等神谕最终候选确认后，才把本场普通历史并入当前周目。
+# 成功分支正式确认后提交本场历史，并把真正击败事实交给 14 / 16 各自保存。
 func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _candidate: Dictionary) -> void:
 	if run_data != SaveManager.data or _final_oracle_session == null or not _final_oracle_session.is_open():
 		return
@@ -373,10 +375,21 @@ func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _ca
 		return
 	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		return
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	if current_level == null or current_level.level_id != level_id:
+		return
 	if not _hit_resolution.commit_normal_hit_history(run_data):
 		push_error("Sandbox: 神谕确认后提交普通命中历史失败。")
 		return
 	run_data.tendency_state.commit_attempt_tendency()
+	# 上述检查已确认同场击破与正式确认；重复提交继续由确认状态和接收方去重。
+	run_data.loser_card_data.grant_on_true_defeat(
+		StringName(level_id), StringName(current_level.streamer_id), true, true, loser_card_catalog
+	)
+	run_data.assimilation_data.register_defeated_streamer(
+		StringName(level_id), StringName(current_level.streamer_id), true, true
+	)
+	# LevelProfile 尚无正式继承池和特性白名单，只登记击败事实，等待配置方补齐奖励。
 
 
 # 正式满蓄释放时立即按冻结的矛盾原句判定；飞行计时只保留演出。
