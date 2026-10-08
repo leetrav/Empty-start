@@ -2,7 +2,7 @@
 
 ## 系统目标
 
-INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar 和 AudioManager 的绑定，开局调用 `begin_combat()`。每次最终 PK 更新先同步档位，再由攻击提交回调读取档位创建复读计划；生成倍率只影响新弹幕。Tier 状态已连接可见反馈，Viewer / Like 的档位数值规则仍待配置。PK 满值目前由 Sandbox 停止普通战斗并显示矛盾击破等待提示。
+INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar 和 AudioManager 的绑定，开局调用 `begin_combat()`。每次最终 PK 更新先同步档位，再由攻击提交回调读取档位创建复读计划；生成倍率只影响新弹幕。Tier 状态已连接可见反馈，Viewer / Like 的档位数值规则仍待配置。PK 满值由 Sandbox 停止普通战斗并启动真实 ContradictionBreak 入口。
 
 战斗阶段系统负责根据当前 PK 判断普通战斗处于 Tier 0～5 的哪个档位，并把这个档位告诉其他系统。
 
@@ -31,6 +31,10 @@ CS-08 提供 `get_current_repeat_count_per_hit()`，返回当前 Tier 配置的 
 CS-10 提供 `tier_state_changed(current_tier)`，在开局同步 Tier 0，并在跨档计算完成后只广播一次最终 Tier。Tier 上升时发出 `audio_event_requested(&"tier_up")`；`bind_audio_manager(audio_manager)` 将该事件接到 AU-01 的 `AudioManager.play_event(StringName)`。当前 LiveDataHud 只显示四项计数，没有 Tier 接收端；Sandbox 场景拥有者需把 `tier_state_changed` 接到实际 Tier 表现组件。此接口不包含 AU-02 音乐状态切换。
 
 ## 任务顺序
+
+CS-11 提供 `get_stage_result(final_player_pk, maximum_player_pk)`：低于配置满值返回 `StageResult.NORMAL_COMBAT`，达到满值返回 `StageResult.ENTER_CONTRADICTION`。该结果即时派生，不保存第二份 PK 或阶段状态。Sandbox 收到最终 PK 后读取结果，立即调用 `HitResolution.set_normal_pk_resolution_enabled(false)` 固定满值，并停止对手回拉与普通生成；本发事实提交后沿用既有 `_complete_normal_combat()` 启动 12 系统。延迟切换期间的负增量也无法改低 PK。重开创建新的 HitResolution，普通结算恢复。真假矛盾内容和成败判定继续归 12 系统；缺失内容只用独立 TEST_ONLY 关卡验收，正式配置保持原样。
+
+CS-11 仅新增 `tests/combat_stage/test_cs_11_enter_contradiction.gd` 一个用例；图形运行 Sandbox 的临时验收驱动验证满值冻结、回拉停止、真实矛盾入口和重开恢复，驱动在验收后删除。
 
 | 任务卡 | 小功能 | 自动化测试 |
 | --- | --- | --- |

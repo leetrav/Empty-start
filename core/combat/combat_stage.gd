@@ -10,6 +10,8 @@ signal audio_event_requested(event_id: StringName)
 
 const INITIAL_TIER: int = 0
 
+enum StageResult { NORMAL_COMBAT, ENTER_CONTRADICTION }
+
 var _tier_catalog: CombatStageTierCatalog
 var _current_tier: int = INITIAL_TIER
 var _tier_changes_enabled: bool = true
@@ -29,6 +31,13 @@ func begin_combat() -> void:
 
 func get_current_tier() -> int:
 	return _current_tier
+
+
+# 最终 PK 达到配置满值时交出矛盾阶段结果，内容与成败仍由 12 系统处理。
+func get_stage_result(final_player_pk: float, maximum_player_pk: float) -> StageResult:
+	if final_player_pk >= maximum_player_pk:
+		return StageResult.ENTER_CONTRADICTION
+	return StageResult.NORMAL_COMBAT
 
 
 # 终局把当前表现固定到指定 Tier，并关闭后续普通升降档入口。
