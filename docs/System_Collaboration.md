@@ -268,6 +268,8 @@ PK 满
 
 复读弹幕进入屏幕后，继续由【弹幕生成系统】管理实例和寿命。
 
+RP-10 的真实保存入口是 `RepeatGenerationStats.commit_normal_repeat_history(run_data, level_id)`：Sandbox 在 PK 满值进入矛盾阶段时调用，将本场实际普通生成数按关卡写入 `SaveData.committed_normal_repeat_history_by_level`，每关仅提交一次，矛盾复读排除。失败和重开调用 `discard_uncommitted_normal_repeat_history()` 撤销本次普通暂存，已有周目快照保留；跨关聚合与统计消费接线留 RP-12。
+
 ---
 
 ## 8. 直播数据表现系统是什么位置
@@ -568,8 +570,8 @@ FO-13 的选择表现保留战斗 HUD：Sandbox 在中央 BattleArea 展示 Fina
 | 待生成复读和复读统计 | 复读系统 | 弹幕生成、神谕、终局读取 |
 | 矛盾阶段成败 | 矛盾击破系统 | 神谕或休息读取 |
 | 本场最终神谕 | 终结神谕系统确认 | 圣典和奖励系统接收 |
-| 已吞并主播、词库权重与特性 | 吞并系统 | 通过 `SaveData.assimilation_data` 读取；后续关卡、休息和终局使用 |
-| 已保存经文记录 | 圣典系统 | 从 `SaveData.scripture_data` 的 `get_ordered_entries()` / `get_chapter_slots(level_catalog)` 读取经文快照与含缺章的原序号视图 |
+| 已吞并主播、词库权重与特性 | 吞并系统 | 通过 `SaveData.assimilation_data` 读取；休息用 `get_new_content_for_source(level_id, streamer_id)` 查询同场实际新增，用 `get_current_content_snapshot()` 读取总量快照；神降临的 `DivineDescentAssimilationInput.build_snapshot(run_data)` 复用此总量快照入口 |
+| 已保存经文记录 | 圣典系统 | 从 `SaveData.scripture_data` 的 `get_ordered_entries()` / `get_chapter_slots(level_catalog)` 读取经文快照与含缺章的原序号视图；神降临用 `DivineDescentScriptureInput.build_snapshot(run_data)` 复用正式经文读取并对齐 DD-02 原句字段 |
 | 败者卡资料与已获卡片 | 败者卡系统 | Rest 调用 `SaveData.loser_card_data.get_acquired_cards(catalog)` 读取已获快照，调用 `get_new_card_for_level(level_id, catalog)` 读取本场发卡结果；空 Dictionary 表示无新增，来源匹配由 16 系统负责 |
 | 三项倾向累计与开局比较参照 | 三项倾向系统 | 通过 `SaveData.tendency_state` 保存；休息、终局和结局读取后续提交结果 |
 | 当前流程走到哪 | 关卡配置 / 战斗阶段 / 休息 / 神降临按阶段接力 | 各阶段完成后把下一阶段叫起来 |

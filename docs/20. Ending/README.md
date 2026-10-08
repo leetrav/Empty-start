@@ -82,3 +82,34 @@ EN-06～09 完成页面数据和显示。
 - 每行输出 `level_id`、`chapter_number`、`verse_number`、`streamer_name`、`original_line_id`、`original_line_text`、`tendency_id`、`has_oracle` 和 `status`。
 - 正式经文的 `status` 为 `confirmed_oracle`，读取已保存的原文和固定节号；缺章的 `has_oracle` 为 `false`、`verse_number` 为 0、`status` 为 `not_formed_oracle`，供页面显示“未形成神谕”。
 - EN-04 只整理显示快照，不复制 Scripture 的排序、节号生成或缺章判定规则。
+
+## EN-05 当前身份结果分类接口
+
+- `EndingIdentityResultClassifier.classify(tendency_state)` 接收已完成身份初始化、包含已提交结果的 `TendencyState`，返回稳定 `StringName` 分类：`no_effective_behavior`（无行为）、`primary_tied`（并列）、`consistent`（一致）、`shifted`（偏移）。
+- 优先级固定为无有效行为 → 最高分并列 → 开局倾向与主导一致 → 其余偏移；全零时即使存在并列及身份一致也归为无行为类。
+- 无行为、并列和主导分别调用 17 系统的 `has_no_effective_behavior()`、`is_primary_tied()`、`get_primary_tendency_id()`；Ending 不读取或重算精确分数。
+- 开局参照读取 `TendencyState.opening_identity_tendency_id`：Identify 确认身份时已经通过 `initialize_from_identity_option()` 从所选 `IdentityOption.tendency_id` 写入该周目值，无需根据身份显示名称或 ID 推测倾向。
+- 分类器只读传入数据。当前尚未接入 EN-01 终局接收流程；后续集成应传入终局固定的三项倾向结果，判词配置与页面由对应任务卡实现。
+
+## EN-06 当前判词配置接口
+
+- `data/ending/ending_judgement_text_config.tres` 是四类判词的策划配置入口，使用 `EndingJudgementTextConfig` Resource。
+- `get_judgement_text(result_class: StringName)` 直接复用 EN-05 分类常量，返回对应多行文本字段：
+
+| EN-05 分类 ID | 判词配置字段 |
+| --- | --- |
+| `no_effective_behavior` | `no_effective_behavior_text` |
+| `primary_tied` | `primary_tied_text` |
+| `consistent` | `consistent_text` |
+| `shifted` | `shifted_text` |
+
+- 四个字段当前均为空，等待策划填写正式判词；查询保留配置原文，允许空文本，未知分类返回空字符串。
+- 后续调用先取得 EN-05 的 `classify(tendency_state)` 结果，再传给配置的 `get_judgement_text()`；配置运行时只读。EN-06 只提供映射，页面和终局接线由后续任务卡完成。
+
+## EN-07 当前结局显示数据接口
+
+- `EndingDisplayData.build(tendency_state, scripture_data, level_catalog, main_art_config, religion_name_config, judgement_text_config)` 组合 EN-02～06 已有接口，返回显示数据字典；调用方提供已初始化身份的有效三项倾向、圣典、完整关卡目录和三份配置 Resource。
+- 输出 `primary_tendency_id`、`secondary_tendency_id`、`main_art`、`religion_name`、`identity_result_class`、`judgement_text` 和 `scripture`。
+- `scripture.rows` 直接沿用 EN-04 的章节显示列表；`scripture.is_empty` 通过 Scripture 的 `get_ordered_entries().is_empty()` 得到。全空时区域 `status` 沿用 EN-04 的 `not_formed_oracle`，保留目录中的缺章位置；有正式经文时为 `confirmed_oracle`。
+- 空圣典不会阻断主图、教名和判词读取。正式配置尚未填写时，文本保持空字符串、主图保持 `null`，显示数据字段仍完整返回。
+- 组装过程只读上游和配置，未接入 EN-01 终局完成事件，未制作 EN-08 页面。仅新增一个关键单元测试，验证全空圣典仍生成配置结果和明确空态。

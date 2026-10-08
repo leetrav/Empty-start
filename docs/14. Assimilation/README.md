@@ -24,6 +24,22 @@
 - `register_inherited_trait(level_id, trait_id, can_inherit)` 只登记已真正击败关卡允许继承的特性，跨主播来源的同一稳定 trait_id 只保留一次；实际特性装配与兼容仍归 4. BarrageTraits。
 - 当前 `LevelProfile` 尚无稳定 pool_id、继承权重及允许继承标记；以上 API 接收配置方显式提供的值，配置与实际生成接线留 AS-06 / FO-11。`special_trait_ids` 表示本关所用特性，不能直接当作继承白名单。
 
+## AS-08：已提交来源与休息读取
+
+- `committed_additions_by_level` 由 14 持有，按 `level_id` 保存 `{streamer_id, inherited_word_weights, inherited_trait_ids}`。真正击败首次登记成功时建立来源；词库 / 特性首次登记成功时同步写入该来源的新增记录。重复或被拒绝的登记不新增来源条目。
+- 现有登记函数仍是同步正式写入入口：调用方完成本场词库 / 特性登记后再进入休息读取。来源记录随 `SaveData.assimilation_data` 保存；Rest 读取不会再次发奖，也不会消费或清空记录。
+- `get_new_content_for_source(level_id, streamer_id)` 返回 `{level_id, streamer_id, inherited_word_weights, inherited_trait_ids}` 的独立快照。只含该来源首次实际新增的词库 ID / 权重和特性 ID；未知来源、主播不匹配、仅通关、已击败但无新增均返回 `{}`。
+- `get_current_content_snapshot()` 返回 `{inherited_word_weights, inherited_trait_ids}` 的周目总量独立快照，可在无本场新增时读取既有内容。
+- 旧存档缺少来源字段时默认空字典，既有总量保留。历史归属不从总量或 ID 列表顺序补算；继承登记要求已经保存的正式来源，缺少来源的旧关卡拒绝新的无归属写入。
+- Rest 消费端通过上述查询读取结果；AS-08 不修改 RS-03 分支，合入后再补 RS-03 的调用。
+
+## AS-09：神降临读取
+
+- 终局调用方在进入时调用现有 `DivineDescentAssimilationInput.build_snapshot(run_data)`；该入口通过 `SaveData.assimilation_data.get_current_content_snapshot()` 取得实际已获得的全部词库权重与特性 ID。
+- 总量与来源记录继续由 14 持有，19 仅持有公开接口返回的独立快照；后续登记或修改快照互不影响。
+- 没有成果时固定返回 `{inherited_word_weights: {}, inherited_trait_ids: []}`。总量读取沿用 AS-08，包含旧存档已有但缺少来源记录的成果。
+- 本卡完成读取接口联调；完整终局进入组合仍归 DD-01，Rest 本场新增、特性装配与权重计算由各自任务负责。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
