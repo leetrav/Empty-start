@@ -100,12 +100,20 @@ static func apply_scripture_bonus(
 	return weighted_candidates
 
 
-# 只比较扩散池的当前动态权重；并列暂沿用输入顺序，正式并列裁决归 DD-10。
+# 当前动态权重最高者锁句；同权重按首次已提交命中顺序、稳定原句 ID 升序裁决。
 static func select_highest_weight_candidate(candidates: Array[Dictionary]) -> Dictionary:
 	var highest: Dictionary = {}
 	for candidate: Dictionary in candidates:
 		if highest.is_empty() or int(candidate.get("weight", 0)) > int(highest.get("weight", 0)):
 			highest = candidate
+		elif int(candidate.get("weight", 0)) == int(highest.get("weight", 0)):
+			var candidate_order: int = int(candidate.get("first_committed_hit_order", 0))
+			var highest_order: int = int(highest.get("first_committed_hit_order", 0))
+			if candidate_order < highest_order or (
+				candidate_order == highest_order
+				and str(candidate.get("original_sentence_id", "")) < str(highest.get("original_sentence_id", ""))
+			):
+				highest = candidate
 	return highest.duplicate(true)
 
 
