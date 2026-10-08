@@ -283,7 +283,8 @@ func _submit_arrival_to_hit_resolution(
 	)
 	# 只传递已选异常，惩罚数值与整发 PK 更新继续由 6 统一处理。
 	var hit_resolution_result: Dictionary = _hit_resolution.resolve_shot_results(hit_resolution_targets, shot_anomaly)
-	if not bool(hit_resolution_result.get("cancelled_by_zero_pk", false)):
+	# 只记录实际完成普通结算的整发；打满 PK 的这一发仍保留，阶段关闭后的旧提交丢弃。
+	if not bool(hit_resolution_result.get("cancelled_by_zero_pk", false)) and not bool(hit_resolution_result.get("terminal_mode", false)):
 		for normal_hit_record: Dictionary in normal_hit_records:
 			_hit_resolution.record_normal_word_hit(
 				normal_hit_record["original_sentence_id"],

@@ -46,7 +46,7 @@ func apply_player_pk_delta(delta: float) -> float:
 	return _player_pk
 
 
-# 终局模式关闭普通 PK 结算；关闭后保留当前 PK 快照，不再发出 Tier 驱动信号。
+# 矛盾和终局阶段关闭普通结算，保留 PK 快照并停止 Tier 驱动信号。
 func set_normal_pk_resolution_enabled(enabled: bool) -> void:
 	_normal_pk_resolution_enabled = enabled
 
@@ -167,12 +167,13 @@ func resolve_shot_results(
 	# 保留逐目标结算数据，只把 PK 增量求和后统一更新一次并应用范围限制。
 	# 回拉已使 PK 到达下限时整发作废，避免提交命中收益或倾向结果。
 	if not _normal_pk_resolution_enabled:
+		# 阶段关闭后丢弃晚到的普通目标收益，避免下游继续累计倾向或生成普通复读。
 		return {
 			"cancelled_by_zero_pk": false,
 			"terminal_mode": true,
 			"total_pk_delta": 0.0,
 			"final_player_pk": _player_pk,
-			"target_results": target_results.duplicate(true),
+			"target_results": [],
 		}
 	if _player_pk <= _minimum_player_pk:
 		return {
