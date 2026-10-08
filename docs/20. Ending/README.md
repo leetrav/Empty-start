@@ -90,3 +90,18 @@ EN-06～09 完成页面数据和显示。
 - 无行为、并列和主导分别调用 17 系统的 `has_no_effective_behavior()`、`is_primary_tied()`、`get_primary_tendency_id()`；Ending 不读取或重算精确分数。
 - 开局参照读取 `TendencyState.opening_identity_tendency_id`：Identify 确认身份时已经通过 `initialize_from_identity_option()` 从所选 `IdentityOption.tendency_id` 写入该周目值，无需根据身份显示名称或 ID 推测倾向。
 - 分类器只读传入数据。当前尚未接入 EN-01 终局接收流程；后续集成应传入终局固定的三项倾向结果，判词配置与页面由对应任务卡实现。
+
+## EN-06 当前判词配置接口
+
+- `data/ending/ending_judgement_text_config.tres` 是四类判词的策划配置入口，使用 `EndingJudgementTextConfig` Resource。
+- `get_judgement_text(result_class: StringName)` 直接复用 EN-05 分类常量，返回对应多行文本字段：
+
+| EN-05 分类 ID | 判词配置字段 |
+| --- | --- |
+| `no_effective_behavior` | `no_effective_behavior_text` |
+| `primary_tied` | `primary_tied_text` |
+| `consistent` | `consistent_text` |
+| `shifted` | `shifted_text` |
+
+- 四个字段当前均为空，等待策划填写正式判词；查询保留配置原文，允许空文本，未知分类返回空字符串。
+- 后续调用先取得 EN-05 的 `classify(tendency_state)` 结果，再传给配置的 `get_judgement_text()`；配置运行时只读。EN-06 只提供映射，页面和终局接线由后续任务卡完成。
