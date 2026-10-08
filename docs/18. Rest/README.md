@@ -26,6 +26,7 @@
 | RS-09 | 进入下一普通关 | 1 个关键单元测试 |
 | RS-10 | 普通关结束后进入神降临 | 1 个关键单元测试 |
 | RS-11 | 结算结束后切换输入 | 无 |
+| RS-12 | 新周目直接进入休息时刻的主角房间（开局入口） | 实际流程 smoke，无新增纯逻辑单测 |
 
 ## 测试预算
 
@@ -45,6 +46,7 @@ RS-05～06 等 15/16。
 RS-07 等 17. ThreeTendencies。
 RS-09 等 2. LevelConfiguration。
 RS-10 等 19. DivineDescent。
+RS-12 等身份系统 ID-09 的三步开局确认，并复用已完成的 RS-07 房间环境。它是开局进入房间的入口，与战后 RS-01～11 结算入口分开处理。
 
 RS-01 已增加 `RestSession.open_result(result_snapshot)` 作为本场结果入口。快照包含来源 `level_id` 与 `result_kind`（`pk_win_unbroken` 或 `breakthrough_oracle_complete`）；会话只接受首次打开，读取方使用 `get_result_snapshot()` 获得深拷贝。
 
@@ -83,3 +85,7 @@ RS-08 已核实并保护现有重复查看路径：用同一所属周目 SaveDat
 休息结果页面复用 `res://assets/environment/bg_player_room_1.png` 的单间背景，环境独立子场景 `ui/rest/rest_room_environment.tscn` 仅切换背景调色、覆盖光照、左右装饰块与符号：正统暖金/对称，异端冷紫/倾斜，荒谬霓虹双色/错位。当前颜色、图形和符号仅为可替换的开发期视觉占位；后续美术可只替换 RoomEnvironment 内的贴图与装饰，无需改变 Rest 结算逻辑或三种背景。
 
 `RestResultView.show_result()` 只读取当前周目 `SaveData.tendency_state.get_primary_tendency_id()`，直接沿用 17 的开局全零和主导并列裁决；不接触累计值或本场暂存。缺有效上下文时使用不带倾向装饰的中性房间，`hide_result()` 同步复位。环境子节点均不接收鼠标，结果面板、圣典、败者卡、返回和继续信号仍沿用原 UI 接线。RS-07 不新增永久自动化单测；开发临时场景已做真实 Godot 4.7.2 UI 交互 Smoke，详见日期日志。
+
+## 新需求：RS-12 开局房间（待实施）
+
+新周目先经过 ID-09 的「主播取名 → 12 身份卡 → 粉丝团取名」，正式确认并保存后，先进入主角房间。房间复用 `RestRoomEnvironment` 和 RS-07 当前已实现的三倾向装饰及光照；以开局身份的倾向显示初始房间状态，等待玩家点击「开始直播」后才启动第一普通关。开局此时无已完成关卡，也没有战后 `RestSession` 结果。首次房间入口与战后结算入口明确区分，详见 `tasks/RS-12_new-run-opening-room.md`。
