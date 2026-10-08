@@ -73,6 +73,14 @@ DD-03 等 14. Assimilation。
 DD-04～16 完成终局逻辑。
 DD-17 等 20. Ending。
 
+## DD-03 吞并输入接口
+
+- 终局调用方在进入时调用 `DivineDescentAssimilationInput.build_snapshot(run_data)`，并持有返回快照。
+- 输入只读取现有 `SaveData.assimilation_data` 的当前总 `inherited_word_weights` 与 `inherited_trait_ids`，返回相同两个字段：词库 ID → 原权重的 Dictionary，以及稳定特性 ID 的 Array。
+- 两个集合均使用 Godot 原生 `duplicate(true)`；后续源数据变化不会影响已取得的快照，修改快照也不会写回吞并数据。
+- 没有成果时两个字段分别为明确空 Dictionary / Array；未提供周目或吞并数据时也采用同一空结构。
+- 本接口只读取总量，独立于 AS-08 的本场新增成果 / 来源接口；没有修改 AssimilationData，也不计算候选权重、圣典加权或实际生成。
+
 ## DD-02 历史候选接口
 
 - `DivineDescentCandidateFilter.filter_three_tendency_history(committed_history)` 是普通历史进入终局前的唯一三项倾向边界，Neutral 仍保留在存档但不会进入候选。
