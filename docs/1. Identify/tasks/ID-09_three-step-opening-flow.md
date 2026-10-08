@@ -5,11 +5,11 @@
 - docs/System_Collaboration.md
 - docs/Original/任务卡模板.md
 - docs/1. Identify/README.md
-- docs/1. Identify/tasks/ID-02_name-confirmation.md（实际路径依最新仓库确认）
-- docs/1. Identify/tasks/ID-03_identity-confirm-lock.md（实际路径依最新仓库确认）
-- docs/1. Identify/tasks/ID-04_save-identity.md（实际路径依最新仓库确认）
+- docs/1. Identify/tasks/ID-02_player-name-confirmation.md
+- docs/1. Identify/tasks/ID-03_identity-confirm-lock.md
+- docs/1. Identify/tasks/ID-04_identity-save-data.md
 - docs/1. Identify/tasks/ID-05_identity-setup-ui.md
-- docs/1. Identify/tasks/ID-06_main-menu-flow.md（实际路径依最新仓库确认）
+- docs/1. Identify/tasks/ID-06_identity-flow-wiring.md
 - docs/1. Identify/tasks/ID-07_custom-fan-group-name.md
 - docs/1. Identify/tasks/ID-08_twelve-identity-card-selection.md 及最新完成日志
 - docs/18. Rest/README.md 与 RS-12 开局房间入口任务卡
