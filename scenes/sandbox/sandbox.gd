@@ -560,6 +560,12 @@ func _complete_normal_combat() -> void:
 	var current_level: LevelProfile = _run_state.get_current_level_profile()
 	# PK 胜利已经成立，先提交普通复读；后续击破或神谕分支不再次提交。
 	if current_level != null:
+		# 粉丝由直播数据按周目和关卡去重，矛盾结果与重复打开均不再次加粉。
+		SaveManager.data.live_session.commit_pk_win_fans(
+			StringName(current_level.level_id), battle_config.pk_win_fan_gain
+		)
+		# 已入账粉丝成为重开基数，防止重放已胜利关卡时回退已保存的增长。
+		_opening_fan_count = SaveManager.data.live_session.fan_count
 		_repeat_queue.get_generation_stats().commit_normal_repeat_history(
 			SaveManager.data, StringName(current_level.level_id)
 		)
