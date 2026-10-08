@@ -18,7 +18,9 @@
 
 终局期间不再运行普通 PK 胜负、档位升降和矛盾击破。
 
-当前没有正式 DivineDescent Session 或场景入口。DD-04 先提供可组合的 `DivineDescentCombatMode`：`enter_terminal_mode(tier_catalog, hit_resolution, combat_stage, contradiction_break, barrage_area, opponent_pk_bar)` 读取 Tier 5 配置、应用后续弹幕表现倍率，并直接调用各系统的公开锁定入口。进入后 HitResolution 拒绝普通 PK 更新，CombatStage 固定 Tier 5 并忽略后续升降，ContradictionBreakSystem 拒绝窗口启动；普通生成 / 矛盾生成和 PK 回拉也会停止，BarrageGeneration 的实例表现入口继续保留。该对象不负责终局进入、整局结果冻结或历史候选。
+当前没有正式 DivineDescent Session 或场景入口。DD-04 提供可组合的 `DivineDescentCombatMode`：`enter_terminal_mode(tier_catalog, hit_resolution, combat_stage, contradiction_break, barrage_area, opponent_pk_bar)` 读取 Tier 5 配置、应用后续弹幕表现倍率，并直接调用各系统的公开锁定入口。进入后 HitResolution 拒绝普通 PK 更新，CombatStage 固定 Tier 5 并忽略后续升降，ContradictionBreakSystem 拒绝窗口启动；矛盾生成和 PK 回拉停止，普通新话继续保持当前生成状态。
+
+DD-05 在同一模式对象上提供 `start_new_word_decay(config)` 与 `advance_new_word_decay(delta_seconds)`：起始频率读取 Tier 5 配置，衰减时长读取 `data/divine_descent/divine_descent_decay_config.tres`，每次推进只调整 BarrageArea 的生成频率，配置时长结束后频率为 0。该对象不负责终局进入、整局结果冻结或历史候选。
 
 TT-13 提供 `DivineDescentCandidateFilter.filter_three_tendency_history(committed_history)` 作为未来 DD-02 候选归并前的输入边界：已提交普通命中历史中的 neutral 仍保留在存档，但只将正统、异端、荒谬原句交给终局候选与锁句流程。当前神降临运行阶段尚未实现；DD-02 接入时必须复用此筛选入口，再处理归并和权重。
 
