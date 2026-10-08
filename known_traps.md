@@ -223,6 +223,12 @@
 - **触发条件**：Godot 4.7.2 直接读取 const 预载 Resource 的字段，随后同一 Resource 的字段发生变化；参见引擎维护仓库 [Issue #101628](https://github.com/godotengine/godot/issues/101628)。
 - **规避**：需要查询当前字段时，通过普通 Resource 引用读取；AU-02 的 `_audio_config` 引用原配置，未复制 Resource。修正后实际 WASAPI 运行验收的零时长检查通过。生产静态资源仍保持运行时只读，验收修改只存在于临时进程内。
 
+### KT-36：受限 Windows 工作区下 Godot 日志与编辑器目录写入失败
+
+- **现象**：Godot CLI 可解析脚本并输出预期 PASS，但默认 `user://logs` 或 Steam 自包含 `editor_data/editor_settings-4.7.tres` 写入被拒绝，进程仍可能退出 0。
+- **触发条件**：工作区允许写当前目录，用户数据 / 引擎安装目录只读；DD-09 的受限 worktree 中已复现。
+- **处理**：先用引擎 `--help` 确认 `--log-file`，将运行日志显式指向可写临时目录；同时检查 PASS、退出码和 stderr。编辑器导入的目录权限、系统证书读取错误单独记录为环境限制，不将其误报为业务解析失败或无错误验证，也不改用户全局目录权限。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。

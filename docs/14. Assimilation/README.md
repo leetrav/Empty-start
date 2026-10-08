@@ -35,6 +35,14 @@
 - 4 系统从同一返回值的 `inherited_trait_ids` 读取实际已获 ID，现有 `BarrageTraitSet.add_trait()` / `are_compatible()` 继续负责装配与兼容；AS-06 不合并本关特性、不触发战斗效果或把特性装到矛盾实例。
 - A 后续在第二关普通战斗准备处读取此入口，将池集合和 trait ID 交给各自消费者。本卡没有修改 Sandbox / Rest / DivineDescent / Ending，完整生成混池及 BT-13 触发不在本次范围。
 
+## AS-07：当前关失败与重开
+
+- `Sandbox.restart_current_attempt()` 沿用当前 `SaveManager.data` 和同一 `SaveData.assimilation_data`，重建本场战斗对象；此前已提交的通关 / 击败 ID、词库整池权重、特性 ID 与 `committed_additions_by_level` 来源记录保持不变。
+- `OpponentPKBar.attempt_failed` 触发 Sandbox 清理当前普通命中、复读和倾向暂存；重开还丢弃待提交经文并重置失败锁。这些清理入口只处理当前尝试，吞并成果继续由 14 的周目 Resource 持有。
+- 当前关奖励仍只在同周目、同关卡的真实击破成功与 FinalOracle 正式确认后，经 FO-11 回调登记。普通战斗暂存、击破但尚未确认，以及未击破的 PK 胜利均不产生真正击败型吞并成果；无需增加吞并暂存或回滚接口。
+- Godot 4.7.2 真实场景 smoke 已验证：第一关正式提交后，经 Rest 继续到第二关，手动重开、PK 归零失败后重开、神谕确认前重开及未击破结果后重开均保留前关成果与来源，当前关奖励保持未登记，AS-06 消费入口仍可读取前关内容。
+- 本卡复用已存在的失败 / 重开行为，只补文档和验收日志。验证范围为同一运行中周目的关卡重开；新周目由 `SaveManager.new_game()` 创建新的数据，磁盘存档往返不属于本卡。
+
 ## AS-08：已提交来源与休息读取
 
 - `committed_additions_by_level` 由 14 持有，按 `level_id` 保存 `{streamer_id, inherited_word_weights, inherited_trait_ids}`。真正击败首次登记成功时建立来源；词库 / 特性首次登记成功时同步写入该来源的新增记录。重复或被拒绝的登记不新增来源条目。

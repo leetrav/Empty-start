@@ -47,7 +47,7 @@ func show_unbroken_result(session: RestSession) -> bool:
 	return show_result(session)
 
 
-# 空态只读 Session 聚合结果和成果系统历史快照，继续入口始终保留。
+# 每次打开都只刷新已提交结果和历史；显示与隐藏页面不发奖、不触发继续请求。
 func show_result(
 		session: RestSession,
 		run_data: SaveData = null,
