@@ -62,6 +62,16 @@ EN-04 等 15. Scripture。
 EN-05 等 1. Identify 与 17. ThreeTendencies。
 EN-06～09 完成页面数据和显示。
 
+## EN-01 终局事实接收入口
+
+- `EndingSession.receive_final_state(session, level_catalog, main_art_config, religion_name_config, judgement_text_config)` 只接受已成功进入的 `DivineDescentSession`，首次返回 true；空 / 未进入会话、缺少目录及重复接收返回 false。
+- 调用方提供包含全部普通关卡的 `LevelCatalog`。三份配置默认读取已有正式 `.tres`；覆盖默认值时必须传入有效 Resource。接收不等待 DD-17 路由，可在独立组合场景使用已进入 Session 验证。
+- `get_final_snapshot()` 返回独立副本，保存 Session 的 `tendency_result`、`scripture_entries`、`identity_id`、`streamer_name`。后两项已在原 `DivineDescentSession.enter(run_data)` 中复制，接收时无需再读可变 SaveData。
+- 经文只将冻结字段映射成私有 Scripture 读取副本，复用 EN-04 / EN-07 的排序、缺章和显示组合；没有再次正式写入或随机生成节号。最终显示数据在接收时仅组合一次。
+- `get_display_data()` 返回保留显示数据的深拷贝，可交给 `EndingPage.show_ending()`。刷新不重新查询源倾向、经文或关卡目录；修改 getter 副本与重复接收均无法改写首次结果。
+- 源 SaveData、ScriptureData 与 TendencyState 继续归原系统所有；接收方不持有它们的可变引用。主图 Texture2D 延续现有静态配置只读约定。
+- EN-01 完成接收与保留事实，DD-17 完成信号、SceneRouter 转场及完整主流程仍由 C/A 后续联调；没有提前执行 EN-09。
+
 ## EN-02 当前主图配置接口
 
 - `data/ending/ending_main_art_config.tres` 是三类教派主图的唯一配置入口。
@@ -90,7 +100,7 @@ EN-06～09 完成页面数据和显示。
 - 优先级固定为无有效行为 → 最高分并列 → 开局倾向与主导一致 → 其余偏移；全零时即使存在并列及身份一致也归为无行为类。
 - 无行为、并列和主导分别调用 17 系统的 `has_no_effective_behavior()`、`is_primary_tied()`、`get_primary_tendency_id()`；Ending 不读取或重算精确分数。
 - 开局参照读取 `TendencyState.opening_identity_tendency_id`：Identify 确认身份时已经通过 `initialize_from_identity_option()` 从所选 `IdentityOption.tendency_id` 写入该周目值，无需根据身份显示名称或 ID 推测倾向。
-- 分类器只读传入数据。当前尚未接入 EN-01 终局接收流程；后续集成应传入终局固定的三项倾向结果，判词配置与页面由对应任务卡实现。
+- 分类器只读传入数据。EN-01 的 EndingSession 已消费冻结倾向；DD-17 正式进入结局的流程转场仍待后续联调。
 - TT-12 增加 `classify_frozen_result(tendency_result)`，直接使用 19 Session 的冻结标记、主导 ID 与开局依据；旧 `classify(TendencyState)` 共用同一分类实现。空输入返回空 StringName，表示尚无最终结果；全零优先于并列的顺序保持原状。
 
 ## EN-06 当前判词配置接口
@@ -114,14 +124,14 @@ EN-06～09 完成页面数据和显示。
 - 输出 `primary_tendency_id`、`secondary_tendency_id`、`is_primary_tied`、`has_no_effective_behavior`、`opening_identity_tendency_id`、`main_art`、`religion_name`、`identity_result_class`、`judgement_text` 和 `scripture`；精确累计值不进入显示结果。
 - `scripture.rows` 直接沿用 EN-04 的章节显示列表；`scripture.is_empty` 通过 Scripture 的 `get_ordered_entries().is_empty()` 得到。全空时区域 `status` 沿用 EN-04 的 `not_formed_oracle`，保留目录中的缺章位置；有正式经文时为 `confirmed_oracle`。
 - 空圣典不会阻断主图、教名和判词读取。正式配置尚未填写时，文本保持空字符串、主图保持 `null`，显示数据字段仍完整返回。
-- 组装过程只读上游和配置，未接入 EN-01 终局完成事件；页面呈现入口见下方 EN-08。EN-07 仅新增一个关键单元测试，验证全空圣典仍生成配置结果和明确空态。
+- 组装过程只读上游和配置，EN-01 接收时组合并保留显示结果；DD-17 完成事件与转场尚未接入。页面呈现入口见下方 EN-08。EN-07 仅新增一个关键单元测试，验证全空圣典仍生成配置结果和明确空态。
 
 ## TT-12 冻结倾向读取适配
 
 - `EndingDisplayData.build_from_frozen_tendency(tendency_result, scripture_data, level_catalog, main_art_config, religion_name_config, judgement_text_config)` 接收 `session.get_entry_snapshot()["tendency_result"]`，从同一快照取主次、并列、全零和开局依据，再复用现有主图 / 教名 / 判词配置及经文适配。
 - 新入口只读取参数，不缓存或修改源 / 快照，不构造另一份可变最终倾向 Resource。旧 `build(TendencyState, ...)` 仍可用于非终局预览，但正式终局应使用冻结入口，避免实时源状态漂移。
 - 空冻结输入返回 `{}`，与已有的全零冻结结果区分；全零有效快照仍正常组装教名 / 判词。调用前提是 DD-01 已成功进入并提供完整 `tendency_result`。
-- 本适配只关闭倾向事实交接，经文参数继续沿用 EN-07 的现有类型。EN-01 尚未实现，正式结果接收、固定圣典组合和 SceneRouter 转场留给该任务；本卡没有宣称整局 Ending 已接线。
+- 本适配只关闭倾向事实交接，经文参数继续沿用 EN-07 的现有类型。EN-01 已使用 Session 冻结经文的私有读取副本组合显示；DD-17 / SceneRouter 正式转场尚待后续任务，整局 Ending 路由仍未接线。
 
 ## EN-08 当前结局页面接口
 

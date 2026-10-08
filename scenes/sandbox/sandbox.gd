@@ -3,6 +3,7 @@ extends Control
 signal final_oracle_opened(session: FinalOracleSession)
 signal rest_opened(session: RestSession)
 signal rest_continue_requested(session: RestSession)
+signal divine_descent_entered(session: DivineDescentSession)
 
 const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
 const PRESENTATION_ASSETS: PresentationAssetConfig = preload("res://data/shared/presentation_asset_config.tres")
@@ -37,6 +38,8 @@ var _rest_result_view: RestResultView
 var _oracle_transition_timer: Timer
 var _oracle_transition_started: bool = false
 var _opening_fan_count: int = 0
+var _divine_descent_session: DivineDescentSession
+var _divine_descent_mode: DivineDescentCombatMode
 
 
 # 场景只创建生命周期对象并接线；PK、Tier、倾向等状态留在各自所有者。
@@ -77,6 +80,9 @@ func _ready() -> void:
 
 # 按当前关重建尝试；重开与切到下一关共用清理，保留此前周目成果。
 func restart_current_attempt() -> void:
+	# 已进入终局后不能通过普通重开入口恢复 PK、档位与矛盾规则。
+	if _divine_descent_session != null and _divine_descent_session.is_entered():
+		return
 	var restarting_level: LevelProfile = _run_state.get_current_level_profile()
 	if restarting_level != null:
 		SaveManager.data.scripture_data.rollback_uncommitted(StringName(restarting_level.level_id))
@@ -175,7 +181,9 @@ func get_debug_snapshot() -> Dictionary:
 	var tendency_state: TendencyState = SaveManager.data.tendency_state
 	var barrage_counts: Dictionary = _barrage_area.get_current_barrage_counts()
 	var battle_phase: String = "普通战斗中（NORMAL_COMBAT）" if _normal_combat_active else "普通战斗未运行（INACTIVE）"
-	if _contradiction_stage_active:
+	if _divine_descent_session != null and _divine_descent_session.is_entered():
+		battle_phase = "神降临（DIVINE_DESCENT）"
+	elif _contradiction_stage_active:
 		battle_phase = "矛盾击破（CONTRADICTION_BREAK）"
 	elif _final_oracle_session != null and _final_oracle_session.is_open():
 		battle_phase = "终结神谕（FINAL_ORACLE）"
@@ -545,10 +553,44 @@ func _on_rest_continue_requested() -> void:
 		_opponent_pk_bar.complete_current_level()
 		_opening_fan_count = SaveManager.data.live_session.fan_count
 		restart_current_attempt()
-	elif completion != LevelRunState.CompletionResult.ALL_NORMAL_LEVELS_COMPLETED:
+	elif completion == LevelRunState.CompletionResult.ALL_NORMAL_LEVELS_COMPLETED:
+		_enter_divine_descent()
+	else:
 		return
-	# 最后一关继续保留休息界面；终局转场留 RS-10，重复请求由关卡状态拒绝。
 	rest_continue_requested.emit(finished_session)
+
+
+# 末关结果已提交后进入 19 的真实 Session；普通玩法边界复用现有终局模式。
+func _enter_divine_descent() -> void:
+	if _divine_descent_session != null or not _run_state.is_all_normal_levels_completed():
+		return
+	var session: DivineDescentSession = DivineDescentSession.new()
+	if not session.enter(SaveManager.data):
+		push_error("Sandbox: 神降临入口无法冻结当前周目结果。")
+		return
+	var mode: DivineDescentCombatMode = DivineDescentCombatMode.new()
+	if not mode.enter_terminal_mode(
+		SAMPLE_TIER_CATALOG, _hit_resolution, _combat_stage,
+		_contradiction_break, _barrage_area, _opponent_pk_bar
+	):
+		push_error("Sandbox: 无法应用神降临普通战斗关闭边界。")
+		return
+	_divine_descent_session = session
+	_divine_descent_mode = mode
+	_stop_normal_combat()
+	_contradiction_stage_active = false
+	_repeat_queue.clear_contradiction_queue()
+	_oracle_transition_timer.stop()
+	_oracle_selection_timer = null
+	_final_oracle_session = null
+	_attack_charge_input.clear_selection_targets()
+	_attack_charge_input.lock_new_attacks()
+	_oracle_candidate_display.clear_display()
+	_rest_result_view.hide_result()
+	_rest_session = null
+	_battle_hud.show_battle_state("神降临")
+	# 后续演出只消费同一冻结 Session，本卡不提前启动扩散、锁句或结局转场。
+	divine_descent_entered.emit(session)
 
 
 # 普通与复读都由同一生成事实计评论，等待请求和失败生成不提前入账。
