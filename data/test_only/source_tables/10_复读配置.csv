@@ -1,0 +1,4 @@
+param_id,value,unit,notes
+normal_delay_min_s,0.5,s,TEST_ONLY｜规则键保持接口名，值未定稿
+normal_delay_max_s,3,s,TEST_ONLY｜规则键保持接口名，值未定稿
+normal_screen_cap,24,count,TEST_ONLY｜同屏上限暂用占位值

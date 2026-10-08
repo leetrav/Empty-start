@@ -1,0 +1,3 @@
+asset_id,category,owner_id,purpose,expected_format,target_folder,status,notes
+test_portrait_01,character,test_streamer_01,TEST_ONLY 直播头像,PNG,assets/characters/,todo,TEST_ONLY｜美术资源待交付
+test_ending_art_orthodox,ui,test_ending,TEST_ONLY 结局主图,PNG,assets/ui/,todo,TEST_ONLY｜资源待交付

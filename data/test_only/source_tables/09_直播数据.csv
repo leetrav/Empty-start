@@ -1,0 +1,3 @@
+rule_id,trigger,viewer_mode,viewer_value,like_mode,like_value,comment_delta,fan_mode,fan_value,duration_s,notes
+test_live_open,test_stream_start,add,15,none,0,0,none,0,,TEST_ONLY｜观众数表现临时值
+test_live_hit,test_normal_hit,add,3,add,6,2,none,0,,TEST_ONLY｜表现反馈临时值

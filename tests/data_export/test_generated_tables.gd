@@ -1,8 +1,8 @@
-## 从正式导出 CSV 逐行比对实际 Godot LevelSpeech / CombatStageTierCatalog Resource。
+## 从待定稿 CSV 逐行核对 TEST_ONLY 词库预览；Tier 继续读取现有确认配置。
 extends SceneTree
 
 const CSV_PATH := "res://data/source_tables/03_普通词库.csv"
-const POOL_PATH := "res://data/generated/level_configuration/pool_streamer_a.tres"
+const POOL_PATH := "res://data/test_only/sheet_preview/level_configuration/pool_streamer_a.tres"
 const TIER_PATH := "res://data/generated/combat_stage/tier_catalog.tres"
 
 func _initialize() -> void:

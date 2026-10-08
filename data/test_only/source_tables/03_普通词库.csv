@@ -1,0 +1,13 @@
+word_id,text,tendency,strength,pool_id,weight,source_streamer_id,enabled,notes
+test_word_01,神正在看直播吗？,orthodox,1,test_pool_01,1,test_streamer_01,true,TEST_ONLY｜临时弹幕文本
+test_word_02,祂说过会看评论。,orthodox,2,test_pool_01,0.6,test_streamer_01,true,TEST_ONLY｜临时弹幕文本
+test_word_03,我宣布神其实在给我点赞。,heresy,1,test_pool_01,1,test_streamer_01,true,TEST_ONLY｜临时弹幕文本
+test_word_04,神把密码交给我了，信我。,heresy,3,test_pool_01,0.5,test_streamer_01,true,TEST_ONLY｜临时弹幕文本
+test_word_05,宇宙只是巨型鼠笼。,absurd,1,test_pool_01,1,test_streamer_01,true,TEST_ONLY｜临时弹幕文本
+test_word_06,我向一颗瓜子宣誓效忠。,absurd,2,test_pool_01,1.3,test_streamer_01,true,TEST_ONLY｜临时弹幕文本
+test_word_07,有人吗？,neutral,1,test_pool_01,1,test_streamer_01,true,TEST_ONLY｜临时弹幕文本
+test_word_08,主播你麦克风好像没开。,neutral,1,test_pool_01,0.8,test_streamer_01,true,TEST_ONLY｜临时弹幕文本
+test_word_09,祂终于回了一个句号。,orthodox,2,test_pool_02,1,test_streamer_02,true,TEST_ONLY｜临时弹幕文本
+test_word_10,我有祂的管理员权限。,heresy,2,test_pool_02,1,test_streamer_02,true,TEST_ONLY｜临时弹幕文本
+test_word_11,赞美神圣的薯条。,absurd,3,test_pool_02,1,test_streamer_02,true,TEST_ONLY｜临时弹幕文本
+test_word_12,弹幕为什么都是同一句？,neutral,1,test_pool_02,1,test_streamer_02,true,TEST_ONLY｜临时弹幕文本

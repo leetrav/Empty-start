@@ -116,3 +116,12 @@ LevelProfile 保存静态关卡资料、普通话语池、倾向比例、特殊�
 `LevelRunState.complete_level(level_id)` 只接受当前关的首次完成：存在更大的 `level_order` 时返回 `ADVANCED` 并推进；重复提交返回 `ALREADY_COMPLETED`；最后一关返回 `ALL_NORMAL_LEVELS_COMPLETED`，`is_all_normal_levels_completed()` 同时报告结束状态。空白或未知 ID 返回 `INVALID_LEVEL`，已知但非当前关返回 `LEVEL_NOT_CURRENT`。
 
 完成记录保存在单个 `LevelRunState` 实例中，以当前周目状态实例 + `level_id` 识别本次提交。去重状态不写入 SaveData；本类不调用休息时刻、终局或奖励系统。
+
+
+## 2026-10-08 导表 TEST_ONLY 数据接入
+
+策划源中，只有身份配置和系统案已明确的战斗规则可作为确定配置。其他关卡、台词、矛盾与资产等数据尚未定稿，联调使用 data/test_only/ 中的独立测试样例。
+
+LevelProfile 新增可选 normal_speech_pool_source: LevelSpeechPool，使用 get_normal_speech_pool() 读取。存在词库 Resource 时读取其中的 LevelSpeech 列表，否则继续使用内嵌 normal_speech_pool；运行时保持静态 Resource 只读。
+
+测试场景为 tests/fixtures/data_export/test_only_sandbox.tscn，注入测试关卡目录；正常主场景默认继续使用原关卡目录。导表方法、已实现映射、策划确认后的替换方式详见 tools/README.md。

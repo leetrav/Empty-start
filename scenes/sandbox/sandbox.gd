@@ -4,7 +4,7 @@ signal final_oracle_opened(session: FinalOracleSession)
 signal rest_opened(session: RestSession)
 signal rest_continue_requested(session: RestSession)
 
-const SAMPLE_LEVEL_CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
+@export var level_catalog: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/generated/combat_stage/tier_catalog.tres")
 const PRESENTATION_ASSETS: PresentationAssetConfig = preload("res://data/shared/presentation_asset_config.tres")
 const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
@@ -46,9 +46,9 @@ func _ready() -> void:
 	%LiveDataHud.bind_live_session(SaveManager.data.live_session)
 	# 敌方尚无数据所有者，本卡仅显式提供四个显示占位值。
 	%OpponentLiveDataHud.set_values(0, 0, 0, 0)
-	_run_state = LevelRunState.new(SAMPLE_LEVEL_CATALOG)
+	_run_state = LevelRunState.new(level_catalog)
 	_oracle_confirmation_state = FinalOracleConfirmationState.new(SaveManager.data)
-	SaveManager.data.scripture_data.bind_confirmation_state(_oracle_confirmation_state, SAMPLE_LEVEL_CATALOG)
+	SaveManager.data.scripture_data.bind_confirmation_state(_oracle_confirmation_state, level_catalog)
 	_oracle_confirmation_state.confirmation_committed.connect(_on_oracle_confirmation_committed)
 	_opening_fan_count = SaveManager.data.live_session.fan_count
 	_opponent_pk_bar = OpponentPKBar.new()
@@ -317,7 +317,7 @@ func _get_oracle_history_with_sentence_text(current_level: LevelProfile) -> Arra
 	var normal_hit_history: Array[Dictionary] = _hit_resolution.get_normal_hit_history()
 	var sentence_text_by_id: Dictionary = {}
 	if current_level != null:
-		for speech: LevelSpeech in current_level.normal_speech_pool:
+		for speech: LevelSpeech in current_level.get_normal_speech_pool():
 			if speech != null and not speech.original_sentence_id.is_empty():
 				sentence_text_by_id[speech.original_sentence_id] = speech.text
 
@@ -473,7 +473,7 @@ func _open_rest_after_unbroken() -> void:
 	_attack_charge_input.set_combat_active(false)
 	_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾 · 休息时刻")
 	if not _rest_result_view.show_result(
-		_rest_session, SaveManager.data, SAMPLE_LEVEL_CATALOG, loser_card_catalog
+		_rest_session, SaveManager.data, level_catalog, loser_card_catalog
 	):
 		push_error("Sandbox: 无法显示本场未击破结果。")
 		return

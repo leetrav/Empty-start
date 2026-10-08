@@ -1,0 +1,3 @@
+trait_id,display_name,inheritable,penalty_param_id,lifetime_override_s,split_child_count,visual_asset_id,notes
+test_trait_blocked,TEST_ONLY 遮挡,true,blocked_penalty_pk,7,,test_asset_block,TEST_ONLY｜实际运行时特性 ID 待正式定义
+test_trait_split,TEST_ONLY 分裂,true,,,2,test_asset_split,TEST_ONLY｜只验证导表与引用

@@ -1,85 +1,74 @@
-# 策划数据导表工具
+# 策划数据导表｜TEST_ONLY 联调说明
 
-Google Sheets 是策划编辑源；XLSX 作为本地输入，CSV 作为 Git / Agent 交付，已有接口对应的 Godot Resource 由工具生成。工具不会更改原始 XLSX。
+## 当前数据状态
 
-## 首次准备
+只有 01_身份配置，以及 06_战斗数值、08_Tier档位中已经写进系统案的确定规则具有正式依据。其他系统（包括当前的 344 条普通词库）均处于待定稿状态。CSV 能解析不代表策划批准。
 
-安装 Python 3.10+ 和 openpyxl：
+## 日常操作
+
+第一次需要 Python 3.10+ 和 openpyxl：
 
 ~~~powershell
 python -m pip install openpyxl
 ~~~
 
-如果全局 Python 由 uv 管理并拒绝安装，则在仓库根目录创建虚拟环境：
+使用 uv 管理 Python 时可创建独立环境：
 
 ~~~powershell
 uv venv .venv
 uv pip install --python .venv\Scripts\python.exe openpyxl
 ~~~
 
-## 日常使用
+### 1. 正常 Google Sheets 导表
 
-1. 在 Google Sheets 策划数据总表中修改数据。
-2. 选择「文件 → 下载 → Microsoft Excel (.xlsx)」，保存完整工作簿。
-3. 在仓库根目录打开 PowerShell，运行：
+在 Google Sheets 选择「文件 → 下载 → Microsoft Excel (.xlsx)」，将 XLSX 放在仓库目录，在 PowerShell 执行：
 
 ~~~powershell
 python tools/export_game_data.py --input "策划数据总表.xlsx"
 ~~~
 
-如果使用上述 uv 虚拟环境，改用：
+产物：data/source_tables/ 下 20 个原字段 CSV；06 拆分战斗数值、生命周期、基础参数；已确定的 Tier 生成 data/generated/combat_stage/tier_catalog.tres。尚未定稿的普通词库只能生成到 data/test_only/sheet_preview/level_configuration/pool_streamer_a.tres，保留全部 344 条供读取测试，暂时不能作为正式关卡词库。
+
+### 2. 生成一组可直接联调的 TEST_ONLY 数据
 
 ~~~powershell
-.\.venv\Scripts\python.exe tools/export_game_data.py --input "策划数据总表.xlsx"
+python tools/export_game_data.py --input "tests/fixtures/data_export/test_only_data.xlsx" --test-only
 ~~~
 
-输入文件在其他目录时填写完整路径；只想更新 CSV，可添加 --csv-only。运行后终端逐项列出处理 Sheet、有效记录、警告、错误、输出路径和未变化文件。
+测试工作簿有 19 张 Sheet：01 身份与 06、08 的来源内容直接沿用策划表供校验，15 张未定稿 Sheet 使用单独的 TEST_ONLY 数据。
 
-## 输出
+会输出：
+- data/test_only/source_tables/：15 个按系统独立的 CSV；
+- data/test_only/generated/level_configuration/test_pool_01.tres、test_pool_02.tres：共 12 条测试弹幕；
+- 同目录 test_level_01.tres、test_level_02.tres、test_only_level_catalog.tres：两关独立测试配置，包括主播、词库引用、真假矛盾、生成参数。
 
-- data/source_tables/：18 个业务 Sheet 共导出 20 个 UTF-8 CSV；06_战斗数值单独拆成 06_战斗数值、06_生命周期、06_基础参数，每个文件只有自己的字段表头。
-- data/generated/level_configuration/：按 pool_id 分组生成 LevelSpeechPool 资源；仅启用的普通话语进入 Resource，停用行仍保留在 CSV。
-- data/generated/combat_stage/tier_catalog.tres：从已有正式 Tier Resource 模板生成表格对应字段；Sandbox 已读取这份生成配置，原模板里独有的 Neutral 权重和立绘状态保留。
-- 00_填写说明仅供策划阅读，跳过导出；以 EXAMPLE_ 开头的 ID、notes 明确为「示例行」的记录会跳过，并显示警告。
+测试场景：res://tests/fixtures/data_export/test_only_sandbox.tscn。该场景继承原有 Sandbox，单独注入 TEST_ONLY LevelCatalog；游戏正式入口继续使用既有 LevelCatalog。
 
-同一输入连续运行保持文件字节与修改时间不变。校验错误时停止整轮写入；可保留警告项的原始空值。仅管理工具自身输出路径，其他人工文件不受影响。**直接在 Google Sheets 修改正式数据，下次重新导出，不编辑生成文件。**
+所有自行创造的记录使用 test_ 稳定 ID（例如 test_level_01、test_word_01），仅有 normal_delay_min_s 等固定接口参数键保留原名并用 notes 标记 TEST_ONLY。所有额外数值是测试占位，不构成策划定稿；音频、美术资产缺失时保留空值。
 
-## 已确认的字段映射
+### 3. 提交与替换
 
-| 策划表字段 | Godot 字段 | 说明 |
-|---|---|---|
-| 03.word_id | LevelSpeech.original_sentence_id | 稳定 ID 原样保留 |
-| 03.text | LevelSpeech.text | 文本、标点、换行原样 |
-| 03.tendency | LevelSpeech.tendency_id | heresy → heretical；其他值原样 |
-| 03.strength | LevelSpeech.strength | int，必须为 1～3 |
-| 03.weight | LevelSpeech.appearance_weight | float，必须大于 0 |
-| 08.pk_up_threshold | CombatStageTierConfig.upgrade_threshold | 策划 56 → Godot 0.56 |
-| 08.pk_down_threshold | CombatStageTierConfig.downgrade_threshold | 同上；Tier 0 空值按现有资源 0.0 |
-| 08.spawn_batch_mult | generation_count_multiplier | 倍率 float |
-| 08.spawn_frequency_mult | generation_frequency_multiplier | 倍率 float |
-| 08.move_speed_mult | movement_speed_multiplier | 倍率 float |
-| 08.lifetime_mult | lifetime_multiplier | 倍率 float |
-| 08.pullback_mult | opponent_pullback_multiplier | 倍率 float |
-| 08.repeat_count | repeat_count_per_hit | int |
-| 05.spawn_interval_s | LevelProfile.base_spawn_interval_seconds | 映射记录，待正式接入 |
-| 06.word_strength_1_pk=0.12 | PK 内部 0.0012 | 百分点除以 100；06 暂只导 CSV |
+导表工具在源工作簿出现字段/关联/类型错误时中止整轮写入，报告 Sheet、原始行号、字段、原因。未决定的空值报告警告；不会自动编造正式数值。相同输入重复导出字节和修改时间不变。可加 --csv-only 只导 CSV。
 
-08.presentation_key、music_event_id、repeat_lifetime_s 留在 CSV，当前 Tier Resource 无对应字段。03.pool_id、source_streamer_id、enabled、notes 留在 CSV，仅 pool_id/启用状态参与 Resource 分组与过滤。
+后续确定正式配置：更新 Google Sheets → 下载 XLSX → 运行正常导表命令 → Agent 根据正式 data/source_tables/ 建立相应 Resource。LevelProfile 已新增 normal_speech_pool_source: LevelSpeechPool 和 get_normal_speech_pool()；正式词库只需重新挂载资源，弹幕选择、经文和 Sandbox 已统一读取这个入口。原有 normal_speech_pool 继续兼容旧关卡。
 
-## 校验和待办
+正常模式与 TEST_ONLY 模式的输出目录严格隔离；未标记 TEST_ONLY 的工作簿不能使用 --test-only。当前尚未实现全部业务表的正式 Godot 导入器；TEST_ONLY 模式只实现了联调必需的 02/03/04/05 → LevelProfile 和 LevelCatalog，其他表已准备 CSV，可由对应系统 Agent 使用。
 
-错误：缺表头、重复稳定 ID、无效数字/布尔/枚举、已具备正式来源的关联缺失、Tier 阈值与复读寿命异常。警告：示例/说明行、未填写正式值、暂无正式父表的引用。均显示 Sheet/行号/字段/原因。
+## 字段映射
 
-当前 03_普通词库有 344 条正式话语，归属 pool_streamer_a。02_主播关卡、04_矛盾内容、14_败者卡目前只有明确示例数据，所以对应 CSV 仅含表头。
+普通词库：word_id → LevelSpeech.original_sentence_id；text → text；tendency → tendency_id（heresy → heretical）；strength → strength；weight → appearance_weight。
 
-**关卡数据的正式 ID 待策划决定**：工作簿示例 level_01/streamer_a，项目既有样例 level_001/streamer_sample。导表已真实加载 LevelSpeechPool，暂时保留原本 LevelProfile.normal_speech_pool，等待稳定 ID 对齐后由 Agent 正式绑定词库。
+关卡/矛盾：02.level_id → LevelProfile.level_id；02.streamer_id → streamer_id；02.word_pool_id → normal_speech_pool_source 的 pool_id；04.type=true/false → true_contradictions / false_contradictions；05.spawn_interval_s → base_spawn_interval_seconds；05.move_speed_px_s → base_move_speed_pixels_per_second。生成的 TEST_ONLY 关卡中四类倾向的比率 1/1/1/0.5 为临时混合权重。
 
-## Godot 验证
+Tier：pk_up_threshold/down → upgrade_threshold/downgrade_threshold；策划百分比 56 → 0.56。spawn_batch_mult → generation_count_multiplier；spawn_frequency_mult → generation_frequency_multiplier；move_speed_mult → movement_speed_multiplier；lifetime_mult → lifetime_multiplier；pullback_mult → opponent_pullback_multiplier；repeat_count → repeat_count_per_hit。06 中的 PK 收益按百分点 / 100 映射，如 0.12 → 0.0012，06 目前只生成 CSV。Tier 原资源独有的 neutral_weight_multiplier 和立绘状态保持不变。
 
-Godot 4.7.2 完成项目导入后，在根目录执行：
+## 验证命令
 
 ~~~powershell
+python tests/data_export/test_export_modes.py
 godot --headless --path . --script res://tests/data_export/test_generated_tables.gd
+godot --headless --path . --script res://tests/data_export/test_test_only_integration.gd
+godot --headless --path . --script res://tests/data_export/test_test_only_sandbox.gd
 ~~~
 
-测试将 03 的 CSV 与已加载的 LevelSpeech Resource 逐条核对，并检查 6 档 Tier 资源。全量流程仍以真实 Sandbox 场景启动为准；不通过脱离 Autoload 的单文件编译判定 Sandbox 可用性（known_traps.md / KT-25）。
+已知环境问题：当前最新 main 中 data/shared/audio_event_config.tres 引用的部分 .ogg 音效文件缺失，Godot 启动时可能输出独立的资源错误；以上导表验证须检查 PASS 标记与退出码，不能据此宣称整个游戏无错误。相关数据问题遵守 known_traps.md KT-11/12/13/14/15/18/20。
