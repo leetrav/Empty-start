@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="LevelProfile" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://data/level_configuration/level_profile.gd" id="1_profile"]
+[ext_resource type="Script" path="res://data/level_configuration/level_speech.gd" id="2_speech"]
+[ext_resource type="Script" path="res://data/level_configuration/level_contradiction.gd" id="3_contradiction"]
+[ext_resource type="Resource" path="res://tests/fixtures/fo11/test_normal_pool_inheritance.tres" id="4_inheritance"]
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="speech_orthodox"]
+script = ExtResource("2_speech")
+original_sentence_id = "sample_sentence_001"
+text = "示例正统话语，策划后续替换。"
+tendency_id = "orthodox"
+appearance_weight = 1.0
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="speech_heretical"]
+script = ExtResource("2_speech")
+original_sentence_id = "sample_sentence_heretical_001"
+text = "示例异端话语，策划后续替换。"
+tendency_id = "heretical"
+appearance_weight = 1.0
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="speech_absurd"]
+script = ExtResource("2_speech")
+original_sentence_id = "sample_sentence_absurd_001"
+text = "示例荒谬话语，策划后续替换。"
+tendency_id = "absurd"
+appearance_weight = 1.0
+
+[sub_resource type="Resource" script_class="LevelContradiction" id="contradiction_true"]
+script = ExtResource("3_contradiction")
+original_sentence_id = "sample_contradiction_true_001"
+text = "示例真矛盾，后续由策划替换。"
+
+[sub_resource type="Resource" script_class="LevelContradiction" id="contradiction_false"]
+script = ExtResource("3_contradiction")
+original_sentence_id = "sample_contradiction_false_001"
+text = "示例假矛盾，后续由策划替换。"
+
+[resource]
+resource_name = "TEST_ONLY FO-11 level_001 reward fixture"
+script = ExtResource("1_profile")
+level_id = "level_001"
+level_order = 1
+streamer_id = "streamer_sample"
+streamer_name = "示例主播"
+stream_topic = "TEST_ONLY FO-11 奖励配置验收"
+fan_badge_id = "fan_badge_sample"
+normal_speech_pool = Array[ExtResource("2_speech")]([SubResource("speech_orthodox"), SubResource("speech_heretical"), SubResource("speech_absurd")])
+normal_pool_inheritance = ExtResource("4_inheritance")
+orthodox_ratio = 1.0
+heretical_ratio = 1.0
+absurd_ratio = 1.0
+special_trait_ids = Array[String](["occlusion"])
+inheritable_trait_ids = Array[StringName]([&"occlusion"])
+true_contradictions = Array[ExtResource("3_contradiction")]([SubResource("contradiction_true")])
+false_contradictions = Array[ExtResource("3_contradiction")]([SubResource("contradiction_false")])
+contradiction_context_clues = Array[String](["示例前文线索，后续由策划替换。"])
+base_batch_count = 3
+base_spawn_interval_seconds = 1.0
+base_move_speed_pixels_per_second = 100.0
+normal_barrage_screen_cap = 24

@@ -21,6 +21,9 @@ extends Resource
 ## 普通话语池保留原句定义，供弹幕生成系统读取。
 @export var normal_speech_pool: Array[LevelSpeech] = []
 
+## 该普通词库的继承配置；留空表示未配置奖励，内容仍使用上面的同一词库。
+@export var normal_pool_inheritance: WordPoolInheritanceConfig
+
 ## 普通话语类别比例只保存配置值；neutral 不计入玩家三项倾向。
 @export var orthodox_ratio: float = 0.0
 @export var heretical_ratio: float = 0.0
@@ -29,6 +32,9 @@ extends Resource
 
 ## 特性 ID 的正式取值由弹幕特性系统定义，关卡只保存本关选择的 ID。
 @export var special_trait_ids: Array[String] = []
+
+## 真正击败后允许继承的特性白名单，独立于本关启用的特殊玩法列表。
+@export var inheritable_trait_ids: Array[StringName] = []
 
 ## 矛盾内容与线索归当前关卡配置，判定规则由矛盾击破系统执行。
 @export var true_contradictions: Array[LevelContradiction] = []
