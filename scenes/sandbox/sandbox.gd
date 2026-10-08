@@ -646,7 +646,9 @@ func _on_shot_hit_resolution_submitted(_snapshot: AttackTargetSnapshot, submissi
 # 满值先立刻停回拉和生成；攻击提交完本发事实后统一停止输入和清理。
 func _on_final_player_pk_updated(player_pk: float) -> void:
 	_refresh_pk_feedback()
-	if _normal_combat_active and player_pk >= battle_config.maximum_player_pk:
+	if _normal_combat_active and _combat_stage.get_stage_result(player_pk, battle_config.maximum_player_pk) == CombatStage.StageResult.ENTER_CONTRADICTION:
+		# 满值立即冻结，避免延迟切换前的扣分或旧普通结算改低 PK。
+		_hit_resolution.set_normal_pk_resolution_enabled(false)
 		_opponent_pk_bar.stop_pullback()
 		_barrage_area.stop_normal_generation()
 		_complete_normal_combat.call_deferred()
