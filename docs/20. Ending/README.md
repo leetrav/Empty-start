@@ -91,6 +91,7 @@ EN-06～09 完成页面数据和显示。
 - 无行为、并列和主导分别调用 17 系统的 `has_no_effective_behavior()`、`is_primary_tied()`、`get_primary_tendency_id()`；Ending 不读取或重算精确分数。
 - 开局参照读取 `TendencyState.opening_identity_tendency_id`：Identify 确认身份时已经通过 `initialize_from_identity_option()` 从所选 `IdentityOption.tendency_id` 写入该周目值，无需根据身份显示名称或 ID 推测倾向。
 - 分类器只读传入数据。当前尚未接入 EN-01 终局接收流程；后续集成应传入终局固定的三项倾向结果，判词配置与页面由对应任务卡实现。
+- TT-12 增加 `classify_frozen_result(tendency_result)`，直接使用 19 Session 的冻结标记、主导 ID 与开局依据；旧 `classify(TendencyState)` 共用同一分类实现。空输入返回空 StringName，表示尚无最终结果；全零优先于并列的顺序保持原状。
 
 ## EN-06 当前判词配置接口
 
@@ -110,10 +111,17 @@ EN-06～09 完成页面数据和显示。
 ## EN-07 当前结局显示数据接口
 
 - `EndingDisplayData.build(tendency_state, scripture_data, level_catalog, main_art_config, religion_name_config, judgement_text_config)` 组合 EN-02～06 已有接口，返回显示数据字典；调用方提供已初始化身份的有效三项倾向、圣典、完整关卡目录和三份配置 Resource。
-- 输出 `primary_tendency_id`、`secondary_tendency_id`、`main_art`、`religion_name`、`identity_result_class`、`judgement_text` 和 `scripture`。
+- 输出 `primary_tendency_id`、`secondary_tendency_id`、`is_primary_tied`、`has_no_effective_behavior`、`opening_identity_tendency_id`、`main_art`、`religion_name`、`identity_result_class`、`judgement_text` 和 `scripture`；精确累计值不进入显示结果。
 - `scripture.rows` 直接沿用 EN-04 的章节显示列表；`scripture.is_empty` 通过 Scripture 的 `get_ordered_entries().is_empty()` 得到。全空时区域 `status` 沿用 EN-04 的 `not_formed_oracle`，保留目录中的缺章位置；有正式经文时为 `confirmed_oracle`。
 - 空圣典不会阻断主图、教名和判词读取。正式配置尚未填写时，文本保持空字符串、主图保持 `null`，显示数据字段仍完整返回。
 - 组装过程只读上游和配置，未接入 EN-01 终局完成事件；页面呈现入口见下方 EN-08。EN-07 仅新增一个关键单元测试，验证全空圣典仍生成配置结果和明确空态。
+
+## TT-12 冻结倾向读取适配
+
+- `EndingDisplayData.build_from_frozen_tendency(tendency_result, scripture_data, level_catalog, main_art_config, religion_name_config, judgement_text_config)` 接收 `session.get_entry_snapshot()["tendency_result"]`，从同一快照取主次、并列、全零和开局依据，再复用现有主图 / 教名 / 判词配置及经文适配。
+- 新入口只读取参数，不缓存或修改源 / 快照，不构造另一份可变最终倾向 Resource。旧 `build(TendencyState, ...)` 仍可用于非终局预览，但正式终局应使用冻结入口，避免实时源状态漂移。
+- 空冻结输入返回 `{}`，与已有的全零冻结结果区分；全零有效快照仍正常组装教名 / 判词。调用前提是 DD-01 已成功进入并提供完整 `tendency_result`。
+- 本适配只关闭倾向事实交接，经文参数继续沿用 EN-07 的现有类型。EN-01 尚未实现，正式结果接收、固定圣典组合和 SceneRouter 转场留给该任务；本卡没有宣称整局 Ending 已接线。
 
 ## EN-08 当前结局页面接口
 
