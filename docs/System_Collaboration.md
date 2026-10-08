@@ -570,7 +570,7 @@ FO-13 的选择表现保留战斗 HUD：Sandbox 在中央 BattleArea 展示 Fina
 | 本场最终神谕 | 终结神谕系统确认 | 圣典和奖励系统接收 |
 | 已吞并主播、词库权重与特性 | 吞并系统 | 通过 `SaveData.assimilation_data` 读取；后续关卡、休息和终局使用 |
 | 已保存经文记录 | 圣典系统 | 从 `SaveData.scripture_data` 的 `get_ordered_entries()` / `get_chapter_slots(level_catalog)` 读取经文快照与含缺章的原序号视图 |
-| 败者卡资料与已获卡片 | 败者卡系统 | 静态资料按主播 ID 查找；通过 `SaveData.loser_card_data` 读取本周目已获 ID，供休息展示 |
+| 败者卡资料与已获卡片 | 败者卡系统 | Rest 调用 `SaveData.loser_card_data.get_acquired_cards(catalog)` 读取已获快照，调用 `get_new_card_for_level(level_id, catalog)` 读取本场发卡结果；空 Dictionary 表示无新增，来源匹配由 16 系统负责 |
 | 三项倾向累计与开局比较参照 | 三项倾向系统 | 通过 `SaveData.tendency_state` 保存；休息、终局和结局读取后续提交结果 |
 | 当前流程走到哪 | 关卡配置 / 战斗阶段 / 休息 / 神降临按阶段接力 | 各阶段完成后把下一阶段叫起来 |
 
