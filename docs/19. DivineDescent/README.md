@@ -87,6 +87,7 @@ DD-17 等 20. Ending。
 - `DivineDescentCandidateFilter.build_history_candidates(committed_hit_history, normal_repeat_counts_by_line_id)` 复用上述边界，按 `original_sentence_id` 归并候选，保持第一次出现的顺序。
 - 候选字段为 `original_sentence_id`、`original_sentence_text`、`tendency`、`hit_count`、`normal_repeat_count` 和 `first_committed_hit_order`，供 DD-06 以后直接读取。
 - `hit_count` 对同一原句的多条已提交命中快照累加；`normal_repeat_count` 独立读取 Repeat 提供的按原句统计字典，不从命中历史字段推断。
+- RP-12 已提供真实复读来源 `RepeatGenerationStats.get_committed_normal_counts_by_line_id(run_data)`，只读 RP-10 已提交普通历史并跨关按原句求和，直接作为上述候选入口第二个参数。第一参数继续通过 `run_data.get_committed_normal_hit_history()` 取得；未提交和矛盾复读排除。终局进入 / 冻结仍由后续 DD-01 组合，本接口不执行新的权重规则。
 
 ## SC-07 圣典输入接口
 

@@ -21,7 +21,7 @@ func record_generated(plan: RepeatPlan, actual_generated_count: int) -> void:
 			return
 
 
-# 读取指定原句已生成的普通复读数量。
+# 神谕按原句只读本场实际普通数量；矛盾数量不参与候选排序。
 func get_normal_count(original_line_id: StringName) -> int:
 	return int(normal_counts_by_line_id.get(original_line_id, 0))
 
@@ -29,6 +29,18 @@ func get_normal_count(original_line_id: StringName) -> int:
 # 读取指定原句已生成的矛盾复读数量。
 func get_contradiction_count(original_line_id: StringName) -> int:
 	return int(contradiction_counts_by_line_id.get(original_line_id, 0))
+
+
+# 神降临只读已提交普通历史，跨关同原句求和；返回临时结果，不维护第二份统计。
+static func get_committed_normal_counts_by_line_id(run_data: SaveData) -> Dictionary:
+	var counts_by_line_id: Dictionary = {}
+	if run_data == null:
+		return counts_by_line_id
+	for level_counts: Dictionary in run_data.committed_normal_repeat_history_by_level.values():
+		for line_id: Variant in level_counts:
+			var original_line_id := StringName(str(line_id))
+			counts_by_line_id[original_line_id] = int(counts_by_line_id.get(original_line_id, 0)) + int(level_counts[line_id])
+	return counts_by_line_id
 
 
 # PK 胜利后按本周目关卡提交一次普通实际数量快照；矛盾统计不进入历史。
