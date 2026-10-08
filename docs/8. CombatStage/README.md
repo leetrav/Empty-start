@@ -36,6 +36,10 @@ CS-11 提供 `get_stage_result(final_player_pk, maximum_player_pk)`：低于配�
 
 CS-11 仅新增 `tests/combat_stage/test_cs_11_enter_contradiction.gd` 一个用例；图形运行 Sandbox 的临时验收驱动验证满值冻结、回拉停止、真实矛盾入口和重开恢复，驱动在验收后删除。
 
+CS-12 已核实并沿用 Sandbox `_stop_normal_combat()` 的协调入口：AttackChargeInput 停用时取消蓄力、飞行快照与硬直 Timer；BarrageArea 停止生成并清空旧普通 / 复读视图与容量；RepeatDelayQueue 清空普通等待请求，实际生成统计保留供胜利提交。全部清理完成后 `_complete_normal_combat()` 才启动 ContradictionBreak 内容、矛盾生成与限时窗口。各状态继续由所属系统清理。
+
+满值通知与帧尾清理之间，Sandbox 的普通复读调度还检查 `HitResolution.allows_normal_pk_resolution()`，普通结算关闭后立即停止推进，防止到期请求在延迟窗口生成并进入胜利统计；本发事实提交仍按原流程完成。矛盾复读继续按矛盾阶段开关调度。CS-12 未新增永久自动化测试；Godot 4.7.2 TEST_ONLY 图形 Sandbox 临时冒烟已覆盖蓄力、飞行和硬直三种清理状态。
+
 | 任务卡 | 小功能 | 自动化测试 |
 | --- | --- | --- |
 | CS-01 | 定义 Tier 配置数据 | 无 |

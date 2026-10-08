@@ -163,7 +163,8 @@ func restart_current_attempt() -> void:
 func _process(delta: float) -> void:
 	# 直播上涨只推进表现数据；SceneTree 暂停时此帧回调也暂停。
 	SaveManager.data.live_session.advance_short_boosts(delta)
-	if _normal_combat_active or _contradiction_stage_active:
+	# PK 满值已关闭普通结算；帧尾清理前也停止普通复读，避免迟到生成进入胜利统计。
+	if (_normal_combat_active and _hit_resolution.allows_normal_pk_resolution()) or _contradiction_stage_active:
 		_repeat_queue.advance_and_dispatch(delta, _barrage_area)
 	if _oracle_selection_timer != null:
 		_oracle_selection_timer.advance(delta, get_tree().paused)
