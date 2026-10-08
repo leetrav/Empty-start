@@ -48,6 +48,18 @@ FinalOracle 选择阶段由 Sandbox 将中央 `FinalOracleCandidateDisplay` 生�
 
 - DBG-01 增加 `AttackChargeInput.is_charge_held()`，供调试面板读取真实按住状态并显示“蓄力中”；阶段和蓄力比例仍由 `get_attack_phase()`、`get_charge_progress()` 提供。
 
+### CA-12 触屏输入与 Lane A 接线
+
+`AttackChargeInput.configure_mobile_input(config: MobileAttackInputConfig) -> bool` 注入移动端准心设计直径 `touch_reticle_diameter`。仓库尚无正式移动端数值表，本 Resource 默认为 0（未配置），拒绝零值、负值和非有限值；未注入时触屏攻击保持关闭。PC 已批准的准心尺寸保持原配置。
+
+触屏首次按下由 `_unhandled_input()` 接收，UI 可优先消费。接管单指后拖动更新准心，按住沿用现有蓄力计时，松开先更新最终坐标再调用原释放流程；未满蓄取消，满蓄沿用快照、飞行、结算和硬直。第二指不能改变攻击手势；触屏模拟鼠标事件不会重复触发攻击。系统取消、后台切换、暂停中抬指、战斗停止均丢弃当前触屏蓄力。暂停中保持按住则冻结进度，恢复后继续。
+
+`AimReticle.move_touch_aim(viewport_position, diameter)` 使用原有画布逆变换和中心偏移，准心显示及目标相交共用同一直径。布局刷新保留最近触屏位置，实体鼠标重新操作恢复 PC 尺寸。
+
+**A 集成位置**：Sandbox `_ready()` 现有 `configure_target_query()` 之后，将场景读取的移动端配置传入 `configure_mobile_input()`，检查返回值。重开沿用已注入的只读配置，继续用现有 `set_combat_active()` 清理手势。本卡没有修改 Sandbox / Rest / 其他场景，也没有自动启用测试数值。
+
+正式数值到位前，A 仅在明确的 TEST_ONLY 联调入口加载 `res://tests/fixtures/combat_attack/ca12_test_only_mobile_input.tres`；其中 80 设计像素只用于 PC 模拟验收。正式发布须换成策划数值表导出的 `MobileAttackInputConfig`，不得将 fixture 当成正式平衡值。正式 Android 场景接线、构建及手机分辨率/手感验收见 CA-12 日志中的未验证项。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
@@ -83,4 +95,4 @@ UI、飞行表现、硬直、暂停、触摸和跨系统传递全部用最小运
 
 CA-01～09、CA-11 已完成。
 CA-10 等 12. ContradictionBreak 和 10. Repeat 有真实接口。
-CA-12 放到 Android 输入适配阶段。
+CA-12 输入组件已实现并通过 PC 真实场景模拟触屏 smoke；A 的配置接线、正式移动尺寸、Android 构建和手机验收仍待完成。
