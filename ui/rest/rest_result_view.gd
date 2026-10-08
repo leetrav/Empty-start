@@ -10,6 +10,7 @@ var _history_loser_cards: LoserCardData
 var _history_loser_card_catalog: LoserCardCatalog
 
 @onready var _overlay: Control = %Overlay
+@onready var _room_environment: RestRoomEnvironment = %RoomEnvironment
 @onready var _result_title: Label = %ResultTitle
 @onready var _result_description: Label = %ResultDescription
 @onready var _new_rewards_empty: Label = %NewRewardsEmpty
@@ -92,6 +93,11 @@ func show_result(
 		and _history_loser_cards.get_acquired_cards(loser_card_catalog).is_empty()
 	)
 	_history_empty_states.visible = _scripture_history_empty.visible or _loser_card_history_empty.visible
+	# 环境只消费 17 已提交的主导倾向，不读取精确分数或本场暂存。
+	var tendency_id: String = ""
+	if run_data != null and run_data.tendency_state != null:
+		tendency_id = run_data.tendency_state.get_primary_tendency_id()
+	_room_environment.apply_tendency(tendency_id)
 	_scripture_history.hide()
 	_loser_card_history.hide()
 	_overlay.show()
@@ -102,6 +108,7 @@ func show_result(
 # 重开时同步收起结果与历史面板，释放本次上下文引用。
 func hide_result() -> void:
 	_overlay.hide()
+	_room_environment.apply_tendency("")
 	_scripture_history.hide()
 	_loser_card_history.hide()
 	_history_scripture = null

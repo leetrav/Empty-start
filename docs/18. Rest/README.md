@@ -77,3 +77,9 @@ RS-06 在同一结果面板增加“查看历史败者卡”，与圣典入口�
 RS-08 已核实并保护现有重复查看路径：用同一所属周目 SaveData、冻结 `level_id` 的 RestSession 与目录重新调用 `RestResultView.show_result()`，每次仅通过 `read_committed_rewards()` 和历史 getter 刷新界面。`show_result()` / `hide_result()` 不调用奖励提交或关卡推进，也不发出继续信号；重复 `open_result()` 保留首次结果快照。界面重新实例化后读取同一场已提交记录仍保持成果数量与固定节号。
 
 只有显式继续才调用 `RestSession.continue_to_next_level(run_state)`；同一周目的 LevelRunState 已完成该 `level_id` 后，再次提交旧结果返回 `ALREADY_COMPLETED`，当前关保持原值。重复保护继续归 14 / 15 / 16 与关卡所有者，Rest 不增加第二套奖励 / 推进记录。`tests/unit/rest/test_rs_08_reopen_idempotent.gd` 只含一个关键用例，验证重复接收 / 读取、成果不增加、固定节号不变、显式推进后重开旧结果也无法额外推进。实际 UI 重开及圣典 / 败者卡返回流程另用临时 Godot 场景 smoke 验证。
+
+## RS-07：同一房间按倾向改变装饰与光照
+
+休息结果页面复用 `res://assets/environment/bg_player_room_1.png` 的单间背景，环境独立子场景 `ui/rest/rest_room_environment.tscn` 仅切换背景调色、覆盖光照、左右装饰块与符号：正统暖金/对称，异端冷紫/倾斜，荒谬霓虹双色/错位。当前颜色、图形和符号仅为可替换的开发期视觉占位；后续美术可只替换 RoomEnvironment 内的贴图与装饰，无需改变 Rest 结算逻辑或三种背景。
+
+`RestResultView.show_result()` 只读取当前周目 `SaveData.tendency_state.get_primary_tendency_id()`，直接沿用 17 的开局全零和主导并列裁决；不接触累计值或本场暂存。缺有效上下文时使用不带倾向装饰的中性房间，`hide_result()` 同步复位。环境子节点均不接收鼠标，结果面板、圣典、败者卡、返回和继续信号仍沿用原 UI 接线。RS-07 不新增永久自动化单测；开发临时场景已做真实 Godot 4.7.2 UI 交互 Smoke，详见日期日志。
