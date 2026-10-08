@@ -28,7 +28,9 @@ HR-02 的 `calculate_normal_word_reward(strength, tendency_id)` 按内容强度�
 
 HR-04 的 `calculate_repeat_hit_result()` 返回有效命中标记和零 PK、零倾向收益；它不修改 PK 或提交倾向。
 
-HR-05 的 `resolve_shot_results(target_results)` 接收逐目标结算字典，先汇总全部 `pk_delta`，再一次性更新并限制玩家 PK。返回整发的 `total_pk_delta` 与 `final_player_pk`，并深拷贝保留原有 `target_results`，供后续读取每个目标的倾向变化；最终 PK 信号同步交给 CombatStage。
+HR-05 的 `resolve_shot_results(target_results, shot_anomaly=ShotAnomaly.NONE)` 接收逐目标结算字典，先汇总全部 `pk_delta`，再一次性更新并限制玩家 PK。返回整发的 `total_pk_delta` 与 `final_player_pk`，并深拷贝逐目标结果，供后续读取每个目标的倾向变化；最终 PK 信号同步交给 CombatStage。原单参数调用保持有效。
+
+BT-11（2026-10-09）补齐已存在真实 TraitResult 的惩罚消费：FAKE_CARD 每目标 `-0.005`，RETALIATION_COPY 每目标 `-0.007`，OCCLUSION / REFLECT 的目标 PK 为 0，特殊结果普通倾向与有效普通命中标记清零；CombatAttack 传入 HR-06 选出的整发异常，BOUNCE / OBSTRUCTION / MISS 每发扣 `-0.01`，和目标增量合并后仅更新一次 PK。沿用 `data/source_tables/06_战斗数值.csv` 正式值，4 / 5 不计算惩罚。终局关闭、PK 已归零提前返回的边界保持。尚无真实雷结果类型，雷映射仍待其正式接口；本次仅完成 BT-11 已有特性结果联调。
 
 HR-08 在整发结算前检查当前 PK。若回拉已把 PK 降至下限，返回 `cancelled_by_zero_pk = true`、零 PK 增量和空 `target_results`，本发命中与倾向变化都不再传递；正常结算返回 false。
 
