@@ -86,5 +86,5 @@ HR-01～08、HR-14 可以先完成纯结算核心和本场命中历史。
 HR-09 等 8. CombatStage。
 HR-10 / HR-11 已由 INT-01 组合真实整发结果、本场倾向和普通复读计划。
 HR-12 的普通命中 / 陷阱表现增量继续等待 9. LiveDataPresentation 的数值规则；生成评论已接通。
-HR-13 等 12. ContradictionBreak。
+HR-13（2026-10-09）已核实真实矛盾边界：满 PK 后 Sandbox 关闭普通结算，AttackChargeInput 的矛盾模式在释放时交付冻结快照，飞行结束跳过普通结算；12 的 `resolve_shot_hit_ids()` 独占成败判定，既有场景回调把真假矛盾命中创建为 10 的专用复读计划。阶段关闭后的晚到普通提交保留 `terminal_mode=true`，返回空 `target_results`，攻击端跳过其普通历史，避免倾向或普通复读收益泄漏。打满 PK 的最后一发仍按已完成的普通结算保留收益与历史。没有增加永久测试或重复接线，未修改 Sandbox；运行证据见本系统 HR-13 日志及 evidence。
 HR-15 的失败回滚已接 Sandbox 重开与失败事件；胜利提交入口已提供，实际调用由 CB-12 按未击破或神谕确认后的最终结果接入。
