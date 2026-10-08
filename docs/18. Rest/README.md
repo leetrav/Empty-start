@@ -49,3 +49,7 @@ RS-10 等 19. DivineDescent。
 RS-01 已增加 `RestSession.open_result(result_snapshot)` 作为本场结果入口。快照包含来源 `level_id` 与 `result_kind`（`pk_win_unbroken` 或 `breakthrough_oracle_complete`）；会话只接受首次打开，读取方使用 `get_result_snapshot()` 获得深拷贝。
 
 RS-02 为 `pk_win_unbroken` 增加专属结果面板，显示 PK 胜利但矛盾未击破、没有神谕或击败奖励，并发出继续请求。Sandbox 将继续请求转成 `rest_continue_requested(session)` 信号；下一关切换仍由 RS-09 接入。
+
+RS-03 增加 `RestSession.read_committed_rewards(save_data, level_catalog, loser_card_catalog)`：经文按当前 `level_id` 读取 `ScriptureData.get_entry_for_level()`；吞并用同一 Session 的 `level_id` 和真实 LevelCatalog 对应的 `streamer_id` 调用 `AssimilationData.get_new_content_for_source()`，返回 `new_assimilation` 快照。未打开、未击破、缺少关卡 / 来源或无新增时该字段为 `{}`。Rest 不保存来源映射或计算总量差值，需要总量的消费方使用 14 的 `get_current_content_snapshot()`。
+
+RS-03 已接入 LCARD-07 正式只读入口 `SaveData.loser_card_data.get_new_card_for_level(level_id, loser_card_catalog)`：来源归 16 判断，本场无新增为 `{}`，Rest 映射为 `new_loser_card = null`；正式发卡但 Catalog 缺失时仍能得到主播 ID 与 `profile = null`。败者卡读取不依赖 LevelCatalog，后者仅用于解析吞并的同关主播来源；所有读取均不发奖或改写已提交结果。
