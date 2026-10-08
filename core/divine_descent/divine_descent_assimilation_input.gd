@@ -12,7 +12,5 @@ static func build_snapshot(run_data: SaveData) -> Dictionary:
 	}
 	if run_data == null or run_data.assimilation_data == null:
 		return snapshot
-	var assimilation_data: AssimilationData = run_data.assimilation_data
-	snapshot["inherited_word_weights"] = assimilation_data.inherited_word_weights.duplicate(true)
-	snapshot["inherited_trait_ids"] = assimilation_data.inherited_trait_ids.duplicate(true)
-	return snapshot
+	# 吞并系统公开入口负责总量读取和集合隔离，终局直接持有其独立快照。
+	return run_data.assimilation_data.get_current_content_snapshot()
