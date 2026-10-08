@@ -74,6 +74,32 @@ static func calculate_base_weights(candidates: Array[Dictionary]) -> Array[Dicti
 	return weighted_candidates
 
 
+# 读取 DD-06 基础权重与冻结经文，仅给池内圣典原句加一次最大基础权重。
+static func apply_scripture_bonus(
+		base_weight_candidates: Array[Dictionary], scripture_entries: Array[Dictionary]
+) -> Array[Dictionary]:
+	var maximum_base_weight: int = 0
+	for candidate: Dictionary in base_weight_candidates:
+		maximum_base_weight = maxi(maximum_base_weight, int(candidate.get("base_weight", 1)))
+	var scripture_sentence_ids: Dictionary = {}
+	for entry: Dictionary in scripture_entries:
+		var sentence_id: String = str(entry.get("original_sentence_id", ""))
+		if not sentence_id.is_empty():
+			scripture_sentence_ids[sentence_id] = true
+
+	var weighted_candidates: Array[Dictionary] = []
+	for candidate: Dictionary in base_weight_candidates:
+		var weighted_candidate: Dictionary = candidate.duplicate(true)
+		var base_weight: int = int(candidate.get("base_weight", 1))
+		var sentence_id: String = str(candidate.get("original_sentence_id", ""))
+		# 最大值取加成前的基础池；保留输入顺序与 base_weight，当前权重单独派生。
+		weighted_candidate["weight"] = base_weight + (
+			maximum_base_weight if scripture_sentence_ids.has(sentence_id) else 0
+		)
+		weighted_candidates.append(weighted_candidate)
+	return weighted_candidates
+
+
 # 从 Repeat 的独立按原句统计边界读取普通复读数，不把它写回命中历史。
 static func _read_repeat_count(counts_by_line_id: Dictionary, sentence_id: String) -> int:
 	if counts_by_line_id.has(sentence_id):
