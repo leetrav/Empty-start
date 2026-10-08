@@ -110,7 +110,7 @@ DD-17 等 20. Ending。
 
 - `DivineDescentCandidateFilter.calculate_base_weights(candidates)` 接收 DD-02 输出，按原顺序返回候选深拷贝，并新增 `base_weight` 字段。
 - `base_weight = max(hit_count + normal_repeat_count, 1)`；仅使用已有普通命中数和实际普通复读数，保留候选其他字段，输入历史与候选保持原值。
-- 基础权重属于 DivineDescent 的派生数据；HitResolution 和 Repeat 继续拥有各自历史。DD-07 已提供纯圣典加成，动态权重、锁句及运行阶段接线留给后续任务。
+- 基础权重属于 DivineDescent 的派生数据；HitResolution 和 Repeat 继续拥有各自历史。DD-07 已提供纯圣典加成，DD-08 已提供动态权重扩散，锁句及主流程接线留给后续任务。
 
 ## DD-07 圣典候选加成
 
@@ -118,4 +118,15 @@ DD-17 等 20. Ending。
 - 输出深拷贝保留原字段及 `base_weight`，新增 `weight = base_weight + 圣典加成`；加成等于本次输入候选池加成前的最大 `base_weight`，同句多章只加一次，非圣典候选 `weight = base_weight`。每次从基础值派生，不读取旧 `weight`。
 - 空经文只返回基础权重；空候选返回空数组；单句圣典候选加成等于自身基础权重。圣典中池外原句不会新增候选，输入候选、经文与 Session 冻结快照保持原值。
 - 保留 DD-02 的原候选顺序，不按本卡输出权重重新排序；DD-09 / DD-10 的最高权重与并列裁决留对应卡。没有改动 FO-05 的本场候选排序。
-- 后续组合调用：从 Session 读取 `history_candidates / scripture_entries` → `calculate_base_weights(history_candidates)` → `apply_scripture_bonus(base_candidates, scripture_entries)`。返回池作为演出工作数据，冻结来源仍留在 Session；DD-08 的生成和动态加权本卡未实现。
+- DD-08 已组合调用：从 Session 读取 `history_candidates / scripture_entries` → `calculate_base_weights(history_candidates)` → `apply_scripture_bonus(base_candidates, scripture_entries)`。返回池作为扩散工作数据，冻结来源仍留在 Session；DD-07 本身只提供纯加成规则。
+
+## DD-08 自动扩散组件
+
+- `DivineDescentSpread` 是独立 Node，进入树后调用 `start(session, barrage_area, speech_catalog, interval_seconds, repeat_lifetime_seconds, display_template, random_generator = null)`。每个终局 Session 组合一个扩散组件，由它唯一持有可变 `weight` 工作池；Session 继续只持有冻结来源。
+- 启动复用 DD-06 / DD-07 初始化权重。已有正文优先保留；存档候选只有原句 ID 时，按真实 `LevelCatalog.profiles` → `LevelProfile.get_normal_speech_pool()` 解析并复制正文，支持 #61 导表 Resource。空候选、缺少正文、未进入 Session 或非法时长会拒绝启动，既不补造句子也不丢弃候选。空历史路由仍留 DD-15。
+- 调用方先让 BarrageArea 进入当前关卡上下文，之后可停止普通生成；扩散直接调用现有 `spawn_repeat_barrage(RepeatPlan)`。间隔、寿命与模板必须从当前真实配置显式注入，本组件没有自定策划值。现有配置组合可读取当前关基础间隔 / Tier 5 频率、运行配置的复读寿命与模板；终局专用配置后续可替换同一参数入口。
+- 原生可暂停 Timer 在无玩家输入时逐次推进；每次用当前工作池调用 Godot [`RandomNumberGenerator.rand_weighted()`](https://docs.godotengine.org/en/stable/classes/class_randomnumbergenerator.html#class-randomnumbergenerator-method-rand-weighted)，创建一条 NORMAL RepeatPlan。只有 BarrageArea 返回真实生成实例后，该原句 `weight +1` 并发出 `repeat_generated(original_sentence_id, view, current_weight)`，下一轮读取新值。
+- `generate_next_repeat()` 是一次生成公开命令，返回成功实例或 null；容量 / 位置不足返回 null，权重保持原值，Timer 下一轮重试，不建立积压队列。`is_generation_blocked()` 读取上次尝试是否失败，成功后清除；区域离树时停止。生成实例、位置、同屏容量和寿命继续由 3 持有。
+- 不订阅攻击、复读命中或移除事件，命中不会触发扩散。NORMAL 复读继续走既有零收益命中规则；正式终局组合沿用 DD-04 的普通战斗关闭接口，本卡没有复制命中规则。
+- `get_current_candidates()` 返回动态工作池深拷贝，保留原句 ID、正文、倾向、命中 / 复读统计、首次提交顺序、基础权重和当前权重，供 DD-09 读取；修改副本不会回写。`stop()` 停止计时并保留工作池，`is_running()` 读取真实 Timer 状态；同一个组件启动后不重新初始化权重。
+- 当前仅在独立最小场景验证本组件，没有接入 RS-10 / Sandbox / Rest / Ending，没有执行 DD-09 锁句或后续演出。
