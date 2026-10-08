@@ -38,6 +38,22 @@
 
 UI、空态、历史查看、环境变化和输入切换全部做实际运行联调。
 
+## RS-11：结算展示与菜单输入边界
+
+`RestResultView.show_result()` 进入展示阶段时禁用继续、圣典与败者卡按钮，释放旧焦点，拦截输入事件；对应回调也检查阶段，避免直接发出按钮信号绕过。展示结束后才恢复符合资料上下文的按钮与继续焦点。查看历史及返回不会恢复战斗攻击，重复打开继续只读取既有成果。
+
+现有结果页面为静态展示，没有正式演出时长；默认在下一布局帧调用 `finish_result_performance()`。后续演出可使用新增的第五参数 `wait_for_performance = true`，完成时显式调用该接口；`result_performance_finished` 只通知已结束事实。关闭 / 重开会使旧静态等待失效，隐藏时报告完成无效，重复完成不会重复通知。没有补写正式动画、文案或平衡配置。
+
+准心通过公开 `configure_battle_aim(aim: AimReticle)` 注入。Rest 显示期间暂停其输入处理，历史面板保持原生悬停、点击和滚动；`hide_result()` 恢复准心进入前的处理状态。蓄力 / 发射仍由 Sandbox 原有 `set_combat_active(false)` / `lock_new_attacks()` 路径负责，菜单解锁不会调用攻击启用接口。按 [Godot 输入事件文档](https://docs.godotengine.org/en/stable/tutorials/inputs/inputevent.html)，在 `_input()` 消费移动会同时阻断 GUI，因此菜单阶段保留完整事件传递。
+
+**Lane A 集成完成（2026-10-09，PR #78 补做）**：正式 Sandbox 在 `_ready()` 中创建 Rest 页面并 `add_child()` 后调用一次以下接口。重开及继续路由复用该实例，保留原有唯一的继续信号连接。
+
+```gdscript
+_rest_result_view.configure_battle_aim(_aim_reticle)
+```
+
+RS-11 没有新增永久单测、Scene 或 Resource。Lane B 已完成 UI 与既有 RS-08 / 09 / 10 单测验收；Lane A 补做使用真实 Godot 4.7.2 D3D12 运行正式 Sandbox，只注入现有 TEST_ONLY 双关目录及临时演出控制，验证展示锁定、完成开放、圣典 / 卡片查看返回、准心冻结、攻击关闭、隐藏 / 重开恢复、旧展示等待隔离、下一关和 RS-10 唯一神降临入口，同时复验 CS-11 满 PK 冻结。实际输出 `RS11_INTEGRATION_REAL_SCENE_PASS`、退出码 0；权限环境错误与证据路径见 `休息时刻系统_RS-11_2026-10-09_log.md`。
+
 ## 依赖顺序
 
 RS-01～02 等 12. ContradictionBreak / 13. FinalOracle 结果。
