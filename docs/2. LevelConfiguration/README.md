@@ -14,6 +14,7 @@
 
 - `LevelProfile`、`LevelCatalog`、`LevelRunState` 已实现，`data/level_configuration/` 提供可编辑的示例关卡。
 - INT-01 Sandbox 持有当前 `LevelRunState`，普通战斗失败后原地重开同一关，关卡序号保持不变。
+- RS-09 将 Rest 继续请求接到 `LevelRunState.complete_level(level_id)`；返回 `ADVANCED` 后 Sandbox 读取新的 LevelProfile 并在原场景重建该关尝试，保留 SaveData 已提交成果。最后普通关到神降临仍待 RS-10；第二关正式内容尚未补齐。
 - 【吞并系统】【对手 PK 条系统】【休息时刻系统】【神降临系统】尚未实现时，与它们有关的任务卡只保留为后续联调任务，不提前制造临时跨系统接口。
 - 身份系统任务卡已经拆分，但本系统不依赖身份系统才能先做静态关卡数据和关卡顺序。
 

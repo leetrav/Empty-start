@@ -429,6 +429,8 @@ FO-13 的选择表现保留战斗 HUD：Sandbox 在中央 BattleArea 展示 Fina
 → 关卡配置系统准备下一名主播
 ```
 
+RS-09 的正式调用链为 RestResultView 的继续请求 → Sandbox → `RestSession.continue_to_next_level(run_state)` → `LevelRunState.complete_level(level_id)`。关卡系统独占顺序和去重；`ADVANCED` 后 Sandbox 复用当前场景清理并按新 LevelProfile 开始尝试，沿用同一 SaveData 保留已提交成果。Sandbox 跨系统接线由 Lane A 负责，Rest UI 由 Lane B 负责。
+
 普通关卡全部结束时：
 
 ```text
