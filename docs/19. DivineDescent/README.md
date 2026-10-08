@@ -88,6 +88,13 @@ DD-17 等 20. Ending。
 - 候选字段为 `original_sentence_id`、`original_sentence_text`、`tendency`、`hit_count`、`normal_repeat_count` 和 `first_committed_hit_order`，供 DD-06 以后直接读取。
 - `hit_count` 对同一原句的多条已提交命中快照累加；`normal_repeat_count` 独立读取 Repeat 提供的按原句统计字典，不从命中历史字段推断。
 
+## SC-07 圣典输入接口
+
+- `DivineDescentScriptureInput.build_snapshot(run_data)` 通过 15 的 `get_ordered_entries()` 读取已提交经文，返回 `Array[Dictionary]` 独立快照；空圣典、空周目或缺少 ScriptureData 均返回空数组。
+- 每章字段为 `level_id`、`streamer_name`、`original_sentence_id`、`original_sentence_text`、`tendency`、`chapter_number`、`verse_number`。原句 ID 从 `ScriptureEntry.original_line_id` 转为 String，与 DD-02 候选的 `original_sentence_id` 一致。
+- 排序、原文和固定章 / 节号由 Scripture 的正式读取接口提供；未提交暂存排除，同句多章保留，原章号不压缩。修改返回值不会写回圣典。
+- DD-01 的正式进入组合以后调用并持有此快照；DD-07 使用稳定原句 ID 匹配历史候选，再执行其同句一次加权规则。本接口只提供读取依据。
+
 ## DD-06 基础权重接口
 
 - `DivineDescentCandidateFilter.calculate_base_weights(candidates)` 接收 DD-02 输出，按原顺序返回候选深拷贝，并新增 `base_weight` 字段。
