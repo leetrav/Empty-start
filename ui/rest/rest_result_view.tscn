@@ -62,6 +62,40 @@ theme_type_variation = &"MutedLabel"
 text = "你赢下了本场 PK，但未能确认真正的矛盾。\n本场没有神谕或击败奖励，仍可继续后续流程。"
 horizontal_alignment = 1
 
+[node name="NewRewardsEmpty" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "本场没有新增经文、败者卡或吞并内容。"
+horizontal_alignment = 1
+
+[node name="HistoryEmptyStates" type="VBoxContainer" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HistoryEmptyTitle" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows/HistoryEmptyStates"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "历史收藏"
+horizontal_alignment = 1
+
+[node name="ScriptureHistoryEmpty" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows/HistoryEmptyStates"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "圣典：暂无已保存经文。"
+horizontal_alignment = 1
+
+[node name="LoserCardHistoryEmpty" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows/HistoryEmptyStates"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "败者卡：暂无已获卡片。"
+horizontal_alignment = 1
+
 [node name="ContinueButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)

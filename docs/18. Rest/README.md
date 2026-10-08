@@ -53,3 +53,5 @@ RS-02 为 `pk_win_unbroken` 增加专属结果面板，显示 PK 胜利但矛盾
 RS-03 增加 `RestSession.read_committed_rewards(save_data, level_catalog, loser_card_catalog)`：经文按当前 `level_id` 读取 `ScriptureData.get_entry_for_level()`；吞并用同一 Session 的 `level_id` 和真实 LevelCatalog 对应的 `streamer_id` 调用 `AssimilationData.get_new_content_for_source()`，返回 `new_assimilation` 快照。未打开、未击破、缺少关卡 / 来源或无新增时该字段为 `{}`。Rest 不保存来源映射或计算总量差值，需要总量的消费方使用 14 的 `get_current_content_snapshot()`。
 
 RS-03 已接入 LCARD-07 正式只读入口 `SaveData.loser_card_data.get_new_card_for_level(level_id, loser_card_catalog)`：来源归 16 判断，本场无新增为 `{}`，Rest 映射为 `new_loser_card = null`；正式发卡但 Catalog 缺失时仍能得到主播 ID 与 `profile = null`。败者卡读取不依赖 LevelCatalog，后者仅用于解析吞并的同关主播来源；所有读取均不发奖或改写已提交结果。
+
+RS-04 在现有 `RestResultView` 增加 `show_result(session, save_data, level_catalog, loser_card_catalog)`。三类本场成果均为空时显示“本场没有新增经文、败者卡或吞并内容”；历史经文和败者卡分别复用 `get_ordered_entries()` / `get_acquired_cards()` 判断空集合，在同一面板显示可读提示。缺少数据时不推断历史为空，已有卡片但 Catalog 缺失也保留其非空事实。继续按钮始终可用，仍发出 `continue_requested`；Sandbox 的未击破入口传入真实周目与目录并保留原信号转发。历史列表浏览和下一关路由留后续任务。

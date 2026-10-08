@@ -472,7 +472,9 @@ func _open_rest_after_unbroken() -> void:
 	_repeat_queue.clear_contradiction_queue()
 	_attack_charge_input.set_combat_active(false)
 	_battle_hud.show_battle_state("PK 胜利 · 未击破矛盾 · 休息时刻")
-	if not _rest_result_view.show_unbroken_result(_rest_session):
+	if not _rest_result_view.show_result(
+		_rest_session, SaveManager.data, SAMPLE_LEVEL_CATALOG, loser_card_catalog
+	):
 		push_error("Sandbox: 无法显示本场未击破结果。")
 		return
 	rest_opened.emit(_rest_session)
