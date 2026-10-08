@@ -36,7 +36,7 @@
 - 同关重复确认不重发信号；直接重复请求四个登记入口均返回 false，来源记录保持原值。错误来源查询为空，矛盾池、禁止继承池和白名单外的特性登记被已有规则拒绝。
 - 最终输出 `FO11_TEST_FIXTURES_SMOKE_PASS: 41 checks`，退出码 0，stderr 为空。没有新增仓库单元测试或长期 smoke 脚本；临时探针已删除。
 - Godot-MCP 9080 doctor 未连接，使用 CLI 并按 KT-34 等待实际进程结束。新 worktree 首次导入有既有 OGG 预加载提示；导入完成后最终解析与 runtime smoke 无相关错误。无关导入 sidecar / UID 已恢复或删除，仅保留本任务新 Resource 的 UID。
-- 使用独立临时 APPDATA，用户原有配置及存档未改写。`git diff --check` 通过；提交前再次 fetch main，当前仍为 bf435882。
+- 使用独立临时 APPDATA，用户原有配置及存档未改写。`git diff --check` 通过；首次提交前 main 为 bf435882。发布 PR 前 main 新增 `DEVELOPMENT_PLAN_2026-10-08.md` 并前进至 56dfa20，本分支已无冲突合入；上游只增文档，本次已验证的资源、脚本与 fixture 内容保持一致。
 
 ## 5. A 的下一步与正式替换
 
