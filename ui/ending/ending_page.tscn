@@ -1,0 +1,111 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/ending/ending_page.gd" id="1_page"]
+[ext_resource type="Theme" path="res://ui/theme/base_theme.tres" id="2_theme"]
+
+[node name="EndingPage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_page")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.090196, 0.098039, 0.113725, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="PageScroll" type="ScrollContainer" parent="Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 2
+follow_focus = true
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="Margin/PageScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 24
+
+[node name="Title" type="Label" parent="Margin/PageScroll/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "结局"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="MainArt" type="TextureRect" parent="Margin/PageScroll/Content"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ReligionName" type="Label" parent="Margin/PageScroll/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ScriptureHeading" type="Label" parent="Margin/PageScroll/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "圣典"
+autowrap_mode = 3
+
+[node name="EmptyScripture" type="Label" parent="Margin/PageScroll/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "未形成神谕"
+autowrap_mode = 3
+
+[node name="ScriptureRows" type="VBoxContainer" parent="Margin/PageScroll/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="JudgementSection" type="PanelContainer" parent="Margin/PageScroll/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"CardPanel"
+
+[node name="Content" type="VBoxContainer" parent="Margin/PageScroll/Content/JudgementSection"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Heading" type="Label" parent="Margin/PageScroll/Content/JudgementSection/Content"]
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "最终判词"
+autowrap_mode = 3
+
+[node name="JudgementText" type="Label" parent="Margin/PageScroll/Content/JudgementSection/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
