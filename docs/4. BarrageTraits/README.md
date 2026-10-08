@@ -110,7 +110,12 @@ BT-10 的目标可选过滤与到达结果读取已由 5. CombatAttack CA-08 完
 - 范围内仅有不可选目标时形成空快照；到达后沿用 CombatAttack → HitResolution 现有整发落空判定、异常选择与一次结算，不在特性系统新增瞄准、惩罚或收益规则。
 - BT-10 只明确调整已有过滤调用的顺序并完成真实输入 smoke；没有改 Sandbox、关卡特性分配、神谕选择目标或后续 BT-11 接线，也没有新增自动化测试。
 
-BT-11 等【6. HitResolution】有真实结果输入后再接。
+## BT-11 命中结算接线（2026-10-09）
+
+- 复用 CA-09 的真实到达链：每个 BarrageView 的独立 TraitSet 解析最终 `BarrageTraitResult`，CombatAttack 原样携带该对象、内容事实与有效性，交给 `HitResolution.resolve_shot_results(target_results, shot_anomaly)`。
+- 原链已区分正常 / 遮挡 / 假牌 / 反击复制品 / 反弹；本次补齐 6 系统此前缺失的特性惩罚。假牌逐目标 `-0.005`，反击逐目标 `-0.007`；反弹、遮挡、落空沿既有优先级每发仅扣 `-0.01`。数值沿用 `data/source_tables/06_战斗数值.csv` 的百分点换算。特殊结果 PK / 倾向普通收益清零；同一反弹目标最终 Kind 为 REFLECT，因此不会再加反击惩罚。
+- 4 只提供最终类型；5 只传递已选整发异常；6 计算惩罚并一次更新 PK，17 沿 Sandbox 原回调收正常倾向。Sandbox 未修改，遮挡留场，其余最终结果结束实例的原边界保持。
+- Godot `4.7.2.stable.steam.ed1daf0bf` 临时 TEST_ONLY 场景真实驱动鼠标蓄力 → 扫描 → 飞行 Timer → 结算 → Sandbox 回调，通过正常、假牌、反击、遮挡、组合反弹与同发混合联调。每发只更新一次 PK，特殊结果无普通倾向 / 历史；无新增长期测试。证据与限制见 BT-11 日期日志。
 
 ## BT-12 矛盾阶段特性边界（已核实）
 

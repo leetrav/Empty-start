@@ -161,7 +161,9 @@ func is_shot_fully_missed(target_validity: Array[bool]) -> bool:
 	return true
 
 
-func resolve_shot_results(target_results: Array[Dictionary]) -> Dictionary:
+func resolve_shot_results(
+	target_results: Array[Dictionary], shot_anomaly: ShotAnomaly = ShotAnomaly.NONE
+) -> Dictionary:
 	# 保留逐目标结算数据，只把 PK 增量求和后统一更新一次并应用范围限制。
 	# 回拉已使 PK 到达下限时整发作废，避免提交命中收益或倾向结果。
 	if not _normal_pk_resolution_enabled:
@@ -180,16 +182,32 @@ func resolve_shot_results(target_results: Array[Dictionary]) -> Dictionary:
 			"target_results": [],
 		}
 
+	# 特性已由 4 解析；6 按正式战斗数值表换算为内部 0–1 PK，并清掉特殊结果的普通收益。
+	var resolved_targets: Array[Dictionary] = target_results.duplicate(true)
 	var total_pk_delta: float = 0.0
-	for target_result: Dictionary in target_results:
+	for target_result: Dictionary in resolved_targets:
+		var trait_result := target_result.get("trait_result") as BarrageTraitResult
+		if trait_result != null and not trait_result.receives_normal_reward:
+			target_result["is_valid_hit"] = false
+			target_result["tendency_delta"] = 0
+			match trait_result.kind:
+				BarrageTraitResult.Kind.FAKE_CARD:
+					target_result["pk_delta"] = -0.005
+				BarrageTraitResult.Kind.RETALIATION_COPY:
+					target_result["pk_delta"] = -0.007
+				_:
+					target_result["pk_delta"] = 0.0
 		total_pk_delta += float(target_result.get("pk_delta", 0.0))
+	# 反弹 / 遮挡 / 落空每发只扣一次；最终反弹结果不会再叠加该目标的反击惩罚。
+	if shot_anomaly != ShotAnomaly.NONE:
+		total_pk_delta -= 0.01
 
 	var final_player_pk: float = apply_player_pk_delta(total_pk_delta)
 	return {
 		"cancelled_by_zero_pk": false,
 		"total_pk_delta": total_pk_delta,
 		"final_player_pk": final_player_pk,
-		"target_results": target_results.duplicate(true),
+		"target_results": resolved_targets,
 	}
 
 

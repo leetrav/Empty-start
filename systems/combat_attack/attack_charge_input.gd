@@ -281,7 +281,8 @@ func _submit_arrival_to_hit_resolution(
 		has_obstruction,
 		is_miss
 	)
-	var hit_resolution_result: Dictionary = _hit_resolution.resolve_shot_results(hit_resolution_targets)
+	# 只传递已选异常，惩罚数值与整发 PK 更新继续由 6 统一处理。
+	var hit_resolution_result: Dictionary = _hit_resolution.resolve_shot_results(hit_resolution_targets, shot_anomaly)
 	if not bool(hit_resolution_result.get("cancelled_by_zero_pk", false)):
 		for normal_hit_record: Dictionary in normal_hit_records:
 			_hit_resolution.record_normal_word_hit(
