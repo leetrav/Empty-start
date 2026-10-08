@@ -137,5 +137,12 @@ DD-17 等 20. Ending。
 - `DivineDescentSpread.bind_new_word_decay(combat_mode)` 订阅 DD-05 的真实 `new_word_rate_changed`，可以在扩散启动前或启动后调用；已完成衰减的晚绑定也会立即检查当前池。重复绑定同一模式不重复订阅，另一个模式不会替换本次来源。
 - 锁句同时要求 DD-05 的衰减完成且 `get_new_word_rate_multiplier() == 0.0`；未开始、尚有正新话率（包括极小正数）时保持未锁。归零后停止 DD-08 自动扩散，从其当前 `weight` 池选最高句，保存首次独立快照并只发一次 `sentence_locked(candidate)`。
 - `get_locked_candidate()` 返回深拷贝，`is_sentence_locked()` 读取锁态；通知副本与读取副本均不能回写。`bind_new_word_decay()` / `start()` 可能同步锁句，组合方应先订阅通知；晚订阅可通过 getter 读取首次结果。锁句与动态池仍归扩散组件，Session 和已提交历史继续保持冻结。
-- `DivineDescentCandidateFilter.select_highest_weight_candidate(candidates)` 是本卡纯最高权重选择接口，只比较当前 `weight`；并列暂保留输入顺序首个最高项，未实现 DD-10 的首次提交命中顺序 / ID 裁决。空候选返回 `{}`，不补造锁句。
+- `DivineDescentCandidateFilter.select_highest_weight_candidate(candidates)` 是纯最高权重选择接口；DD-10 已补齐并列裁决，依次比较当前 `weight` 降序、`first_committed_hit_order` 升序、`original_sentence_id` 升序。空候选返回 `{}`，不补造锁句。
 - 本卡没有实现 DD-11 的锁定句持续生成或待生成内容清理，没有提前结束已有弹幕生命周期。真实场景组合仍由后续任务接入，当前使用最小真实 DD-05 / DD-08 场景验收。
+
+## DD-10 锁句并列裁决
+
+- DD-09 归零锁句继续调用同一 `select_highest_weight_candidate(candidates)`；最高动态权重并列时，首次已提交普通命中更早者优先，顺序仍相同时按稳定原句 ID 的大小写敏感字符串升序选择。ID 使用字符串字典序，沿用 DD-02 提供的原句标识。
+- 选择只扫描当前工作池，保留输入数组顺序及所有字段，返回选中候选的深拷贝；输入重排不会改变不同原句的裁决结果。首次命中顺序直接读取冻结候选的 `first_committed_hit_order`，扩散生成次数只影响 `weight`。
+- 新增且仅新增两个关键单元用例：同权重优先较早已提交命中；同权重、同命中顺序优先较小稳定 ID。TEST_ONLY 数据仅存在于 `tests/unit/divine_descent/test_dd_10_lock_tie_break.gd` 内存中。
+- 本卡只补齐裁决，沿用 DD-09 的首次锁句快照与通知；DD-11 持续生成仍待后续任务。

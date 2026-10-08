@@ -28,6 +28,8 @@
 
 DBG-01 提供只读 `get_current_barrage_counts()`，从当前真实 `BarrageView` 汇总普通、复读与矛盾弹幕；开发操作使用 `clear_current_barrages()` 保持当前生成开关、`spawn_normal_batch_now()` 单次生成、`stop_normal_generation()` 与 `resume_normal_generation()` 控制普通批次。Paradox 阶段继续由矛盾专属生成器接管。
 
+BT-13 增加 `get_available_trait_ids(level_profile)`，读取当前 SaveManager 周目的已提交继承 ID，与本关特性合并并去重。`spawn_normal_barrage(level_profile, speech, selected_trait_ids=[])` 支持显式选择可用特性，复用 4 的 BT-09 校验，不可用 / 互斥选择返回 null。默认空选择保持原批次行为；正式分配比例待配置，不自动把全部可用特性装到每条弹幕。矛盾和复读入口保持独立，接口详情见 4 README 与 BT-13 日志。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
@@ -46,6 +48,13 @@ DBG-01 提供只读 `get_current_barrage_counts()`，从当前真实 `BarrageVie
 | BG-12 | 进入矛盾阶段时切换真假矛盾生成 | 无 |
 | BG-13 | 普通战斗结束时清理普通弹幕和待生成复读 | 无 |
 | BG-14 | 读取舞台布局尺寸 | 无 |
+| BG-15 | 高密度动态弹幕与区域群体命中需求暂存（未完成，暂不派工） | 待后续正式拆卡确定 |
+
+## 待整理需求：BG-15（2026-10-09）
+
+本轮讨论已确认：目标同屏容量 500～1000（最终依据 PC / Android 实机压测确定）；战斗区域四周及内部随机出生；直线、曲线、加减速、游荡四种运动；允许交叉、穿透、随机前后层级及运动中变层；弹幕动态缩放和变速；一句话内部不同样式与局部文字动画；视觉完全遮住仍可按实际区域群体命中；单发 PK 正向收益与负向惩罚分别封顶，但所有有效命中仍按实际结果进入对应系统结算。具体参数与实现方案仍未确定。
+
+当前只记录在 `tasks/BG-15_pending-high-density-dynamic-barrage-requirements.md`，**未完成且暂不派工**。本次未修改程序实现；待关联的 05、06、10 等系统讨论后再整理具体 Agent 任务卡。
 
 ## 测试预算
 

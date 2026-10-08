@@ -31,6 +31,7 @@
 | LC-07 | 接入吞并后的继承内容 | 无新增自动化测试 |
 | LC-08 | 接通当前关重开 | 无新增自动化测试 |
 | LC-09 | 接通休息时刻后的下一关 / 终局入口 | 无新增自动化测试 |
+| LC-10 | 正式导表与后续新增需求联调（未完成，暂缓） | 待策划确认后再定 |
 
 ## 测试预算
 
@@ -136,3 +137,7 @@ Godot 4.7.2 smoke 已验证同一周目第一关真实 FO-11 提交后，通过�
 LevelProfile 新增可选 normal_speech_pool_source: LevelSpeechPool，使用 get_normal_speech_pool() 读取。存在词库 Resource 时读取其中的 LevelSpeech 列表，否则继续使用内嵌 normal_speech_pool；运行时保持静态 Resource 只读。
 
 测试场景为 tests/fixtures/data_export/test_only_sandbox.tscn，注入测试关卡目录；正常主场景默认继续使用原关卡目录。导表方法、已实现映射、策划确认后的替换方式详见 tools/README.md。
+
+## 待办：LC-10 正式导表与新增需求联调（未完成）
+
+当前导表工具已完成 Excel/XLSX → CSV 数据校验及 TEST_ONLY 02/03/04/05 → Godot 关卡 Resource 的联调路径。正式关卡与矛盾表尚无有效记录，生成数值仍待填写；正式运行关卡仍用占位配置。正式数据绑定和跨系统联调尚未完成。**本系统先暂停新增需求讨论与开发；等待其他系统新增任务卡及策划正式数据确定后，再补充 LC-10 的具体实施和验收。**详见 `tasks/LC-10_pending-data-import-and-integration.md`。

@@ -32,9 +32,9 @@ func receive_final_state(
 	return true
 
 
-# 接收状态由首次快照派生，重复调用不能替换结果。
+# 显示结果已组装即为接收完成；圣典、败者卡和吞并数量均不作为完成条件。
 func is_received() -> bool:
-	return not _final_snapshot.is_empty()
+	return not _display_snapshot.is_empty()
 
 
 # 返回独立事实副本，身份、姓名及经文仍是进入终局时的依据。

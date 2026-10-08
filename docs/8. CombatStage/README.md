@@ -2,7 +2,7 @@
 
 ## 系统目标
 
-INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar 和 AudioManager 的绑定，开局调用 `begin_combat()`。每次最终 PK 更新先同步档位，再由攻击提交回调读取档位创建复读计划；生成倍率只影响新弹幕。Tier 状态已连接可见反馈，Viewer / Like 的档位数值规则仍待配置。PK 满值目前由 Sandbox 停止普通战斗并显示矛盾击破等待提示。
+INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar 和 AudioManager 的绑定，开局调用 `begin_combat()`。每次最终 PK 更新先同步档位，再由攻击提交回调读取档位创建复读计划；生成倍率只影响新弹幕。Tier 状态已连接可见反馈，Viewer / Like 的档位数值规则仍待配置。PK 满值由 Sandbox 停止普通战斗并启动真实 ContradictionBreak 入口。
 
 战斗阶段系统负责根据当前 PK 判断普通战斗处于 Tier 0～5 的哪个档位，并把这个档位告诉其他系统。
 
@@ -32,6 +32,10 @@ CS-10 提供 `tier_state_changed(current_tier)`，在开局同步 Tier 0，并�
 
 ## 任务顺序
 
+CS-11 提供 `get_stage_result(final_player_pk, maximum_player_pk)`：低于配置满值返回 `StageResult.NORMAL_COMBAT`，达到满值返回 `StageResult.ENTER_CONTRADICTION`。该结果即时派生，不保存第二份 PK 或阶段状态。Sandbox 收到最终 PK 后读取结果，立即调用 `HitResolution.set_normal_pk_resolution_enabled(false)` 固定满值，并停止对手回拉与普通生成；本发事实提交后沿用既有 `_complete_normal_combat()` 启动 12 系统。延迟切换期间的负增量也无法改低 PK。重开创建新的 HitResolution，普通结算恢复。真假矛盾内容和成败判定继续归 12 系统；缺失内容只用独立 TEST_ONLY 关卡验收，正式配置保持原样。
+
+CS-11 仅新增 `tests/combat_stage/test_cs_11_enter_contradiction.gd` 一个用例；图形运行 Sandbox 的临时验收驱动验证满值冻结、回拉停止、真实矛盾入口和重开恢复，驱动在验收后删除。
+
 | 任务卡 | 小功能 | 自动化测试 |
 | --- | --- | --- |
 | CS-01 | 定义 Tier 配置数据 | 无 |
@@ -46,6 +50,7 @@ CS-10 提供 `tier_state_changed(current_tier)`，在开局同步 Tier 0，并�
 | CS-10 | 把档位变化交给直播/视听表现 | 无新增自动化测试 |
 | CS-11 | PK 满进入矛盾阶段 | 1 个关键单元测试 |
 | CS-12 | 进入矛盾阶段前清理普通战斗 | 无新增自动化测试 |
+| CS-13 | Tier 升档清屏、降档震动反馈（需求暂存，未完成） | 待后续正式拆卡 |
 
 ## 测试预算
 
@@ -69,3 +74,7 @@ CS-09 等 7. OpponentPKBar。
 CS-10 的 Tier 状态与 AU-01 音效绑定已在 INT-01 Sandbox 接通；直播热度数值变化继续等待具体规则。
 CS-11 等 12. ContradictionBreak 有真实入口后联调。
 CS-12 等 3/5/10 的清理入口存在。
+
+## 待整理：CS-13 升降档表现需求
+
+策划新增需求：T0→T1 以及其他**向上突破**时短暂清空场上弹幕，并配合阶段突破动效；T1→T0 **不清屏**，用屏幕抖动表现降档。清屏类别、其他下行路径、多档跨越、时长和输入影响仍待确认。详见 `tasks/CS-13_pending-tier-transition-feedback.md`。**仅记录，未修改程序，暂不派工。**

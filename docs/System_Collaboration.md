@@ -448,7 +448,9 @@ RS-10 在 `LevelRunState.complete_level()` 返回 `ALL_NORMAL_LEVELS_COMPLETED` 
 
 ## 13. 吞并怎么影响后面的战斗
 
-AS-06 的当前只读链为 `SaveData.assimilation_data.get_current_content_snapshot()` → `LevelCatalog.get_inherited_content_snapshot(assimilation_data)`。2 使用完整关卡目录及已有 LevelProfile / LevelSpeechPool 解析已获池的词句，保留已提交整池权重；4 读取同一返回值的已获 trait ID，继续由 TraitSet 装配和校验。返回副本不会回写 14 成果或静态目录，未知 / 禁止 / 矛盾池不产生词句结果。普通生成混池、BT-13 效果和 Sandbox 调用由后续联调接入，本卡没有抢改对应 Owner 文件。
+AS-06 的当前只读链为 `SaveData.assimilation_data.get_current_content_snapshot()` → `LevelCatalog.get_inherited_content_snapshot(assimilation_data)`。2 使用完整关卡目录及已有 LevelProfile / LevelSpeechPool 解析已获池的词句，保留已提交整池权重；4 读取同一返回值的已获 trait ID，继续由 TraitSet 装配和校验。返回副本不会回写 14 成果或静态目录，未知 / 禁止 / 矛盾池不产生词句结果。普通生成混池与正式特性分配仍待对应联调；BT-13 的可用集合及显式装配见下文，Sandbox 调用保持所属 Owner 管理。
+
+BT-13 已提供 `BarrageArea.get_available_trait_ids(level_profile)`，从当前 SaveManager 周目读取上述提交特性，与本关集合合并去重；普通生成入口的可选第三参数 `selected_trait_ids` 交给 TraitSet 按 BT-09 显式装配。默认批次仍为空选择，正式分配比例待配置；Sandbox 无改动，矛盾 / 复读入口保持独立。特性语义由 4 持有，3 只调用公开校验与装配接口。
 
 【吞并系统】保存玩家真正击败主播后得到的内容。
 
