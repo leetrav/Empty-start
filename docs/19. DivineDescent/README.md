@@ -79,3 +79,9 @@ DD-17 等 20. Ending。
 - `DivineDescentCandidateFilter.build_history_candidates(committed_hit_history, normal_repeat_counts_by_line_id)` 复用上述边界，按 `original_sentence_id` 归并候选，保持第一次出现的顺序。
 - 候选字段为 `original_sentence_id`、`original_sentence_text`、`tendency`、`hit_count`、`normal_repeat_count` 和 `first_committed_hit_order`，供 DD-06 以后直接读取。
 - `hit_count` 对同一原句的多条已提交命中快照累加；`normal_repeat_count` 独立读取 Repeat 提供的按原句统计字典，不从命中历史字段推断。
+
+## DD-06 基础权重接口
+
+- `DivineDescentCandidateFilter.calculate_base_weights(candidates)` 接收 DD-02 输出，按原顺序返回候选深拷贝，并新增 `base_weight` 字段。
+- `base_weight = max(hit_count + normal_repeat_count, 1)`；仅使用已有普通命中数和实际普通复读数，保留候选其他字段，输入历史与候选保持原值。
+- 基础权重属于 DivineDescent 的派生数据；HitResolution 和 Repeat 继续拥有各自历史。圣典加成、动态权重、锁句及运行阶段接线留给后续任务。
