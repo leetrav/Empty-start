@@ -62,6 +62,18 @@ func build_history_candidates(
 	return candidates
 
 
+# 读取 DD-02 候选统计，返回带基础权重的副本；命中数加普通复读数，最低取 1。
+static func calculate_base_weights(candidates: Array[Dictionary]) -> Array[Dictionary]:
+	var weighted_candidates: Array[Dictionary] = []
+	for candidate: Dictionary in candidates:
+		var weighted_candidate: Dictionary = candidate.duplicate(true)
+		weighted_candidate["base_weight"] = maxi(
+			int(candidate.get("hit_count", 0)) + int(candidate.get("normal_repeat_count", 0)), 1
+		)
+		weighted_candidates.append(weighted_candidate)
+	return weighted_candidates
+
+
 # 从 Repeat 的独立按原句统计边界读取普通复读数，不把它写回命中历史。
 static func _read_repeat_count(counts_by_line_id: Dictionary, sentence_id: String) -> int:
 	if counts_by_line_id.has(sentence_id):
