@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://ui/rest/rest_result_view.gd" id="1_rest_result_view"]
 [ext_resource type="PackedScene" path="res://ui/rest/scripture_history_view.tscn" id="2_scripture_history"]
 [ext_resource type="PackedScene" path="res://ui/rest/loser_card_history_view.tscn" id="3_loser_card_history"]
+[ext_resource type="PackedScene" path="res://ui/rest/rest_room_environment.tscn" id="4_room_environment"]
 
 [node name="RestResultView" type="CanvasLayer"]
 layer = 30
@@ -19,6 +20,9 @@ grow_vertical = 2
 visible = false
 mouse_filter = 0
 
+[node name="RoomEnvironment" parent="Overlay" instance=ExtResource("4_room_environment")]
+unique_name_in_owner = true
+
 [node name="Dim" type="ColorRect" parent="Overlay"]
 layout_mode = 1
 anchors_preset = 15
@@ -27,7 +31,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.01, 0.015, 0.03, 0.82)
+color = Color(0.01, 0.015, 0.03, 0.55)
 
 [node name="CenterContainer" type="CenterContainer" parent="Overlay"]
 layout_mode = 1
