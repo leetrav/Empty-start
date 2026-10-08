@@ -115,3 +115,9 @@ BT-11 等【6. HitResolution】有真实结果输入后再接。
 BT-12 等【12. ContradictionBreak】有真实矛盾阶段后再接。
 
 BT-13 等【14. Assimilation】有真实继承输出后再接。
+
+## FO-11 测试配置前置
+
+- `LevelProfile.inheritable_trait_ids` 提供独立继承白名单，和当前关 `special_trait_ids` 分开；14 只登记白名单项，后续实例装配继续复用本系统支持 ID 与兼容规则。
+- `tests/fixtures/fo11/test_level_001.tres` 使用已有 `occlusion`，Godot smoke 已验证 `add_trait()` 接受该 ID、`are_compatible()` 通过，以及 14 写入 / 读取后保持同一稳定 ID。
+- 本次没有修改特性语义、生成分配或继承装配，也没有执行 BT-13。正式特性名单由策划填写生产关卡字段，fixture 仅供显式注入验收。

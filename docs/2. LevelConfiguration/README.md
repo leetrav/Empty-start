@@ -85,9 +85,17 @@ LevelProfile 保存静态关卡资料、普通话语池、倾向比例、特殊�
 
 ### LC-03 特殊玩法与矛盾内容
 
-`LevelProfile.special_trait_ids` 保存本关使用的特性稳定 ID 字符串，具体 ID 由弹幕特性系统定义。当前仓库还没有 BT-01 数据定义，所以示例列表留空，本系统不预设一份特性枚举。
+`LevelProfile.special_trait_ids` 保存本关使用的特性稳定 ID 字符串，具体 ID 由现有 `BarrageTraitSet` 定义；本关启用列表和继承白名单分别配置。
 
 真、假矛盾分别保存在 `true_contradictions` 与 `false_contradictions` 中；每项为 `LevelContradiction` Resource，含稳定 `original_sentence_id` 与文本。`contradiction_context_clues` 保存本关前文线索文本。矛盾真假判定和命中流程仍由矛盾击破系统负责。
+
+### FO-11 继承配置前置
+
+`LevelProfile.normal_pool_inheritance` 引用 `WordPoolInheritanceConfig`，只保存该关 `normal_speech_pool` 的继承元数据：稳定 `pool_id`、整池 `appearance_weight`、`can_inherit` 和 `is_contradiction_pool`。普通句子列表继续只有一个内容来源，真 / 假矛盾仍用各自独立字段；LevelSpeech 的单句权重不替代整池继承权重。
+
+`LevelProfile.inheritable_trait_ids` 为独立 `Array[StringName]` 白名单，供真正击败结果读取。旧关卡默认配置 null / 空列表，不会自动获得词库或特性奖励。
+
+`tests/fixtures/fo11/test_level_catalog.tres` 可以直接交给 `LevelRunState` 和其他已有关卡读取接口：首关含 TEST_ONLY 继承配置，第二关复用已有生产关卡。生产目录没有引用该 fixture；正式交付将配置填写到生产 LevelProfile 的同一字段。实际奖励、混词和兼容装配接线留对应后续卡。
 
 ### LC-04 基础生成参数
 

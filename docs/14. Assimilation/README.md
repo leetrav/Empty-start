@@ -22,7 +22,9 @@
 - 真正击败自动包含通关；仅通关关卡无法使用词库和特性登记入口，既有吞并成果继续保留。
 - `register_inherited_word_pool(level_id, pool_id, appearance_weight, can_inherit, is_contradiction_pool)` 只允许已登记真正击败关卡的可继承普通词库；稳定 pool_id 只保存首次权重，矛盾专属池和禁止继承的池被排除。
 - `register_inherited_trait(level_id, trait_id, can_inherit)` 只登记已真正击败关卡允许继承的特性，跨主播来源的同一稳定 trait_id 只保留一次；实际特性装配与兼容仍归 4. BarrageTraits。
-- 当前 `LevelProfile` 尚无稳定 pool_id、继承权重及允许继承标记；以上 API 接收配置方显式提供的值，配置与实际生成接线留 AS-06 / FO-11。`special_trait_ids` 表示本关所用特性，不能直接当作继承白名单。
+- `LevelProfile.normal_pool_inheritance` 可引用 `WordPoolInheritanceConfig`，提供整池稳定 `pool_id`、`appearance_weight`、`can_inherit` 和 `is_contradiction_pool`。实际内容继续由同关 `normal_speech_pool` 拥有，整池权重独立于单句权重。默认 null 表示没有配置词库奖励。
+- `LevelProfile.inheritable_trait_ids` 是独立的稳定特性 ID 白名单，默认空；`special_trait_ids` 表示本关所用特性，不能直接当作继承白名单。登记时仅对白名单项传入 `can_inherit=true`，后续装配仍由 4 系统校验兼容。
+- FO-11 TEST_ONLY 配置在 `tests/fixtures/fo11/`，已用真实登记 / 来源读取 API 验证；正式关卡配置仍未填写。Sandbox 词库 / 特性奖励接线、后续混入生成和特性装配分别留 FO-11、AS-06 与 BT-13。
 
 ## AS-08：已提交来源与休息读取
 
