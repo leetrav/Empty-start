@@ -157,6 +157,10 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 
 正式 `barrage_area.tscn` 已移除早期技术预览标题；外层 HUD 通过区域根节点组合组件，保持对子场景内部 NodePath 的独立性。
 
+### BT-12 矛盾记录的特性边界
+
+`start_contradiction_generation()` 的自动批次与 `spawn_contradiction_barrage()` 都通过新 `BarrageRuntimeRecord` 取得独立空 TraitSet；真 / 假实例保留矛盾标记、稳定原句 ID 和文本，生成入口不复制普通战斗特性。真假仍由 CB 根据当前关内容判断，普通 `fake_card` 等特性不承担真伪标记。BT-12 已通过真实 Sandbox 普通阶段到矛盾阶段输入 smoke 验证，没有改动生成行为或普通特性规则。
+
 ### BG-11 全局暂停生成与弹幕寿命
 
 `BarrageArea` 沿用场景树默认的可暂停处理模式，普通生成 Timer 在 `SceneTree.paused` 时停止计时。`BarrageView` 使用 `PROCESS_MODE_ALWAYS` 观察暂停状态；暂停期间跳过移动和到期检查，并记录暂停开始时间。恢复时把实际暂停时长补加到 `expires_at_msec`，使已有弹幕按暂停前剩余寿命继续运行。该处理只覆盖弹幕生成和弹幕寿命。
