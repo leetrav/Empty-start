@@ -78,6 +78,7 @@ DD-17 等 20. Ending。
 - 每次终局创建一个 `DivineDescentSession`；普通关卡完成的组合方调用 `enter(current_run_data) -> bool`。首次合法进入返回 true；重复调用、空周目或缺少倾向 Resource 返回 false，首次快照保持原值。调用前需完成本场正式结果提交，19 不替上游提交暂存。
 - `is_entered()` 读取进入状态；`get_entry_snapshot()` 返回独立深拷贝，进入前返回 `{}`。会话不保留 SaveData / TendencyState / ScriptureEntry 等源 Resource 引用，也没有改变冻结结果的公开写入接口。
 - 快照字段：`tendency_result`、`scripture_entries`、`committed_normal_hit_history`、`normal_repeat_counts_by_line_id`、`history_candidates`、`assimilation_content`。普通历史与 DD-02 候选分别保留来源及已归并数据；圣典 / 吞并字段沿用 SC-07 / AS-09 的结构。
+- EN-01 补齐进入时的 `identity_id` 与 `streamer_name` 标量，直接复制 SaveData 已有字段；Ending 接收后仍使用进入时依据，避免后续源身份 / 姓名变化。其余历史与候选冻结规则保持原状。
 - `tendency_result` 保存 `orthodox_total / heretical_total / absurd_total`、`opening_identity_tendency_id` 和 17 公开方法得到的 `primary_tendency_id / secondary_tendency_id / is_primary_tied / has_no_effective_behavior`。仅复制已提交事实，排除 `attempt_*`；并列和全零规则仍由 TendencyState 计算。
 - 唯一归属约定：17 拥有倾向事实和裁决规则，19 持有本次终局不可变使用快照。TT-11 已核实后续源变化和副本修改不能改变首次事实；TT-12 已增加 20 的 `EndingDisplayData.build_from_frozen_tendency()` / `EndingIdentityResultClassifier.classify_frozen_result()`，直接读取本 Session 的 `tendency_result` 副本，沿用主次 / 并列 / 全零及开局依据。EN-01 的正式接收 / 转场仍待后续任务。
 - 源存档后续写入、暂存经文变化和调用方修改返回副本均不改变内部快照。空历史仍可进入并提供明确空集合；直接跳过演出或转入 Ending 的规则留 DD-15 / DD-17。

@@ -12,6 +12,9 @@ func enter(run_data: SaveData) -> bool:
 	var repeat_counts: Dictionary = RepeatGenerationStats.get_committed_normal_counts_by_line_id(run_data)
 	var candidate_filter := DivineDescentCandidateFilter.new()
 	_entry_snapshot = {
+		# 身份和主播名随进入时事实固定，Ending 接收时无需再读可变存档。
+		"identity_id": run_data.identity_id,
+		"streamer_name": run_data.streamer_name,
 		"tendency_result": _snapshot_committed_tendency(run_data.tendency_state),
 		"scripture_entries": DivineDescentScriptureInput.build_snapshot(run_data),
 		"committed_normal_hit_history": hit_history,
