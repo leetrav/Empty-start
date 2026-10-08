@@ -50,6 +50,12 @@ func read_committed_rewards(
 	if run_data.scripture_data != null:
 		rewards["new_scripture_entry"] = run_data.scripture_data.get_entry_for_level(level_id)
 
+	# 败者卡的来源与本场新增判断归 16，缺少关卡目录也可以独立读取。
+	if run_data.loser_card_data != null:
+		var new_card: Dictionary = run_data.loser_card_data.get_new_card_for_level(level_id, loser_card_catalog)
+		if not new_card.is_empty():
+			rewards["new_loser_card"] = new_card
+
 	if level_catalog == null:
 		return rewards
 	var session_level: LevelProfile
@@ -64,15 +70,5 @@ func read_committed_rewards(
 	# 来源和新增条目归 14 持有，Rest 只按真实关卡 / 主播读取已提交快照。
 	if run_data.assimilation_data != null:
 		rewards["new_assimilation"] = run_data.assimilation_data.get_new_content_for_source(level_id, streamer_id)
-
-	# 败者卡只从已记录的同关发卡事实读取，卡片资料仍来自静态 Catalog。
-	var card_data: LoserCardData = run_data.loser_card_data
-	if card_data != null and card_data.rewarded_level_ids.has(level_id) and card_data.acquired_streamer_ids.has(streamer_id):
-		var card_profile: LoserCardProfile
-		if loser_card_catalog != null:
-			var found_profile: LoserCardProfile = loser_card_catalog.find_profile(streamer_id)
-			if found_profile != null:
-				card_profile = found_profile.duplicate(true) as LoserCardProfile
-		rewards["new_loser_card"] = {"streamer_id": streamer_id, "profile": card_profile}
 
 	return rewards
