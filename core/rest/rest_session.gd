@@ -37,6 +37,7 @@ func read_committed_rewards(
 	var rewards: Dictionary = {
 		"new_scripture_entry": null,
 		"new_loser_card": null,
+		"new_assimilation": {},
 	}
 	if not _open or run_data == null:
 		return rewards
@@ -59,6 +60,10 @@ func read_committed_rewards(
 	if session_level == null or session_level.streamer_id.is_empty():
 		return rewards
 	var streamer_id := StringName(session_level.streamer_id)
+
+	# 来源和新增条目归 14 持有，Rest 只按真实关卡 / 主播读取已提交快照。
+	if run_data.assimilation_data != null:
+		rewards["new_assimilation"] = run_data.assimilation_data.get_new_content_for_source(level_id, streamer_id)
 
 	# 败者卡只从已记录的同关发卡事实读取，卡片资料仍来自静态 Catalog。
 	var card_data: LoserCardData = run_data.loser_card_data

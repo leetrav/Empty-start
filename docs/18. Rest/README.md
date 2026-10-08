@@ -50,6 +50,6 @@ RS-01 已增加 `RestSession.open_result(result_snapshot)` 作为本场结果入
 
 RS-02 为 `pk_win_unbroken` 增加专属结果面板，显示 PK 胜利但矛盾未击破、没有神谕或击败奖励，并发出继续请求。Sandbox 将继续请求转成 `rest_continue_requested(session)` 信号；下一关切换仍由 RS-09 接入。
 
-RS-03 增加 `RestSession.read_committed_rewards(save_data, level_catalog, loser_card_catalog)`：经文按当前 `level_id` 读取 `ScriptureData.get_entry_for_level()`；败者卡按 `rewarded_level_ids` / `acquired_streamer_ids` 确认后从静态 Catalog 读取。该接口只读，不执行任何奖励写入。
+RS-03 增加 `RestSession.read_committed_rewards(save_data, level_catalog, loser_card_catalog)`：经文按当前 `level_id` 读取 `ScriptureData.get_entry_for_level()`；吞并用同一 Session 的 `level_id` 和真实 LevelCatalog 对应的 `streamer_id` 调用 `AssimilationData.get_new_content_for_source()`，返回 `new_assimilation` 快照。未打开、未击破、缺少关卡 / 来源或无新增时该字段为 `{}`。Rest 不保存来源映射或计算总量差值，需要总量的消费方使用 14 的 `get_current_content_snapshot()`。
 
-吞并读取等待 14 提供真实来源接口。最小语义：按本场 `level_id` / `streamer_id` 查询已经提交的新增词库（稳定 ID 与权重）和特性 ID，无新增时返回空结果；发放条件、提交时机、数据结构与来源归属均由 14 持有。Rest 不从 `AssimilationData` 周目总量差值推断本场内容。
+败者卡当前保留按 `rewarded_level_ids` / `acquired_streamer_ids` 确认后从静态 Catalog 读取的实现。等待 LCARD-07 正式只读接口合入后再做最后接线，PR #32 继续保持 draft。上述读取均不执行奖励写入。
