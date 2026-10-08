@@ -9,11 +9,22 @@ const SHIFTED: StringName = &"shifted"
 
 # 按无行为、并列、一致、偏移的优先级分类；倾向判定全部读取 17 系统公开结果。
 func classify(tendency_state: TendencyState) -> StringName:
-	if tendency_state.has_no_effective_behavior():
+	return classify_frozen_result({
+		"has_no_effective_behavior": tendency_state.has_no_effective_behavior(),
+		"is_primary_tied": tendency_state.is_primary_tied(),
+		"opening_identity_tendency_id": tendency_state.opening_identity_tendency_id,
+		"primary_tendency_id": tendency_state.get_primary_tendency_id(),
+	})
+
+
+# 直接消费 19 的冻结事实；复用原分类顺序，空输入表示尚无最终结果。
+func classify_frozen_result(tendency_result: Dictionary) -> StringName:
+	if tendency_result.is_empty():
+		return &""
+	if bool(tendency_result.get("has_no_effective_behavior", false)):
 		return NO_EFFECTIVE_BEHAVIOR
-	if tendency_state.is_primary_tied():
+	if bool(tendency_result.get("is_primary_tied", false)):
 		return PRIMARY_TIED
-	# 开局参照由 Identify 确认时从 IdentityOption.tendency_id 写入，沿用周目保存值。
-	if tendency_state.opening_identity_tendency_id == tendency_state.get_primary_tendency_id():
+	if str(tendency_result.get("opening_identity_tendency_id", "")) == str(tendency_result.get("primary_tendency_id", "")):
 		return CONSISTENT
 	return SHIFTED
