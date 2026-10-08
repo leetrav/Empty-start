@@ -376,6 +376,8 @@ PK 胜利但未击破
 
 当前 `FinalOracleConfirmationState.confirmation_committed(run_data, level_id, candidate)` 是正式确认事实。圣典通过 `ScriptureData.bind_confirmation_state()` 接收，同关首次写入后以保存列表去重；候选原句 ID / 倾向与关卡目录中的文本、主播名、原关卡序号组成经文快照。
 
+FO-12 在 Sandbox 同场成功确认回调完成历史、倾向及奖励提交后，帧尾关闭战斗 / 候选并调用 `RestSession.open_result(breakthrough_oracle_complete)` 与 `RestResultView.show_result()`。Rest 只通过真实 SaveData 和关卡 / 卡片目录的现有公开读取链展示成果，不再次发奖；重复确认不重开 Rest，Continue 复用 RS-09，最后普通关到 DD 仍留 RS-10。
+
 FO-13 的选择表现保留战斗 HUD：Sandbox 在中央 BattleArea 展示 FinalOracleSession 的冻结原句；AttackChargeInput 复用普通准心和蓄力发射过程，仅把命中候选交给 Sandbox，不调用 HitResolution。Sandbox 将攻击命中和 FO-08 超时结果都交给同一个 `FinalOracleSession.confirm_display_candidate()`；PK、倾向与复读收益在选择阶段保持冻结。
 
 圣典的尚未确认结果单独保存在同一 `SaveData.scripture_data.pending_entry`，不会进入正式章节视图。真实当前关重开流程调用 `rollback_uncommitted(level_id)` 撤回该关暂存，之前已确认的 `entries` 保留。

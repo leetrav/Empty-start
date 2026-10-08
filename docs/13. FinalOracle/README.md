@@ -53,7 +53,7 @@ UI、10 秒计时器、战斗冻结、奖励系统和休息流程全部做实际
 
 ## 依赖顺序
 
-`FinalOracleSession.open_after_breakthrough(level_id, normal_hit_history, repeat_stats, confirmation_state)` 是 FO-01 的真实接收入口：只接受一次击破完成事实，复用候选池并冻结展示快照；普通战斗冻结由 Sandbox 协调。FO-06～09 的候选快照、倒计时、自动排序和单次确认均已完成；FO-13 将展示与手动操作接入中央主游戏区的普通攻击链；FO-10 已复用 SC-02 的 Scripture 正式确认接收链。FO-11 已完成奖励程序接线与 TEST_ONLY 完整场景验收，正式奖励配置仍待交付；FO-12 留后续独立联调。
+`FinalOracleSession.open_after_breakthrough(level_id, normal_hit_history, repeat_stats, confirmation_state)` 是 FO-01 的真实接收入口：只接受一次击破完成事实，复用候选池并冻结展示快照；普通战斗冻结由 Sandbox 协调。FO-06～09 的候选快照、倒计时、自动排序和单次确认均已完成；FO-13 将展示与手动操作接入中央主游戏区的普通攻击链；FO-10 已复用 SC-02 的 Scripture 正式确认接收链。FO-11 已完成奖励程序接线与 TEST_ONLY 完整场景验收，正式奖励配置仍待交付；FO-12 已在确认及奖励提交后接通真实 Rest。
 
 FO-01 等 12. ContradictionBreak 的成功与过渡完成事件。
 FO-02～05 在【6. HitResolution】HR-14 的本场普通命中历史与【10. Repeat】普通复读统计存在后完成纯候选逻辑。
@@ -61,7 +61,7 @@ FO-06～09 完成神谕选择流程。
 FO-13 在 FO-06～09 基础上替换正式交互表现：候选进入中央主游戏区，并复用普通攻击完成选择；应在 FO-10～12 奖励与休息联调前完成。
 FO-10 已复用 SC-02 已接入的 Scripture 正式确认接口：Sandbox 创建并绑定当前周目的确认状态，确认事实携带 `level_id` 与候选原句 ID / 倾向，Scripture 从 `LevelCatalog` 解析原句文本、主播名、原关卡序号并按 `SaveData.scripture_data` 同关去重写入。
 FO-11 已接入 16 发卡、14 真正击败及允许继承词库 / 特性登记，复用前置 TEST_ONLY 资源验收；生产默认目录保持原状，详见下方接线状态。
-FO-12 等 18. Rest。
+FO-12 已接入 `RestSession.open_result()` 与 `RestResultView.show_result()`，成功分支沿用 RS-09 的 Continue 进入下一普通关；末关 DD 转场留 RS-10。
 
 ## FO-02 当前候选池接口
 
@@ -139,4 +139,12 @@ FO-12 等 18. Rest。
 - 特性仅遍历当前关卡的 `inheritable_trait_ids`，逐项调用 `register_inherited_trait()`；本关启用的 `special_trait_ids` 不作为奖励白名单。词库 / 特性权重与去重继续由 14 保存，13 不维护另一份成果或兼容规则。
 - RS-09 已提供可注入的 Sandbox `level_catalog`，运行状态与 Scripture 绑定共用同一目录。FO-11 验收实例显式注入 `tests/fixtures/fo11/test_level_catalog.tres` 与 `test_loser_card_catalog.tres`，通过真实 PK、矛盾成功和正式 Session 确认取得一张测试卡、普通池 `test_only_streamer_sample_normal`（TEST_ONLY 权重 1.0）及 `occlusion`；重复手动 / 自动确认及重开同关均保持首份奖励。
 - 正式默认空卡目录、null 池和空白名单下仍可确认，14 仅保存真正击败事实，内容保持为空；测试配置存在时的 PK 胜利但未击破分支也没有卡片、击败或继承奖励。缺少正式资源时不补造内容，换正式配置后使用新周目验收，已确认关卡不擅自补发。
-- 本次只完成 FO-11 接线，没有修改生产默认引用、正式关卡配置或 TEST_ONLY fixture，没有新增永久测试；后续吞并影响生成的 AS-06 与成功进入休息的 FO-12 均未执行。先前前置记录保留历史状态，当前结果见 `终结神谕系统_FO-11_2026-10-08_log.md`。
+- FO-11 只负责奖励登记；后续吞并影响生成的 AS-06 未执行，成功进入休息由下方 FO-12 接线负责。生产默认引用与 TEST_ONLY fixture 均未替换，未新增永久测试。先前前置记录保留历史状态，奖励验收结果见 `终结神谕系统_FO-11_2026-10-08_log.md`。
+
+## FO-12 成功进入休息
+
+- Sandbox 在合法 CB BREAKTHROUGH 的同场正式确认回调中完成普通历史 / 倾向和 FO-11 奖励提交后，通过 Godot `call_deferred()` 在帧尾调用 `_open_rest_after_oracle(run_data, session)`。同步确认和攻击回调先完成，避免其后续显示操作覆盖休息界面。
+- 帧尾核对同一 SaveData、同一当前 Session、关卡 ID 与首次确认事实；换周目、重开、换关的旧请求退出。已有打开的 Rest 不重复创建，同场重复确认仍由 FO-09 拒绝。
+- 只传递 `level_id`、`result_kind = breakthrough_oracle_complete`、PK 胜利与击破事实给 `RestSession.open_result()`；调用 `RestResultView.show_result(rest_session, run_data, level_catalog, loser_card_catalog)`，成果由 Rest 现有公开 getter 读取。转场没有再次写入历史、倾向、圣典、卡片或吞并。
+- 进入 Rest 时停止普通 / 矛盾生成、回拉与攻击，清空旧弹幕、复读等待、候选目标和神谕计时，收起候选显示。当前神谕 Session 绑定清空，首次确认仍由确认状态及 SaveData 保存，Rest 期间战斗输入保持关闭。
+- 无正式卡片 / 继承配置时正常显示已存经文及对应空态。原 `pk_win_unbroken` 路线保持不变；两种 Rest 均复用 RS-09 Continue。验收使用显式 TEST_ONLY 注入，生产资源未覆盖；#61 的 `get_normal_speech_pool()` 外部词库读取链保持，第二关正式内容是否就绪以实际配置为准。
