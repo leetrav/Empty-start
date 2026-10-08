@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://ui/rest/rest_result_view.gd" id="1_rest_result_view"]
 [ext_resource type="PackedScene" path="res://ui/rest/scripture_history_view.tscn" id="2_scripture_history"]
+[ext_resource type="PackedScene" path="res://ui/rest/loser_card_history_view.tscn" id="3_loser_card_history"]
 
 [node name="RestResultView" type="CanvasLayer"]
 layer = 30
@@ -105,12 +106,33 @@ theme_type_variation = &"MutedLabel"
 text = "历史圣典资料暂不可用。"
 horizontal_alignment = 1
 
-[node name="ScriptureHistoryButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows"]
+[node name="LoserCardHistoryUnavailable" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "历史败者卡资料暂不可用。"
+horizontal_alignment = 1
+
+[node name="HistoryActions" type="HBoxContainer" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ScriptureHistoryButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows/HistoryActions"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
+size_flags_horizontal = 3
 theme_type_variation = &"SecondaryButton"
 text = "查看历史圣典"
+
+[node name="LoserCardHistoryButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows/HistoryActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"SecondaryButton"
+text = "查看历史败者卡"
 
 [node name="ContinueButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/Rows"]
 unique_name_in_owner = true
@@ -120,4 +142,7 @@ theme_type_variation = &"PrimaryButton"
 text = "继续"
 
 [node name="ScriptureHistoryView" parent="." instance=ExtResource("2_scripture_history")]
+unique_name_in_owner = true
+
+[node name="LoserCardHistoryView" parent="." instance=ExtResource("3_loser_card_history")]
 unique_name_in_owner = true
