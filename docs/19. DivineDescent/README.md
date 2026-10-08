@@ -152,4 +152,11 @@ DD-17 等 20. Ending。
 - 真实 DD-05 归零锁句后，`DivineDescentSpread` 在发出 `sentence_locked` 前将可变生成池收窄为锁定句的独立副本；`get_current_candidates()` 此后只返回这一句。首次锁句快照保持锁定时权重，成功生成继续只更新工作池权重，Session 冻结历史保持原值。
 - 当前扩散没有待生成队列，每次 Timer 到期才从工作池创建单条 RepeatPlan；取消其他候选后，锁前容量 / 位置失败的尝试也不会复活其他句。原 Timer 保留周期，继续通过同一 `generate_next_repeat()` / `spawn_repeat_barrage()` 生成；失败仍等待下一轮重试。晚绑定及启动时同步锁句同样持续生成，显式 `stop()` 仍可停止。
 - 锁句不会清屏或调整既有 BarrageView 的记录、移动参数、截止时间；场上其他旧句按原生命周期自然退出。没有新增队列、管理器、场景或正式配置。
-- 使用 Godot `4.7.2.stable.steam.ed1daf0bf` 的临时 TEST_ONLY 真实场景验证锁定句自动生成、容量失败后恢复、旧句自然到期及同步启动锁句；临时文件验收后移出仓库，未新增永久单元测试。完整主流程接线、可见占比与后续演出仍归后续任务。
+- 使用 Godot `4.7.2.stable.steam.ed1daf0bf` 的临时 TEST_ONLY 真实场景验证锁定句自动生成、容量失败后恢复、旧句自然到期及同步启动锁句；临时文件验收后移出仓库，未新增永久单元测试。可见占比由 DD-12 提供，完整主流程接线与后续演出仍归后续任务。
+
+## DD-12 锁定句可见占比（2026-10-09）
+
+- `DivineDescentSpread.get_locked_visible_ratio() -> float` 即时读取所属 BarrageArea，返回锁定原句可见实例数 / 全部可见弹幕实例数，范围为 0～1；未锁句、区域失效或可见集合为空时返回 0。没有缓存、计时推进或收束触发。
+- `BarrageArea.get_visible_barrage_records()` 只提供当前区域内可见且与区域矩形相交的 BarrageView 记录，排除纯 UI、空记录、隐藏与待删除节点。部分仍在区域内的弹幕计一次；普通原句与复读都计入分母。
+- `DivineDescentCandidateFilter.calculate_visible_ratio(visible_records, locked_sentence_id)` 按 `original_sentence_id` 比较，每个实例计一次；复读模板和显示文本变化保持同一原句归属，同文异 ID 仍分别判断。查询保持源记录、锁句快照和工作权重原值。
+- 仅新增两个关键单元用例：原句归并复读变体、排除 UI。TEST_ONLY 文本与尺寸只存在于测试内存；正式 .tres 保持原值。达到 90% 的收束判定留 DD-13，本卡没有修改 Sandbox / Rest / Ending。

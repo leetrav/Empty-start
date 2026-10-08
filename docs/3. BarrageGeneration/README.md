@@ -28,6 +28,8 @@
 
 DBG-01 提供只读 `get_current_barrage_counts()`，从当前真实 `BarrageView` 汇总普通、复读与矛盾弹幕；开发操作使用 `clear_current_barrages()` 保持当前生成开关、`spawn_normal_batch_now()` 单次生成、`stop_normal_generation()` 与 `resume_normal_generation()` 控制普通批次。Paradox 阶段继续由矛盾专属生成器接管。
 
+DD-12（2026-10-09）新增只读 `get_visible_barrage_records() -> Array[BarrageRuntimeRecord]`，即时读取区域内实际可见、矩形仍与区域相交的 BarrageView 记录；纯 UI、空记录、隐藏及待删除节点排除。返回新数组，记录引用供只读消费；19 使用稳定原句 ID 计算锁句占比，生成、容量与生命周期继续由 3 拥有。
+
 BT-13 增加 `get_available_trait_ids(level_profile)`，读取当前 SaveManager 周目的已提交继承 ID，与本关特性合并并去重。`spawn_normal_barrage(level_profile, speech, selected_trait_ids=[])` 支持显式选择可用特性，复用 4 的 BT-09 校验，不可用 / 互斥选择返回 null。默认空选择保持原批次行为；正式分配比例待配置，不自动把全部可用特性装到每条弹幕。矛盾和复读入口保持独立，接口详情见 4 README 与 BT-13 日志。
 
 ## 任务顺序

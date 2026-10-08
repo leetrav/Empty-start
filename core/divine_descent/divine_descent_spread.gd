@@ -77,6 +77,15 @@ func is_sentence_locked() -> bool:
 	return not _locked_candidate.is_empty()
 
 
+# 即时读取当前区域；占比不缓存，也不在本卡触发收束。
+func get_locked_visible_ratio() -> float:
+	if not is_sentence_locked() or not is_instance_valid(_barrage_area) or not _barrage_area.is_inside_tree():
+		return 0.0
+	return DivineDescentCandidateFilter.calculate_visible_ratio(
+		_barrage_area.get_visible_barrage_records(), str(_locked_candidate["original_sentence_id"])
+	)
+
+
 # 只在真实归零时响应；后续重复通知不能覆盖首次结果。
 func _on_new_word_rate_changed(_rate_multiplier: float, _progress: float) -> void:
 	_try_lock_after_new_word_decay()
