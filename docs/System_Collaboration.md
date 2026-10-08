@@ -529,7 +529,7 @@ DD-01 的 `DivineDescentSession.enter(current_run_data)` 是正式进入 / 冻�
 
 后面的玩家输入主要影响演出强度。
 
-TT-12 的 Ending 倾向交接入口为 `EndingDisplayData.build_from_frozen_tendency(session.get_entry_snapshot()["tendency_result"], ...)`，身份分类调用 `classify_frozen_result()`。20 只读取 19 的首次主次 / 并列 / 全零 / 开局依据，精确累计不进入页面，不重建 TendencyState 或重新裁决。此处只完成倾向读取，EN-01 的正式终局接收、固定成果组合和转场尚未接入。
+TT-12 的 Ending 倾向交接入口为 `EndingDisplayData.build_from_frozen_tendency(session.get_entry_snapshot()["tendency_result"], ...)`，身份分类调用 `classify_frozen_result()`。20 只读取 19 的首次主次 / 并列 / 全零 / 开局依据，精确累计不进入页面，不重建 TendencyState 或重新裁决。EN-01 已增加 `EndingSession.receive_final_state(session, level_catalog)`，保留冻结倾向、经文、身份 ID 与主播名，接收时一次组合显示数据，刷新只取副本。DD-17 完成事件与正式场景转场仍待 C/A 联调。
 
 神降临的大流程是：
 
