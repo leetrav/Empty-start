@@ -113,4 +113,13 @@ EN-06～09 完成页面数据和显示。
 - 输出 `primary_tendency_id`、`secondary_tendency_id`、`main_art`、`religion_name`、`identity_result_class`、`judgement_text` 和 `scripture`。
 - `scripture.rows` 直接沿用 EN-04 的章节显示列表；`scripture.is_empty` 通过 Scripture 的 `get_ordered_entries().is_empty()` 得到。全空时区域 `status` 沿用 EN-04 的 `not_formed_oracle`，保留目录中的缺章位置；有正式经文时为 `confirmed_oracle`。
 - 空圣典不会阻断主图、教名和判词读取。正式配置尚未填写时，文本保持空字符串、主图保持 `null`，显示数据字段仍完整返回。
-- 组装过程只读上游和配置，未接入 EN-01 终局完成事件，未制作 EN-08 页面。仅新增一个关键单元测试，验证全空圣典仍生成配置结果和明确空态。
+- 组装过程只读上游和配置，未接入 EN-01 终局完成事件；页面呈现入口见下方 EN-08。EN-07 仅新增一个关键单元测试，验证全空圣典仍生成配置结果和明确空态。
+
+## EN-08 当前结局页面接口
+
+- `ui/ending/ending_page.tscn` 是可独立加载的 Control 页面，复用 `ui/theme/base_theme.tres`，组合主图、教名、圣典及最终判词；单列 ScrollContainer 支持长经文 / 判词滚动，文本自动换行。
+- `EndingPage.show_ending(display_data)` 接收现有 `EndingDisplayData.build(...)` 输出；允许入树前传入，节点就绪后呈现。页面持有显示快照，重复调用会替换经文行并回到顶部。
+- 主图使用保持比例的 TextureRect；空主图、空教名或空判词收起对应内容，不补写正式设计文案或生成图像。
+- `EndingScriptureRow` 子场景只显示 EN-04 行数据，沿用原顺序、确认原文及固定章 / 节号。缺章显示原章号和“未形成神谕”；全空圣典保留缺章行，并显示经文区域空态。
+- 页面仅消费显示结果，教名 / 判词选择、排序与编号继续由 EN-02～07 / Scripture 提供。本卡没有新增 SceneRouter 入口、读取全局存档或接入终局完成事件；EN-01 后续组合方负责构建结果并调用 `show_ending()`，EN-09 保留给其任务卡。
+- Godot 4.7.2 已完成场景解析、实际图形运行与 UI smoke；正式资源、完整视觉排版及 Android 设备触控仍待人工验收。验收样本图像 / 文本仅存在于临时进程，生产配置保持原状。
