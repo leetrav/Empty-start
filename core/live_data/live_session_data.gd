@@ -30,6 +30,19 @@ extends Resource
 		fan_count = value
 		emit_changed()
 
+# 随当前周目保存已结算关卡；开播和本场重开都保留这份记录。
+@export var settled_fan_level_ids: Array[StringName] = []
+
+
+# 由正式 PK 胜利入口提交配置增量，矛盾成败不影响本次结算。
+func commit_pk_win_fans(level_id: StringName, fan_gain: int) -> bool:
+	if level_id == &"" or fan_gain < 0 or settled_fan_level_ids.has(level_id):
+		return false
+	# 先标记再更新计数，changed 信号的同步读取或重复提交不会重复加粉。
+	settled_fan_level_ids.append(level_id)
+	fan_count += fan_gain
+	return true
+
 
 # 开始一场直播时重置本场表现值，并接收本周目当前粉丝数。
 func initialize_session(initial_fan_count: int) -> void:
