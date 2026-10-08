@@ -376,6 +376,8 @@ PK 胜利但未击破
 
 当前 `FinalOracleConfirmationState.confirmation_committed(run_data, level_id, candidate)` 是正式确认事实。圣典通过 `ScriptureData.bind_confirmation_state()` 接收，同关首次写入后以保存列表去重；候选原句 ID / 倾向与关卡目录中的文本、主播名、原关卡序号组成经文快照。
 
+FO-12 在 Sandbox 同场成功确认回调完成历史、倾向及奖励提交后，帧尾关闭战斗 / 候选并调用 `RestSession.open_result(breakthrough_oracle_complete)` 与 `RestResultView.show_result()`。Rest 只通过真实 SaveData 和关卡 / 卡片目录的现有公开读取链展示成果，不再次发奖；重复确认不重开 Rest，Continue 复用 RS-09，最后普通关到 DD 仍留 RS-10。
+
 FO-13 的选择表现保留战斗 HUD：Sandbox 在中央 BattleArea 展示 FinalOracleSession 的冻结原句；AttackChargeInput 复用普通准心和蓄力发射过程，仅把命中候选交给 Sandbox，不调用 HitResolution。Sandbox 将攻击命中和 FO-08 超时结果都交给同一个 `FinalOracleSession.confirm_display_candidate()`；PK、倾向与复读收益在选择阶段保持冻结。
 
 圣典的尚未确认结果单独保存在同一 `SaveData.scripture_data.pending_entry`，不会进入正式章节视图。真实当前关重开流程调用 `rollback_uncommitted(level_id)` 撤回该关暂存，之前已确认的 `entries` 保留。
@@ -443,6 +445,8 @@ RS-09 的正式调用链为 RestResultView 的继续请求 → Sandbox → `Rest
 ---
 
 ## 13. 吞并怎么影响后面的战斗
+
+AS-06 的当前只读链为 `SaveData.assimilation_data.get_current_content_snapshot()` → `LevelCatalog.get_inherited_content_snapshot(assimilation_data)`。2 使用完整关卡目录及已有 LevelProfile / LevelSpeechPool 解析已获池的词句，保留已提交整池权重；4 读取同一返回值的已获 trait ID，继续由 TraitSet 装配和校验。返回副本不会回写 14 成果或静态目录，未知 / 禁止 / 矛盾池不产生词句结果。普通生成混池、BT-13 效果和 Sandbox 调用由后续联调接入，本卡没有抢改对应 Owner 文件。
 
 【吞并系统】保存玩家真正击败主播后得到的内容。
 
@@ -521,9 +525,11 @@ RS-09 的正式调用链为 RestResultView 的继续请求 → Sandbox → `Rest
 
 DD-01 的 `DivineDescentSession.enter(current_run_data)` 是正式进入 / 冻结接口。未来 RS-10 在普通关卡完成并提交结果后创建会话并调用一次；后续通过 `get_entry_snapshot()` 读取独立副本。该快照固定已提交倾向结果、SC-07 经文、HR-15 命中历史、RP-12 普通复读数量、DD-02 候选与 AS-09 吞并成果；源存档及暂存变化不会改变它。
 
-倾向归属统一为：17 持有精确累计、开局参照和裁决规则，19 持有本次进入终局的不可变使用快照。未来 TT-11 / TT-12 复用这一结果归属，不建立另一份可变冻结真相；19 从现有 TendencyState 公开结果读取主导、次要、并列、全零，仅复制已提交总值，未提交 attempt 排除。
+倾向归属统一为：17 持有精确累计、开局参照和裁决规则，19 持有本次进入终局的不可变使用快照。TT-11 已复用 DD-01 核实冻结后不变，TT-12 后续继续沿用同一归属；19 从现有 TendencyState 公开结果读取主导、次要、并列、全零，仅复制已提交总值，未提交 attempt 排除。进入和读取都不修改源状态，后续源暂存 / 提交不影响 Session 首次快照，读取副本修改也无法回写内部结果。
 
 后面的玩家输入主要影响演出强度。
+
+TT-12 的 Ending 倾向交接入口为 `EndingDisplayData.build_from_frozen_tendency(session.get_entry_snapshot()["tendency_result"], ...)`，身份分类调用 `classify_frozen_result()`。20 只读取 19 的首次主次 / 并列 / 全零 / 开局依据，精确累计不进入页面，不重建 TendencyState 或重新裁决。此处只完成倾向读取，EN-01 的正式终局接收、固定成果组合和转场尚未接入。
 
 神降临的大流程是：
 
@@ -644,7 +650,7 @@ README 里“等某系统”表示当前这张联调卡等待对应接口；同�
 
 当前 `LevelProfile.normal_pool_inheritance` 由关卡配置持有，提供该关普通词库的稳定 ID、整池继承权重与资格；词库正文仍读取同一 `normal_speech_pool`。`inheritable_trait_ids` 是独立特性白名单，和本关启用的 `special_trait_ids` 分开。
 
-13 在正式确认的同场校验后把这些静态值交给 14 现有登记 API；卡片资料交给 16 的既有 Catalog / 发卡入口。14 / 16 继续拥有运行成果、来源与去重。`tests/fixtures/fo11/` 只提供显式注入的 TEST_ONLY 验收数据，生产默认目录没有替换，完整 Sandbox 奖励接线继续由 FO-11 负责。
+13 在正式确认的同场校验后把这些静态值交给 14 现有登记 API；卡片资料交给 16 的既有 Catalog / 发卡入口。14 / 16 继续拥有运行成果、来源与去重。FO-11 已在 Sandbox 同一回调中按首次击败登记结果提交允许继承的普通池和白名单特性；`tests/fixtures/fo11/` 只提供显式注入的 TEST_ONLY 验收数据，生产默认目录没有替换，正式资源仍待配置。
 
 ### 提交身份
 

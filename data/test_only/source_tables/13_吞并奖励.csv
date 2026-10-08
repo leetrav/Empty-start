@@ -1,0 +1,2 @@
+reward_id,streamer_id,reward_type,content_id,inherited_weight,enabled,notes
+test_reward_01,test_streamer_01,word_pool,test_pool_01,1,true,TEST_ONLY｜奖励引用测试词库

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="LevelProfile" format=3]
+
+[ext_resource type="Script" path="res://data/level_configuration/level_profile.gd" id="1_profile"]
+[ext_resource type="Script" path="res://data/level_configuration/level_contradiction.gd" id="2_contradiction"]
+[ext_resource type="Resource" path="res://data/test_only/generated/level_configuration/test_pool_02.tres" id="3_pool"]
+
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_1"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "test_contra_true_02"
+text = "神从未说过话，我刚转述了神的话。"
+
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_2"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "test_contra_false_02"
+text = "请再发一次刚才的弹幕。"
+
+[resource]
+resource_name = "TEST_ONLY test_level_02"
+script = ExtResource("1_profile")
+level_id = "test_level_02"
+level_order = 2
+streamer_id = "test_streamer_02"
+streamer_name = "TEST_ONLY 小祷"
+stream_topic = "临时直播间：复读就能证明吗"
+normal_speech_pool_source = ExtResource("3_pool")
+orthodox_ratio = 1.0
+heretical_ratio = 1.0
+absurd_ratio = 1.0
+neutral_ratio = 0.5
+true_contradictions = Array[ExtResource("2_contradiction")]([SubResource("Contradiction_1")])
+false_contradictions = Array[ExtResource("2_contradiction")]([SubResource("Contradiction_2")])
+contradiction_context_clues = Array[String]([])
+base_batch_count = 2
+base_spawn_interval_seconds = 1.2
+base_move_speed_pixels_per_second = 110
+normal_barrage_screen_cap = 20

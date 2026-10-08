@@ -275,6 +275,7 @@ func spawn_contradiction_barrage(level_profile: LevelProfile, line: LevelContrad
 		_pause_normal_generation_timer()
 		return null
 	var barrage_record := BarrageRuntimeRecord.new()
+	# 真 / 假矛盾使用新记录自带的独立空 TraitSet；不复制普通特性，真假由 12 按原句 ID 判断。
 	barrage_record.text = line.text
 	barrage_record.original_sentence_text = line.text
 	barrage_record.original_sentence_id = line.original_sentence_id

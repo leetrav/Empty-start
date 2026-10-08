@@ -1,0 +1,7 @@
+trait_id,display_name,inheritable,penalty_param_id,lifetime_override_s,split_child_count,visual_asset_id,notes
+blocked,遮挡,true,blocked_penalty_pk,,,trait_blocked,被遮挡目标不给话语收益；异常扣分读取 blocked_penalty_pk
+retaliation_copy,水军复制/反击,true,retaliation_penalty_pk,5,,trait_retaliation,系统案反击弹幕生命周期5s；复制品自身不继续复制
+fake,假弹幕,true,fake_penalty_pk,7,,trait_fake,系统案假弹幕生命周期7s
+unselectable,不可选,true,,5,,trait_unselectable,系统案不可选弹幕生命周期5s
+split,分裂,true,,6,2,trait_split,系统案分裂弹幕生命周期6s；母体最多分裂一次，子片沿用母体截止时间
+reflect,反弹,true,reflect_penalty_pk,5,,trait_reflect,系统案：反弹属于反击类表现；按反弹异常扣分，不叠加反击扣分

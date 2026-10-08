@@ -1,0 +1,2 @@
+level_id,base_batch_count,spawn_interval_s,move_speed_px_s,normal_screen_cap,word_weight_multiplier,valid_area_key,layout_key,notes
+level_01,,,,,1,center_valid_area,battle_layout_01,按实测填写

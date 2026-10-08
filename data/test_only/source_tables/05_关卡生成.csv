@@ -1,0 +1,3 @@
+level_id,base_batch_count,spawn_interval_s,move_speed_px_s,normal_screen_cap,word_weight_multiplier,valid_area_key,layout_key,notes
+test_level_01,3,1,100,24,1,test_center,test_layout_01,TEST_ONLY｜此数值仅保证联调
+test_level_02,2,1.2,110,20,1,test_center,test_layout_01,TEST_ONLY｜验证换关

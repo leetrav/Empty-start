@@ -318,7 +318,7 @@ func _get_oracle_history_with_sentence_text(current_level: LevelProfile) -> Arra
 	var normal_hit_history: Array[Dictionary] = _hit_resolution.get_normal_hit_history()
 	var sentence_text_by_id: Dictionary = {}
 	if current_level != null:
-		for speech: LevelSpeech in current_level.normal_speech_pool:
+		for speech: LevelSpeech in current_level.get_normal_speech_pool():
 			if speech != null and not speech.original_sentence_id.is_empty():
 				sentence_text_by_id[speech.original_sentence_id] = speech.text
 
@@ -394,13 +394,64 @@ func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _ca
 		return
 	run_data.tendency_state.commit_attempt_tendency()
 	# 上述检查已确认同场击破与正式确认；重复提交继续由确认状态和接收方去重。
+	var source_level_id := StringName(current_level.level_id)
+	var source_streamer_id := StringName(current_level.streamer_id)
 	run_data.loser_card_data.grant_on_true_defeat(
-		StringName(level_id), StringName(current_level.streamer_id), true, true, loser_card_catalog
+		source_level_id, source_streamer_id, true, true, loser_card_catalog
 	)
-	run_data.assimilation_data.register_defeated_streamer(
-		StringName(level_id), StringName(current_level.streamer_id), true, true
+	var defeat_added: bool = run_data.assimilation_data.register_defeated_streamer(
+		source_level_id, source_streamer_id, true, true
 	)
-	# LevelProfile 尚无正式继承池和特性白名单，只登记击败事实，等待配置方补齐奖励。
+	if defeat_added:
+		# 只登记本关配置允许继承的普通池，资格与矛盾排除由 14 的现有入口判断。
+		var pool: WordPoolInheritanceConfig = current_level.normal_pool_inheritance
+		if pool != null:
+			run_data.assimilation_data.register_inherited_word_pool(
+				source_level_id, pool.pool_id, pool.appearance_weight,
+				pool.can_inherit, pool.is_contradiction_pool
+			)
+		# 继承白名单独立于本关特性装配，不能把 special_trait_ids 直接当作奖励。
+		for trait_id: StringName in current_level.inheritable_trait_ids:
+			run_data.assimilation_data.register_inherited_trait(source_level_id, trait_id, true)
+	# 等同步确认及攻击回调结束，再收起候选进入休息，防止旧回调重新显示界面。
+	_open_rest_after_oracle.call_deferred(run_data, _final_oracle_session)
+
+
+# 只把同场已确认事实交给休息入口；奖励已提交，展示只调用已有公开读取链。
+func _open_rest_after_oracle(run_data: SaveData, session: FinalOracleSession) -> void:
+	# 重开、换关或换周目后，旧帧尾请求不再影响当前尝试。
+	if run_data != SaveManager.data or session == null or session != _final_oracle_session:
+		return
+	if _rest_session != null and _rest_session.is_open():
+		return
+	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		return
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	if current_level == null or session.get_level_id() != current_level.level_id or session.get_confirmed_selection().is_empty():
+		return
+	_rest_session = RestSession.new()
+	if not _rest_session.open_result({
+		"level_id": current_level.level_id,
+		"result_kind": "breakthrough_oracle_complete",
+		"pk_won": true,
+		"contradiction_broken": true,
+	}):
+		push_error("Sandbox: 休息入口拒绝本场已确认神谕结果。")
+		return
+	_stop_normal_combat()
+	_contradiction_stage_active = false
+	_repeat_queue.clear_contradiction_queue()
+	_oracle_transition_timer.stop()
+	_oracle_selection_timer = null
+	_attack_charge_input.clear_selection_targets()
+	_attack_charge_input.lock_new_attacks()
+	_oracle_candidate_display.clear_display()
+	_final_oracle_session = null
+	_battle_hud.show_battle_state("休息时刻")
+	if not _rest_result_view.show_result(_rest_session, run_data, level_catalog, loser_card_catalog):
+		push_error("Sandbox: 无法显示本场已确认神谕结果。")
+		return
+	rest_opened.emit(_rest_session)
 
 
 # 正式满蓄释放时立即按冻结的矛盾原句判定；飞行计时只保留演出。

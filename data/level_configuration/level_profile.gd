@@ -21,6 +21,18 @@ extends Resource
 ## 普通话语池保留原句定义，供弹幕生成系统读取。
 @export var normal_speech_pool: Array[LevelSpeech] = []
 
+## 生成式词库入口：与内嵌词库复用同一 LevelSpeech 结构。
+## 正式接入时只需更换 Resource；旧关卡未配置时使用 normal_speech_pool。
+@export var normal_speech_pool_source: LevelSpeechPool
+
+
+func get_normal_speech_pool() -> Array[LevelSpeech]:
+    # 只读取词库 Resource，不修改共享的静态 LevelProfile。
+    if normal_speech_pool_source != null:
+        return normal_speech_pool_source.speeches
+    return normal_speech_pool
+
+
 ## 该普通词库的继承配置；留空表示未配置奖励，内容仍使用上面的同一词库。
 @export var normal_pool_inheritance: WordPoolInheritanceConfig
 

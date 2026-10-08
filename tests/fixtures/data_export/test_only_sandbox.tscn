@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/sandbox/sandbox.tscn" id="1_base"]
+[ext_resource type="Resource" path="res://data/test_only/generated/level_configuration/test_only_level_catalog.tres" id="2_catalog"]
+
+[node name="Sandbox" instance=ExtResource("1_base")]
+level_catalog = ExtResource("2_catalog")

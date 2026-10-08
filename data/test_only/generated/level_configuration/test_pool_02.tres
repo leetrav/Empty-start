@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="LevelSpeechPool" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/level_configuration/level_speech_pool.gd" id="1_pool"]
+[ext_resource type="Script" path="res://data/level_configuration/level_speech.gd" id="2_speech"]
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_1"]
+script = ExtResource("2_speech")
+original_sentence_id = "test_word_09"
+text = "祂终于回了一个句号。"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_2"]
+script = ExtResource("2_speech")
+original_sentence_id = "test_word_10"
+text = "我有祂的管理员权限。"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_3"]
+script = ExtResource("2_speech")
+original_sentence_id = "test_word_11"
+text = "赞美神圣的薯条。"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_4"]
+script = ExtResource("2_speech")
+original_sentence_id = "test_word_12"
+text = "弹幕为什么都是同一句？"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[resource]
+script = ExtResource("1_pool")
+pool_id = "test_pool_02"
+speeches = Array[ExtResource("2_speech")]([SubResource("Speech_1"), SubResource("Speech_2"), SubResource("Speech_3"), SubResource("Speech_4")])

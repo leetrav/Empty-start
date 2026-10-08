@@ -1,0 +1,5 @@
+contradiction_id,set_id,streamer_id,type,text,clue_text,enabled,notes
+test_contra_true_01,test_contra_01,test_streamer_01,true,我从未删过评论，但所有评论都被我删除。,主播说自己拥有删评权限,true,TEST_ONLY｜真矛盾
+test_contra_false_01,test_contra_01,test_streamer_01,false,今天直播间非常吵。,,true,TEST_ONLY｜假矛盾
+test_contra_true_02,test_contra_02,test_streamer_02,true,神从未说过话，我刚转述了神的话。,,true,TEST_ONLY｜真矛盾
+test_contra_false_02,test_contra_02,test_streamer_02,false,请再发一次刚才的弹幕。,,true,TEST_ONLY｜假矛盾

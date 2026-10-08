@@ -35,7 +35,7 @@
 - 3. BarrageGeneration 已有正式运行时记录与生成入口；它只装配特性组件，不解释特性语义，也暂未把 `LevelProfile.special_trait_ids` 分配到具体弹幕实例。
 - 2. LevelConfiguration 已拆出“本关特殊玩法标识”的配置任务。
 - BT-06 的子话语生成还有待按 3. BarrageGeneration 的正式入口完成场景联调；本系统不自建生成逻辑。
-- CA-09 / INT-01 已将逐目标 Trait Result 交给 HitResolution，并由 Sandbox 仅保留遮挡未命中的目标；正常、假牌、反击复制品和反弹结果都结束实例。生命周期与普通收益独立判断，假牌/反击/反弹继续跳过普通收益。当前样例使用空 TraitSet；special_trait_ids 的实例分配、12. ContradictionBreak 和14. Assimilation 联调继续等待后续任务。
+- CA-09 / INT-01 已将逐目标 Trait Result 交给 HitResolution，并由 Sandbox 仅保留遮挡未命中的目标；正常、假牌、反击复制品和反弹结果都结束实例。生命周期与普通收益独立判断，假牌/反击/反弹继续跳过普通收益。当前样例使用空 TraitSet；special_trait_ids 的实例分配与 14. Assimilation 装配继续留后续卡，12 的矛盾特性边界已由 BT-12 核实。
 
 BT-01 特性 ID：`occlusion`（遮挡）、`retaliation_copy`（水军复制 / 反击）、`fake_card`（假牌）、`unselectable`（不可选）、`split`（分裂）、`reflect`（反弹）。
 
@@ -112,9 +112,21 @@ BT-10 的目标可选过滤与到达结果读取已由 5. CombatAttack CA-08 完
 
 BT-11 等【6. HitResolution】有真实结果输入后再接。
 
-BT-12 等【12. ContradictionBreak】有真实矛盾阶段后再接。
+## BT-12 矛盾阶段特性边界（已核实）
+
+- `BarrageArea.start_contradiction_generation()` 接收 12 提供的真 / 假列表，自动批次和 `spawn_contradiction_barrage()` 都创建新 `BarrageRuntimeRecord`；其构造函数组合独立空 `BarrageTraitSet`，不复制普通实例的特性或关卡特性列表。
+- 真矛盾和假矛盾都保留 `is_contradiction=true`、稳定 `original_sentence_id` 与原文。真假归属继续由 12 的当前关真 / 假列表拥有，假矛盾不等同于普通 `fake_card` 特性。
+- 真实释放快照 `AttackTargetSnapshot.get_contradiction_facts()` 冻结原句 ID / 文本；Sandbox 原有回调立即交给 CB `resolve_shot_hit_ids()`。`AttackChargeInput` 的矛盾模式跳过普通到达 / HitResolution 提交，因此不会混入普通 PK、倾向或普通命中历史。
+- Godot 4.7.2 一次 runtime smoke 使用现有一发上限，按当前关重开分别覆盖假 / 真矛盾：生成时两类均无假牌、反弹、分裂、不可选、遮挡或反击复制品特性，真假判定和选中事实保留。普通阶段六种特性组件规则及真实普通 / 遮挡输入继续工作。
+- BT-12 仅补已有生成边界中文注释并完成定向验收；没有新增接口、清洗 TraitSet 的重复逻辑或自动化单测，也没有修改 Sandbox。后续特性分配 / BT-13 仍应只按各自普通实例边界接入，保持矛盾专用记录独立。
 
 BT-13 等【14. Assimilation】有真实继承输出后再接。
+
+## AS-06 提供的已提交特性输入
+
+`LevelCatalog.get_inherited_content_snapshot(current_run_data.assimilation_data)` 的 `inherited_trait_ids` 直接来自 14 的已提交总量公开快照，与可解析普通池一起返回独立数据。没有正式奖励时数组为空；没有从本关 special_trait_ids 或待确认白名单补造已获特性。
+
+4 系统可将返回 ID 交给已有 `BarrageTraitSet.add_trait()`，使用 `are_compatible()` 按实际普通 / 陷阱 / 复读上下文校验。AS-06 smoke 已验证第一关真实确认后，第二关读取 occlusion 并装配到独立 TraitSet；这里只验证数据消费，不代表 BT-13 的实际弹幕分配或战斗触发已完成，BT-12 矛盾隔离边界继续保持。
 
 ## FO-11 测试配置前置
 

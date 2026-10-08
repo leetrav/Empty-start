@@ -1,0 +1,3 @@
+event_id,audio_type,asset_path_or_id,volume_db,pitch_min,pitch_max,loop,transition_group,notes
+test_audio_click,ui,,,1,1,false,,TEST_ONLY｜故意留空音效资源路径，待音频交付
+test_audio_tier,sfx,,,1,1,false,,TEST_ONLY｜音效资源待交付

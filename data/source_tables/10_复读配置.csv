@@ -1,0 +1,7 @@
+param_id,value,unit,notes
+normal_delay_min_s,0.5,s,系统案：普通复读在命中后0.5–3秒内陆续出现
+normal_delay_max_s,3,s,系统案：普通复读在命中后0.5–3秒内陆续出现
+normal_screen_cap,,count,系统案明确：普通复读独立同屏上限需原型实测后配置
+repeat_template,{text},,系统案表现可用+1、赞同、重复原句；当前单模板字段先保留原句
+contradiction_repeat_count,120,count,系统案：Paradox击中1条真假矛盾后生成120条复读
+contradiction_repeat_lifetime_s,10,s,系统案：矛盾复读随10秒Paradox窗口

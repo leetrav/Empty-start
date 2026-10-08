@@ -108,6 +108,16 @@ LevelProfile 保存静态关卡资料、普通话语池、倾向比例、特殊�
 
 ### LC-05 当前普通关卡选择
 
+#### AS-06 已提交吞并输入
+
+`LevelCatalog.get_inherited_content_snapshot(current_run_data.assimilation_data)` 从 14 公开总量快照取已获得池 ID、整池权重和特性。池按现有 `normal_pool_inheritance` 解析，词句调用 `get_normal_speech_pool()`，兼容导表 LevelSpeechPool 和内嵌词库。导表的 pool_id 与继承元数据 ID 须保持一致，整池权重使用保存的提交值。
+
+返回 `inherited_word_pools` 与 `inherited_trait_ids`；每个池带 `pool_id / appearance_weight / speeches`。静态目录缺项、禁止继承、矛盾标记或 ID 不匹配时该池不产生词句结果；没有成果时保持空数组。同池只返回一次，词句和成果列表均隔离于源数据。调用方提供完整关卡目录，查询不扫描目录文件、不建立新池注册表，也不修改当前关普通池。
+
+Godot 4.7.2 smoke 已验证同一周目第一关真实 FO-11 提交后，通过现有 LevelRunState 完成并选择第二关，读取导表测试池、原权重、全部词句与特性。本卡只交付数据可消费能力，Sandbox 调用接线由 A 负责，实际混池 / 特性触发留后续联调。
+
+#### 当前选择接口
+
 `LevelCatalog.profiles` 保存普通关卡集合；每个 `LevelProfile.level_order` 使用唯一递增序号表示流程位置。`LevelRunState` 新建时选择序号最小的关卡，通过 `set_current_level_order()` 切换，并由 `get_current_level_profile()` 返回当前配置。
 
 示例目录 `data/level_configuration/level_catalog.tres` 列出 `level_001.tres` 与 `level_002.tres`。本阶段只读取当前关卡，不推进、不结算，也不接入 UI。
@@ -117,3 +127,12 @@ LevelProfile 保存静态关卡资料、普通话语池、倾向比例、特殊�
 `LevelRunState.complete_level(level_id)` 只接受当前关的首次完成：存在更大的 `level_order` 时返回 `ADVANCED` 并推进；重复提交返回 `ALREADY_COMPLETED`；最后一关返回 `ALL_NORMAL_LEVELS_COMPLETED`，`is_all_normal_levels_completed()` 同时报告结束状态。空白或未知 ID 返回 `INVALID_LEVEL`，已知但非当前关返回 `LEVEL_NOT_CURRENT`。
 
 完成记录保存在单个 `LevelRunState` 实例中，以当前周目状态实例 + `level_id` 识别本次提交。去重状态不写入 SaveData；本类不调用休息时刻、终局或奖励系统。
+
+
+## 2026-10-08 导表 TEST_ONLY 数据接入
+
+策划源中，只有身份配置和系统案已明确的战斗规则可作为确定配置。其他关卡、台词、矛盾与资产等数据尚未定稿，联调使用 data/test_only/ 中的独立测试样例。
+
+LevelProfile 新增可选 normal_speech_pool_source: LevelSpeechPool，使用 get_normal_speech_pool() 读取。存在词库 Resource 时读取其中的 LevelSpeech 列表，否则继续使用内嵌 normal_speech_pool；运行时保持静态 Resource 只读。
+
+测试场景为 tests/fixtures/data_export/test_only_sandbox.tscn，注入测试关卡目录；正常主场景默认继续使用原关卡目录。导表方法、已实现映射、策划确认后的替换方式详见 tools/README.md。

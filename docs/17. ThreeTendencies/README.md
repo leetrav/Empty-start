@@ -58,6 +58,22 @@ RS-07 的消费方在普通胜利倾向正式提交后，从所属周目的 `Sav
 - 输入前提是身份已初始化的有效周目；未提供周目 / TendencyState 时消费方保持尚无环境结果，未初始化参照可能为空 ID，不推测正式场景或替代倾向。
 - TT-10 已使用真实 TendencyState 提交 / 回滚与 RestSession 打开事件验证此读取方式。当前 RS-07 页面接线与房间视觉切换仍由 B 完成；本卡未修改 Rest UI 或 Sandbox。终局冻结与同一结果供 19 / 20 留 TT-11 / TT-12。
 
+## TT-11：进入终局冻结最终倾向
+
+- 复用 DD-01 的 `DivineDescentSession.enter(run_data)`：普通关卡结果正式提交后调用一次，19 保存本次终局的 `entry_snapshot.tendency_result`；17 继续拥有源 TendencyState 的累计、开局参照及裁决规则。
+- 冻结字段为三个已提交 `*_total`、`opening_identity_tendency_id`、`primary_tendency_id`、`secondary_tendency_id`、`is_primary_tied`、`has_no_effective_behavior`。主次 / 并列 / 全零直接读取现有公开判定，`attempt_*` 排除，进入不会提交或清空暂存。
+- 后续源普通命中暂存、正式提交、初始化依据变化均不影响该次终局快照。Source Resource 保持原归属，终局通过同一 Session 的 `get_entry_snapshot()` 读取首次事实；返回副本修改和重复 `enter()` 也不能替换内部结果。
+- TT-11 没有另建冻结状态或新增运行接口。新增且只新增一个单元测试 `tests/unit/tendency_state_final_freeze_test.gd`，覆盖冻结后保持不变；真实 Resource / 场景 smoke 同时核实全零结果和存读后的暂存隔离。
+- 本卡只核实倾向冻结边界，RS-10 正式进入组合及终局演出输入仍由其系统负责；TT-12 的统一结果消费和 Ending 接线留下一张卡。
+
+## TT-12：同一冻结结果供 19 / 20
+
+- 19 继续持有同一 `DivineDescentSession`，终局倾向事实统一读取 `get_entry_snapshot()["tendency_result"]`；17 的精确累计和裁决所有权保持原状。
+- 20 新增 `EndingDisplayData.build_from_frozen_tendency(tendency_result, scripture_data, level_catalog, main_art_config, religion_name_config, judgement_text_config)`，只读 Session 返回的倾向副本，直接使用冻结主导 / 次要 / 并列 / 全零 / 开局依据；不重建可变 TendencyState，也不按总值重新裁决。
+- `EndingIdentityResultClassifier.classify_frozen_result(tendency_result)` 复用无行为 → 主导并列 → 一致 → 偏移的既有分类优先级。全零和并列同时为真时仍选无行为；次要并列直接沿用 17 已固定的次要 ID。
+- 显示数据保留两项 ID、两个标记和开局依据，精确三个总值不会进入页面数据。旧 Ending `build(TendencyState, ...)` / `classify(TendencyState)` 保持兼容，终局调用方应使用冻结入口；空冻结输入返回空结果。
+- TT-12 已验证真实 SaveData 存读与 Session → Ending 读取一致，源后续暂存 / 提交及开局依据变化不会漂移。本卡只完成倾向交接；EN-01 正式终局接收 / 转场及全套固定成果组合仍待下一张任务。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
@@ -100,5 +116,5 @@ TT-02 等 6. HitResolution 的普通话语倾向事件。
 TT-03 / TT-04 等本场胜负与 7. OpponentPKBar 重开流程。
 TT-05～08 可完成纯判定逻辑。
 TT-10 等 18. Rest。
-TT-11 / TT-12 等 19. DivineDescent 与 20. Ending。
+TT-11 已复用 DD-01 Session 核实终局冻结；TT-12 已提供 Ending 的冻结结果读取适配，正式终局接收待 EN-01。
 TT-13 建立 Neutral 普通话语链路；TT-14 在 TT-13 基础上接入随 Tier 变化的 Neutral 生成权重。

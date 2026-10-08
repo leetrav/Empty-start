@@ -1,0 +1,5 @@
+config_type,primary_tendency,secondary_or_state,text_value,asset_id,notes
+main_art,orthodox,,,test_ending_art_orthodox,TEST_ONLY｜仅供渲染验证
+main_art,heresy,,,test_ending_art_heresy,TEST_ONLY｜仅供渲染验证
+main_art,absurd,,,test_ending_art_absurd,TEST_ONLY｜仅供渲染验证
+religion_name,orthodox,orthodox,临时复读教,,TEST_ONLY｜文案未定稿

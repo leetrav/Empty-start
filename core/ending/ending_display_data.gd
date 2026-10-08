@@ -17,9 +17,29 @@ func build(
 		religion_name_config: RELIGION_NAME_CONFIG,
 		judgement_text_config: JUDGEMENT_TEXT_CONFIG
 	) -> Dictionary:
-	var primary_tendency_id: String = tendency_state.get_primary_tendency_id()
-	var secondary_tendency_id: String = tendency_state.get_secondary_tendency_id()
-	var result_class: StringName = IDENTITY_CLASSIFIER.new().classify(tendency_state)
+	return build_from_frozen_tendency({
+		"primary_tendency_id": tendency_state.get_primary_tendency_id(),
+		"secondary_tendency_id": tendency_state.get_secondary_tendency_id(),
+		"is_primary_tied": tendency_state.is_primary_tied(),
+		"has_no_effective_behavior": tendency_state.has_no_effective_behavior(),
+		"opening_identity_tendency_id": tendency_state.opening_identity_tendency_id,
+	}, scripture_data, level_catalog, main_art_config, religion_name_config, judgement_text_config)
+
+
+# 接收 Session getter 的倾向副本，只读首次事实；不重建可变 TendencyState 或重算裁决。
+func build_from_frozen_tendency(
+		tendency_result: Dictionary,
+		scripture_data: ScriptureData,
+		level_catalog: LevelCatalog,
+		main_art_config: MAIN_ART_CONFIG,
+		religion_name_config: RELIGION_NAME_CONFIG,
+		judgement_text_config: JUDGEMENT_TEXT_CONFIG
+	) -> Dictionary:
+	if tendency_result.is_empty():
+		return {}
+	var primary_tendency_id: String = str(tendency_result.get("primary_tendency_id", ""))
+	var secondary_tendency_id: String = str(tendency_result.get("secondary_tendency_id", ""))
+	var result_class: StringName = IDENTITY_CLASSIFIER.new().classify_frozen_result(tendency_result)
 	var scripture_rows: Array[Dictionary] = SCRIPTURE_DISPLAY.new().build_from_scripture(
 		scripture_data, level_catalog
 	)
@@ -28,6 +48,9 @@ func build(
 	return {
 		"primary_tendency_id": primary_tendency_id,
 		"secondary_tendency_id": secondary_tendency_id,
+		"is_primary_tied": bool(tendency_result.get("is_primary_tied", false)),
+		"has_no_effective_behavior": bool(tendency_result.get("has_no_effective_behavior", false)),
+		"opening_identity_tendency_id": str(tendency_result.get("opening_identity_tendency_id", "")),
 		"main_art": main_art_config.get_main_art_for_tendency(primary_tendency_id),
 		"religion_name": religion_name_config.get_religion_name(primary_tendency_id, secondary_tendency_id),
 		"identity_result_class": result_class,
