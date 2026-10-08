@@ -54,4 +54,8 @@ RS-03 增加 `RestSession.read_committed_rewards(save_data, level_catalog, loser
 
 RS-03 已接入 LCARD-07 正式只读入口 `SaveData.loser_card_data.get_new_card_for_level(level_id, loser_card_catalog)`：来源归 16 判断，本场无新增为 `{}`，Rest 映射为 `new_loser_card = null`；正式发卡但 Catalog 缺失时仍能得到主播 ID 与 `profile = null`。败者卡读取不依赖 LevelCatalog，后者仅用于解析吞并的同关主播来源；所有读取均不发奖或改写已提交结果。
 
-RS-04 在现有 `RestResultView` 增加 `show_result(session, save_data, level_catalog, loser_card_catalog)`。三类本场成果均为空时显示“本场没有新增经文、败者卡或吞并内容”；历史经文和败者卡分别复用 `get_ordered_entries()` / `get_acquired_cards()` 判断空集合，在同一面板显示可读提示。缺少数据时不推断历史为空，已有卡片但 Catalog 缺失也保留其非空事实。继续按钮始终可用，仍发出 `continue_requested`；Sandbox 的未击破入口传入真实周目与目录并保留原信号转发。历史列表浏览和下一关路由留后续任务。
+RS-04 在现有 `RestResultView` 增加 `show_result(session, save_data, level_catalog, loser_card_catalog)`。三类本场成果均为空时显示“本场没有新增经文、败者卡或吞并内容”；历史经文和败者卡分别复用 `get_ordered_entries()` / `get_acquired_cards()` 判断空集合，在同一面板显示可读提示。缺少数据时不推断历史为空，已有卡片但 Catalog 缺失也保留其非空事实。继续按钮始终可用，仍发出 `continue_requested`；Sandbox 的未击破入口传入真实周目与目录并保留原信号转发。历史败者卡浏览和下一关路由留后续任务。
+
+RS-05 在结果面板增加“查看历史圣典”，沿用 `show_result()` 传入的 `SaveData.scripture_data` 与 `LevelCatalog`。组合子场景 `ui/rest/scripture_history_view.tscn` 的 `show_history(scripture_data, level_catalog)` 只读数据，复用 `EndingScriptureDisplayData.build_from_scripture()` → `ScriptureData.get_chapter_slots()` 和 `EndingScriptureRow` 显示原章号、固定节号、主播、正式原文及“未形成神谕”的缺章；暂存 `pending_entry` 不作为正式经文展示。章节规则仍由 15 持有，Rest 没有新增历史数据层。
+
+历史为空时保留清楚的空提示与缺章行，空目录另行提示；缺少 SaveData / ScriptureData / LevelCatalog 时显示“历史圣典资料暂不可用”并禁用查看入口，避免将未知资料视为空收藏。子面板沿用项目 Theme，长文本自动换行并使用原生 ScrollContainer 纵向滚动，返回按钮固定在滚动区外。返回请求恢复原结果面板与按钮焦点，原继续信号保持可用；重新显示或隐藏结果时同步收起历史面板。Sandbox 已有上下文足够，本卡无需修改其接线。
