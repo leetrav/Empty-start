@@ -28,6 +28,13 @@ func get_result_snapshot() -> Dictionary:
 	return _result_snapshot.duplicate(true)
 
 
+# 继续时按本场稳定 ID 调用关卡所有者；路线和重复提交结果沿用现有完成枚举。
+func continue_to_next_level(run_state: LevelRunState) -> LevelRunState.CompletionResult:
+	if not _open or run_state == null:
+		return LevelRunState.CompletionResult.INVALID_LEVEL
+	return run_state.complete_level(str(_result_snapshot.get("level_id", "")))
+
+
 # 只读取当前成功关卡已提交的成果，不调用圣典、卡片或吞并的发放入口。
 func read_committed_rewards(
 		run_data: SaveData,
