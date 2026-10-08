@@ -152,6 +152,8 @@ func restart_current_attempt() -> void:
 
 # 暂停由 SceneTree 冻结此节点，复读等待只使用实际游戏帧时间。
 func _process(delta: float) -> void:
+	# 直播上涨只推进表现数据；SceneTree 暂停时此帧回调也暂停。
+	SaveManager.data.live_session.advance_short_boosts(delta)
 	if _normal_combat_active or _contradiction_stage_active:
 		_repeat_queue.advance_and_dispatch(delta, _barrage_area)
 	if _oracle_selection_timer != null:
@@ -380,6 +382,12 @@ func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _ca
 	var current_level: LevelProfile = _run_state.get_current_level_profile()
 	if current_level == null or current_level.level_id != level_id:
 		return
+	# 已校验同场正式确认事实，直播表现独立于后续奖励写入。
+	run_data.live_session.start_short_boost(
+		LiveSessionData.BoostEvent.ORACLE_CONFIRMATION,
+		battle_config.oracle_boost_viewer_gain, battle_config.oracle_boost_like_gain,
+		battle_config.oracle_boost_duration_seconds
+	)
 	if not _hit_resolution.commit_normal_hit_history(run_data):
 		push_error("Sandbox: 神谕确认后提交普通命中历史失败。")
 		return
@@ -426,6 +434,12 @@ func _on_contradiction_outcome_locked(outcome: int) -> void:
 	_attack_charge_input.lock_new_attacks()
 	_barrage_area.clear_barrages()
 	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		# 只消费成功结果；未击破分支继续沿用既有休息流程。
+		SaveManager.data.live_session.start_short_boost(
+			LiveSessionData.BoostEvent.CONTRADICTION_BREAK,
+			battle_config.break_boost_viewer_gain, battle_config.break_boost_like_gain,
+			battle_config.break_boost_duration_seconds
+		)
 		_battle_hud.show_battle_state("矛盾击破成功 · 等待复读展示")
 	else:
 		_open_rest_after_unbroken()
