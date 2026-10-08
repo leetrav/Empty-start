@@ -217,6 +217,12 @@
 - **触发条件**：Windows PowerShell 执行图形子系统 Godot exe，且同一工作流继续读取输出、清理或运行下一条验证。
 - **规避**：使用 `Start-Process -Wait -PassThru -WindowStyle Hidden` 并重定向 stdout / stderr，读取进程的 `ExitCode`；接口 smoke 同时检查预期成功输出和错误日志。AS-08 已用此方式确认完整导入及真实接口运行结果。
 
+### KT-35：const Resource 属性读取被解析期折叠
+
+- **现象**：AU-02 临时运行验收将音频配置的淡入 / 静音时长改为 0，通过局部 Resource 引用读取已是 0，`const AUDIO_EVENT_CONFIG.music_*_seconds` 路径仍按原时长淡变，零时长检查失败。
+- **触发条件**：Godot 4.7.2 直接读取 const 预载 Resource 的字段，随后同一 Resource 的字段发生变化；参见引擎维护仓库 [Issue #101628](https://github.com/godotengine/godot/issues/101628)。
+- **规避**：需要查询当前字段时，通过普通 Resource 引用读取；AU-02 的 `_audio_config` 引用原配置，未复制 Resource。修正后实际 WASAPI 运行验收的零时长检查通过。生产静态资源仍保持运行时只读，验收修改只存在于临时进程内。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。

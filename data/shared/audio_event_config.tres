@@ -79,4 +79,11 @@ stream = ExtResource("8_magical_6")
 
 [resource]
 script = ExtResource("1_config")
+music_fade_in_seconds = 0.5
+music_fade_out_seconds = 0.5
+music_cross_fade_seconds = 0.75
+music_duck_seconds = 0.2
+music_restore_seconds = 0.3
+music_silence_seconds = 0.25
+music_duck_volume = 0.25
 events = Array[ExtResource("2_event")]([SubResource("event_attack_charge"), SubResource("event_attack_ready"), SubResource("event_attack_fire"), SubResource("event_hit_normal"), SubResource("event_hit_trap"), SubResource("event_tier_up"), SubResource("event_contradiction_start"), SubResource("event_contradiction_break"), SubResource("event_oracle_confirm"), SubResource("event_divine_descent_start"), SubResource("event_divine_descent_lock")])
