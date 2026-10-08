@@ -73,3 +73,12 @@ RP-07 等 6. HitResolution。
 RP-08 等 12. ContradictionBreak。
 RP-10 等 7. OpponentPKBar / 本场结果提交。
 RP-12 等 13. FinalOracle 与 19. DivineDescent。
+
+## RP-10 普通复读历史提交与回滚
+
+- `RepeatGenerationStats.commit_normal_repeat_history(run_data, level_id)` 在 PK 胜利时深拷贝本场 `normal_counts_by_line_id`，按 `StringName` 关卡 ID 保存至真实 `SaveData.committed_normal_repeat_history_by_level`。每个值是 `{StringName 原句 ID: int 实际普通生成数}`；当前周目同关只保存首份，空普通统计也记录一次提交。
+- 普通历史与 `contradiction_counts_by_line_id` 完全分开，计划请求数量和未生成请求不入历史。各关独立保存，即使原句 ID 相同也保留各关实际数量，RP-12 后续负责读取方需要的聚合。
+- `discard_uncommitted_normal_repeat_history()` 只清本场未提交普通统计；已提交本场统计仍保留供神谕读取，SaveData 中以前关卡快照保持原值。重开继续创建新的 RepeatDelayQueue / RepeatGenerationStats。
+- Sandbox 在 `_complete_normal_combat()` 停止普通生成与等待队列后提交普通统计，时点为 PK 满值进入矛盾阶段；击破成功、未击破、神谕确认分支均沿用同一份已提交历史。失败和当前关重开显式调用回滚接口。
+- 本场统计由 RepeatDelayQueue 持有，历史由当前周目 SaveData 保存、Repeat 写入；现有 SaveManager 原生 Resource 存读自动包含该导出字段，新周目与缺少该字段的旧存档默认为空。没有把普通复读数写入普通命中历史。
+- 本卡没有执行 RP-12，没有修改 DivineDescent / Ending；后续可将各关已提交普通统计汇总为 DD-02 已有独立复读来源。

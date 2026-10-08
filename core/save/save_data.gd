@@ -32,6 +32,9 @@ const CURRENT_VERSION: int = 1
 @export var committed_normal_hit_history: Array[Dictionary] = []
 @export var next_normal_hit_commit_order: int = 1
 
+# Repeat 按关卡保存 PK 胜利时的普通实际生成统计；键为关卡 ID，值为原句 ID 到数量。
+@export var committed_normal_repeat_history_by_level: Dictionary = {}
+
 
 func get_committed_normal_hit_history() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
