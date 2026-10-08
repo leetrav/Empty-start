@@ -105,3 +105,11 @@ EN-06～09 完成页面数据和显示。
 
 - 四个字段当前均为空，等待策划填写正式判词；查询保留配置原文，允许空文本，未知分类返回空字符串。
 - 后续调用先取得 EN-05 的 `classify(tendency_state)` 结果，再传给配置的 `get_judgement_text()`；配置运行时只读。EN-06 只提供映射，页面和终局接线由后续任务卡完成。
+
+## EN-07 当前结局显示数据接口
+
+- `EndingDisplayData.build(tendency_state, scripture_data, level_catalog, main_art_config, religion_name_config, judgement_text_config)` 组合 EN-02～06 已有接口，返回显示数据字典；调用方提供已初始化身份的有效三项倾向、圣典、完整关卡目录和三份配置 Resource。
+- 输出 `primary_tendency_id`、`secondary_tendency_id`、`main_art`、`religion_name`、`identity_result_class`、`judgement_text` 和 `scripture`。
+- `scripture.rows` 直接沿用 EN-04 的章节显示列表；`scripture.is_empty` 通过 Scripture 的 `get_ordered_entries().is_empty()` 得到。全空时区域 `status` 沿用 EN-04 的 `not_formed_oracle`，保留目录中的缺章位置；有正式经文时为 `confirmed_oracle`。
+- 空圣典不会阻断主图、教名和判词读取。正式配置尚未填写时，文本保持空字符串、主图保持 `null`，显示数据字段仍完整返回。
+- 组装过程只读上游和配置，未接入 EN-01 终局完成事件，未制作 EN-08 页面。仅新增一个关键单元测试，验证全空圣典仍生成配置结果和明确空态。
