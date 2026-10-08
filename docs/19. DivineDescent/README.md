@@ -18,11 +18,11 @@
 
 终局期间不再运行普通 PK 胜负、档位升降和矛盾击破。
 
-当前没有正式 DivineDescent Session 或场景入口。DD-04 提供可组合的 `DivineDescentCombatMode`：`enter_terminal_mode(tier_catalog, hit_resolution, combat_stage, contradiction_break, barrage_area, opponent_pk_bar)` 读取 Tier 5 配置、应用后续弹幕表现倍率，并直接调用各系统的公开锁定入口。进入后 HitResolution 拒绝普通 PK 更新，CombatStage 固定 Tier 5 并忽略后续升降，ContradictionBreakSystem 拒绝窗口启动；矛盾生成和 PK 回拉停止，普通新话继续保持当前生成状态。
+DD-01 已提供独立 `DivineDescentSession.enter(run_data)` 终局进入 / 冻结接口；当前尚无 RS-10 正式场景路由。DD-04 提供可组合的 `DivineDescentCombatMode`：`enter_terminal_mode(tier_catalog, hit_resolution, combat_stage, contradiction_break, barrage_area, opponent_pk_bar)` 读取 Tier 5 配置、应用后续弹幕表现倍率，并直接调用各系统的公开锁定入口。进入后 HitResolution 拒绝普通 PK 更新，CombatStage 固定 Tier 5 并忽略后续升降，ContradictionBreakSystem 拒绝窗口启动；矛盾生成和 PK 回拉停止，普通新话继续保持当前生成状态。
 
 DD-05 在同一模式对象上提供 `start_new_word_decay(config)` 与 `advance_new_word_decay(delta_seconds)`：起始频率读取 Tier 5 配置，衰减时长读取 `data/divine_descent/divine_descent_decay_config.tres`，每次推进只调整 BarrageArea 的生成频率，配置时长结束后频率为 0。该对象不负责终局进入、整局结果冻结或历史候选。
 
-TT-13 提供 `DivineDescentCandidateFilter.filter_three_tendency_history(committed_history)` 作为未来 DD-02 候选归并前的输入边界：已提交普通命中历史中的 neutral 仍保留在存档，但只将正统、异端、荒谬原句交给终局候选与锁句流程。当前神降临运行阶段尚未实现；DD-02 接入时必须复用此筛选入口，再处理归并和权重。
+TT-13 提供 `DivineDescentCandidateFilter.filter_three_tendency_history(committed_history)` 作为 DD-02 候选归并前的唯一输入边界：已提交普通命中历史中的 neutral 仍保留在存档，但只将正统、异端、荒谬原句交给终局候选。DD-01 进入时复用 DD-02 归并入口冻结候选，后续演出阶段继续等待各自任务。
 
 ## 任务顺序
 
@@ -67,11 +67,21 @@ TT-13 提供 `DivineDescentCandidateFilter.filter_three_tendency_history(committ
 
 ## 依赖顺序
 
-DD-01 等 18. Rest、17. ThreeTendencies、15. Scripture。
+DD-01 进入 / 冻结接口已完成；18 的 RS-10 后续在普通关卡全部完成时调用，17 / 15 等源数据继续通过已有真实接口读取。
 DD-02 等【6. HitResolution】HR-15 的已提交普通命中历史与【10. Repeat】已提交普通复读历史。
 DD-03 等 14. Assimilation。
 DD-04～16 完成终局逻辑。
 DD-17 等 20. Ending。
+
+## DD-01 进入与唯一冻结归属
+
+- 每次终局创建一个 `DivineDescentSession`；普通关卡完成的组合方调用 `enter(current_run_data) -> bool`。首次合法进入返回 true；重复调用、空周目或缺少倾向 Resource 返回 false，首次快照保持原值。调用前需完成本场正式结果提交，19 不替上游提交暂存。
+- `is_entered()` 读取进入状态；`get_entry_snapshot()` 返回独立深拷贝，进入前返回 `{}`。会话不保留 SaveData / TendencyState / ScriptureEntry 等源 Resource 引用，也没有改变冻结结果的公开写入接口。
+- 快照字段：`tendency_result`、`scripture_entries`、`committed_normal_hit_history`、`normal_repeat_counts_by_line_id`、`history_candidates`、`assimilation_content`。普通历史与 DD-02 候选分别保留来源及已归并数据；圣典 / 吞并字段沿用 SC-07 / AS-09 的结构。
+- `tendency_result` 保存 `orthodox_total / heretical_total / absurd_total`、`opening_identity_tendency_id` 和 17 公开方法得到的 `primary_tendency_id / secondary_tendency_id / is_primary_tied / has_no_effective_behavior`。仅复制已提交事实，排除 `attempt_*`；并列和全零规则仍由 TendencyState 计算。
+- 唯一归属约定：17 拥有倾向事实和裁决规则，19 持有本次终局不可变使用快照。未来 TT-11 / TT-12 沿用此边界，提供只读倾向事实 / 结果，不新增另一份可变冻结真相；后续消费方从本 Session 读取首次结果。
+- 源存档后续写入、暂存经文变化和调用方修改返回副本均不改变内部快照。空历史仍可进入并提供明确空集合；直接跳过演出或转入 Ending 的规则留 DD-15 / DD-17。
+- DD-01 只负责进入时固定数据，不在本卡接入 Sandbox、Rest UI、RS-10 路由、DD-04 运行模式、DD-05 计时或新的权重 / 演出业务。后续组合方可独立组合现有模式与会话。
 
 ## DD-03 吞并输入接口
 
@@ -87,14 +97,14 @@ DD-17 等 20. Ending。
 - `DivineDescentCandidateFilter.build_history_candidates(committed_hit_history, normal_repeat_counts_by_line_id)` 复用上述边界，按 `original_sentence_id` 归并候选，保持第一次出现的顺序。
 - 候选字段为 `original_sentence_id`、`original_sentence_text`、`tendency`、`hit_count`、`normal_repeat_count` 和 `first_committed_hit_order`，供 DD-06 以后直接读取。
 - `hit_count` 对同一原句的多条已提交命中快照累加；`normal_repeat_count` 独立读取 Repeat 提供的按原句统计字典，不从命中历史字段推断。
-- RP-12 已提供真实复读来源 `RepeatGenerationStats.get_committed_normal_counts_by_line_id(run_data)`，只读 RP-10 已提交普通历史并跨关按原句求和，直接作为上述候选入口第二个参数。第一参数继续通过 `run_data.get_committed_normal_hit_history()` 取得；未提交和矛盾复读排除。终局进入 / 冻结仍由后续 DD-01 组合，本接口不执行新的权重规则。
+- RP-12 已提供真实复读来源 `RepeatGenerationStats.get_committed_normal_counts_by_line_id(run_data)`，只读 RP-10 已提交普通历史并跨关按原句求和，直接作为上述候选入口第二个参数。第一参数继续通过 `run_data.get_committed_normal_hit_history()` 取得；未提交和矛盾复读排除。DD-01 的 Session 已在进入时组合这两个来源并固定结果，本接口不执行新的权重规则。
 
 ## SC-07 圣典输入接口
 
 - `DivineDescentScriptureInput.build_snapshot(run_data)` 通过 15 的 `get_ordered_entries()` 读取已提交经文，返回 `Array[Dictionary]` 独立快照；空圣典、空周目或缺少 ScriptureData 均返回空数组。
 - 每章字段为 `level_id`、`streamer_name`、`original_sentence_id`、`original_sentence_text`、`tendency`、`chapter_number`、`verse_number`。原句 ID 从 `ScriptureEntry.original_line_id` 转为 String，与 DD-02 候选的 `original_sentence_id` 一致。
 - 排序、原文和固定章 / 节号由 Scripture 的正式读取接口提供；未提交暂存排除，同句多章保留，原章号不压缩。修改返回值不会写回圣典。
-- DD-01 的正式进入组合以后调用并持有此快照；DD-07 使用稳定原句 ID 匹配历史候选，再执行其同句一次加权规则。本接口只提供读取依据。
+- DD-01 的 Session 已在正式进入接口调用并持有此快照；DD-07 后续使用稳定原句 ID 匹配历史候选，再执行其同句一次加权规则。本接口只提供读取依据。
 
 ## DD-06 基础权重接口
 
