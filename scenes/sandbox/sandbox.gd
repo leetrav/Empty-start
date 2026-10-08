@@ -81,6 +81,8 @@ func restart_current_attempt() -> void:
 		SaveManager.data.scripture_data.rollback_uncommitted(StringName(restarting_level.level_id))
 	if _hit_resolution != null:
 		_hit_resolution.discard_uncommitted_normal_hit_history()
+	if _repeat_queue != null:
+		_repeat_queue.get_generation_stats().discard_uncommitted_normal_repeat_history()
 	_stop_normal_combat()
 	_contradiction_stage_active = false
 	_oracle_transition_started = false
@@ -545,6 +547,7 @@ func _on_attempt_failed() -> void:
 	_opponent_pk_bar.record_current_level_failure()
 	_stop_normal_combat()
 	_hit_resolution.discard_uncommitted_normal_hit_history()
+	_repeat_queue.get_generation_stats().discard_uncommitted_normal_repeat_history()
 	SaveManager.data.tendency_state.rollback_attempt_tendency()
 	_battle_hud.show_failure()
 
@@ -554,11 +557,16 @@ func _complete_normal_combat() -> void:
 	if not _normal_combat_active or _hit_resolution.get_player_pk() < battle_config.maximum_player_pk:
 		return
 	_stop_normal_combat()
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	# PK 胜利已经成立，先提交普通复读；后续击破或神谕分支不再次提交。
+	if current_level != null:
+		_repeat_queue.get_generation_stats().commit_normal_repeat_history(
+			SaveManager.data, StringName(current_level.level_id)
+		)
 	_contradiction_stage_active = true
 	_contradiction_break = ContradictionBreakSystem.new()
 	add_child(_contradiction_break)
 	_contradiction_break.outcome_locked.connect(_on_contradiction_outcome_locked)
-	var current_level: LevelProfile = _run_state.get_current_level_profile()
 	if not _contradiction_break.load_level_content(current_level):
 		push_error("Sandbox: 当前关卡没有可用的矛盾内容。")
 		return

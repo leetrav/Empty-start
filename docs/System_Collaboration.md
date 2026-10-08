@@ -268,6 +268,8 @@ PK 满
 
 复读弹幕进入屏幕后，继续由【弹幕生成系统】管理实例和寿命。
 
+RP-10 的真实保存入口是 `RepeatGenerationStats.commit_normal_repeat_history(run_data, level_id)`：Sandbox 在 PK 满值进入矛盾阶段时调用，将本场实际普通生成数按关卡写入 `SaveData.committed_normal_repeat_history_by_level`，每关仅提交一次，矛盾复读排除。失败和重开调用 `discard_uncommitted_normal_repeat_history()` 撤销本次普通暂存，已有周目快照保留；跨关聚合与统计消费接线留 RP-12。
+
 ---
 
 ## 8. 直播数据表现系统是什么位置
