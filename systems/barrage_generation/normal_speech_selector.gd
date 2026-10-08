@@ -46,7 +46,7 @@ func select_next_normal_speech(current_level: LevelProfile, neutral_weight_multi
 ## 只将有原句 ID、文本和正权重的话语作为候选。
 func _collect_candidates(current_level: LevelProfile, tendency_id: String) -> Array[LevelSpeech]:
 	var candidates: Array[LevelSpeech] = []
-	for speech in current_level.normal_speech_pool:
+	for speech in current_level.get_normal_speech_pool():
 		if speech == null or speech.tendency_id != tendency_id:
 			continue
 		if speech.original_sentence_id.is_empty() or speech.text.is_empty():

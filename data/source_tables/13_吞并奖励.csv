@@ -1,0 +1,2 @@
+reward_id,streamer_id,reward_type,content_id,inherited_weight,enabled,notes
+reward_a_pool,streamer_a,word_pool,pool_streamer_a,1,true,词库权重用于后续关卡混入

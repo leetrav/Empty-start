@@ -1,0 +1,5 @@
+param_id,value,unit,notes
+new_word_decay_s,10,s,TEST_ONLY｜待策划决定
+auto_repeat_interval_min_s,0.5,s,TEST_ONLY｜待策划决定
+auto_repeat_interval_max_s,2,s,TEST_ONLY｜待策划决定
+converge_ratio,0.9,ratio,TEST_ONLY｜待策划决定

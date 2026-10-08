@@ -1,0 +1,17 @@
+config_type,primary_tendency,secondary_or_state,text_value,asset_id,notes
+main_art,orthodox,,,ending_art_orthodox,三张主图之一
+main_art,heresy,,,ending_art_heresy,
+main_art,absurd,,,ending_art_absurd,
+religion_name,orthodox,orthodox,,,纯正统
+religion_name,orthodox,heresy,,,正统主导+异端次要
+religion_name,orthodox,absurd,,,正统主导+荒谬次要
+religion_name,heresy,orthodox,,,异端主导+正统次要
+religion_name,heresy,heresy,,,纯异端
+religion_name,heresy,absurd,,,异端主导+荒谬次要
+religion_name,absurd,orthodox,,,荒谬主导+正统次要
+religion_name,absurd,heresy,,,荒谬主导+异端次要
+religion_name,absurd,absurd,,,纯荒谬
+judgement,,no_behavior,,,无有效行为，优先级最高
+judgement,,tie,,,最高分并列
+judgement,,consistent,,,开局身份对应倾向与最终主导一致
+judgement,,shifted,,,其余情况

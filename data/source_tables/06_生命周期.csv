@@ -1,0 +1,13 @@
+barrage_type,base_lifetime_s,affected_by_tier_lifetime_mult,notes
+word_strength_1,8,true,系统案：强度1话语
+word_strength_2,7,true,系统案：强度2话语
+word_strength_3,6,true,系统案：强度3话语
+thunder,7,false,系统案：雷弹幕
+fake,7,false,系统案：假弹幕
+retaliation,5,false,系统案：反击弹幕
+repeat,3,true,系统案：复读弹幕；Tier表中的复读寿命=3s×生命周期倍率
+unselectable,5,false,系统案：不可选弹幕
+split,6,true,系统案：分裂一次，子片沿用母体截止时间
+contradiction_candidate,10,false,系统案：Paradox窗口
+true_contradiction,10,false,系统案：只有一次正式攻击机会
+false_contradiction,10,false,系统案：与真矛盾同时存在

@@ -1,0 +1,6 @@
+param_id,value,unit,notes
+new_word_decay_s,,s,从开始到新话生成率降为0的时间
+auto_repeat_interval_min_s,,s,扩散阶段自动复读最短间隔
+auto_repeat_interval_max_s,,s,扩散阶段自动复读最长间隔
+converge_ratio,0.9,ratio,锁定原句可见占比达到此值后进入收束
+final_emphasis_duration_s,,s,全屏强调持续时间

@@ -1,0 +1,3 @@
+level_id,time_limit_s,shot_limit,silence_transition_s,notes
+test_level_01,10,1,1,TEST_ONLY｜引用系统案已给定时间
+test_level_02,10,1,1,TEST_ONLY｜引用系统案已给定时间

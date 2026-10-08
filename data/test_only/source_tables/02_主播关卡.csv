@@ -1,0 +1,3 @@
+level_id,level_order,streamer_id,streamer_name,portrait_asset_id,avatar_asset_id,live_theme,fan_badge_text,background_asset_id,special_play_id,word_pool_id,contradiction_set_id,loser_card_id,enabled,notes
+test_level_01,1,test_streamer_01,TEST_ONLY 小钟,,,临时直播间：谁在替神发言,临时粉丝团,,,test_pool_01,test_contra_01,test_card_01,true,TEST_ONLY｜仅供关卡/词库/结算联调
+test_level_02,2,test_streamer_02,TEST_ONLY 小祷,,,临时直播间：复读就能证明吗,回声测试团,,,test_pool_02,test_contra_02,test_card_02,true,TEST_ONLY｜用来验证关卡切换

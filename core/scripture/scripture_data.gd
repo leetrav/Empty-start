@@ -131,7 +131,7 @@ func _build_entry(level_profile: LevelProfile, candidate: Dictionary) -> Scriptu
 		return null
 	if not ["orthodox", "heretical", "absurd"].has(tendency_id):
 		return null
-	for speech: LevelSpeech in level_profile.normal_speech_pool:
+	for speech: LevelSpeech in level_profile.get_normal_speech_pool():
 		if speech == null or StringName(speech.original_sentence_id) != original_line_id:
 			continue
 		var entry: ScriptureEntry = ScriptureEntry.new()

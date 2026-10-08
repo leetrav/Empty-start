@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="LevelCatalog" format=3]
+
+[ext_resource type="Script" path="res://data/level_configuration/level_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" path="res://data/test_only/generated/level_configuration/test_level_01.tres" id="2_level"]
+[ext_resource type="Resource" path="res://data/test_only/generated/level_configuration/test_level_02.tres" id="3_level"]
+
+[resource]
+resource_name = "TEST_ONLY two-level integration catalog"
+script = ExtResource("1_catalog")
+profiles = Array[ExtResource("2_level")]([ExtResource("2_level"), ExtResource("3_level")])

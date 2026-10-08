@@ -1,0 +1,3 @@
+card_id,streamer_id,display_name,art_asset_id,description,enabled,notes
+test_card_01,test_streamer_01,TEST_ONLY 小钟败者卡,,仅用于收集验证,true,TEST_ONLY｜没有美术资源
+test_card_02,test_streamer_02,TEST_ONLY 小祷败者卡,,仅用于收集验证,true,TEST_ONLY｜没有美术资源

@@ -318,7 +318,7 @@ func _get_oracle_history_with_sentence_text(current_level: LevelProfile) -> Arra
 	var normal_hit_history: Array[Dictionary] = _hit_resolution.get_normal_hit_history()
 	var sentence_text_by_id: Dictionary = {}
 	if current_level != null:
-		for speech: LevelSpeech in current_level.normal_speech_pool:
+		for speech: LevelSpeech in current_level.get_normal_speech_pool():
 			if speech != null and not speech.original_sentence_id.is_empty():
 				sentence_text_by_id[speech.original_sentence_id] = speech.text
 
