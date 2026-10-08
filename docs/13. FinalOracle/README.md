@@ -60,7 +60,7 @@ FO-02～05 在【6. HitResolution】HR-14 的本场普通命中历史与【10. R
 FO-06～09 完成神谕选择流程。
 FO-13 在 FO-06～09 基础上替换正式交互表现：候选进入中央主游戏区，并复用普通攻击完成选择；应在 FO-10～12 奖励与休息联调前完成。
 FO-10 已复用 SC-02 已接入的 Scripture 正式确认接口：Sandbox 创建并绑定当前周目的确认状态，确认事实携带 `level_id` 与候选原句 ID / 倾向，Scripture 从 `LevelCatalog` 解析原句文本、主播名、原关卡序号并按 `SaveData.scripture_data` 同关去重写入。
-FO-11 等 16. LoserCard 与 14. Assimilation。
+FO-11 已接入 16 / 14 的真正击败事实提交，完整奖励验收仍等待正式败者卡资料与关卡吞并配置，详见下方接线状态。
 FO-12 等 18. Rest。
 
 ## FO-02 当前候选池接口
@@ -74,6 +74,7 @@ FO-12 等 18. Rest。
 
 - `FinalOracleCandidatePool.select_most_repeated_per_tendency(candidates, repeat_stats)` 对正统、异端、荒谬分别选择普通复读实际生成数最高的一句。
 - 计数通过 `RepeatGenerationStats.get_normal_count(StringName(original_sentence_id))` 读取；矛盾复读统计不参与。
+- RP-12 已复用并验证这条正式只读链：Sandbox 将本场队列持有的统计直接传入 Session，13 只读取实际普通计数；没有另存复读统计或从周目总量替代本场数量。
 - 复读数相同时优先最近命中更晚的句子；最近命中顺序仍并列时按稳定原句 ID 升序裁决。
 
 ## FO-05 候选补位接口
@@ -128,3 +129,11 @@ FO-12 等 18. Rest。
 - FO-10 没有新增接口：当前 main 已具备 `FinalOracleConfirmationState.confirmation_committed`、`ScriptureData.bind_confirmation_state()` 和 Sandbox 周目初始化绑定。
 - 手动候选与超时候选都经过同一 `FinalOracleSession.confirm_display_candidate()`，首次确认触发 Scripture 写入；同关第二次确认由确认状态和 Scripture 保存列表共同拒绝。
 - Scripture 写入保留原句 ID、原句文本、倾向、主播名、关卡 ID 和章号；本卡只确认接线，不改动节号、奖励或休息流程。
+
+## FO-11 奖励接线状态（配置阻塞，任务尚未完成）
+
+- 手动 / 自动选择仍共用现有 Session 和确认状态。`confirmation_committed` 后，Sandbox 的现有回调检查当前周目、Session 关卡、CB `BREAKTHROUGH` 与当前 LevelProfile，提交普通历史后调用 `LoserCardData.grant_on_true_defeat()` 和 `AssimilationData.register_defeated_streamer()`。
+- 关卡 / 主播来源直接读取当前 `LevelProfile.level_id / streamer_id`；状态数据继续由 `SaveData.loser_card_data / assimilation_data` 拥有。首次确认广播一次，接收方沿用已有周目内关卡 / 主播去重；仅 PK 胜利未击破分支不会进入此接线。
+- Sandbox 的 `loser_card_catalog` 默认读取正式 `data/loser_card/loser_card_catalog.tres`。当前目录仍为空，16 收到提交请求后按已有规则拒绝无资料卡片，正式发卡验收尚未成立。
+- 14 已可登记真正击败及来源，但 `LevelProfile` 尚无词库 `pool_id`、词库继承 `appearance_weight / can_inherit / is_contradiction_pool` 和允许继承的 trait 白名单。普通话语的 appearance_weight 与本关 special_trait_ids 不能替代这些配置，所以当前只提交击败事实，词库 / 特性奖励验收尚未成立。
+- 配置方补齐后，在同一确认回调中使用 14 现有词库 / 特性登记 API 提交允许继承内容，再复验正式卡片和本场新增吞并内容。FO-11 保留等待状态；本轮没有接入 FO-12。

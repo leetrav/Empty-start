@@ -1,5 +1,8 @@
 extends Node
 
+# 击破静音请求完成后通知调用方；中途被新音乐请求替代时不发送。
+signal music_silenced
+
 const SFX_PLAYER_COUNT: int = 8
 const UI_PLAYER_COUNT: int = 4
 
@@ -8,7 +11,25 @@ const SFX_BUS_NAME: StringName = &"SFX"
 const UI_BUS_NAME: StringName = &"UI"
 const AUDIO_EVENT_CONFIG: AudioEventConfig = preload("res://data/shared/audio_event_config.tres")
 
+# 通过同一 Resource 引用读取字段，避免 const Resource 属性在解析期折叠为旧值。
+var _audio_config: AudioEventConfig = AUDIO_EVENT_CONFIG
 var _music_player: AudioStreamPlayer
+var _outgoing_music_player: AudioStreamPlayer
+var _music_tween: Tween
+var _duck_tween: Tween
+# 两首音乐的淡变与共同压低分别保存增益，避免 Tween 同时争用播放器音量。
+var _music_gain: float = 0.0:
+	set(value):
+		_music_gain = clampf(value, 0.0, 1.0)
+		_apply_music_gains()
+var _outgoing_gain: float = 0.0:
+	set(value):
+		_outgoing_gain = clampf(value, 0.0, 1.0)
+		_apply_music_gains()
+var _duck_gain: float = 1.0:
+	set(value):
+		_duck_gain = clampf(value, 0.0, 1.0)
+		_apply_music_gains()
 var _sfx_players: Array[AudioStreamPlayer] = []
 var _ui_players: Array[AudioStreamPlayer] = []
 var _sfx_play_order: Array[int] = []
@@ -23,6 +44,8 @@ func _ready() -> void:
 	var ui_bus_available: bool = _ensure_audio_bus(UI_BUS_NAME)
 
 	_music_player = _create_player("MusicPlayer", MUSIC_BUS_NAME, music_bus_available)
+	_outgoing_music_player = _create_player("MusicTransitionPlayer", MUSIC_BUS_NAME, music_bus_available)
+	_apply_music_gains()
 
 	for index in range(SFX_PLAYER_COUNT):
 		_sfx_players.append(_create_player("SFXPlayer_%d" % (index + 1), SFX_BUS_NAME, sfx_bus_available))
@@ -43,21 +66,140 @@ func play_music(stream: AudioStream) -> void:
 	if not is_instance_valid(_music_player):
 		push_error("AudioManager: music player is not initialized.")
 		return
+	# 原有直接播放入口保持立即播放，也可取消尚未完成的淡出。
+	_cancel_music_tween()
+	_stop_outgoing_music()
+	_music_gain = 1.0
+	_music_player.bus = MUSIC_BUS_NAME
 	if _music_player.stream == stream and _music_player.is_playing():
 		return
-
-	_music_player.bus = MUSIC_BUS_NAME
 	_music_player.stream = stream
 	_music_player.play()
 
 
 func stop_music() -> void:
-	# 停止音乐并清除 Stream，让下一次播放从头开始。
+	# 显式停止取消全部音乐过渡并清空两播放器，让下一次播放从头开始。
+	_cancel_music_tween()
+	if _duck_tween != null:
+		_duck_tween.kill()
+		_duck_tween = null
+	_stop_outgoing_music()
+	_music_gain = 0.0
+	_duck_gain = 1.0
 	if not is_instance_valid(_music_player):
 		return
 
 	_music_player.stop()
 	_music_player.stream = null
+
+
+# 按 AU-01 音乐事件请求主音乐；首次淡入，换曲时交叉切换。
+func change_music(event_id: StringName) -> bool:
+	var event: AudioEvent = _audio_config.find_event(event_id)
+	if event == null or event.audio_type != AudioEvent.AudioType.MUSIC or event.stream == null:
+		push_warning("AudioManager: music event '%s' is missing, empty or not Music." % str(event_id))
+		return false
+	if not _ensure_audio_bus(MUSIC_BUS_NAME) or not is_instance_valid(_music_player):
+		return false
+	_cancel_music_tween()
+	if _music_player.stream != event.stream or not _music_player.is_playing():
+		# 过渡中第三首到来时回收旧淡出尾音，始终只使用两播放器。
+		_stop_outgoing_music()
+		var previous_player: AudioStreamPlayer = _music_player
+		_music_player = _outgoing_music_player
+		_outgoing_music_player = previous_player
+		_outgoing_gain = _music_gain
+		_music_gain = 0.0
+		_music_player.bus = MUSIC_BUS_NAME
+		_music_player.stream = event.stream
+		_music_player.play()
+	var has_outgoing_music: bool = _outgoing_music_player.stream != null and _outgoing_music_player.is_playing()
+	var duration: float = _audio_config.music_cross_fade_seconds if has_outgoing_music else _audio_config.music_fade_in_seconds
+	_tween_music_gains(1.0, duration, _finish_music_change)
+	return true
+
+
+# 使用配置时长淡出并停止，适用于离开当前音乐阶段。
+func fade_out_music() -> void:
+	_tween_music_gains(0.0, _audio_config.music_fade_out_seconds, _finish_music_stop.bind(false))
+
+
+# 击破流程淡出至静音并停止；完成后保持静音，等待调用方请求下一首。
+func fade_to_silence() -> void:
+	_tween_music_gains(0.0, _audio_config.music_silence_seconds, _finish_music_stop.bind(true))
+
+
+# 临时压低所有参与切换的音乐；重复调用始终取同一倍率，不叠加。
+func duck_music() -> void:
+	_tween_duck_gain(_audio_config.music_duck_volume, _audio_config.music_duck_seconds)
+
+
+# 仅恢复音乐压低倍率，保持当前播放位置和玩家 Music Bus 设置。
+func restore_music() -> void:
+	_tween_duck_gain(1.0, _audio_config.music_restore_seconds)
+
+
+# 只控制播放器增益；Music Bus 的玩家音量和静音仍由 SettingsManager 管理。
+func _apply_music_gains() -> void:
+	if is_instance_valid(_music_player):
+		_music_player.volume_linear = _music_gain * _duck_gain
+	if is_instance_valid(_outgoing_music_player):
+		_outgoing_music_player.volume_linear = _outgoing_gain * _duck_gain
+
+
+# 新请求取消旧 Tween 及其回调，避免旧淡出结束后停止新音乐。
+func _cancel_music_tween() -> void:
+	if _music_tween != null:
+		_music_tween.kill()
+		_music_tween = null
+
+
+# 两播放器并行淡变，完成回调在淡变结束后执行；零时长直接完成。
+func _tween_music_gains(target_gain: float, duration: float, completion: Callable) -> void:
+	_cancel_music_tween()
+	if duration <= 0.0:
+		_music_gain = target_gain
+		_outgoing_gain = 0.0
+		completion.call()
+		return
+	_music_tween = create_tween().set_parallel(true)
+	_music_tween.tween_property(self, "_music_gain", target_gain, duration)
+	_music_tween.tween_property(self, "_outgoing_gain", 0.0, duration)
+	_music_tween.chain().tween_callback(completion)
+
+
+# 压低 Tween 与换曲 Tween 分开，交叉切换时两首共同压低。
+func _tween_duck_gain(target_gain: float, duration: float) -> void:
+	if _duck_tween != null:
+		_duck_tween.kill()
+	if duration <= 0.0:
+		_duck_tween = null
+		_duck_gain = target_gain
+		return
+	_duck_tween = create_tween()
+	_duck_tween.tween_property(self, "_duck_gain", clampf(target_gain, 0.0, 1.0), duration)
+
+
+# 换曲完成只清理旧曲，当前主音乐继续播放。
+func _finish_music_change() -> void:
+	_music_tween = null
+	_stop_outgoing_music()
+
+
+# 在实际停止后发送击破静音完成事实，调用方可等待此信号推进表现。
+func _finish_music_stop(notify_silence: bool) -> void:
+	_music_tween = null
+	stop_music()
+	if notify_silence:
+		music_silenced.emit()
+
+
+# 清理交叉切换使用的旧播放器，不影响当前曲目。
+func _stop_outgoing_music() -> void:
+	if is_instance_valid(_outgoing_music_player):
+		_outgoing_music_player.stop()
+		_outgoing_music_player.stream = null
+	_outgoing_gain = 0.0
 
 
 func play_sfx(stream: AudioStream) -> void:
@@ -72,7 +214,7 @@ func play_ui(stream: AudioStream) -> void:
 
 # 按稳定事件 ID 查配置，再交给现有播放器和 Bus 入口执行。
 func play_event(event_id: StringName) -> void:
-	var event: AudioEvent = AUDIO_EVENT_CONFIG.find_event(event_id)
+	var event: AudioEvent = _audio_config.find_event(event_id)
 	if event == null:
 		push_warning("AudioManager: audio event '%s' is not configured." % str(event_id))
 		return
@@ -82,7 +224,7 @@ func play_event(event_id: StringName) -> void:
 
 	match event.audio_type:
 		AudioEvent.AudioType.MUSIC:
-			play_music(event.stream)
+			change_music(event_id)
 		AudioEvent.AudioType.SFX:
 			play_sfx(event.stream)
 		AudioEvent.AudioType.UI:

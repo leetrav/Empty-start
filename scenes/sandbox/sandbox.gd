@@ -10,6 +10,8 @@ const PRESENTATION_ASSETS: PresentationAssetConfig = preload("res://data/shared/
 const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
 const REST_RESULT_VIEW_SCENE: PackedScene = preload("res://ui/rest/rest_result_view.tscn")
 @export var battle_config: SandboxBattleConfig = preload("res://data/sandbox/playable_battle_config.tres")
+# 只从正式败者卡目录发卡；目录缺少资料时由 16 的写入接口拒绝。
+@export var loser_card_catalog: LoserCardCatalog = preload("res://data/loser_card/loser_card_catalog.tres")
 
 @onready var _barrage_area: BarrageArea = %BarrageArea
 @onready var _aim_reticle: AimReticle = %AimReticle
@@ -79,6 +81,8 @@ func restart_current_attempt() -> void:
 		SaveManager.data.scripture_data.rollback_uncommitted(StringName(restarting_level.level_id))
 	if _hit_resolution != null:
 		_hit_resolution.discard_uncommitted_normal_hit_history()
+	if _repeat_queue != null:
+		_repeat_queue.get_generation_stats().discard_uncommitted_normal_repeat_history()
 	_stop_normal_combat()
 	_contradiction_stage_active = false
 	_oracle_transition_started = false
@@ -365,7 +369,7 @@ func _on_oracle_selection_time_changed(seconds_remaining: float) -> void:
 	_battle_hud.show_battle_state("神谕选择 · %.1f 秒" % seconds_remaining)
 
 
-# 成功分支等神谕最终候选确认后，才把本场普通历史并入当前周目。
+# 成功分支正式确认后提交本场历史，并把真正击败事实交给 14 / 16 各自保存。
 func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _candidate: Dictionary) -> void:
 	if run_data != SaveManager.data or _final_oracle_session == null or not _final_oracle_session.is_open():
 		return
@@ -373,10 +377,21 @@ func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _ca
 		return
 	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		return
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	if current_level == null or current_level.level_id != level_id:
+		return
 	if not _hit_resolution.commit_normal_hit_history(run_data):
 		push_error("Sandbox: 神谕确认后提交普通命中历史失败。")
 		return
 	run_data.tendency_state.commit_attempt_tendency()
+	# 上述检查已确认同场击破与正式确认；重复提交继续由确认状态和接收方去重。
+	run_data.loser_card_data.grant_on_true_defeat(
+		StringName(level_id), StringName(current_level.streamer_id), true, true, loser_card_catalog
+	)
+	run_data.assimilation_data.register_defeated_streamer(
+		StringName(level_id), StringName(current_level.streamer_id), true, true
+	)
+	# LevelProfile 尚无正式继承池和特性白名单，只登记击败事实，等待配置方补齐奖励。
 
 
 # 正式满蓄释放时立即按冻结的矛盾原句判定；飞行计时只保留演出。
@@ -532,6 +547,7 @@ func _on_attempt_failed() -> void:
 	_opponent_pk_bar.record_current_level_failure()
 	_stop_normal_combat()
 	_hit_resolution.discard_uncommitted_normal_hit_history()
+	_repeat_queue.get_generation_stats().discard_uncommitted_normal_repeat_history()
 	SaveManager.data.tendency_state.rollback_attempt_tendency()
 	_battle_hud.show_failure()
 
@@ -541,11 +557,22 @@ func _complete_normal_combat() -> void:
 	if not _normal_combat_active or _hit_resolution.get_player_pk() < battle_config.maximum_player_pk:
 		return
 	_stop_normal_combat()
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	# PK 胜利已经成立，先提交普通复读；后续击破或神谕分支不再次提交。
+	if current_level != null:
+		# 粉丝由直播数据按周目和关卡去重，矛盾结果与重复打开均不再次加粉。
+		SaveManager.data.live_session.commit_pk_win_fans(
+			StringName(current_level.level_id), battle_config.pk_win_fan_gain
+		)
+		# 已入账粉丝成为重开基数，防止重放已胜利关卡时回退已保存的增长。
+		_opening_fan_count = SaveManager.data.live_session.fan_count
+		_repeat_queue.get_generation_stats().commit_normal_repeat_history(
+			SaveManager.data, StringName(current_level.level_id)
+		)
 	_contradiction_stage_active = true
 	_contradiction_break = ContradictionBreakSystem.new()
 	add_child(_contradiction_break)
 	_contradiction_break.outcome_locked.connect(_on_contradiction_outcome_locked)
-	var current_level: LevelProfile = _run_state.get_current_level_profile()
 	if not _contradiction_break.load_level_content(current_level):
 		push_error("Sandbox: 当前关卡没有可用的矛盾内容。")
 		return

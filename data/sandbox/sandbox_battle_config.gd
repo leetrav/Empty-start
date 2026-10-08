@@ -6,6 +6,8 @@ extends Resource
 @export var initial_player_pk: float = 0.5
 @export var minimum_player_pk: float = 0.0
 @export var maximum_player_pk: float = 1.0
+# 每场 PK 胜利的粉丝增量待策划配置，缺省 0；运行验证可注入临时正数。
+@export var pk_win_fan_gain: int = 0
 @export var base_pullback_speed: float = 0.001
 @export var normal_lifetime_seconds: float = 10.0
 @export var repeat_lifetime_seconds: float = 6.0

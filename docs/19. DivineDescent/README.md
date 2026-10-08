@@ -76,10 +76,10 @@ DD-17 等 20. Ending。
 ## DD-03 吞并输入接口
 
 - 终局调用方在进入时调用 `DivineDescentAssimilationInput.build_snapshot(run_data)`，并持有返回快照。
-- 输入只读取现有 `SaveData.assimilation_data` 的当前总 `inherited_word_weights` 与 `inherited_trait_ids`，返回相同两个字段：词库 ID → 原权重的 Dictionary，以及稳定特性 ID 的 Array。
-- 两个集合均使用 Godot 原生 `duplicate(true)`；后续源数据变化不会影响已取得的快照，修改快照也不会写回吞并数据。
+- AS-09 已将输入接到 14 的公开只读入口 `SaveData.assimilation_data.get_current_content_snapshot()`，返回当前总 `inherited_word_weights` 与 `inherited_trait_ids`：词库 ID → 原权重的 Dictionary，以及稳定特性 ID 的 Array。
+- 集合隔离由吞并系统的公开快照接口负责：词库字典使用 Godot 原生深拷贝，特性数组复制稳定 ID；后续源数据变化不会影响已取得的快照，修改快照也不会写回吞并数据。
 - 没有成果时两个字段分别为明确空 Dictionary / Array；未提供周目或吞并数据时也采用同一空结构。
-- 本接口只读取总量，独立于 AS-08 的本场新增成果 / 来源接口；没有修改 AssimilationData，也不计算候选权重、圣典加权或实际生成。
+- 本接口只读取总量，保留缺少历史来源记录的既有成果；本场新增 / 来源归属仍归 14，没有修改 AssimilationData，也不计算候选权重、圣典加权或实际生成。
 
 ## DD-02 历史候选接口
 
@@ -87,6 +87,14 @@ DD-17 等 20. Ending。
 - `DivineDescentCandidateFilter.build_history_candidates(committed_hit_history, normal_repeat_counts_by_line_id)` 复用上述边界，按 `original_sentence_id` 归并候选，保持第一次出现的顺序。
 - 候选字段为 `original_sentence_id`、`original_sentence_text`、`tendency`、`hit_count`、`normal_repeat_count` 和 `first_committed_hit_order`，供 DD-06 以后直接读取。
 - `hit_count` 对同一原句的多条已提交命中快照累加；`normal_repeat_count` 独立读取 Repeat 提供的按原句统计字典，不从命中历史字段推断。
+- RP-12 已提供真实复读来源 `RepeatGenerationStats.get_committed_normal_counts_by_line_id(run_data)`，只读 RP-10 已提交普通历史并跨关按原句求和，直接作为上述候选入口第二个参数。第一参数继续通过 `run_data.get_committed_normal_hit_history()` 取得；未提交和矛盾复读排除。终局进入 / 冻结仍由后续 DD-01 组合，本接口不执行新的权重规则。
+
+## SC-07 圣典输入接口
+
+- `DivineDescentScriptureInput.build_snapshot(run_data)` 通过 15 的 `get_ordered_entries()` 读取已提交经文，返回 `Array[Dictionary]` 独立快照；空圣典、空周目或缺少 ScriptureData 均返回空数组。
+- 每章字段为 `level_id`、`streamer_name`、`original_sentence_id`、`original_sentence_text`、`tendency`、`chapter_number`、`verse_number`。原句 ID 从 `ScriptureEntry.original_line_id` 转为 String，与 DD-02 候选的 `original_sentence_id` 一致。
+- 排序、原文和固定章 / 节号由 Scripture 的正式读取接口提供；未提交暂存排除，同句多章保留，原章号不压缩。修改返回值不会写回圣典。
+- DD-01 的正式进入组合以后调用并持有此快照；DD-07 使用稳定原句 ID 匹配历史候选，再执行其同句一次加权规则。本接口只提供读取依据。
 
 ## DD-06 基础权重接口
 
