@@ -8,6 +8,13 @@ extends Resource
 @export var maximum_player_pk: float = 1.0
 # 每场 PK 胜利的粉丝增量待策划配置，缺省 0；运行验证可注入临时正数。
 @export var pk_win_fan_gain: int = 0
+# 击破 / 神谕短时上涨的总增量与时长待策划填写；缺省 0 时关闭该段表现。
+@export var break_boost_viewer_gain: int = 0
+@export var break_boost_like_gain: int = 0
+@export var break_boost_duration_seconds: float = 0.0
+@export var oracle_boost_viewer_gain: int = 0
+@export var oracle_boost_like_gain: int = 0
+@export var oracle_boost_duration_seconds: float = 0.0
 @export var base_pullback_speed: float = 0.001
 @export var normal_lifetime_seconds: float = 10.0
 @export var repeat_lifetime_seconds: float = 6.0

@@ -20,6 +20,9 @@
 - `LiveSessionData.initialize_session(initial_fan_count)` 清空本场观看、点赞、评论，并设置本周目当前粉丝数；新周目默认粉丝数为 0，正式起始粉丝值待策划配置。
 - `LiveSessionData.record_generated_comments(actual_generated_count)` 只累计弹幕系统确认成功生成的实例数量。INT-01 Sandbox 统一监听 `BarrageArea.barrage_generated(view)`，普通与复读每个成功实例传 1；队列返回数量不再重复计评论。
 - LD-02 通过 `set_opening_viewers(multiplier)` 以本次开播单次抽取的倍率计算并保存 `viewer_count`；计算将结果截为非负整数。倍率范围待策划提供；此入口接收抽取后的倍率，不负责随机抽取。
+- LD-06 的 `start_short_boost(event, viewer_gain, like_gain, duration_seconds) -> bool` 接收 `BoostEvent.CONTRADICTION_BREAK` 或 `ORACLE_CONFIRMATION`，两种事件在本次开播各接收一次。总增量与时长在触发时固定；负增量、非正时长或全零增量不启动表现。`advance_short_boosts(delta)` 按实际游戏帧时间逐步补齐整数观看 / 点赞增量，到期停止增长并保留累计值；两段重叠时各自只贡献一次配置总量。
+- Sandbox 只在 `outcome_locked(BREAKTHROUGH)` 成功分支和校验同场身份后的 `confirmation_committed` 分支触发上述接口，`_process(delta)` 负责推进；未击破、神谕仅开放或重复请求均不会额外触发。SceneTree 暂停冻结推进；`initialize_session()` 清除旧上涨与触发记录。计时 / 触发记录不存档，不修改 PK、倾向、评论或粉丝。
+- LD-06 复用 `SandboxBattleConfig` 的 `break_boost_viewer_gain`、`break_boost_like_gain`、`break_boost_duration_seconds` 和对应的 `oracle_boost_*` 三项配置。增量为本次上涨总量，时长单位为秒；正式策划值待交付，六项缺省均为 0，当前正式配置保持关闭。HUD 继续通过 `Resource.changed` 展示逐步上涨，无新增布局、文案或动画资源。
 - LD-07 的 `LiveSessionData.commit_pk_win_fans(level_id, fan_gain) -> bool` 由正式 PK 胜利入口提交配置增量；首次提交返回 `true`，同关重复提交返回 `false`。空关卡 ID 或负增量拒绝提交。`settled_fan_level_ids` 与粉丝数一起随 `SaveData.live_session` 保存，新周目独立初始化；开播初始化保留去重记录。
 - Sandbox 在 `HitResolution` 最终 PK 达到满值、进入矛盾阶段前结算粉丝，矛盾未击破仍保留收益。胜利后同步重开粉丝基数，重复重开或读档进入同关不会回退已入账收益或再次增加。`SandboxBattleConfig.pk_win_fan_gain` 复用现有运行配置，正式策划增量待交付，缺省 0；零增量也视为本关已提交，验证中的正数只注入临时运行实例。
 - LD-09 / INT-03 的 `LiveDataHud` 用四个独立 RichTextLabel 显示四项数值；LiveSessionData 计数属性变化时发出 `Resource.changed`，HUD 随信号刷新。
@@ -66,7 +69,7 @@ LD-01～02 可以先完成。
 LD-03 等 6. HitResolution。
 LD-04 等 8. CombatStage。
 LD-05 等 3. BarrageGeneration 与 10. Repeat。
-LD-06 等 12. ContradictionBreak 与 13. FinalOracle。
+LD-06 已接入 12 / 13 的正式击破成功与神谕确认事件；上涨幅度和时长待策划配置。
 LD-07 已接入 Sandbox 的正式 PK 胜利入口；正式粉丝增量待策划配置。
 LD-08 等 7. OpponentPKBar 重开流程。
 LD-10 等 18. Rest。
