@@ -30,6 +30,13 @@
 - `rollback_uncommitted(level_id)` 只撤回匹配当前关的暂存，正式 `entries` 保留。Sandbox 的真实 `restart_current_attempt()` 已调用该入口，读档后的本场暂存也适用。
 - Sandbox 周目初始化已经绑定 Scripture 接收方；场景节点结构保持现状。
 
+## SC-07：神降临读取
+
+- 19 的 `DivineDescentScriptureInput.build_snapshot(run_data)` 直接消费 `SaveData.scripture_data.get_ordered_entries()`，返回已提交经文的独立 `Array[Dictionary]` 快照；暂存经文排除，空圣典或缺少输入返回空数组。
+- 输出保留 `level_id`、`streamer_name`、原章号 `chapter_number` 和固定 `verse_number`；`original_line_id` / `original_line_text` / `tendency_id` 分别映射为 DD-02 使用的 `original_sentence_id` / `original_sentence_text` / `tendency`。原句 ID 转为同候选一致的 String。
+- 原文、章序、固定节号继续读取 15 的正式记录。同句多章完整保留，缺章不生成假经文且后续章号保持原值；DD-07 后续按稳定原句 ID 处理加权。
+- 本卡只建立读取适配；终局进入时调用并持有快照的组合归 DD-01，圣典加权归 DD-07。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
