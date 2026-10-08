@@ -5,7 +5,7 @@ signal rest_opened(session: RestSession)
 signal rest_continue_requested(session: RestSession)
 
 const SAMPLE_LEVEL_CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
-const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
+const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/generated/combat_stage/tier_catalog.tres")
 const PRESENTATION_ASSETS: PresentationAssetConfig = preload("res://data/shared/presentation_asset_config.tres")
 const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
 const REST_RESULT_VIEW_SCENE: PackedScene = preload("res://ui/rest/rest_result_view.tscn")

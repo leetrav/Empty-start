@@ -1,0 +1,12 @@
+rule_id,trigger,viewer_mode,viewer_value,like_mode,like_value,comment_delta,fan_mode,fan_value,duration_s,notes
+opening_min,开播人数下界倍率,random_mult_min,0.75,none,0,0,none,0,0,示例值，可调整
+opening_max,开播人数上界倍率,random_mult_max,1.25,none,0,0,none,0,0,示例值，可调整
+hit_normal,正常命中,add,,add,,0,none,0,0,
+hit_trap,陷阱命中,add,,mult,,,none,0,0,
+tier_up,升档,add,,none,0,0,none,0,0,
+tier_high,高档位,none,0,mult,,0,none,0,,
+barrage_spawn,普通弹幕生成,none,0,none,0,,none,0,0,评论数变化
+repeat_spawn,复读生成,none,0,none,0,,none,0,0,评论数变化
+contradiction_break,矛盾击破,add,,add,,,none,0,,短时上涨
+oracle_confirm,神谕确认,add,,add,,,none,0,,短时上涨
+pk_win_fans,PK胜利粉丝结算,none,0,none,0,0,add,,0,同一场只结算一次

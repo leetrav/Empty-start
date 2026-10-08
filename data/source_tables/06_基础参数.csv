@@ -1,0 +1,11 @@
+param_id,value,unit,notes
+base_resolution,1920x1080,px,系统案：PC先行；美术交付尺寸应大于基础尺寸2倍
+aim_visual_size,96x96,px,系统案：只负责表现
+theoretical_attack_cycle,1.1–1.2,s,系统案：0.8s蓄力 + 0.15–0.25s飞行 + 0.15s硬直
+single_shot_hit_cap,unlimited,,系统案：暂不限制；同一发同一弹幕只结算一次
+paradox_shot_limit,1,count,系统案：仅1次正式发射机会；未蓄满松开不消耗
+paradox_window_s,10,s,系统案：超时按PK胜利但未击破处理
+paradox_spawn_batch_mult,2,ratio,系统案：真假矛盾每批数量倍率
+paradox_spawn_frequency_mult,3,ratio,系统案：真假矛盾生成频率倍率
+paradox_move_speed_mult,2.5,ratio,系统案：真假矛盾移动速度倍率
+paradox_pullback_mult,0,ratio,系统案：进入Paradox后停止普通回拉

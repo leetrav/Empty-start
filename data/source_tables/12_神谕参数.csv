@@ -1,0 +1,5 @@
+param_id,value,unit,notes
+max_candidates,3,count,最多展示候选数
+selection_time_s,10,s,候选开放后的选择时间
+verse_number_min,1,int,圣典节号范围下限
+verse_number_max,99,int,圣典节号范围上限

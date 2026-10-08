@@ -1,0 +1,2 @@
+level_id,time_limit_s,shot_limit,silence_transition_s,notes
+level_01,10,1,1,系统案：Paradox窗口10s；仅1次正式发射机会；成功击破后与终结神谕共用1s静音过渡
