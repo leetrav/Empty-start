@@ -18,7 +18,7 @@
 
 终局期间不再运行普通 PK 胜负、档位升降和矛盾击破。
 
-DD-01 已提供独立 `DivineDescentSession.enter(run_data)` 终局进入 / 冻结接口；当前尚无 RS-10 正式场景路由。DD-04 提供可组合的 `DivineDescentCombatMode`：`enter_terminal_mode(tier_catalog, hit_resolution, combat_stage, contradiction_break, barrage_area, opponent_pk_bar)` 读取 Tier 5 配置、应用后续弹幕表现倍率，并直接调用各系统的公开锁定入口。进入后 HitResolution 拒绝普通 PK 更新，CombatStage 固定 Tier 5 并忽略后续升降，ContradictionBreakSystem 拒绝窗口启动；矛盾生成和 PK 回拉停止，普通新话继续保持当前生成状态。
+DD-01 已提供独立 `DivineDescentSession.enter(run_data)` 终局进入 / 冻结接口；RS-10 已由 Sandbox 末关 Rest Continue 调用，并通过 `divine_descent_entered(session)` 提供同一冻结 Session。DD-04 提供可组合的 `DivineDescentCombatMode`：`enter_terminal_mode(tier_catalog, hit_resolution, combat_stage, contradiction_break, barrage_area, opponent_pk_bar)` 读取 Tier 5 配置、应用后续弹幕表现倍率，并直接调用各系统的公开锁定入口。进入后 HitResolution 拒绝普通 PK 更新，CombatStage 固定 Tier 5 并忽略后续升降，ContradictionBreakSystem 拒绝窗口启动；矛盾生成和 PK 回拉停止。RS-10 清理旧普通生成、输入与界面并拒绝普通重开，不提前启动后续扩散或演出。
 
 DD-05 在同一模式对象上提供 `start_new_word_decay(config)` 与 `advance_new_word_decay(delta_seconds)`：起始频率读取 Tier 5 配置，衰减时长读取 `data/divine_descent/divine_descent_decay_config.tres`，每次推进只调整 BarrageArea 的生成频率，配置时长结束后频率为 0。该对象不负责终局进入、整局结果冻结或历史候选。
 

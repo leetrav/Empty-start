@@ -442,6 +442,8 @@ RS-09 的正式调用链为 RestResultView 的继续请求 → Sandbox → `Rest
 → 神降临系统
 ```
 
+RS-10 在 `LevelRunState.complete_level()` 返回 `ALL_NORMAL_LEVELS_COMPLETED` 后，由 Sandbox 调用 `DivineDescentSession.enter(SaveManager.data)` 冻结当前周目已提交事实，组合已有终局模式关闭普通规则并发出 `divine_descent_entered(session)`。末关重复请求不会再冻结或提交，后续演出消费同一 Session 的只读快照。
+
 ---
 
 ## 13. 吞并怎么影响后面的战斗
