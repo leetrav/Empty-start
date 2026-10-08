@@ -173,6 +173,21 @@ func spawn_normal_batch_now() -> int:
 	return _spawn_normal_batch(true)
 
 
+# 只读取区域内实际可见的弹幕记录；纯 UI、隐藏及待移除视图不参与终局占比。
+func get_visible_barrage_records() -> Array[BarrageRuntimeRecord]:
+	var records: Array[BarrageRuntimeRecord] = []
+	var area_rect := Rect2(Vector2.ZERO, size)
+	for child in get_children():
+		if not child is BarrageView or child.is_queued_for_deletion():
+			continue
+		var view := child as BarrageView
+		if view.runtime_record == null or not view.is_visible_in_tree():
+			continue
+		if area_rect.intersects(Rect2(view.position, view.size)):
+			records.append(view.runtime_record)
+	return records
+
+
 func get_current_barrage_counts() -> Dictionary:
 	# 从当前真实 BarrageView 汇总，不保存第二份计数。
 	var normal_count: int = 0
