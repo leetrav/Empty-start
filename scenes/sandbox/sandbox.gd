@@ -413,6 +413,45 @@ func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _ca
 		# 继承白名单独立于本关特性装配，不能把 special_trait_ids 直接当作奖励。
 		for trait_id: StringName in current_level.inheritable_trait_ids:
 			run_data.assimilation_data.register_inherited_trait(source_level_id, trait_id, true)
+	# 等同步确认及攻击回调结束，再收起候选进入休息，防止旧回调重新显示界面。
+	_open_rest_after_oracle.call_deferred(run_data, _final_oracle_session)
+
+
+# 只把同场已确认事实交给休息入口；奖励已提交，展示只调用已有公开读取链。
+func _open_rest_after_oracle(run_data: SaveData, session: FinalOracleSession) -> void:
+	# 重开、换关或换周目后，旧帧尾请求不再影响当前尝试。
+	if run_data != SaveManager.data or session == null or session != _final_oracle_session:
+		return
+	if _rest_session != null and _rest_session.is_open():
+		return
+	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		return
+	var current_level: LevelProfile = _run_state.get_current_level_profile()
+	if current_level == null or session.get_level_id() != current_level.level_id or session.get_confirmed_selection().is_empty():
+		return
+	_rest_session = RestSession.new()
+	if not _rest_session.open_result({
+		"level_id": current_level.level_id,
+		"result_kind": "breakthrough_oracle_complete",
+		"pk_won": true,
+		"contradiction_broken": true,
+	}):
+		push_error("Sandbox: 休息入口拒绝本场已确认神谕结果。")
+		return
+	_stop_normal_combat()
+	_contradiction_stage_active = false
+	_repeat_queue.clear_contradiction_queue()
+	_oracle_transition_timer.stop()
+	_oracle_selection_timer = null
+	_attack_charge_input.clear_selection_targets()
+	_attack_charge_input.lock_new_attacks()
+	_oracle_candidate_display.clear_display()
+	_final_oracle_session = null
+	_battle_hud.show_battle_state("休息时刻")
+	if not _rest_result_view.show_result(_rest_session, run_data, level_catalog, loser_card_catalog):
+		push_error("Sandbox: 无法显示本场已确认神谕结果。")
+		return
+	rest_opened.emit(_rest_session)
 
 
 # 正式满蓄释放时立即按冻结的矛盾原句判定；飞行计时只保留演出。
