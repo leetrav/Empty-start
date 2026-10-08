@@ -300,6 +300,8 @@ RP-12 的只读边界：13 从本场同一 `RepeatGenerationStats.get_normal_cou
 
 LD-06 由 Sandbox 将 `ContradictionBreakSystem.outcome_locked(BREAKTHROUGH)` 与校验同场身份后的 `FinalOracleConfirmationState.confirmation_committed` 交给 `SaveData.live_session.start_short_boost()`。直播数据系统拥有每次开播的触发记录和短时进度，配置总量 / 时长来自现有 `SandboxBattleConfig`；场景仅用实际帧时间调用 `advance_short_boosts()`，HUD 沿用 `Resource.changed` 读取观看 / 点赞。重复事件不再累加，重开清理旧表现，评论和粉丝继续由各自既有规则更新。
 
+LD-10 在原 PK 胜利提交入口保存每关实际粉丝增量；Rest 沿用两个分支已有的 SaveData 上下文，首次展示通过 `RestSession.capture_live_result()` 冻结真实观看 / 点赞 / 评论 / 总粉丝及该关增量。重复查看只读取同一会话的快照，不提交粉丝；旧存档缺增量记录时明确提示，正式零增量显示 0。Sandbox 无新增接线，短时上涨继续沿用 LD-06，显示快照固定在首次打开时。
+
 核心战斗继续由 PK、档位、倾向和关卡流程决定。
 
 所以程序看到“点赞变多”时，可以理解成：**战斗结果影响点赞表现**。
