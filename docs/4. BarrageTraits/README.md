@@ -122,6 +122,12 @@ BT-11 等【6. HitResolution】有真实结果输入后再接。
 
 BT-13 等【14. Assimilation】有真实继承输出后再接。
 
+## AS-06 提供的已提交特性输入
+
+`LevelCatalog.get_inherited_content_snapshot(current_run_data.assimilation_data)` 的 `inherited_trait_ids` 直接来自 14 的已提交总量公开快照，与可解析普通池一起返回独立数据。没有正式奖励时数组为空；没有从本关 special_trait_ids 或待确认白名单补造已获特性。
+
+4 系统可将返回 ID 交给已有 `BarrageTraitSet.add_trait()`，使用 `are_compatible()` 按实际普通 / 陷阱 / 复读上下文校验。AS-06 smoke 已验证第一关真实确认后，第二关读取 occlusion 并装配到独立 TraitSet；这里只验证数据消费，不代表 BT-13 的实际弹幕分配或战斗触发已完成，BT-12 矛盾隔离边界继续保持。
+
 ## FO-11 测试配置前置
 
 - `LevelProfile.inheritable_trait_ids` 提供独立继承白名单，和当前关 `special_trait_ids` 分开；14 只登记白名单项，后续实例装配继续复用本系统支持 ID 与兼容规则。
