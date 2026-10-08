@@ -2,6 +2,7 @@ class_name DivineDescentSpread
 extends Node
 
 signal repeat_generated(original_sentence_id: StringName, view: BarrageView, current_weight: int)
+signal sentence_locked(candidate: Dictionary)
 
 var _candidates: Array[Dictionary] = []
 var _barrage_area: BarrageArea
@@ -10,6 +11,8 @@ var _timer: Timer
 var _repeat_lifetime_seconds: float = 0.0
 var _display_template: String = ""
 var _generation_blocked: bool = false
+var _combat_mode: DivineDescentCombatMode
+var _locked_candidate: Dictionary = {}
 
 
 # 原生 Timer 独立于玩家输入推进；全局暂停沿用 SceneTree 的暂停模式。
@@ -48,7 +51,47 @@ func start(
 	if random_generator == null:
 		_random_generator.randomize()
 	_timer.start(interval_seconds)
+	_try_lock_after_new_word_decay()
 	return true
+
+
+# 绑定 DD-05 的真实衰减事实；晚绑定已归零的模式时立即读取当前扩散池。
+func bind_new_word_decay(combat_mode: DivineDescentCombatMode) -> bool:
+	if combat_mode == null:
+		return false
+	if _combat_mode != null:
+		return _combat_mode == combat_mode
+	_combat_mode = combat_mode
+	_combat_mode.new_word_rate_changed.connect(_on_new_word_rate_changed)
+	_try_lock_after_new_word_decay()
+	return true
+
+
+# 锁句后返回首次独立快照，调用方不能修改已经确定的锁句结果。
+func get_locked_candidate() -> Dictionary:
+	return _locked_candidate.duplicate(true)
+
+
+# 锁句状态从已保存结果读取，未归零或空候选时仍为 false。
+func is_sentence_locked() -> bool:
+	return not _locked_candidate.is_empty()
+
+
+# 只在真实归零时响应；后续重复通知不能覆盖首次结果。
+func _on_new_word_rate_changed(_rate_multiplier: float, _progress: float) -> void:
+	_try_lock_after_new_word_decay()
+
+
+# 完成标记使用近似比较，所以还需严格检查新话率为零，避免极小正值提前锁句。
+func _try_lock_after_new_word_decay() -> void:
+	if _combat_mode == null or is_sentence_locked() or _candidates.is_empty():
+		return
+	if not _combat_mode.is_new_word_decay_complete() or _combat_mode.get_new_word_rate_multiplier() != 0.0:
+		return
+	stop()
+	_locked_candidate = DivineDescentCandidateFilter.select_highest_weight_candidate(get_current_candidates())
+	if is_sentence_locked():
+		sentence_locked.emit(get_locked_candidate())
 
 
 # 每次重新读取当前权重抽一句；生成失败保持权重，下一次 Timer 到期再尝试。

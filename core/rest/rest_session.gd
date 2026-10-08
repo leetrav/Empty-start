@@ -35,7 +35,7 @@ func continue_to_next_level(run_state: LevelRunState) -> LevelRunState.Completio
 	return run_state.complete_level(str(_result_snapshot.get("level_id", "")))
 
 
-# 只读取当前成功关卡已提交的成果，不调用圣典、卡片或吞并的发放入口。
+# 按所属周目与冻结 level_id 只读已提交成果；重复展示沿用此入口，推进只由继续请求触发。
 func read_committed_rewards(
 		run_data: SaveData,
 		level_catalog: LevelCatalog,
