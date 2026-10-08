@@ -103,6 +103,13 @@ BT-01～BT-09 可以先完成大部分纯特性规则。
 
 BT-10 的目标可选过滤与到达结果读取已由 5. CombatAttack CA-08 完成。
 
+## BT-10 可选目标过滤接线
+
+- 复用 CA-08 的真实释放扫描：`AttackChargeInput._capture_target_snapshot()` 遍历当前 BarrageArea 视图，使用既有生命周期、区域可见矩形和准心相交检查，再对每条相交弹幕调用自身 `BarrageTraitSet.is_selectable()`。
+- 带 `unselectable` 的目标排除，普通可选目标保留；过滤后的集合仍由现有 `AttackTargetSnapshot.capture_at_release()` 去重并冻结。
+- 范围内仅有不可选目标时形成空快照；到达后沿用 CombatAttack → HitResolution 现有整发落空判定、异常选择与一次结算，不在特性系统新增瞄准、惩罚或收益规则。
+- BT-10 只明确调整已有过滤调用的顺序并完成真实输入 smoke；没有改 Sandbox、关卡特性分配、神谕选择目标或后续 BT-11 接线，也没有新增自动化测试。
+
 BT-11 等【6. HitResolution】有真实结果输入后再接。
 
 BT-12 等【12. ContradictionBreak】有真实矛盾阶段后再接。

@@ -28,6 +28,7 @@
 - CA-07 提供可注入 `AttackTimingConfig` 和普通攻击阶段计时：快照释放后进入飞行，到达时复核并发出结果，再进入硬直；硬直期间不推进蓄力。`tests/fixtures/combat_attack/ca07_short_attack_timing.tres` 只用于计时逻辑验证；INT-01 为 Sandbox 注入独立运行配置。
 - CA-11 让 AttackChargeInput 在全局暂停时冻结蓄力处理，并让飞行 / 硬直 Timer 使用可暂停模式；恢复后沿用暂停前的进度。
 - CA-08 为每条 `BarrageRuntimeRecord` 装配独立 `BarrageTraitSet`；释放扫描调用 `is_selectable()`，到达复核调用 `get_hit_result()`，并通过 `shot_arrival_resolved` 传递目标 ID、目标节点和原始 `BarrageTraitResult`。
+- BT-10 将释放扫描中的 `is_selectable()` 明确放在生命周期、区域可见性及准心相交检查后，逐个过滤范围内不可选弹幕；全部排除时空快照继续进入现有落空结算链。准心判定、快照去重与正常目标收益继续复用原实现。
 - 当前生成记录的特性集合默认为空；如何把 `LevelProfile.special_trait_ids` 分配到具体弹幕实例尚无已定规则，本卡不猜分配方式。
 - CA-09 通过注入的 `HitResolution` 调用正常收益、整发落空 / 异常优先级、单次 `resolve_shot_results()` 和普通命中历史接口；HitResolution 持有唯一 PK。INT-01 Sandbox 从独立运行配置读取初始 PK（当前0.5），并把最终 PK 信号接给 CombatStage。
 - `shot_hit_resolution_submitted` 同发包含目标有效性、`ShotAnomaly`、逐目标 `BarrageTraitResult` / 奖励字典及 HitResolution 返回值。异常惩罚映射等待 HR-03；INT-01 由 Sandbox 据逐目标结果连接普通复读与本场倾向暂存。
