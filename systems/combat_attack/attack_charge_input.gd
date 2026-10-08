@@ -299,7 +299,7 @@ func _submit_arrival_to_hit_resolution(
 	)
 
 
-# 只从 BarrageArea 当前真实视图中筛选有效、可选、在区域内且与准心相交的弹幕。
+# 扫描真实可见弹幕并检查准心相交，再逐个调用 BT-02 排除不可选目标。
 func _capture_target_snapshot() -> AttackTargetSnapshot:
 	var candidates: Array[Node] = []
 	var aim_center: Vector2 = _aim_reticle.get_aim_center_global_position() if _aim_reticle != null else Vector2.ZERO
@@ -327,8 +327,6 @@ func _capture_target_snapshot() -> AttackTargetSnapshot:
 			continue
 		if barrage_view.runtime_record == null or barrage_view.runtime_record.trait_set == null:
 			continue
-		if not barrage_view.runtime_record.trait_set.is_selectable():
-			continue
 		if current_time_msec >= barrage_view.runtime_record.expires_at_msec:
 			continue
 
@@ -336,8 +334,12 @@ func _capture_target_snapshot() -> AttackTargetSnapshot:
 		var visible_target_rect: Rect2 = area_rect.intersection(target_rect)
 		if visible_target_rect.size.x <= 0.0 or visible_target_rect.size.y <= 0.0:
 			continue
-		if _aim_reticle.intersects_target_area(visible_target_rect):
-			candidates.append(barrage_view)
+		if not _aim_reticle.intersects_target_area(visible_target_rect):
+			continue
+		# 可选规则归特性组件；全部被排除时保留空快照，由原有结算链判断落空。
+		if not barrage_view.runtime_record.trait_set.is_selectable():
+			continue
+		candidates.append(barrage_view)
 
 	return AttackTargetSnapshot.capture_at_release(candidates, aim_center)
 
