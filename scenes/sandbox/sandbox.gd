@@ -394,13 +394,25 @@ func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _ca
 		return
 	run_data.tendency_state.commit_attempt_tendency()
 	# 上述检查已确认同场击破与正式确认；重复提交继续由确认状态和接收方去重。
+	var source_level_id := StringName(current_level.level_id)
+	var source_streamer_id := StringName(current_level.streamer_id)
 	run_data.loser_card_data.grant_on_true_defeat(
-		StringName(level_id), StringName(current_level.streamer_id), true, true, loser_card_catalog
+		source_level_id, source_streamer_id, true, true, loser_card_catalog
 	)
-	run_data.assimilation_data.register_defeated_streamer(
-		StringName(level_id), StringName(current_level.streamer_id), true, true
+	var defeat_added: bool = run_data.assimilation_data.register_defeated_streamer(
+		source_level_id, source_streamer_id, true, true
 	)
-	# LevelProfile 尚无正式继承池和特性白名单，只登记击败事实，等待配置方补齐奖励。
+	if defeat_added:
+		# 只登记本关配置允许继承的普通池，资格与矛盾排除由 14 的现有入口判断。
+		var pool: WordPoolInheritanceConfig = current_level.normal_pool_inheritance
+		if pool != null:
+			run_data.assimilation_data.register_inherited_word_pool(
+				source_level_id, pool.pool_id, pool.appearance_weight,
+				pool.can_inherit, pool.is_contradiction_pool
+			)
+		# 继承白名单独立于本关特性装配，不能把 special_trait_ids 直接当作奖励。
+		for trait_id: StringName in current_level.inheritable_trait_ids:
+			run_data.assimilation_data.register_inherited_trait(source_level_id, trait_id, true)
 
 
 # 正式满蓄释放时立即按冻结的矛盾原句判定；飞行计时只保留演出。

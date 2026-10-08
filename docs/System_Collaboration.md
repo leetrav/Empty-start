@@ -644,7 +644,7 @@ README 里“等某系统”表示当前这张联调卡等待对应接口；同�
 
 当前 `LevelProfile.normal_pool_inheritance` 由关卡配置持有，提供该关普通词库的稳定 ID、整池继承权重与资格；词库正文仍读取同一 `normal_speech_pool`。`inheritable_trait_ids` 是独立特性白名单，和本关启用的 `special_trait_ids` 分开。
 
-13 在正式确认的同场校验后把这些静态值交给 14 现有登记 API；卡片资料交给 16 的既有 Catalog / 发卡入口。14 / 16 继续拥有运行成果、来源与去重。`tests/fixtures/fo11/` 只提供显式注入的 TEST_ONLY 验收数据，生产默认目录没有替换，完整 Sandbox 奖励接线继续由 FO-11 负责。
+13 在正式确认的同场校验后把这些静态值交给 14 现有登记 API；卡片资料交给 16 的既有 Catalog / 发卡入口。14 / 16 继续拥有运行成果、来源与去重。FO-11 已在 Sandbox 同一回调中按首次击败登记结果提交允许继承的普通池和白名单特性；`tests/fixtures/fo11/` 只提供显式注入的 TEST_ONLY 验收数据，生产默认目录没有替换，正式资源仍待配置。
 
 ### 提交身份
 
