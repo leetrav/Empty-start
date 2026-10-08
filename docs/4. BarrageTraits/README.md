@@ -32,7 +32,7 @@
 - BT-08 将反弹 → 遮挡 → 基础类型固定为唯一结果解析顺序，并新增 3 个关键单元测试。
 - BT-09 提供纯逻辑 `BarrageTraitSet.are_compatible()`，判断不可选、分裂、反弹与外部提供的陷阱 / 复读类别之间已明确的互斥规则。
 - CA-08 已将现有 `BarrageTraitSet.is_selectable()` 与 `get_hit_result()` 接入 CombatAttack 的释放扫描和到达结果；`BarrageRuntimeRecord` 为每个实例装配独立特性组件。
-- 3. BarrageGeneration 已有正式运行时记录与生成入口；它只装配特性组件，不解释特性语义，也暂未把 `LevelProfile.special_trait_ids` 分配到具体弹幕实例。
+- 3. BarrageGeneration 已有正式运行时记录与生成入口；BT-13 提供本关 / 已提交继承的可用集合查询和显式普通实例装配，具体分配比例仍待正式配置。
 - 2. LevelConfiguration 已拆出“本关特殊玩法标识”的配置任务。
 - BT-06 的子话语生成还有待按 3. BarrageGeneration 的正式入口完成场景联调；本系统不自建生成逻辑。
 - CA-09 / INT-01 已将逐目标 Trait Result 交给 HitResolution，并由 Sandbox 仅保留遮挡未命中的目标；正常、假牌、反击复制品和反弹结果都结束实例。生命周期与普通收益独立判断，假牌/反击/反弹继续跳过普通收益。当前样例使用空 TraitSet；special_trait_ids 的实例分配与 14. Assimilation 装配继续留后续卡，12 的矛盾特性边界已由 BT-12 核实。
@@ -120,13 +120,22 @@ BT-11 等【6. HitResolution】有真实结果输入后再接。
 - Godot 4.7.2 一次 runtime smoke 使用现有一发上限，按当前关重开分别覆盖假 / 真矛盾：生成时两类均无假牌、反弹、分裂、不可选、遮挡或反击复制品特性，真假判定和选中事实保留。普通阶段六种特性组件规则及真实普通 / 遮挡输入继续工作。
 - BT-12 仅补已有生成边界中文注释并完成定向验收；没有新增接口、清洗 TraitSet 的重复逻辑或自动化单测，也没有修改 Sandbox。后续特性分配 / BT-13 仍应只按各自普通实例边界接入，保持矛盾专用记录独立。
 
-BT-13 等【14. Assimilation】有真实继承输出后再接。
+BT-13 已接入【14. Assimilation】的真实继承输出，接口与验收范围见下文。
 
 ## AS-06 提供的已提交特性输入
 
 `LevelCatalog.get_inherited_content_snapshot(current_run_data.assimilation_data)` 的 `inherited_trait_ids` 直接来自 14 的已提交总量公开快照，与可解析普通池一起返回独立数据。没有正式奖励时数组为空；没有从本关 special_trait_ids 或待确认白名单补造已获特性。
 
 4 系统可将返回 ID 交给已有 `BarrageTraitSet.add_trait()`，使用 `are_compatible()` 按实际普通 / 陷阱 / 复读上下文校验。AS-06 smoke 已验证第一关真实确认后，第二关读取 occlusion 并装配到独立 TraitSet；这里只验证数据消费，不代表 BT-13 的实际弹幕分配或战斗触发已完成，BT-12 矛盾隔离边界继续保持。
+
+## BT-13：普通关可用集合与显式装配
+
+- `BarrageTraitSet.get_available_for_level(level_profile, assimilation_data)` 先读取本关 `special_trait_ids`，再经 AS-06 `LevelCatalog.get_inherited_content_snapshot()` 读取已提交特性。特性查询无需词库目录，内部空目录只取 trait 数组；不解析或替代生成词库。复用 `add_trait()` 过滤未知 ID、去重，返回独立数组，保留原关卡顺序与继承顺序。
+- 可用集合允许互斥候选共存。`add_available_traits(selected_ids, available_ids, includes_trap=false, includes_repeat=false)` 检查所选 ID 全部可用，并把已有装配与所选组合交给 BT-09 `are_compatible()`。失败返回 false，原集合保持不变；成功通过 `add_trait()` 登记。没有自动删除冲突候选或改写保存成果。
+- `BarrageArea.get_available_trait_ids(level_profile)` 读取已登记 `SaveManager` 的当前 `SaveData.assimilation_data`；每次查询当前周目，换关、重开与新周目无需维护另一份继承缓存。没有周目时仍返回本关原有特性。
+- `spawn_normal_barrage(level_profile, speech, selected_trait_ids=[])` 在新记录上装配显式选择；不可用或互斥选择返回 null，容量与场上实例保持不变。默认空选择保留现有普通批次行为。调用方可查询集合后显式传入 `[BarrageTraitSet.OCCLUSION]`，真实实例的攻击 / 命中结果继续读取同一 TraitSet。
+- 自动批次的特性分配名单、比例和选择策略尚未提供正式数据，因此本卡保留原默认行为；可用特性不会自动全装到每条弹幕。Sandbox、陷阱、复读和矛盾生成入口未修改；矛盾记录保持空特性。没有新增永久测试或生产配置。
+- Godot 4.7.2 两种临时 TEST_ONLY runtime smoke 已通过：无继承保留本关集合和默认生成；已提交继承可在后续关显式生成并返回遮挡 / 反弹结果，同时验证重复 ID、实例隔离、BT-09 拒绝及 BT-12 边界。详情见 BT-13 日志。
 
 ## FO-11 测试配置前置
 
