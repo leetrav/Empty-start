@@ -5,6 +5,7 @@ signal opened(result_snapshot: Dictionary)
 
 var _result_snapshot: Dictionary = {}
 var _open: bool = false
+var _live_result_snapshot: Dictionary = {}
 
 
 # 休息入口只冻结本场已经确定的结果；重复打开不替换第一次收到的事实。
@@ -26,6 +27,19 @@ func is_open() -> bool:
 
 func get_result_snapshot() -> Dictionary:
 	return _result_snapshot.duplicate(true)
+
+
+# 首次显示时从所属周目冻结直播结果；缺资料可稍后补读，已有快照保持原值。
+func capture_live_result(run_data: SaveData) -> void:
+	if not _open or not _live_result_snapshot.is_empty() or run_data == null or run_data.live_session == null:
+		return
+	var level_id := StringName(str(_result_snapshot["level_id"]))
+	_live_result_snapshot = run_data.live_session.get_result_snapshot(level_id)
+
+
+# 查看只返回副本，跨关或重新创建页面仍沿用本场首次显示的事实。
+func get_live_result_snapshot() -> Dictionary:
+	return _live_result_snapshot.duplicate(true)
 
 
 # 继续时按本场稳定 ID 调用关卡所有者；路线和重复提交结果沿用现有完成枚举。

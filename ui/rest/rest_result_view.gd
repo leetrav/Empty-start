@@ -21,6 +21,7 @@ var _history_loser_card_catalog: LoserCardCatalog
 @onready var _room_environment: RestRoomEnvironment = %RoomEnvironment
 @onready var _result_title: Label = %ResultTitle
 @onready var _result_description: Label = %ResultDescription
+@onready var _live_result: Label = %LiveResult
 @onready var _new_rewards_empty: Label = %NewRewardsEmpty
 @onready var _history_empty_states: VBoxContainer = %HistoryEmptyStates
 @onready var _scripture_history_empty: Label = %ScriptureHistoryEmpty
@@ -75,6 +76,9 @@ func show_result(
 	else:
 		_result_title.text = "本场直播结束"
 		_result_description.text = "本场结果已保存。"
+	# 首次展示冻结真实数据；重复查看只读同一快照，粉丝提交仍归 PK 胜利入口。
+	session.capture_live_result(run_data)
+	_render_live_result(session.get_live_result_snapshot())
 
 	var rewards: Dictionary = session.read_committed_rewards(run_data, level_catalog, loser_card_catalog)
 	var new_assimilation: Dictionary = rewards["new_assimilation"]
@@ -118,6 +122,21 @@ func show_result(
 	if not wait_for_performance:
 		_finish_static_performance(_presentation_id)
 	return true
+
+
+# 缺失数据保持明确空态，零增量与未知增量分开显示。
+func _render_live_result(result: Dictionary) -> void:
+	if result.is_empty():
+		_live_result.text = "本场直播数据暂不可用。"
+		return
+	var fan_delta: Variant = result["fan_delta"]
+	var fan_change: String = "本场粉丝变化记录暂缺"
+	if fan_delta != null:
+		fan_change = "本场粉丝 +%d" % int(fan_delta)
+	_live_result.text = "观看 %d · 点赞 %d · 评论 %d\n%s · 总粉丝 %d" % [
+		int(result["viewer_count"]), int(result["like_count"]), int(result["comment_count"]),
+		fan_change, int(result["fan_count"]),
+	]
 
 
 # 重开时同步收起结果与历史面板，释放本次上下文引用。

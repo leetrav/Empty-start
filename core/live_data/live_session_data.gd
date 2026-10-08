@@ -35,6 +35,9 @@ enum BoostEvent { CONTRADICTION_BREAK, ORACLE_CONFIRMATION }
 # 随当前周目保存已结算关卡；开播和本场重开都保留这份记录。
 @export var settled_fan_level_ids: Array[StringName] = []
 
+# 保存每关首次实际入账增量，结果展示无需根据当前总粉丝反推。
+@export var settled_fan_gains_by_level: Dictionary = {}
+
 # 短时表现只属于本次开播，不随周目存档保存计时或触发记录。
 var _triggered_boost_events: Array[int] = []
 var _active_boosts: Array[Dictionary] = []
@@ -46,8 +49,20 @@ func commit_pk_win_fans(level_id: StringName, fan_gain: int) -> bool:
 		return false
 	# 先标记再更新计数，changed 信号的同步读取或重复提交不会重复加粉。
 	settled_fan_level_ids.append(level_id)
+	settled_fan_gains_by_level[String(level_id)] = fan_gain
 	fan_count += fan_gain
 	return true
+
+
+# 只读当前直播数值和指定关的已提交增量；旧存档缺记录时保留未知值。
+func get_result_snapshot(level_id: StringName) -> Dictionary:
+	return {
+		"viewer_count": viewer_count,
+		"like_count": like_count,
+		"comment_count": comment_count,
+		"fan_count": fan_count,
+		"fan_delta": settled_fan_gains_by_level.get(String(level_id), null),
+	}
 
 
 # 开始一场直播时重置本场表现值，并接收本周目当前粉丝数。
