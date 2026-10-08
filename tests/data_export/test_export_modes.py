@@ -34,7 +34,7 @@ def files_snapshot(paths: list[Path]) -> dict[Path, tuple[bytes, int]]:
 def main() -> None:
     # 测试模式不能覆盖策划原始 CSV 或已确认 Tier Resource。
     authoritative_paths = sorted((ROOT / "data/source_tables").glob("*.csv"))
-    authoritative_paths.append(ROOT / "data/generated/combat_stage/tier_catalog.tres")
+    authoritative_paths.append(ROOT / "data/combat_stage/tier_catalog.tres")
     authoritative = files_snapshot(authoritative_paths)
     success = execute(FIXTURE, "--test-only")
     assert success.returncode == 0, (success.stdout, success.stderr)

@@ -27,7 +27,7 @@ uv pip install --python .venv\Scripts\python.exe openpyxl
 python tools/export_game_data.py --input "策划数据总表.xlsx"
 ~~~
 
-产物：data/source_tables/ 下 20 个原字段 CSV；06 拆分战斗数值、生命周期、基础参数；已确定的 Tier 生成 data/generated/combat_stage/tier_catalog.tres。尚未定稿的普通词库只能生成到 data/test_only/sheet_preview/level_configuration/pool_streamer_a.tres，保留全部 344 条供读取测试，暂时不能作为正式关卡词库。
+产物：data/source_tables/ 下 20 个原字段 CSV；06 拆分战斗数值、生命周期、基础参数；Tier 生成到 data/test_only/sheet_preview/combat_stage/tier_catalog.tres 供比对。游戏运行时只使用 data/combat_stage/tier_catalog.tres；只有正式评审确认新 Tier 数值后才更新该唯一入口。尚未定稿的普通词库只能生成到 data/test_only/sheet_preview/level_configuration/pool_streamer_a.tres，保留全部 344 条供读取测试，暂时不能作为正式关卡词库。
 
 ### 2. 生成一组可直接联调的 TEST_ONLY 数据
 
@@ -69,6 +69,9 @@ python tests/data_export/test_export_modes.py
 godot --headless --path . --script res://tests/data_export/test_generated_tables.gd
 godot --headless --path . --script res://tests/data_export/test_test_only_integration.gd
 godot --headless --path . --script res://tests/data_export/test_test_only_sandbox.gd
+godot --headless --path . res://tests/fixtures/data_export/test_only_live_smoke.tscn --quit-after 720
 ~~~
 
-已知环境问题：当前最新 main 中 data/shared/audio_event_config.tres 引用的部分 .ogg 音效文件缺失，Godot 启动时可能输出独立的资源错误；以上导表验证须检查 PASS 标记与退出码，不能据此宣称整个游戏无错误。相关数据问题遵守 known_traps.md KT-11/12/13/14/15/18/20。
+已知环境问题：独立 Windows worktree 在首次运行前可能需要 Godot --headless --editor --import，才能生成音频 .ogg 的导入缓存；不能仅根据缓存缺失报错判定游戏代码失败。真实战斗 Smoke 使用场景启动方式，从而初始化完整的 Autoload。
+
+注意：真实战斗 Smoke 目前覆盖 _ready、TEST_ONLY 普通弹幕、攻击蓄力发射、命中收益、场景跨关重启；RS-09 休息界面 continue_to_next_level 的端到端路由待 FO-11 合并并同步 main 后补验。相关数据问题遵守 known_traps.md KT-11/12/13/14/15/18/20。

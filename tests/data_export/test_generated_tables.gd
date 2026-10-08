@@ -3,7 +3,7 @@ extends SceneTree
 
 const CSV_PATH := "res://data/source_tables/03_普通词库.csv"
 const POOL_PATH := "res://data/test_only/sheet_preview/level_configuration/pool_streamer_a.tres"
-const TIER_PATH := "res://data/generated/combat_stage/tier_catalog.tres"
+const TIER_PATH := "res://data/test_only/sheet_preview/combat_stage/tier_catalog.tres"
 
 func _initialize() -> void:
     # 只有明确输出成功时才以退出码 0 结束，防止 headless 空跑。
@@ -60,6 +60,29 @@ func _initialize() -> void:
     if t3.repeat_count_per_hit != 12 or not is_equal_approx(t3.lifetime_multiplier, 0.6):
         _fail("Tier 3 复读数量或生命周期倍率错误")
         return
+    # 运行期只能使用 data/combat_stage/tier_catalog.tres；生成预览用于逐档差异校验。
+    var runtime_tiers: CombatStageTierCatalog = load("res://data/combat_stage/tier_catalog.tres") as CombatStageTierCatalog
+    if runtime_tiers == null:
+        _fail("运行期唯一 Tier Catalog 加载失败")
+        return
+    var numeric_fields: Array[String] = [
+        "upgrade_threshold", "downgrade_threshold", "generation_count_multiplier",
+        "generation_frequency_multiplier", "movement_speed_multiplier", "lifetime_multiplier",
+        "neutral_weight_multiplier", "opponent_pullback_multiplier",
+    ]
+    for idx: int in range(6):
+        var generated_tier: CombatStageTierConfig = tiers.get_tier_config(idx)
+        var runtime_tier: CombatStageTierConfig = runtime_tiers.get_tier_config(idx)
+        if generated_tier == null or runtime_tier == null:
+            _fail("Tier %d 缺少配置" % idx)
+            return
+        for field: String in numeric_fields:
+            if not is_equal_approx(float(generated_tier.get(field)), float(runtime_tier.get(field))):
+                _fail("Tier %d 存在分叉：%s；请确认后将生成数据正式升格" % [idx, field])
+                return
+        if generated_tier.repeat_count_per_hit != runtime_tier.repeat_count_per_hit or generated_tier.opponent_portrait_state_id != runtime_tier.opponent_portrait_state_id:
+            _fail("Tier %d 的复读数量或演出状态分叉" % idx)
+            return
     print("PASS Godot LevelSpeech CSV -> Resource: ", count, " records; Tier Resource: 6 entries.")
     quit(0)
 

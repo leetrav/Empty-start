@@ -545,7 +545,7 @@ def main() -> int:
         if args.test_only:
             outputs.update(make_test_only_levels(tables, report))
         if not args.test_only and "08_Tier档位" in tables:
-            outputs["data/generated/combat_stage/tier_catalog.tres"] = make_tier_resource(tables["08_Tier档位"][1], report)
+            outputs["data/test_only/sheet_preview/combat_stage/tier_catalog.tres"] = make_tier_resource(tables["08_Tier档位"][1], report)
     for sheet, n, blanks, examples in report.stats:
         print(f"[表] {sheet}：{n} 条，空行 {blanks}，跳过说明/示例 {examples}")
     for warning in report.warnings:
