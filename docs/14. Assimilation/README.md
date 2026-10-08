@@ -22,9 +22,18 @@
 - 真正击败自动包含通关；仅通关关卡无法使用词库和特性登记入口，既有吞并成果继续保留。
 - `register_inherited_word_pool(level_id, pool_id, appearance_weight, can_inherit, is_contradiction_pool)` 只允许已登记真正击败关卡的可继承普通词库；稳定 pool_id 只保存首次权重，矛盾专属池和禁止继承的池被排除。
 - `register_inherited_trait(level_id, trait_id, can_inherit)` 只登记已真正击败关卡允许继承的特性，跨主播来源的同一稳定 trait_id 只保留一次；实际特性装配与兼容仍归 4. BarrageTraits。
-- `LevelProfile.normal_pool_inheritance` 可引用 `WordPoolInheritanceConfig`，提供整池稳定 `pool_id`、`appearance_weight`、`can_inherit` 和 `is_contradiction_pool`。实际内容继续由同关 `normal_speech_pool` 拥有，整池权重独立于单句权重。默认 null 表示没有配置词库奖励。
+- `LevelProfile.normal_pool_inheritance` 可引用 `WordPoolInheritanceConfig`，提供整池稳定 `pool_id`、`appearance_weight`、`can_inherit` 和 `is_contradiction_pool`。实际内容通过同关 `get_normal_speech_pool()` 读取，兼容导表 `normal_speech_pool_source: LevelSpeechPool` 和旧内嵌词库；整池权重独立于单句权重。默认 null 表示没有配置词库奖励。
 - `LevelProfile.inheritable_trait_ids` 是独立的稳定特性 ID 白名单，默认空；`special_trait_ids` 表示本关所用特性，不能直接当作继承白名单。登记时仅对白名单项传入 `can_inherit=true`，后续装配仍由 4 系统校验兼容。
-- FO-11 TEST_ONLY 配置在 `tests/fixtures/fo11/`，已用真实登记 / 来源读取 API 验证；正式关卡配置仍未填写。Sandbox 词库 / 特性奖励接线、后续混入生成和特性装配分别留 FO-11、AS-06 与 BT-13。
+- FO-11 已在 Sandbox 正式确认回调接通词库 / 特性登记，TEST_ONLY 配置在 `tests/fixtures/fo11/`，正式关卡配置仍未填写。AS-06 已提供后续关卡只读消费入口；实际混入生成和战斗特性触发留相应联调卡。
+
+## AS-06：后续普通关卡读取
+
+- 2 系统提供 `LevelCatalog.get_inherited_content_snapshot(assimilation_data)`，输入当前同一 `SaveData.assimilation_data`，复用 14 的 `get_current_content_snapshot()` 读取已提交池 ID / 权重与 trait ID。
+- 返回 `{inherited_word_pools: Array[Dictionary], inherited_trait_ids: Array[StringName]}`；每个池为 `{pool_id: StringName, appearance_weight: float, speeches: Array[LevelSpeech]}`。没有吞并成果或数据为 null 时两项都是空数组。
+- 使用已有完整关卡目录按 `normal_pool_inheritance.pool_id` 定位普通词库，并复用 `LevelProfile.get_normal_speech_pool()`；导表 Resource 的 pool_id 必须与继承 ID 一致。当前目录未配置、禁止继承、矛盾标记或 ID 不匹配的池不生成词句结果，不回写 14 的保存记录。
+- 整池权重保留正式提交值，不从当前配置重算。目录复用同池时只返回一次；词句 Resource 为独立副本，返回权重 / trait 数组 / 词句的修改均不影响 14 或静态目录。未知池 ID 不猜测文件路径或创建第二份词库注册表，调用方需提供含已获池配置的完整目录。
+- 4 系统从同一返回值的 `inherited_trait_ids` 读取实际已获 ID，现有 `BarrageTraitSet.add_trait()` / `are_compatible()` 继续负责装配与兼容；AS-06 不合并本关特性、不触发战斗效果或把特性装到矛盾实例。
+- A 后续在第二关普通战斗准备处读取此入口，将池集合和 trait ID 交给各自消费者。本卡没有修改 Sandbox / Rest / DivineDescent / Ending，完整生成混池及 BT-13 触发不在本次范围。
 
 ## AS-08：已提交来源与休息读取
 

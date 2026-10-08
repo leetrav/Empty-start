@@ -444,6 +444,8 @@ RS-09 的正式调用链为 RestResultView 的继续请求 → Sandbox → `Rest
 
 ## 13. 吞并怎么影响后面的战斗
 
+AS-06 的当前只读链为 `SaveData.assimilation_data.get_current_content_snapshot()` → `LevelCatalog.get_inherited_content_snapshot(assimilation_data)`。2 使用完整关卡目录及已有 LevelProfile / LevelSpeechPool 解析已获池的词句，保留已提交整池权重；4 读取同一返回值的已获 trait ID，继续由 TraitSet 装配和校验。返回副本不会回写 14 成果或静态目录，未知 / 禁止 / 矛盾池不产生词句结果。普通生成混池、BT-13 效果和 Sandbox 调用由后续联调接入，本卡没有抢改对应 Owner 文件。
+
 【吞并系统】保存玩家真正击败主播后得到的内容。
 
 当前主要有两类：
