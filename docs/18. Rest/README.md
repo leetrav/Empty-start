@@ -69,3 +69,7 @@ RS-05 在结果面板增加“查看历史圣典”，沿用 `show_result()` 传
 RS-06 在同一结果面板增加“查看历史败者卡”，与圣典入口并排，沿用 `show_result()` 传入的 `SaveData.loser_card_data` / `LoserCardCatalog`。子场景 `ui/rest/loser_card_history_view.tscn` 的 `show_history(loser_card_data, catalog)` 调用正式 `get_acquired_cards(catalog)`，按其返回顺序组合 `LoserCardHistoryRow`，展示 Profile 中的真实主播名、卡面和完整文案；获得与排序规则继续归 16，Rest 没有新增收藏或奖励登记。
 
 有效获卡数据返回空数组时显示“暂无已获卡片”；目录为 null、空目录或某个档案缺失时保留正式读取接口返回的已获主播 ID，并清楚提示档案暂缺。Profile 存在但卡面 / 文案缺少时也显示对应缺资料提示，不合成素材。缺少 SaveData / LoserCardData 属于上下文不可用，禁用查看入口且保留继续按钮；缺少卡片目录仍允许查看已获记录，和空收藏区分。卡片页沿用项目 Theme，长文换行、原生纵向滚动，固定返回按钮恢复原面板与败者卡入口焦点；圣典查看与原继续信号保留，两个子面板互斥显示。Sandbox 接线继续由 Lane A 持有，本卡无需修改。
+
+RS-08 已核实并保护现有重复查看路径：用同一所属周目 SaveData、冻结 `level_id` 的 RestSession 与目录重新调用 `RestResultView.show_result()`，每次仅通过 `read_committed_rewards()` 和历史 getter 刷新界面。`show_result()` / `hide_result()` 不调用奖励提交或关卡推进，也不发出继续信号；重复 `open_result()` 保留首次结果快照。界面重新实例化后读取同一场已提交记录仍保持成果数量与固定节号。
+
+只有显式继续才调用 `RestSession.continue_to_next_level(run_state)`；同一周目的 LevelRunState 已完成该 `level_id` 后，再次提交旧结果返回 `ALREADY_COMPLETED`，当前关保持原值。重复保护继续归 14 / 15 / 16 与关卡所有者，Rest 不增加第二套奖励 / 推进记录。`tests/unit/rest/test_rs_08_reopen_idempotent.gd` 只含一个关键用例，验证重复接收 / 读取、成果不增加、固定节号不变、显式推进后重开旧结果也无法额外推进。实际 UI 重开及圣典 / 败者卡返回流程另用临时 Godot 场景 smoke 验证。
