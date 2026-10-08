@@ -82,6 +82,7 @@ EN-06～09 完成页面数据和显示。
 - 每行输出 `level_id`、`chapter_number`、`verse_number`、`streamer_name`、`original_line_id`、`original_line_text`、`tendency_id`、`has_oracle` 和 `status`。
 - 正式经文的 `status` 为 `confirmed_oracle`，读取已保存的原文和固定节号；缺章的 `has_oracle` 为 `false`、`verse_number` 为 0、`status` 为 `not_formed_oracle`，供页面显示“未形成神谕”。
 - EN-04 只整理显示快照，不复制 Scripture 的排序、节号生成或缺章判定规则。
+- SC-08 已验证 `SaveData.scripture_data` 的正式确认与 Resource 存读成果可直接供 EN-04 / EN-07 读取。调用方须提供完整 `LevelCatalog`；暂存经文保持缺章，后续配置变化沿用正式经文已保存的原文、章号与节号。读取结果独立于源数据，本次沿用现有适配与组装入口。
 
 ## EN-05 当前身份结果分类接口
 
