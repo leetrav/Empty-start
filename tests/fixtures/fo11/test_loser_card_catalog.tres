@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LoserCardCatalog" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/loser_card/loser_card_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://core/loser_card/loser_card_profile.gd" id="2_profile"]
+
+[sub_resource type="GradientTexture2D" id="test_card_art"]
+resource_name = "TEST_ONLY native placeholder card art"
+
+[sub_resource type="Resource" script_class="LoserCardProfile" id="test_streamer_card"]
+resource_name = "TEST_ONLY FO-11 streamer_sample card"
+script = ExtResource("2_profile")
+streamer_id = &"streamer_sample"
+streamer_name = "TEST_ONLY 示例主播"
+card_art = SubResource("test_card_art")
+card_text = "TEST_ONLY：FO-11 发卡验收占位，非正式卡片文案。"
+
+[resource]
+resource_name = "TEST_ONLY FO-11 loser cards; inject explicitly"
+script = ExtResource("1_catalog")
+profiles = Array[ExtResource("2_profile")]([SubResource("test_streamer_card")])

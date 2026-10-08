@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WordPoolInheritanceConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/level_configuration/word_pool_inheritance_config.gd" id="1_config"]
+
+[resource]
+resource_name = "TEST_ONLY FO-11 normal pool; weight 1.0 is placeholder"
+script = ExtResource("1_config")
+pool_id = &"test_only_streamer_sample_normal"
+appearance_weight = 1.0
+can_inherit = true
+is_contradiction_pool = false

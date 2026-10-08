@@ -135,5 +135,6 @@ FO-12 等 18. Rest。
 - 手动 / 自动选择仍共用现有 Session 和确认状态。`confirmation_committed` 后，Sandbox 的现有回调检查当前周目、Session 关卡、CB `BREAKTHROUGH` 与当前 LevelProfile，提交普通历史后调用 `LoserCardData.grant_on_true_defeat()` 和 `AssimilationData.register_defeated_streamer()`。
 - 关卡 / 主播来源直接读取当前 `LevelProfile.level_id / streamer_id`；状态数据继续由 `SaveData.loser_card_data / assimilation_data` 拥有。首次确认广播一次，接收方沿用已有周目内关卡 / 主播去重；仅 PK 胜利未击破分支不会进入此接线。
 - Sandbox 的 `loser_card_catalog` 默认读取正式 `data/loser_card/loser_card_catalog.tres`。当前目录仍为空，16 收到提交请求后按已有规则拒绝无资料卡片，正式发卡验收尚未成立。
-- 14 已可登记真正击败及来源，但 `LevelProfile` 尚无词库 `pool_id`、词库继承 `appearance_weight / can_inherit / is_contradiction_pool` 和允许继承的 trait 白名单。普通话语的 appearance_weight 与本关 special_trait_ids 不能替代这些配置，所以当前只提交击败事实，词库 / 特性奖励验收尚未成立。
+- FO-11 测试配置前置已增加 `LevelProfile.normal_pool_inheritance`（稳定 pool_id / 整池权重 / 资格 / 矛盾标记）和 `inheritable_trait_ids` 白名单。`tests/fixtures/fo11/` 提供真正可读取的 LevelCatalog / LevelProfile 和测试卡片目录，供 A 显式注入；生产目录仍未填写正式奖励配置。
+- 本前置只通过真实 14 / 16 登记与读取接口验证测试配置；Sandbox 当前仍只提交击败事实，词库 / 特性登记尚未接入该回调。A 需在 FO-11 读取上述字段并完成完整场景验收，具体注入和调用方式见 `tests/fixtures/fo11/README.md`。前置完成不代表 FO-11 全卡完成。
 - 配置方补齐后，在同一确认回调中使用 14 现有词库 / 特性登记 API 提交允许继承内容，再复验正式卡片和本场新增吞并内容。FO-11 保留等待状态；本轮没有接入 FO-12。

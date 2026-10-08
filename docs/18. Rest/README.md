@@ -61,3 +61,7 @@ RS-09 增加 `RestSession.continue_to_next_level(run_state) -> LevelRunState.Com
 Sandbox 在 `ADVANCED` 时复用 `restart_current_attempt()`，按新的当前 LevelProfile 重建普通战斗；清理旧弹幕、队列、输入、神谕、矛盾、休息界面及未提交暂存，并通过 `OpponentPKBar.complete_current_level()` 清除旧关连败。继续沿用同一 SaveData，入关粉丝基数读取当前已入账粉丝，经文 / 败者卡 / 吞并等已提交成果保留。`level_catalog` 为可注入的现有关卡目录 Resource，运行状态、经文来源与 Rest 展示统一读取它。
 
 重复点击继续时，重建后的当前 Rest 绑定已清空；重复提交旧结果也由 LevelRunState 拒绝，均不会跳过下一关。最后一普通关返回 `ALL_NORMAL_LEVELS_COMPLETED` 时仅保留休息界面和一次通知，神降临入口仍留 RS-10。当前成功分支尚待 FO-12 正式进入休息，本卡保持原神谕边界。正式 `level_002.tres` 目前只有基础信息，词库 / 矛盾内容仍待补齐；RS-09 smoke 使用明确标记的独立临时数据，不代表第二关正式可玩。
+
+RS-05 在结果面板增加“查看历史圣典”，沿用 `show_result()` 传入的 `SaveData.scripture_data` 与 `LevelCatalog`。组合子场景 `ui/rest/scripture_history_view.tscn` 的 `show_history(scripture_data, level_catalog)` 只读数据，复用 `EndingScriptureDisplayData.build_from_scripture()` → `ScriptureData.get_chapter_slots()` 和 `EndingScriptureRow` 显示原章号、固定节号、主播、正式原文及“未形成神谕”的缺章；暂存 `pending_entry` 不作为正式经文展示。章节规则仍由 15 持有，Rest 没有新增历史数据层。
+
+历史为空时保留清楚的空提示与缺章行，空目录另行提示；缺少 SaveData / ScriptureData / LevelCatalog 时显示“历史圣典资料暂不可用”并禁用查看入口，避免将未知资料视为空收藏。子面板沿用项目 Theme，长文本自动换行并使用原生 ScrollContainer 纵向滚动，返回按钮固定在滚动区外。返回请求恢复原结果面板与按钮焦点，原继续信号保持可用；重新显示或隐藏结果时同步收起历史面板。Sandbox 已有上下文足够，本卡无需修改其接线。

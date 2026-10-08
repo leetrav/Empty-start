@@ -11,6 +11,7 @@
 - `LoserCardProfile` Resource 以稳定 `streamer_id` 标识主播，提供 `streamer_name`、`card_art` 和 `card_text` 展示入口。
 - `LoserCardCatalog` 保存资料列表，并通过 `find_profile(streamer_id)` 查找卡片。
 - 当前目录中的 `data/loser_card/loser_card_catalog.tres` 是空资料库；正式主播 ID、卡面素材和文案尚未提供。
+- FO-11 前置提供 `tests/fixtures/fo11/test_loser_card_catalog.tres`，包含 `streamer_sample` 的一张 TEST_ONLY 卡，可向现有 `loser_card_catalog` 属性显式注入。卡名 / 文案及原生占位卡面不代表正式交付，生产目录保持原状；正式内容到位后继续填写上述生产目录。注入步骤见 `tests/fixtures/fo11/README.md`。
 - `LoserCardData` Resource 保存周目获卡主播 ID 和已发卡关卡 ID；`grant_on_true_defeat(level_id, streamer_id, contradiction_broken, oracle_confirmed, catalog)` 同时要求 CB 击破成功和同关 FinalOracle 正式确认，并通过 Catalog 查到对应资料。同场重复不发，资料缺失不合成卡片。
 - 同一个 `LoserCardData` 周目 Resource 内，以 `acquired_streamer_ids` 对主播去重：同场重报和同主播跨关重报均返回 false，保留首张卡。
 - `pk_win_unbroken` 分支的 `contradiction_broken=false` 不满足发卡入口；PK 胜利不会替代击破或神谕确认，已有卡片及提交记录保持原值。

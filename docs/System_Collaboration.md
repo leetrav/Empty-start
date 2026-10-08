@@ -403,6 +403,8 @@ FO-13 的选择表现保留战斗 HUD：Sandbox 在中央 BattleArea 展示 Fina
 
 最终倾向会给【休息时刻系统】【神降临系统】【结局系统】使用。
 
+TT-10 已核实休息环境读取方式：正式提交完成后，Rest 从所属 `SaveData.tendency_state` 调用 `get_primary_tendency_id()`、`get_secondary_tendency_id()`、`is_primary_tied()`、`has_no_effective_behavior()`，只消费稳定倾向 ID 与布尔标记。查询排除本场未提交值，全零时主导 / 次要沿用开局身份且全零 / 并列标记同时为真；消费方先识别全零状态。房间素材和实际环境切换属于 RS-07，精确累计值保持隐藏。
+
 ---
 
 ## 12. 休息时刻系统负责什么
@@ -516,6 +518,10 @@ RS-09 的正式调用链为 RestResultView 的继续请求 → Sandbox → `Rest
 - 最终三项倾向。
 
 进入神降临时，这些结果固定下来。
+
+DD-01 的 `DivineDescentSession.enter(current_run_data)` 是正式进入 / 冻结接口。未来 RS-10 在普通关卡完成并提交结果后创建会话并调用一次；后续通过 `get_entry_snapshot()` 读取独立副本。该快照固定已提交倾向结果、SC-07 经文、HR-15 命中历史、RP-12 普通复读数量、DD-02 候选与 AS-09 吞并成果；源存档及暂存变化不会改变它。
+
+倾向归属统一为：17 持有精确累计、开局参照和裁决规则，19 持有本次进入终局的不可变使用快照。未来 TT-11 / TT-12 复用这一结果归属，不建立另一份可变冻结真相；19 从现有 TendencyState 公开结果读取主导、次要、并列、全零，仅复制已提交总值，未提交 attempt 排除。
 
 后面的玩家输入主要影响演出强度。
 
@@ -633,6 +639,14 @@ RS-09 的正式调用链为 RestResultView 的继续请求 → Sandbox → `Rest
 README 里“等某系统”表示当前这张联调卡等待对应接口；同一个系统里其他独立任务可以继续开发。
 
 ## 21. 一次提交怎么识别同一场
+
+### FO-11 奖励静态配置读取
+
+当前 `LevelProfile.normal_pool_inheritance` 由关卡配置持有，提供该关普通词库的稳定 ID、整池继承权重与资格；词库正文仍读取同一 `normal_speech_pool`。`inheritable_trait_ids` 是独立特性白名单，和本关启用的 `special_trait_ids` 分开。
+
+13 在正式确认的同场校验后把这些静态值交给 14 现有登记 API；卡片资料交给 16 的既有 Catalog / 发卡入口。14 / 16 继续拥有运行成果、来源与去重。`tests/fixtures/fo11/` 只提供显式注入的 TEST_ONLY 验收数据，生产默认目录没有替换，完整 Sandbox 奖励接线继续由 FO-11 负责。
+
+### 提交身份
 
 同一周目里，用当前周目数据 + `level_id` 作为本场结果的唯一身份。
 
