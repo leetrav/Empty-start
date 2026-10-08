@@ -37,6 +37,14 @@
 - 原文、章序、固定节号继续读取 15 的正式记录。同句多章完整保留，缺章不生成假经文且后续章号保持原值；DD-07 后续按稳定原句 ID 处理加权。
 - 本卡只建立读取适配；终局进入时调用并持有快照的组合归 DD-01，圣典加权归 DD-07。
 
+## SC-08：结局读取
+
+- 正式供给链复用已有 `EndingScriptureDisplayData.build_from_scripture(run_data.scripture_data, level_catalog)` → `ScriptureData.get_chapter_slots(level_catalog)`。调用方传入所属周目的已提交圣典与完整关卡目录，即可获得全部经文及每关缺章行。
+- 每行保留 `level_id`、`chapter_number`、`verse_number`、`streamer_name`、`original_line_id`、`original_line_text`、`tendency_id`、`has_oracle`、`status`。已提交章号 / 节号和原文读取保存快照，后续关卡配置变化、重复读取及读档均沿用已保存值。
+- 缺章沿用目录原章号，`has_oracle=false`、`verse_number=0`、`status=not_formed_oracle`；暂存经文也采用缺章显示，原章号不压缩。
+- EN-07 的 `EndingDisplayData.build(...)` 已消费该适配，输出 `scripture.rows`，并通过 `get_ordered_entries().is_empty()` 得到 `scripture.is_empty`。全空圣典保留全部缺章，区域 `status=not_formed_oracle`。
+- 15 继续拥有经文与编号；20 只持有独立显示快照。SC-08 已用正式确认和原生 SaveData 存读验证现有链路，沿用现有实现；EN-01 终局接收与 EN-08 页面仍归对应任务。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
