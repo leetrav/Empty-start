@@ -71,6 +71,8 @@ func _ready() -> void:
 	add_child(_oracle_transition_timer)
 	_rest_result_view = REST_RESULT_VIEW_SCENE.instantiate() as RestResultView
 	add_child(_rest_result_view)
+	# 创建时注入一次准心，休息及历史页面统一冻结输入，隐藏时恢复。
+	_rest_result_view.configure_battle_aim(_aim_reticle)
 	_rest_result_view.continue_requested.connect(_on_rest_continue_requested)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)

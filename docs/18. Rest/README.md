@@ -46,13 +46,13 @@ UI、空态、历史查看、环境变化和输入切换全部做实际运行联
 
 准心通过公开 `configure_battle_aim(aim: AimReticle)` 注入。Rest 显示期间暂停其输入处理，历史面板保持原生悬停、点击和滚动；`hide_result()` 恢复准心进入前的处理状态。蓄力 / 发射仍由 Sandbox 原有 `set_combat_active(false)` / `lock_new_attacks()` 路径负责，菜单解锁不会调用攻击启用接口。按 [Godot 输入事件文档](https://docs.godotengine.org/en/stable/tutorials/inputs/inputevent.html)，在 `_input()` 消费移动会同时阻断 GUI，因此菜单阶段保留完整事件传递。
 
-**Lane A 接线阻塞（当前完整集成仍待完成）**：RS-11 只拥有 Rest UI，正式 Sandbox 尚未注入准心。Lane A 在 `_rest_result_view` 入树后补充以下一行即可；当前未接线的正式场景在菜单开放后仍会移动底层准心。临时 TEST_ONLY 场景已经通过此公开接口验证完整边界，不能将该结果表述为正式 Sandbox 已完成接线。
+**Lane A 集成完成（2026-10-09，PR #78 补做）**：正式 Sandbox 在 `_ready()` 中创建 Rest 页面并 `add_child()` 后调用一次以下接口。重开及继续路由复用该实例，保留原有唯一的继续信号连接。
 
 ```gdscript
 _rest_result_view.configure_battle_aim(_aim_reticle)
 ```
 
-RS-11 没有新增永久单测、Scene 或 Resource。真实 Godot 4.7.2 D3D12 Sandbox 场景 smoke 使用现有 TEST_ONLY 双关目录及临时演出控制，验证展示锁定、完成开放、圣典 / 卡片查看返回、准心冻结、攻击关闭、重开隔离、下一关和 RS-10 神降临入口。既有 RS-08 / 09 / 10 单测均通过；权限环境错误与实际验收范围见 `休息时刻系统_RS-11_2026-10-09_log.md`。
+RS-11 没有新增永久单测、Scene 或 Resource。Lane B 已完成 UI 与既有 RS-08 / 09 / 10 单测验收；Lane A 补做使用真实 Godot 4.7.2 D3D12 运行正式 Sandbox，只注入现有 TEST_ONLY 双关目录及临时演出控制，验证展示锁定、完成开放、圣典 / 卡片查看返回、准心冻结、攻击关闭、隐藏 / 重开恢复、旧展示等待隔离、下一关和 RS-10 唯一神降临入口，同时复验 CS-11 满 PK 冻结。实际输出 `RS11_INTEGRATION_REAL_SCENE_PASS`、退出码 0；权限环境错误与证据路径见 `休息时刻系统_RS-11_2026-10-09_log.md`。
 
 ## 依赖顺序
 
