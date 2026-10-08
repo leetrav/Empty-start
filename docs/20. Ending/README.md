@@ -75,3 +75,18 @@ EN-06～09 完成页面数据和显示。
 - `EndingReligionNameConfig` 提供三种纯倾向字段和六种主导 → 次要混合字段；`get_religion_name(primary_tendency_id, secondary_tendency_id)` 按稳定 ID 与顺序读取文本。
 - 纯组合键为 `orthodox/orthodox`、`heretical/heretical`、`absurd/absurd`；混合组合覆盖六个有序组合。`has_complete_mapping()` 可检查九个配置槽位是否都有文本。
 - 当前九个字段均为空，等待策划填写正式教名；逻辑不猜测或写入教名文本。
+
+## EN-04 当前经文显示数据接口
+
+- `EndingScriptureDisplayData.build_from_scripture(scripture_data, level_catalog)` 直接复用 `ScriptureData.get_chapter_slots(level_catalog)`，保留 Scripture 已决定的章号顺序和缺章位置。
+- 每行输出 `level_id`、`chapter_number`、`verse_number`、`streamer_name`、`original_line_id`、`original_line_text`、`tendency_id`、`has_oracle` 和 `status`。
+- 正式经文的 `status` 为 `confirmed_oracle`，读取已保存的原文和固定节号；缺章的 `has_oracle` 为 `false`、`verse_number` 为 0、`status` 为 `not_formed_oracle`，供页面显示“未形成神谕”。
+- EN-04 只整理显示快照，不复制 Scripture 的排序、节号生成或缺章判定规则。
+
+## EN-05 当前身份结果分类接口
+
+- `EndingIdentityResultClassifier.classify(tendency_state)` 接收已完成身份初始化、包含已提交结果的 `TendencyState`，返回稳定 `StringName` 分类：`no_effective_behavior`（无行为）、`primary_tied`（并列）、`consistent`（一致）、`shifted`（偏移）。
+- 优先级固定为无有效行为 → 最高分并列 → 开局倾向与主导一致 → 其余偏移；全零时即使存在并列及身份一致也归为无行为类。
+- 无行为、并列和主导分别调用 17 系统的 `has_no_effective_behavior()`、`is_primary_tied()`、`get_primary_tendency_id()`；Ending 不读取或重算精确分数。
+- 开局参照读取 `TendencyState.opening_identity_tendency_id`：Identify 确认身份时已经通过 `initialize_from_identity_option()` 从所选 `IdentityOption.tendency_id` 写入该周目值，无需根据身份显示名称或 ID 推测倾向。
+- 分类器只读传入数据。当前尚未接入 EN-01 终局接收流程；后续集成应传入终局固定的三项倾向结果，判词配置与页面由对应任务卡实现。

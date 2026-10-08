@@ -53,13 +53,13 @@ UI、10 秒计时器、战斗冻结、奖励系统和休息流程全部做实际
 
 ## 依赖顺序
 
-`FinalOracleSession.open_after_breakthrough(level_id, normal_hit_history, repeat_stats, confirmation_state)` 是 FO-01 的真实接收入口：只接受一次击破完成事实，复用候选池并冻结展示快照；普通战斗冻结由 Sandbox 协调。FO-06～09 的候选快照、倒计时、自动排序和单次确认均已完成；FO-13 将展示与手动操作接入中央主游戏区的普通攻击链。FO-10～12 按依赖顺序继续接入奖励与休息系统。
+`FinalOracleSession.open_after_breakthrough(level_id, normal_hit_history, repeat_stats, confirmation_state)` 是 FO-01 的真实接收入口：只接受一次击破完成事实，复用候选池并冻结展示快照；普通战斗冻结由 Sandbox 协调。FO-06～09 的候选快照、倒计时、自动排序和单次确认均已完成；FO-13 将展示与手动操作接入中央主游戏区的普通攻击链；FO-10 已复用 SC-02 的 Scripture 正式确认接收链。FO-11～12 继续等待各自奖励与休息依赖。
 
 FO-01 等 12. ContradictionBreak 的成功与过渡完成事件。
 FO-02～05 在【6. HitResolution】HR-14 的本场普通命中历史与【10. Repeat】普通复读统计存在后完成纯候选逻辑。
 FO-06～09 完成神谕选择流程。
 FO-13 在 FO-06～09 基础上替换正式交互表现：候选进入中央主游戏区，并复用普通攻击完成选择；应在 FO-10～12 奖励与休息联调前完成。
-FO-10 可复用 SC-02 已接入的 Scripture 正式确认接口。
+FO-10 已复用 SC-02 已接入的 Scripture 正式确认接口：Sandbox 创建并绑定当前周目的确认状态，确认事实携带 `level_id` 与候选原句 ID / 倾向，Scripture 从 `LevelCatalog` 解析原句文本、主播名、原关卡序号并按 `SaveData.scripture_data` 同关去重写入。
 FO-11 等 16. LoserCard 与 14. Assimilation。
 FO-12 等 18. Rest。
 
@@ -122,3 +122,9 @@ FO-12 等 18. Rest。
 - SC-02 已由 `run_data.scripture_data.bind_confirmation_state(confirmation_state, level_catalog)` 订阅正式确认事实；Sandbox 在创建确认状态后完成绑定。
 - 当前候选仅有原句 ID 和倾向，Scripture 从注入的真实关卡目录解析原句文本、主播名和章号，保存首条经文；同关重复提交保持首条。
 - Scripture 的未确认快照由 `stage_oracle()` 单独暂存；正式确认按本次候选写入并清同关暂存，重开只撤回暂存，已经确认的经文和节号保留。
+
+## FO-10 圣典接线状态
+
+- FO-10 没有新增接口：当前 main 已具备 `FinalOracleConfirmationState.confirmation_committed`、`ScriptureData.bind_confirmation_state()` 和 Sandbox 周目初始化绑定。
+- 手动候选与超时候选都经过同一 `FinalOracleSession.confirm_display_candidate()`，首次确认触发 Scripture 写入；同关第二次确认由确认状态和 Scripture 保存列表共同拒绝。
+- Scripture 写入保留原句 ID、原句文本、倾向、主播名、关卡 ID 和章号；本卡只确认接线，不改动节号、奖励或休息流程。

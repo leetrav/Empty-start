@@ -15,6 +15,9 @@ extends Resource
 
 @export var inherited_trait_ids: Array[StringName] = []
 
+# 按正式击败关卡保存主播及该来源实际新增内容，随所属 SaveData 一起存读。
+@export var committed_additions_by_level: Dictionary = {}
+
 
 # 击破成功且神谕正式确认后登记；周目由本 Resource 所属 SaveData 确定。
 func register_defeated_streamer(
@@ -30,6 +33,11 @@ func register_defeated_streamer(
 	_register_completed_streamer(level_id, streamer_id)
 	defeated_level_ids.append(level_id)
 	defeated_streamer_ids.append(streamer_id)
+	committed_additions_by_level[level_id] = {
+		"streamer_id": streamer_id,
+		"inherited_word_weights": {},
+		"inherited_trait_ids": [],
+	}
 	return true
 
 
@@ -40,9 +48,15 @@ func register_inherited_word_pool(
 	) -> bool:
 	if not defeated_level_ids.has(level_id) or pool_id.is_empty() or appearance_weight < 0.0:
 		return false
+	# 来源必须由真正击败登记提供；旧存档缺失来源时保留总量，拒绝无归属的新写入。
+	if not committed_additions_by_level.has(level_id):
+		return false
 	if not can_inherit or is_contradiction_pool or inherited_word_weights.has(pool_id):
 		return false
 	inherited_word_weights[pool_id] = appearance_weight
+	var source_additions: Dictionary = committed_additions_by_level[level_id]
+	var source_word_weights: Dictionary = source_additions["inherited_word_weights"]
+	source_word_weights[pool_id] = appearance_weight
 	return true
 
 
@@ -50,10 +64,42 @@ func register_inherited_word_pool(
 func register_inherited_trait(level_id: StringName, trait_id: StringName, can_inherit: bool) -> bool:
 	if not defeated_level_ids.has(level_id) or trait_id.is_empty() or not can_inherit:
 		return false
+	if not committed_additions_by_level.has(level_id):
+		return false
 	if inherited_trait_ids.has(trait_id):
 		return false
 	inherited_trait_ids.append(trait_id)
+	var source_additions: Dictionary = committed_additions_by_level[level_id]
+	var source_trait_ids: Array = source_additions["inherited_trait_ids"]
+	source_trait_ids.append(trait_id)
 	return true
+
+
+# 返回同关同主播实际提交的新增快照；无新增、未知或不匹配来源统一返回空字典。
+func get_new_content_for_source(level_id: StringName, streamer_id: StringName) -> Dictionary:
+	if level_id.is_empty() or streamer_id.is_empty() or not committed_additions_by_level.has(level_id):
+		return {}
+	var source_additions: Dictionary = committed_additions_by_level[level_id]
+	if source_additions["streamer_id"] != streamer_id:
+		return {}
+	var source_word_weights: Dictionary = source_additions["inherited_word_weights"]
+	var source_trait_ids: Array = source_additions["inherited_trait_ids"]
+	if source_word_weights.is_empty() and source_trait_ids.is_empty():
+		return {}
+	return {
+		"level_id": level_id,
+		"streamer_id": streamer_id,
+		"inherited_word_weights": source_word_weights.duplicate(true),
+		"inherited_trait_ids": source_trait_ids.duplicate(),
+	}
+
+
+# 总内容仍读取现有周目集合；返回副本，休息界面修改快照不会改写吞并成果。
+func get_current_content_snapshot() -> Dictionary:
+	return {
+		"inherited_word_weights": inherited_word_weights.duplicate(true),
+		"inherited_trait_ids": inherited_trait_ids.duplicate(),
+	}
 
 
 # PK 胜利登记通关；击破且正式确认后再登记真正击败，返回本次新增的两类事实。
