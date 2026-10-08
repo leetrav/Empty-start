@@ -4,11 +4,12 @@ signal final_oracle_opened(session: FinalOracleSession)
 signal rest_opened(session: RestSession)
 signal rest_continue_requested(session: RestSession)
 
-@export var level_catalog: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
 const PRESENTATION_ASSETS: PresentationAssetConfig = preload("res://data/shared/presentation_asset_config.tres")
 const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
 const REST_RESULT_VIEW_SCENE: PackedScene = preload("res://ui/rest/rest_result_view.tscn")
+# 关卡资料统一由目录提供，运行验证可注入独立临时目录。
+@export var level_catalog: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 @export var battle_config: SandboxBattleConfig = preload("res://data/sandbox/playable_battle_config.tres")
 # 只从正式败者卡目录发卡；目录缺少资料时由 16 的写入接口拒绝。
 @export var loser_card_catalog: LoserCardCatalog = preload("res://data/loser_card/loser_card_catalog.tres")
@@ -74,7 +75,7 @@ func _ready() -> void:
 	restart_current_attempt()
 
 
-# 原地重开同一关；替换本场结算和队列，保留当前关卡及此前周目成果。
+# 按当前关重建尝试；重开与切到下一关共用清理，保留此前周目成果。
 func restart_current_attempt() -> void:
 	var restarting_level: LevelProfile = _run_state.get_current_level_profile()
 	if restarting_level != null:
@@ -393,13 +394,25 @@ func _on_oracle_confirmation_committed(run_data: SaveData, level_id: String, _ca
 		return
 	run_data.tendency_state.commit_attempt_tendency()
 	# 上述检查已确认同场击破与正式确认；重复提交继续由确认状态和接收方去重。
+	var source_level_id := StringName(current_level.level_id)
+	var source_streamer_id := StringName(current_level.streamer_id)
 	run_data.loser_card_data.grant_on_true_defeat(
-		StringName(level_id), StringName(current_level.streamer_id), true, true, loser_card_catalog
+		source_level_id, source_streamer_id, true, true, loser_card_catalog
 	)
-	run_data.assimilation_data.register_defeated_streamer(
-		StringName(level_id), StringName(current_level.streamer_id), true, true
+	var defeat_added: bool = run_data.assimilation_data.register_defeated_streamer(
+		source_level_id, source_streamer_id, true, true
 	)
-	# LevelProfile 尚无正式继承池和特性白名单，只登记击败事实，等待配置方补齐奖励。
+	if defeat_added:
+		# 只登记本关配置允许继承的普通池，资格与矛盾排除由 14 的现有入口判断。
+		var pool: WordPoolInheritanceConfig = current_level.normal_pool_inheritance
+		if pool != null:
+			run_data.assimilation_data.register_inherited_word_pool(
+				source_level_id, pool.pool_id, pool.appearance_weight,
+				pool.can_inherit, pool.is_contradiction_pool
+			)
+		# 继承白名单独立于本关特性装配，不能把 special_trait_ids 直接当作奖励。
+		for trait_id: StringName in current_level.inheritable_trait_ids:
+			run_data.assimilation_data.register_inherited_trait(source_level_id, trait_id, true)
 
 
 # 正式满蓄释放时立即按冻结的矛盾原句判定；飞行计时只保留演出。
@@ -480,11 +493,23 @@ func _open_rest_after_unbroken() -> void:
 	rest_opened.emit(_rest_session)
 
 
-# 休息界面只上报继续意图，下一关路由由后续流程任务接入。
+# 继续请求使用本场结果 ID 推进；仅下一普通关路线重建当前场景的尝试。
 func _on_rest_continue_requested() -> void:
 	if _rest_session == null or not _rest_session.is_open():
 		return
-	rest_continue_requested.emit(_rest_session)
+	var finished_session: RestSession = _rest_session
+	var completion: LevelRunState.CompletionResult = finished_session.continue_to_next_level(_run_state)
+	if completion == LevelRunState.CompletionResult.ADVANCED:
+		# 撤回旧关未提交暂存，已保存经文、卡片、吞并和粉丝继续使用同一 SaveData。
+		var finished_level_id := StringName(str(finished_session.get_result_snapshot().get("level_id", "")))
+		SaveManager.data.scripture_data.rollback_uncommitted(finished_level_id)
+		_opponent_pk_bar.complete_current_level()
+		_opening_fan_count = SaveManager.data.live_session.fan_count
+		restart_current_attempt()
+	elif completion != LevelRunState.CompletionResult.ALL_NORMAL_LEVELS_COMPLETED:
+		return
+	# 最后一关继续保留休息界面；终局转场留 RS-10，重复请求由关卡状态拒绝。
+	rest_continue_requested.emit(finished_session)
 
 
 # 普通与复读都由同一生成事实计评论，等待请求和失败生成不提前入账。

@@ -74,4 +74,4 @@ godot --headless --path . res://tests/fixtures/data_export/test_only_live_smoke.
 
 已知环境问题：独立 Windows worktree 在首次运行前可能需要 Godot --headless --editor --import，才能生成音频 .ogg 的导入缓存；不能仅根据缓存缺失报错判定游戏代码失败。真实战斗 Smoke 使用场景启动方式，从而初始化完整的 Autoload。
 
-注意：真实战斗 Smoke 目前覆盖 _ready、TEST_ONLY 普通弹幕、攻击蓄力发射、命中收益、场景跨关重启；RS-09 休息界面 continue_to_next_level 的端到端路由待 FO-11 合并并同步 main 后补验。相关数据问题遵守 known_traps.md KT-11/12/13/14/15/18/20。
+注意：真实战斗 Smoke 已在 RS-09 / FO-11 合入后验证普通弹幕、蓄力攻击、PK 命中、未击破 Rest 界面 Continue → 下一关和重复继续去重。成功神谕后进入 Rest 属 FO-12，尚不在本测试覆盖内。Godot 退出时出现的 ObjectDB / Resource 清理提示已在集成日志中记录。

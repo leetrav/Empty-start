@@ -79,7 +79,7 @@ DD-17 等 20. Ending。
 - `is_entered()` 读取进入状态；`get_entry_snapshot()` 返回独立深拷贝，进入前返回 `{}`。会话不保留 SaveData / TendencyState / ScriptureEntry 等源 Resource 引用，也没有改变冻结结果的公开写入接口。
 - 快照字段：`tendency_result`、`scripture_entries`、`committed_normal_hit_history`、`normal_repeat_counts_by_line_id`、`history_candidates`、`assimilation_content`。普通历史与 DD-02 候选分别保留来源及已归并数据；圣典 / 吞并字段沿用 SC-07 / AS-09 的结构。
 - `tendency_result` 保存 `orthodox_total / heretical_total / absurd_total`、`opening_identity_tendency_id` 和 17 公开方法得到的 `primary_tendency_id / secondary_tendency_id / is_primary_tied / has_no_effective_behavior`。仅复制已提交事实，排除 `attempt_*`；并列和全零规则仍由 TendencyState 计算。
-- 唯一归属约定：17 拥有倾向事实和裁决规则，19 持有本次终局不可变使用快照。未来 TT-11 / TT-12 沿用此边界，提供只读倾向事实 / 结果，不新增另一份可变冻结真相；后续消费方从本 Session 读取首次结果。
+- 唯一归属约定：17 拥有倾向事实和裁决规则，19 持有本次终局不可变使用快照。TT-11 已通过一个关键单测及真实 Resource / 场景 smoke 核实：后续源暂存 / 提交、开局依据变化及读取副本修改均不能改变首次倾向事实。TT-12 后续沿用此边界，消费方从本 Session 读取首次结果。
 - 源存档后续写入、暂存经文变化和调用方修改返回副本均不改变内部快照。空历史仍可进入并提供明确空集合；直接跳过演出或转入 Ending 的规则留 DD-15 / DD-17。
 - DD-01 只负责进入时固定数据，不在本卡接入 Sandbox、Rest UI、RS-10 路由、DD-04 运行模式、DD-05 计时或新的权重 / 演出业务。后续组合方可独立组合现有模式与会话。
 
@@ -104,10 +104,18 @@ DD-17 等 20. Ending。
 - `DivineDescentScriptureInput.build_snapshot(run_data)` 通过 15 的 `get_ordered_entries()` 读取已提交经文，返回 `Array[Dictionary]` 独立快照；空圣典、空周目或缺少 ScriptureData 均返回空数组。
 - 每章字段为 `level_id`、`streamer_name`、`original_sentence_id`、`original_sentence_text`、`tendency`、`chapter_number`、`verse_number`。原句 ID 从 `ScriptureEntry.original_line_id` 转为 String，与 DD-02 候选的 `original_sentence_id` 一致。
 - 排序、原文和固定章 / 节号由 Scripture 的正式读取接口提供；未提交暂存排除，同句多章保留，原章号不压缩。修改返回值不会写回圣典。
-- DD-01 的 Session 已在正式进入接口调用并持有此快照；DD-07 后续使用稳定原句 ID 匹配历史候选，再执行其同句一次加权规则。本接口只提供读取依据。
+- DD-01 的 Session 已在正式进入接口调用并持有此快照；DD-07 使用稳定原句 ID 匹配历史候选，执行同句一次加权规则。本接口只提供读取依据。
 
 ## DD-06 基础权重接口
 
 - `DivineDescentCandidateFilter.calculate_base_weights(candidates)` 接收 DD-02 输出，按原顺序返回候选深拷贝，并新增 `base_weight` 字段。
 - `base_weight = max(hit_count + normal_repeat_count, 1)`；仅使用已有普通命中数和实际普通复读数，保留候选其他字段，输入历史与候选保持原值。
-- 基础权重属于 DivineDescent 的派生数据；HitResolution 和 Repeat 继续拥有各自历史。圣典加成、动态权重、锁句及运行阶段接线留给后续任务。
+- 基础权重属于 DivineDescent 的派生数据；HitResolution 和 Repeat 继续拥有各自历史。DD-07 已提供纯圣典加成，动态权重、锁句及运行阶段接线留给后续任务。
+
+## DD-07 圣典候选加成
+
+- `DivineDescentCandidateFilter.apply_scripture_bonus(base_weight_candidates, scripture_entries)` 接收 DD-06 的基础权重候选与 DD-01 冻结的 SC-07 经文，按 `original_sentence_id` 匹配，只对历史池内候选加成。
+- 输出深拷贝保留原字段及 `base_weight`，新增 `weight = base_weight + 圣典加成`；加成等于本次输入候选池加成前的最大 `base_weight`，同句多章只加一次，非圣典候选 `weight = base_weight`。每次从基础值派生，不读取旧 `weight`。
+- 空经文只返回基础权重；空候选返回空数组；单句圣典候选加成等于自身基础权重。圣典中池外原句不会新增候选，输入候选、经文与 Session 冻结快照保持原值。
+- 保留 DD-02 的原候选顺序，不按本卡输出权重重新排序；DD-09 / DD-10 的最高权重与并列裁决留对应卡。没有改动 FO-05 的本场候选排序。
+- 后续组合调用：从 Session 读取 `history_candidates / scripture_entries` → `calculate_base_weights(history_candidates)` → `apply_scripture_bonus(base_candidates, scripture_entries)`。返回池作为演出工作数据，冻结来源仍留在 Session；DD-08 的生成和动态加权本卡未实现。

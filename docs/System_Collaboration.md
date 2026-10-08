@@ -431,6 +431,8 @@ TT-10 已核实休息环境读取方式：正式提交完成后，Rest 从所属
 → 关卡配置系统准备下一名主播
 ```
 
+RS-09 的正式调用链为 RestResultView 的继续请求 → Sandbox → `RestSession.continue_to_next_level(run_state)` → `LevelRunState.complete_level(level_id)`。关卡系统独占顺序和去重；`ADVANCED` 后 Sandbox 复用当前场景清理并按新 LevelProfile 开始尝试，沿用同一 SaveData 保留已提交成果。Sandbox 跨系统接线由 Lane A 负责，Rest UI 由 Lane B 负责。
+
 普通关卡全部结束时：
 
 ```text
@@ -519,7 +521,7 @@ TT-10 已核实休息环境读取方式：正式提交完成后，Rest 从所属
 
 DD-01 的 `DivineDescentSession.enter(current_run_data)` 是正式进入 / 冻结接口。未来 RS-10 在普通关卡完成并提交结果后创建会话并调用一次；后续通过 `get_entry_snapshot()` 读取独立副本。该快照固定已提交倾向结果、SC-07 经文、HR-15 命中历史、RP-12 普通复读数量、DD-02 候选与 AS-09 吞并成果；源存档及暂存变化不会改变它。
 
-倾向归属统一为：17 持有精确累计、开局参照和裁决规则，19 持有本次进入终局的不可变使用快照。未来 TT-11 / TT-12 复用这一结果归属，不建立另一份可变冻结真相；19 从现有 TendencyState 公开结果读取主导、次要、并列、全零，仅复制已提交总值，未提交 attempt 排除。
+倾向归属统一为：17 持有精确累计、开局参照和裁决规则，19 持有本次进入终局的不可变使用快照。TT-11 已复用 DD-01 核实冻结后不变，TT-12 后续继续沿用同一归属；19 从现有 TendencyState 公开结果读取主导、次要、并列、全零，仅复制已提交总值，未提交 attempt 排除。进入和读取都不修改源状态，后续源暂存 / 提交不影响 Session 首次快照，读取副本修改也无法回写内部结果。
 
 后面的玩家输入主要影响演出强度。
 
@@ -642,7 +644,7 @@ README 里“等某系统”表示当前这张联调卡等待对应接口；同�
 
 当前 `LevelProfile.normal_pool_inheritance` 由关卡配置持有，提供该关普通词库的稳定 ID、整池继承权重与资格；词库正文仍读取同一 `normal_speech_pool`。`inheritable_trait_ids` 是独立特性白名单，和本关启用的 `special_trait_ids` 分开。
 
-13 在正式确认的同场校验后把这些静态值交给 14 现有登记 API；卡片资料交给 16 的既有 Catalog / 发卡入口。14 / 16 继续拥有运行成果、来源与去重。`tests/fixtures/fo11/` 只提供显式注入的 TEST_ONLY 验收数据，生产默认目录没有替换，完整 Sandbox 奖励接线继续由 FO-11 负责。
+13 在正式确认的同场校验后把这些静态值交给 14 现有登记 API；卡片资料交给 16 的既有 Catalog / 发卡入口。14 / 16 继续拥有运行成果、来源与去重。FO-11 已在 Sandbox 同一回调中按首次击败登记结果提交允许继承的普通池和白名单特性；`tests/fixtures/fo11/` 只提供显式注入的 TEST_ONLY 验收数据，生产默认目录没有替换，正式资源仍待配置。
 
 ### 提交身份
 

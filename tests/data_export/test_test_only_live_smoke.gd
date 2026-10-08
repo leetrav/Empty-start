@@ -1,5 +1,5 @@
 ## 测试场景实际进入 SceneTree，执行 _ready、生成、蓄力发射与跨关重启。
-## 集成 RS-09 / FO-11 后继续覆盖真实 Rest→下一关信号链。
+## 真实经 Rest Continue 进入下一关，覆盖 RS-09 的完整信号链。
 extends Node
 
 const SCENE: PackedScene = preload("res://tests/fixtures/data_export/test_only_sandbox.tscn")
@@ -66,22 +66,42 @@ func _execute() -> void:
     if not _check(sandbox._hit_resolution.get_normal_hit_history()[0].get("original_sentence_id", "") == target_id, "命中原句 ID 不正确"):
         return
 
-    # 后续 RS-09 与 FO-11 并入后，这里需要额外验收真实 Rest→next-level 链路。
-    var first_id: String = sandbox._run_state.get_current_level_profile().level_id
-    var next: LevelRunState.CompletionResult = sandbox._run_state.complete_level(first_id)
-    if not _check(next == LevelRunState.CompletionResult.ADVANCED, "运行时关卡状态无法推进"):
-        return
-    sandbox.restart_current_attempt()
+    # Exercise the actual PK completion, unbroken Rest and Continue button signal.
+    # The test already confirmed a real normal hit above; now use the existing PK debug API.
+    sandbox.debug_set_player_pk(sandbox.battle_config.maximum_player_pk)
     await get_tree().process_frame
-    if not _check(sandbox._run_state.get_current_level_profile().level_id == "test_level_02", "第二关未激活"):
+    await get_tree().process_frame
+    if not _check(sandbox._contradiction_break != null and sandbox._contradiction_stage_active, "PK win did not enter contradiction stage"):
         return
-    if not _check(sandbox._normal_combat_active, "第二关普通战斗没有启动"):
+    # Consume the one official CB shot without a true contradiction hit.
+    if not _check(sandbox._contradiction_break.register_launched_shot(), "Contradiction shot was rejected"):
         return
-    if not _check(sandbox._barrage_area.is_normal_generation_enabled(), "第二关生成器未启动"):
+    var no_hits: Array[String] = []
+    if not _check(sandbox._contradiction_break.resolve_shot_hit_ids(no_hits), "Contradiction miss was rejected"):
+        return
+    await get_tree().process_frame
+    if not _check(sandbox._rest_session != null and sandbox._rest_session.is_open(), "Unbroken outcome did not open Rest"):
+        return
+    if not _check(sandbox._rest_result_view._overlay.visible, "Rest view did not show the result"):
+        return
+    # Press the actual Rest button; this must reach RestSession and Sandbox RS-09 routing.
+    sandbox._rest_result_view._continue_button.pressed.emit()
+    await get_tree().process_frame
+    if not _check(sandbox._run_state.get_current_level_profile().level_id == "test_level_02", "Rest Continue failed to enter second level"):
+        return
+    if not _check(sandbox._normal_combat_active, "Second-level normal combat did not start"):
+        return
+    if not _check(sandbox._barrage_area.is_normal_generation_enabled(), "Second-level normal barrage generation did not start"):
+        return
+    # Repeating the same UI action cannot complete the next level.
+    sandbox._rest_result_view._continue_button.pressed.emit()
+    await get_tree().process_frame
+    if not _check(sandbox._run_state.get_current_level_profile().level_id == "test_level_02", "Repeated Continue advanced a second time"):
         return
     print("PASS TEST_ONLY live smoke: SceneTree _ready, spawned ", target_id,
-          ", charged attack, PK/hit history, level 2 battle start.")
+          ", charged attack, PK/hit history, Rest Continue -> level 2.")
     sandbox.queue_free()
+    await get_tree().process_frame
     get_tree().quit(0)
 
 
