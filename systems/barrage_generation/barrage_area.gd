@@ -227,8 +227,20 @@ func _clear_barrage_views() -> int:
 	return cleared_count
 
 
-## 由其他系统明确调用，生成一条选中的普通话语。
-func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> BarrageView:
+# 从当前周目读取可用特性；每次查询返回副本，换关和重开无需另存继承缓存。
+func get_available_trait_ids(level_profile: LevelProfile) -> Array[StringName]:
+	# 通过已登记 Autoload 节点读取，单文件 CLI 检查也能解析；未入树时仅提供本关特性。
+	var save_manager: Node = get_node_or_null("/root/SaveManager") if is_inside_tree() else null
+	var run_data: SaveData = save_manager.get("data") as SaveData if save_manager != null else null
+	return BarrageTraitSet.get_available_for_level(
+		level_profile, run_data.assimilation_data if run_data != null else null
+	)
+
+
+## 显式选择普通话语及特性；默认空选择保留既有生成行为，分配概率交由正式配置决定。
+func spawn_normal_barrage(
+	level_profile: LevelProfile, speech: LevelSpeech, selected_trait_ids: Array[StringName] = []
+) -> BarrageView:
 	if level_profile == null or speech == null:
 		push_error("BarrageArea: 生成普通弹幕需要关卡配置和话语定义。")
 		return null
@@ -241,6 +253,9 @@ func spawn_normal_barrage(level_profile: LevelProfile, speech: LevelSpeech) -> B
 		return null
 
 	var barrage_record: BarrageRuntimeRecord = BarrageRuntimeRecord.new()
+	# 当前入口创建普通原句，陷阱和复读继续使用各自生成入口及类型信息。
+	if not barrage_record.trait_set.add_available_traits(selected_trait_ids, get_available_trait_ids(level_profile)):
+		return null
 	barrage_record.text = speech.text
 	barrage_record.original_sentence_text = speech.text
 	barrage_record.source_id = level_profile.streamer_id

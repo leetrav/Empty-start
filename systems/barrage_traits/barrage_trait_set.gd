@@ -12,6 +12,40 @@ var _trait_ids: Array[StringName] = []
 var _split_triggered: bool = false
 
 
+# 合并本关与已提交继承 ID；可用集合允许互斥候选共存，装配时再检查组合。
+static func get_available_for_level(
+	level_profile: LevelProfile, assimilation_data: AssimilationData = null
+) -> Array[StringName]:
+	var available := BarrageTraitSet.new()
+	if level_profile == null:
+		return available.get_trait_ids()
+	for trait_id: StringName in level_profile.special_trait_ids:
+		available.add_trait(trait_id)
+	# 特性读取无需词库目录；AS-06 直接返回 14 的已提交 ID 副本。
+	var inherited: Dictionary = LevelCatalog.new().get_inherited_content_snapshot(assimilation_data)
+	for trait_id: StringName in inherited["inherited_trait_ids"]:
+		available.add_trait(trait_id)
+	return available.get_trait_ids()
+
+
+# 只装配可用且兼容的整组选择；失败时保留原集合，不自动修正互斥组合。
+func add_available_traits(
+	selected_ids: Array[StringName], available_ids: Array[StringName],
+	includes_trap: bool = false, includes_repeat: bool = false
+) -> bool:
+	var combined: Array[StringName] = get_trait_ids()
+	for trait_id: StringName in selected_ids:
+		if not _is_supported_trait(trait_id) or not available_ids.has(trait_id):
+			return false
+		if not combined.has(trait_id):
+			combined.append(trait_id)
+	if not are_compatible(combined, includes_trap, includes_repeat):
+		return false
+	for trait_id: StringName in selected_ids:
+		add_trait(trait_id)
+	return true
+
+
 # 给单条弹幕装配已定义的特性；重复或未知 ID 不会进入集合。
 func add_trait(trait_id: StringName) -> bool:
 	if not _is_supported_trait(trait_id) or _trait_ids.has(trait_id):
