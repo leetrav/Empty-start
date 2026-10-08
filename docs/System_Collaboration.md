@@ -568,7 +568,7 @@ FO-13 的选择表现保留战斗 HUD：Sandbox 在中央 BattleArea 展示 Fina
 | 待生成复读和复读统计 | 复读系统 | 弹幕生成、神谕、终局读取 |
 | 矛盾阶段成败 | 矛盾击破系统 | 神谕或休息读取 |
 | 本场最终神谕 | 终结神谕系统确认 | 圣典和奖励系统接收 |
-| 已吞并主播、词库权重与特性 | 吞并系统 | 通过 `SaveData.assimilation_data` 读取；休息用 `get_new_content_for_source(level_id, streamer_id)` 查询同场实际新增，用 `get_current_content_snapshot()` 读取总量快照 |
+| 已吞并主播、词库权重与特性 | 吞并系统 | 通过 `SaveData.assimilation_data` 读取；休息用 `get_new_content_for_source(level_id, streamer_id)` 查询同场实际新增，用 `get_current_content_snapshot()` 读取总量快照；神降临的 `DivineDescentAssimilationInput.build_snapshot(run_data)` 复用此总量快照入口 |
 | 已保存经文记录 | 圣典系统 | 从 `SaveData.scripture_data` 的 `get_ordered_entries()` / `get_chapter_slots(level_catalog)` 读取经文快照与含缺章的原序号视图 |
 | 败者卡资料与已获卡片 | 败者卡系统 | 静态资料按主播 ID 查找；通过 `SaveData.loser_card_data` 读取本周目已获 ID，供休息展示 |
 | 三项倾向累计与开局比较参照 | 三项倾向系统 | 通过 `SaveData.tendency_state` 保存；休息、终局和结局读取后续提交结果 |

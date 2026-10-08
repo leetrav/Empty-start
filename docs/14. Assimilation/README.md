@@ -33,6 +33,13 @@
 - 旧存档缺少来源字段时默认空字典，既有总量保留。历史归属不从总量或 ID 列表顺序补算；继承登记要求已经保存的正式来源，缺少来源的旧关卡拒绝新的无归属写入。
 - Rest 消费端通过上述查询读取结果；AS-08 不修改 RS-03 分支，合入后再补 RS-03 的调用。
 
+## AS-09：神降临读取
+
+- 终局调用方在进入时调用现有 `DivineDescentAssimilationInput.build_snapshot(run_data)`；该入口通过 `SaveData.assimilation_data.get_current_content_snapshot()` 取得实际已获得的全部词库权重与特性 ID。
+- 总量与来源记录继续由 14 持有，19 仅持有公开接口返回的独立快照；后续登记或修改快照互不影响。
+- 没有成果时固定返回 `{inherited_word_weights: {}, inherited_trait_ids: []}`。总量读取沿用 AS-08，包含旧存档已有但缺少来源记录的成果。
+- 本卡完成读取接口联调；完整终局进入组合仍归 DD-01，Rest 本场新增、特性装配与权重计算由各自任务负责。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
