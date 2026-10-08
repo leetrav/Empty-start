@@ -40,9 +40,11 @@ func _apply_display_data() -> void:
 		child.queue_free()
 	var scripture: Dictionary = _display_data.get("scripture", {})
 	var rows: Array = scripture.get("rows", [])
+	# 全空圣典沿用 EN-07 空态并继续绘制缺章，其余结局内容照常呈现。
 	_empty_scripture.visible = bool(scripture.get("is_empty", true))
 	for row: Dictionary in rows:
 		var row_view: EndingScriptureRow = SCRIPTURE_ROW.instantiate() as EndingScriptureRow
 		_scripture_rows.add_child(row_view)
 		row_view.show_row(row)
-	_scroll.scroll_vertical = 0
+	# 空配置收起内容后容器会重新布局，延后归零避免布局沿用旧滚动位置。
+	_scroll.set_deferred("scroll_vertical", 0)
