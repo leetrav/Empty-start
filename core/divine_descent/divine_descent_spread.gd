@@ -88,9 +88,11 @@ func _try_lock_after_new_word_decay() -> void:
 		return
 	if not _combat_mode.is_new_word_decay_complete() or _combat_mode.get_new_word_rate_multiplier() != 0.0:
 		return
-	stop()
 	_locked_candidate = DivineDescentCandidateFilter.select_highest_weight_candidate(get_current_candidates())
 	if is_sentence_locked():
+		# 没有积压队列；收窄后续抽取池即取消其他句的生成，保留 Timer 和在场视图。
+		_candidates.clear()
+		_candidates.append(_locked_candidate.duplicate(true))
 		sentence_locked.emit(get_locked_candidate())
 
 
@@ -122,7 +124,7 @@ func generate_next_repeat() -> BarrageView:
 	return view
 
 
-# 停止自动扩散但保留当前工作池，供 DD-09 后续读取锁句依据。
+# 显式停止自动生成并保留当前工作池；锁句本身继续沿用原 Timer 周期。
 func stop() -> void:
 	if _timer != null:
 		_timer.stop()
