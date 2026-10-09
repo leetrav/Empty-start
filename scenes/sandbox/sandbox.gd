@@ -29,6 +29,7 @@ var _repeat_queue: RepeatDelayQueue
 var _run_state: LevelRunState
 var _normal_combat_active: bool = false
 var _contradiction_stage_active: bool = false
+var _contradiction_outcome_handled: bool = false
 var _contradiction_break: ContradictionBreakSystem
 var _final_oracle_session: FinalOracleSession
 var _oracle_selection_timer: FinalOracleSelectionTimer
@@ -94,6 +95,7 @@ func restart_current_attempt() -> void:
 		_repeat_queue.get_generation_stats().discard_uncommitted_normal_repeat_history()
 	_stop_normal_combat()
 	_contradiction_stage_active = false
+	_contradiction_outcome_handled = false
 	_oracle_transition_started = false
 	_oracle_transition_timer.stop()
 	_final_oracle_session = null
@@ -172,6 +174,8 @@ func _process(delta: float) -> void:
 		_battle_hud.show_battle_state("击破矛盾：%.1f 秒 · 剩余 %d 发" % [_contradiction_break.get_remaining_seconds(), _contradiction_break.get_remaining_shots()])
 	elif _contradiction_stage_active and _contradiction_break != null and _contradiction_break.get_outcome() == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		_try_start_oracle_transition()
+	elif _contradiction_stage_active and _contradiction_break != null and _contradiction_break.get_outcome() == ContradictionBreakSystem.Outcome.NOT_BROKEN:
+		_open_rest_after_unbroken()
 	_battle_hud.refresh_attack(_attack_charge_input.get_charge_progress(), _attack_charge_input.get_attack_phase())
 
 
@@ -494,6 +498,12 @@ func _on_contradiction_shot_created(snapshot: AttackTargetSnapshot) -> void:
 
 # 已锁定结果立即停止攻击和矛盾生成；后续分支只读取这一份结果。
 func _on_contradiction_outcome_locked(outcome: int) -> void:
+	# 同场结果只启动一次展示；重复通知不能清掉已生成复读或重新提交休息。
+	if not _contradiction_stage_active or _contradiction_outcome_handled:
+		return
+	if _contradiction_break == null or outcome != _contradiction_break.get_outcome():
+		return
+	_contradiction_outcome_handled = true
 	_attack_charge_input.lock_new_attacks()
 	_barrage_area.clear_barrages()
 	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
@@ -505,12 +515,18 @@ func _on_contradiction_outcome_locked(outcome: int) -> void:
 		)
 		_battle_hud.show_battle_state("矛盾击破成功 · 等待复读展示")
 	else:
+		_battle_hud.show_battle_state("未击破矛盾 · 等待复读展示")
 		_open_rest_after_unbroken()
 
 
-# 未击破已是本场最终结果，直接把无神谕奖励的 PK 胜利快照交给休息入口。
+# 未击破结果立即固定；本发有限复读全部生成并离场后，将无神谕奖励的 PK 胜利交给休息。
 func _open_rest_after_unbroken() -> void:
 	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.NOT_BROKEN:
+		return
+	if not _contradiction_stage_active or (_rest_session != null and _rest_session.is_open()):
+		return
+	# 沿用成功分支的展示结束条件；输入与生成已停止，空命中和超时无需等待。
+	if _repeat_queue.get_pending_contradiction_count() > 0 or _barrage_area.has_visible_contradiction_repeats():
 		return
 	var current_level: LevelProfile = _run_state.get_current_level_profile()
 	if current_level == null:
