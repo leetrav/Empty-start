@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：CS-20 / CS-15
+- 前置：CS-20、CS-14
+- 视觉协调：CS-15 的升档过渡
 
 ## 当前已实现的基础
 SandboxBattleHud 已有 OpponentPortraitArt 和 streamer_portrait 资源绑定，目前开局即展示。

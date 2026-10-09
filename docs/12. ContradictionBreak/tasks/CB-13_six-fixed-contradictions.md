@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：CB-02、CB-03、CB-04 / CS-25
+- 前置：现有 CB-02、CB-03、CB-04
+- 后续消费者：CB-14；CS-25 阶段标签可并行
 
 ## 当前已实现的基础
 当前 LevelProfile 样例仅一真一假，BarrageArea 按 Paradox 倍率循环生成候选；需要改为本轮固定六句演出规则。

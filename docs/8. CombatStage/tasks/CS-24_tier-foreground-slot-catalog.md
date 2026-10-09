@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：BG-16 / 现有 CombatStageTierCatalog
+- 前置：现有 CombatStageTierCatalog、CombatStageTierConfig
+- 后续消费者：BG-16
 
 ## 当前已实现的基础
 当前 CombatStageTierConfig 有生成数量、频率等倍率，但尚未保存前景同屏名额；LC-11 已归档为旧口径索引。

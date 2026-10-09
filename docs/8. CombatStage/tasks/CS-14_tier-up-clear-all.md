@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：CS-18 / CS-15 / BG-38
+- 前置：CS-18；复用 Sandbox 整发提交与 BG-38 命中结束接口
+- 后续演出：CS-15、CS-21
 
 ## 当前已实现的基础
 CombatStage 当前发布 tier_state_changed 时，Sandbox 仍可能处于一发的 resolve_shot_results 内；实际清理时序需要覆盖提交的完整链路。

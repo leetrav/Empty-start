@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：CS-21 / CS-23
+- 前置：CS-21
+- 后续消费者：CS-23
 
 ## 当前已实现的基础
 现有 SandboxBattleHud 暂未提供此段开场气泡流程。

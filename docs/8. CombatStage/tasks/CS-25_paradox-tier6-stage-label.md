@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：现有 CS-11 / CB-13 / SandboxBattleHud.refresh_pk
+- 前置：现有 CS-11 的独立矛盾阶段进入结果
+- 接口参考：SandboxBattleHud.refresh_pk；CB-13 可并行
 
 ## 当前已实现的基础
 现有 CombatStageCatalog 仅保存 T0～T5，矛盾击破是独立 ContradictionBreak 状态。

@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：CS-14 / RP-11 / BG-34
+- 前置：现有 RP-11 的 `RepeatDelayQueue.clear_normal_queue()`
+- 后续消费者：CS-14 在整发提交后协调队列清理
 
 ## 当前已实现的基础
 RepeatDelayQueue.clear_normal_queue() 已实现，当前仅在普通战斗结束等节点调用。

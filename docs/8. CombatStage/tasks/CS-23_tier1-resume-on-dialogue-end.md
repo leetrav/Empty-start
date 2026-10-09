@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：CS-22 / CS-15 / 现有 OpponentPKBar.stop_pullback、resume_pullback
+- 前置：CS-22、CS-15
+- 复用接口：现有 OpponentPKBar 回拉停止和恢复方法
 
 ## 当前已实现的基础
 当前回拉在 restart_current_attempt 里 start_pullback 后即运行；进入 T1 仅更新倍率，缺少对白期间的生命周期衔接。
