@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="MobileAttackInputConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/combat_attack/mobile_attack_input_config.gd" id="1_mobile"]
+
+[resource]
+resource_name = "TEST_ONLY_CA12_touch_dimensions_not_approved"
+script = ExtResource("1_mobile")
+touch_reticle_diameter = 80.0

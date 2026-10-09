@@ -22,6 +22,8 @@ var _contradiction_mode: bool = false
 var _selection_mode_active: bool = false
 var _selection_targets: Array[Control] = []
 var _new_attacks_locked: bool = false
+var _mobile_input_config: MobileAttackInputConfig
+var _touch_index: int = -1
 
 
 # 按住输入且没有暂停或飞行 / 硬直时才推进蓄力。
@@ -36,7 +38,7 @@ func _process(delta: float) -> void:
 
 
 func _ready() -> void:
-	# 暂停期间仍接收鼠标抬起以清理按住状态，蓄力本身由下方显式跳过。
+	# 暂停期间仍接收抬起以清理按住状态，蓄力本身由下方显式跳过。
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_phase_timer = Timer.new()
 	# 计时器沿用 Godot 的暂停处理，在暂停中保留剩余时间。
@@ -74,6 +76,16 @@ func configure_target_query(aim_reticle: AimReticle, barrage_area: BarrageArea) 
 	_barrage_area = barrage_area
 
 
+# 场景注入移动端数值表；缺正式数值时只能显式注入 TEST_ONLY fixture。
+func configure_mobile_input(config: MobileAttackInputConfig) -> bool:
+	if config == null or not is_finite(config.touch_reticle_diameter) or config.touch_reticle_diameter <= 0.0:
+		return false
+	if _attack_held or _attack_phase != AttackPhase.READY:
+		return false
+	_mobile_input_config = config
+	return true
+
+
 # 注入临时可选目标；命中只发选择事实，不进入 HitResolution。
 func set_selection_targets(targets: Array[Control]) -> bool:
 	_selection_targets.clear()
@@ -100,6 +112,7 @@ func set_contradiction_mode(active: bool) -> void:
 
 # 结果在释放时已固定；只封锁下一发，保留当前飞行计时作为演出。
 func lock_new_attacks() -> void:
+	_cancel_touch_charge()
 	_new_attacks_locked = true
 	_attack_held = false
 
@@ -108,6 +121,7 @@ func set_combat_active(active: bool) -> void:
 	_combat_active = active
 	if active:
 		return
+	_cancel_touch_charge()
 	_attack_held = false
 	_active_snapshot = null
 	_attack_phase = AttackPhase.READY
@@ -117,15 +131,39 @@ func set_combat_active(active: bool) -> void:
 		_charge_progress = AttackChargeProgress.new(_attack_timing.charge_time_s)
 
 
-# 在鼠标松开输入事件上冻结当前候选，之后进入准心的弹幕不加入本发。
+# 在松开输入事件上冻结当前候选，之后进入准心的弹幕不加入本发。
 func _input(event: InputEvent) -> void:
+	# 已接管的手指在 UI 上方松开也必须清理；其他手指留给 UI。
+	if _touch_index >= 0:
+		if event is InputEventScreenDrag and event.index == _touch_index:
+			if not get_tree().paused:
+				_aim_reticle.move_touch_aim(event.position, _mobile_input_config.touch_reticle_diameter)
+			get_viewport().set_input_as_handled()
+			return
+		if event is InputEventScreenTouch and event.index == _touch_index and (not event.pressed or event.canceled):
+			if event.canceled or get_tree().paused:
+				_cancel_touch_charge()
+			else:
+				_aim_reticle.move_touch_aim(event.position, _mobile_input_config.touch_reticle_diameter)
+				_touch_index = -1
+				_attack_held = false
+				_handle_attack_release()
+			get_viewport().set_input_as_handled()
+			return
+		if event is InputEventMouseButton or event is InputEventMouseMotion:
+			return
 	if not _combat_active or _new_attacks_locked or not event is InputEventMouseButton:
+		return
+	# Godot 默认会把触屏模拟成鼠标；攻击只处理原始触屏，防止重复发射。
+	if event.device == InputEvent.DEVICE_ID_EMULATION:
 		return
 	var mouse_event := event as InputEventMouseButton
 	if mouse_event.button_index != MOUSE_BUTTON_LEFT:
 		return
 	if mouse_event.pressed:
 		if not get_tree().paused and can_start_charging():
+			if _aim_reticle != null:
+				_aim_reticle.restore_mouse_aim()
 			_attack_held = true
 		return
 
@@ -133,6 +171,36 @@ func _input(event: InputEvent) -> void:
 	_attack_held = false
 	if was_attack_held and not get_tree().paused:
 		_handle_attack_release()
+
+
+# 只接管 UI 未消费的首次按下，避免暂停按钮或结果页触摸同时开始攻击。
+func _unhandled_input(event: InputEvent) -> void:
+	if not event is InputEventScreenTouch or not event.pressed or event.canceled:
+		return
+	if _touch_index >= 0 or _attack_held or _mobile_input_config == null or _aim_reticle == null:
+		return
+	if not can_start_charging():
+		return
+	_touch_index = event.index
+	_aim_reticle.move_touch_aim(event.position, _mobile_input_config.touch_reticle_diameter)
+	_attack_held = true
+	get_viewport().set_input_as_handled()
+
+
+# 系统取消、后台切换和停止战斗丢弃触屏蓄力，满蓄也不能意外发射。
+func _cancel_touch_charge() -> void:
+	if _touch_index < 0:
+		return
+	_touch_index = -1
+	_attack_held = false
+	if _attack_timing != null:
+		_charge_progress = AttackChargeProgress.new(_attack_timing.charge_time_s)
+
+
+# Android 进入后台时抬指事件可能丢失，返回前清理当前手势。
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		_cancel_touch_charge()
 
 
 # 未满蓄释放只取消；满蓄释放发送快照事实，不在攻击系统改动 PK。
@@ -362,7 +430,7 @@ func get_attack_phase() -> AttackPhase:
 
 
 func is_charge_held() -> bool:
-	# 调试状态读取真实鼠标蓄力输入，不从进度或界面文字反推按住状态。
+	# 调试状态读取真实蓄力输入，不从进度或界面文字反推按住状态。
 	return _attack_held
 
 
