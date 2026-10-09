@@ -5,7 +5,7 @@
 [node name="DebugPanel" type="CanvasLayer"]
 unique_name_in_owner = true
 visible = false
-layer = 20
+layer = 21
 process_mode = 3
 script = ExtResource("1_debug")
 

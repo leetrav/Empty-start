@@ -29,6 +29,8 @@ var _refresh_elapsed: float = 0.0
 # 连接静态界面按钮；面板始终可响应 F3，显示时才轮询实时状态。
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	get_viewport().size_changed.connect(_fit_viewport_height)
+	_fit_viewport_height()
 	%CloseButton.pressed.connect(_close_panel)
 	%RestartButton.pressed.connect(_restart_current_battle)
 	%ClearBarragesButton.pressed.connect(_clear_barrages)
@@ -43,17 +45,27 @@ func _ready() -> void:
 			continue
 		var percentage: int = str(button.name).trim_prefix("PK").to_int()
 		button.pressed.connect(_set_player_pk.bind(percentage))
+	_refresh_snapshot()
+
+
+# 默认逻辑视口可能低于设计高度，限制面板高度以保留内部滚动入口。
+func _fit_viewport_height() -> void:
+	var available_height: float = maxf(get_viewport().get_visible_rect().size.y - 32.0, 0.0)
+	$CenterContainer/PanelContainer.custom_minimum_size.y = minf(760.0, available_height)
 
 
 # 由 Sandbox 注入当前场景作为状态读取与调试操作入口。
 func bind_sandbox(sandbox: Node) -> void:
 	_sandbox = sandbox
+	if not is_node_ready():
+		return
+	_message_label.text = "已连接当前战斗，操作结果以实时状态为准。"
 	_refresh_snapshot()
 
 
 # 仅在面板打开时定时刷新显示，不阻塞游戏流程。
 func _process(delta: float) -> void:
-	if not visible or _sandbox == null:
+	if not visible:
 		return
 	_refresh_elapsed += delta
 	if _refresh_elapsed < REFRESH_INTERVAL:
@@ -78,10 +90,15 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # 从 Sandbox 即时读取业务快照并映射到只读状态标签。
 func _refresh_snapshot() -> void:
-	if _sandbox == null or not _sandbox.has_method("get_debug_snapshot"):
+	if not is_instance_valid(_sandbox) or not _sandbox.has_method("get_debug_snapshot"):
+		_set_actions_enabled(false)
+		_battle_phase_label.text = "战斗阶段：尚未绑定当前战斗"
+		_message_label.text = "独立预览仅显示界面；请由战斗场景绑定后操作。"
 		return
 	var snapshot: Dictionary = _sandbox.call("get_debug_snapshot")
+	_set_actions_enabled(not snapshot.is_empty())
 	if snapshot.is_empty():
+		_battle_phase_label.text = "战斗阶段：等待当前战斗初始化"
 		return
 	_battle_phase_label.text = "战斗阶段：%s" % str(snapshot.get("battle_phase", "未知"))
 	_level_label.text = "当前关卡：%s" % str(snapshot.get("level", "未知"))
@@ -110,6 +127,16 @@ func _refresh_snapshot() -> void:
 	]
 
 
+# 独立预览和初始化期间禁用业务按钮，关闭入口仍可使用。
+func _set_actions_enabled(enabled: bool) -> void:
+	for child in _pk_buttons.get_children():
+		if child is Button:
+			child.disabled = not enabled
+	for action_name: String in ["RestartButton", "ClearBarragesButton", "SpawnBatchButton",
+		"StopGenerationButton", "ResumeGenerationButton", "ApplyLiveDataButton", "ApplyTendenciesButton"]:
+		(get_node("%" + action_name) as Button).disabled = not enabled
+
+
 # 将真实攻击阶段与按住状态翻译为中文说明。
 func _get_attack_phase_text(snapshot: Dictionary) -> String:
 	if bool(snapshot.get("is_charging", false)):
@@ -125,7 +152,7 @@ func _get_attack_phase_text(snapshot: Dictionary) -> String:
 
 # 打开面板或应用修改后，将当前真实值填回输入框。
 func _sync_inputs_from_snapshot() -> void:
-	if _sandbox == null:
+	if not is_instance_valid(_sandbox) or not _sandbox.has_method("get_debug_snapshot"):
 		return
 	var snapshot: Dictionary = _sandbox.call("get_debug_snapshot")
 	_viewer_input.value = int(snapshot.get("viewer_count", 0))
@@ -187,7 +214,7 @@ func _apply_live_data() -> void:
 	)
 	_refresh_snapshot()
 	_sync_inputs_from_snapshot()
-	_message_label.text = "已写入当前我方 LiveSessionData。"
+	_message_label.text = "已写入当前我方直播数据。"
 
 
 # 倾向修改限制在当前关未提交的暂存值。
