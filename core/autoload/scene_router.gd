@@ -5,6 +5,11 @@ const MAIN_MENU_SCENE_PATH: String = "res://ui/main_menu/main_menu.tscn"
 const IDENTITY_SETUP_SCENE_PATH: String = "res://ui/identity_setup/identity_setup.tscn"
 const OPENING_ROOM_SCENE_PATH: String = "res://ui/rest/rest_opening_room.tscn"
 const GAME_SCENE_PATH: String = "res://scenes/sandbox/sandbox.tscn"
+const ENDING_SCENE_PATH: String = "res://ui/ending/ending_page.tscn"
+
+# 集成夹具可显式替换游戏入口，默认仍加载正式场景。
+var game_scene_override: PackedScene
+var _ending_session: EndingSession
 
 
 func goto_main_menu() -> Error:
@@ -33,10 +38,35 @@ func goto_opening_room() -> Error:
 
 func goto_game() -> Error:
 	# 加载并切换到项目约定的游戏入口场景。
-	var scene: PackedScene = _load_scene(GAME_SCENE_PATH)
+	var scene: PackedScene = game_scene_override if game_scene_override != null else _load_scene(GAME_SCENE_PATH)
 	if scene == null:
 		return ERR_FILE_NOT_FOUND
 	return _change_scene(scene)
+
+
+# 保留唯一接收对象，实际顶层切换完成后把固定显示结果交给现有页面。
+func goto_ending(session: EndingSession) -> Error:
+	if session == null or not session.is_received():
+		return ERR_INVALID_PARAMETER
+	if _ending_session == session:
+		return ERR_ALREADY_IN_USE
+	var scene := _load_scene(ENDING_SCENE_PATH)
+	if scene == null:
+		return ERR_FILE_NOT_FOUND
+	_ending_session = session
+	get_tree().scene_changed.connect(_show_ending, CONNECT_ONE_SHOT)
+	var error := _change_scene(scene)
+	if error != OK:
+		get_tree().scene_changed.disconnect(_show_ending)
+		_ending_session = null
+	return error
+
+
+# 新页面由 Godot 初始化完成；不再查询可变的 SaveData。
+func _show_ending() -> void:
+	var page := get_tree().current_scene as EndingPage
+	if page != null and _ending_session != null:
+		page.show_ending(_ending_session.get_display_data())
 
 
 func reload_current_scene() -> Error:

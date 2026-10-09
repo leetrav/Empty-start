@@ -1,0 +1,95 @@
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _ready (res://scenes/sandbox/sandbox.gd:91)
+       [5] _ready (res://tests/integration/int_04_test_only_sandbox.gd:31)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _ready (res://scenes/sandbox/sandbox.gd:91)
+       [4] _ready (res://tests/integration/int_04_test_only_sandbox.gd:31)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _execute (res://tests/integration/int_04_full_run.gd:28)
+       [5] _frames (res://tests/integration/int_04_full_run.gd:195)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _execute (res://tests/integration/int_04_full_run.gd:28)
+       [4] _frames (res://tests/integration/int_04_full_run.gd:195)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _on_rest_continue_requested (res://scenes/sandbox/sandbox.gd:586)
+       [5] _on_continue_pressed (res://ui/rest/rest_result_view.gd:204)
+       [6] _execute (res://tests/integration/int_04_full_run.gd:61)
+       [7] _capture (res://tests/integration/int_04_full_run.gd:200)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _on_rest_continue_requested (res://scenes/sandbox/sandbox.gd:586)
+       [4] _on_continue_pressed (res://ui/rest/rest_result_view.gd:204)
+       [5] _execute (res://tests/integration/int_04_full_run.gd:61)
+       [6] _capture (res://tests/integration/int_04_full_run.gd:200)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _ready (res://scenes/sandbox/sandbox.gd:91)
+       [5] _ready (res://tests/integration/int_04_test_only_sandbox.gd:31)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _ready (res://scenes/sandbox/sandbox.gd:91)
+       [4] _ready (res://tests/integration/int_04_test_only_sandbox.gd:31)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _on_rest_continue_requested (res://scenes/sandbox/sandbox.gd:586)
+       [5] _on_continue_pressed (res://ui/rest/rest_result_view.gd:204)
+       [6] _execute (res://tests/integration/int_04_full_run.gd:61)
+       [7] _capture (res://tests/integration/int_04_full_run.gd:200)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _on_rest_continue_requested (res://scenes/sandbox/sandbox.gd:586)
+       [4] _on_continue_pressed (res://ui/rest/rest_result_view.gd:204)
+       [5] _execute (res://tests/integration/int_04_full_run.gd:61)
+       [6] _capture (res://tests/integration/int_04_full_run.gd:200)

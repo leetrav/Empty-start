@@ -1,0 +1,36 @@
+INT-04 / 2026-10-09 / Windows
+Engine: 4.7.2.stable.steam.ed1daf0bf
+Renderer: D3D12 12_0 / Forward+ / AMD Radeon(TM) Graphics
+Window: 1152x648
+
+Specified baseline: 1b84c098ae0caa09760283bac917fa761de24c48
+Final real SceneTree E2E process ExitCode=0
+PASS INT-04 full run checks=62 top_level_routes=10 DD_completed=1
+Main route: true contradiction / confirmed oracle / real rewards / real Rest /
+second normal battle / false contradiction / DD spread-decay-lock-convergence /
+full-screen Tween / actual Ending top-level route / persisted reload.
+Empty route: two unbroken results / original empty history / direct Ending /
+zero scripture-card-assimilation / persisted reload.
+DD15 regression: ExitCode=0, 1/1 PASS
+EN09 regression: ExitCode=0, 1/1 PASS
+SceneRouter check-only: ExitCode=0
+Sandbox check-only: ExitCode=1, SaveManager identifier unavailable (KT-25).
+Sandbox actual scene compilation and execution: verified by E2E.
+
+Latest local origin/main runtime overlay: 7fa27613e674ea1f10642faa864fc7e172c9766a
+Import process ExitCode=0
+Latest-main GUI compatibility process ExitCode=1 (three runs).
+CA-12 mouse press restores aim using abnormal system mouse coordinates in this
+restricted GUI environment; first normal shot misses and no history is recorded.
+Owner: Lane D / CA-12 / #83. Physical mouse and root cause remain UNVERIFIED.
+No latest-main full-flow PASS is claimed.
+
+Raw final baseline stdout/stderr and latest diagnostic stdout/stderr accompany
+this summary. Persistent screenshots are from the final baseline run.
+Certificate-store and settings.cfg permission errors remain in baseline stderr.
+No baseline INT-04 assertion, GDScript, or resource-loading error remains.
+Android devices/builds, final creative assets/balance, listening tests and full
+manual physical-input acceptance: UNVERIFIED.
+No commit, push, PR, merge, or deferred task was performed.
+
+2026-10-09 12:16 newest main 5ee1eff after #103 merged; fresh isolated import ExitCode=0; real Windows D3D12 E2E ExitCode=0; non-empty and empty routes PASS; checks=62; top_level_routes=10; DD_completed=1; E2E stderr 0 bytes; prior CA-12 regression resolved. Raw: latest_main_pass_stdout.txt and latest_main_pass_stderr.txt. Formal art/data and Android device remain UNVERIFIED.
