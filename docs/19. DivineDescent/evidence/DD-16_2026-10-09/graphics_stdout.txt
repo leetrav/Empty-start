@@ -1,0 +1,82 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 Core Profile Context 23.19.12.03.240603 - Compatibility - Using Device: ATI Technologies Inc. - AMD Radeon(TM) Graphics
+
+PASS TEST_ONLY area context 0
+PASS frozen session 0
+PASS terminal mode 0
+PASS terminal rejects trap admission 0
+PASS decay 0
+PASS bind decay 0
+PASS spread 0
+PASS frozen getter isolation 0
+PASS normal terminal traits cosmetic 0
+PASS TEST_ONLY area context 1
+PASS committed inheritance source
+PASS inherit occlusion
+PASS inherit retaliation_copy
+PASS inherit fake_card
+PASS inherit unselectable
+PASS inherit split
+PASS inherit reflect
+PASS frozen session 1
+PASS terminal mode 1
+PASS terminal rejects trap admission 1
+PASS decay 1
+PASS bind decay 1
+PASS spread 1
+PASS frozen getter isolation 1
+PASS normal terminal traits cosmetic 1
+PASS actual repeat 0/0
+PASS no behavioral traits 0/0
+PASS presentation ids 0/0
+PASS actual repeat 1/0
+PASS no behavioral traits 1/0
+PASS presentation ids 1/0
+PASS explicit TEST_ONLY color applied
+PASS same seeded choice and weight 0
+PASS actual repeat 0/1
+PASS no behavioral traits 0/1
+PASS presentation ids 0/1
+PASS actual repeat 1/1
+PASS no behavioral traits 1/1
+PASS presentation ids 1/1
+PASS explicit TEST_ONLY color applied
+PASS same seeded choice and weight 1
+PASS actual repeat 0/2
+PASS no behavioral traits 0/2
+PASS presentation ids 0/2
+PASS actual repeat 1/2
+PASS no behavioral traits 1/2
+PASS presentation ids 1/2
+PASS explicit TEST_ONLY color applied
+PASS same seeded choice and weight 2
+PASS actual repeat 0/3
+PASS no behavioral traits 0/3
+PASS presentation ids 0/3
+PASS actual repeat 1/3
+PASS no behavioral traits 1/3
+PASS presentation ids 1/3
+PASS explicit TEST_ONLY color applied
+PASS same seeded choice and weight 3
+PASS lock 0
+PASS lock preserves old deadline 0
+PASS only locked original 0
+PASS first lock immutable 0
+PASS whole SaveData bytes unchanged 0
+PASS lock 1
+PASS lock preserves old deadline 1
+PASS only locked original 1
+PASS first lock immutable 1
+PASS whole SaveData bytes unchanged 1
+PASS inheritance leaves lock candidate equal
+PASS PK frozen and Tier5 fixed
+PASS contradiction disabled
+PASS cosmetic only occlusion
+PASS cosmetic only retaliation_copy
+PASS cosmetic only fake_card
+PASS cosmetic only unselectable
+PASS cosmetic only split
+PASS cosmetic only reflect
+PASS GUI screenshot
+PASS old visible barrages naturally expired
+PASS DD-16 TEST_ONLY real Windows GUI scene smoke

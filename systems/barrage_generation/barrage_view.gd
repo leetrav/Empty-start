@@ -8,6 +8,19 @@ var _active_area: Control
 var _pause_started_msec: int = -1
 var _presentation_tween: Tween
 var _presentation_base_scale: Vector2
+var _presentation_trait_ids: Array[StringName] = []
+
+## 特性只影响 Label 配色；按冻结 ID 顺序取首个显式颜色，缺正式样式时沿用 Theme。
+func apply_terminal_trait_presentation(trait_ids: Array[StringName], trait_colors: Dictionary) -> void:
+	_presentation_trait_ids = trait_ids.duplicate()
+	for trait_id: StringName in _presentation_trait_ids:
+		if trait_colors.get(trait_id) is Color:
+			add_theme_color_override("font_color", trait_colors[trait_id])
+			break
+
+## 表现 ID 返回副本，与攻击和结算读取的运行记录 TraitSet 分开。
+func get_presentation_trait_ids() -> Array[StringName]:
+	return _presentation_trait_ids.duplicate()
 
 
 ## 仅缩放现有样式；连续输入重播同一峰值，保持原句、移动、判定尺寸和截止时间。

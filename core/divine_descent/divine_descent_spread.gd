@@ -32,7 +32,7 @@ func _ready() -> void:
 func start(
 		session: DivineDescentSession, barrage_area: BarrageArea, speech_catalog: LevelCatalog,
 		interval_seconds: float, repeat_lifetime_seconds: float, display_template: String,
-		random_generator: RandomNumberGenerator = null
+		random_generator: RandomNumberGenerator = null, trait_colors: Dictionary = {}
 ) -> bool:
 	if _timer == null or not _candidates.is_empty() or session == null or not session.is_entered():
 		return false
@@ -49,6 +49,9 @@ func start(
 		return false
 	_candidates = candidates
 	_barrage_area = barrage_area
+	# 仅消费进入时冻结的已获特性；候选、权重和锁句算法不读取表现配置。
+	var inherited_trait_ids: Array[StringName] = frozen["assimilation_content"]["inherited_trait_ids"]
+	_barrage_area.enter_terminal_presentation(inherited_trait_ids, trait_colors)
 	_repeat_lifetime_seconds = repeat_lifetime_seconds
 	_display_template = display_template
 	_random_generator = random_generator if random_generator != null else RandomNumberGenerator.new()
