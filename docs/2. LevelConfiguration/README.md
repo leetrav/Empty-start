@@ -141,3 +141,14 @@ LevelProfile 新增可选 normal_speech_pool_source: LevelSpeechPool，使用 ge
 ## 待办：LC-10 正式导表与新增需求联调（未完成）
 
 当前导表工具已完成 Excel/XLSX → CSV 数据校验及 TEST_ONLY 02/03/04/05 → Godot 关卡 Resource 的联调路径。正式关卡与矛盾表尚无有效记录，生成数值仍待填写；正式运行关卡仍用占位配置。正式数据绑定和跨系统联调尚未完成。**本系统先暂停新增需求讨论与开发；等待其他系统新增任务卡及策划正式数据确定后，再补充 LC-10 的具体实施和验收。**详见 `tasks/LC-10_pending-data-import-and-integration.md`。
+
+## 2026-10-09 新确认规则与单功能任务卡
+
+前景数量按 Tier 配置：T1=10、T2=13、T3=16，T4/T5 沿递增三条的规划为 19/22，T0 后续由策划填写。各档特性实例同屏上限独立可配，示例值为 1；一条话语同时拥有多项兼容特性仍按一条实例计数。
+
+| 任务卡 | 唯一功能 | 状态 |
+| --- | --- | --- |
+| [LC-11](tasks/LC-11_tier-foreground-count-config.md) | 按 Tier 配置前景话语数量 | 待实施 |
+| [LC-12](tasks/LC-12_special-trait-instance-cap.md) | 特殊特性话语的同屏实例上限配置 | 待实施 |
+
+本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。

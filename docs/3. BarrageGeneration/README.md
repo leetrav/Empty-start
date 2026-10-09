@@ -196,23 +196,39 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 
 | 卡号 | 本卡唯一功能 | 状态 |
 | --- | --- | --- |
-| [BG-16](tasks/BG-16_high-density-cap.md) | 普通弹幕高密度容量 | 待实施 |
-| [BG-17](tasks/BG-17_pc-android-performance.md) | PC 与 Android 高密度性能验证 | 待实施 |
+| [BG-16](tasks/BG-16_high-density-cap.md) | 按 Tier 维持少量前景话语名额 | 待实施 |
+| [BG-17](tasks/BG-17_pc-android-performance.md) | 前景少量话语与大量复读的分层性能验收 | 待实施 |
 | [BG-18](tasks/BG-18_four-edge-spawn.md) | 战斗区域四周随机出生 | 待实施 |
 | [BG-19](tasks/BG-19_interior-random-spawn.md) | 战斗区域内部随机出生 | 待实施 |
-| [BG-20](tasks/BG-20_random-straight-motion.md) | 随机方向直线穿越 | 待实施 |
-| [BG-21](tasks/BG-21_curved-motion.md) | 曲线漂移运动 | 待实施 |
-| [BG-22](tasks/BG-22_speed-change-motion.md) | 弹幕运动中加减速 | 待实施 |
-| [BG-23](tasks/BG-23_wandering-motion.md) | 弹幕游荡转向 | 待实施 |
+| [BG-20](tasks/BG-20_random-straight-motion.md) | 前景普通话语随机方向直线运动 | 待实施 |
+| [BG-21](tasks/BG-21_curved-motion.md) | 前景普通话语连续曲线运动 | 待实施 |
+| [BG-22](tasks/BG-22_speed-change-motion.md) | 前景普通话语平缓加减速 | 待实施 |
+| [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 待实施 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 待实施 |
-| [BG-25](tasks/BG-25_random-start-layer.md) | 出生时随机前后层级 | 待实施 |
-| [BG-26](tasks/BG-26_moving-layer-order.md) | 运动中变化前后层级 | 待实施 |
-| [BG-27](tasks/BG-27_animated-size.md) | 运动中随机放大缩小 | 待实施 |
+| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 待实施 |
+| [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 待实施 |
+| [BG-27](tasks/BG-27_animated-size.md) | 普通前景话语的适度缩放 | 待实施 |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 单句话语内部富文本混合样式 | 待实施 |
-| [BG-29](tasks/BG-29_local-text-animation.md) | 局部字词动态效果 | 待实施 |
-| [BG-30](tasks/BG-30_opinion-tide.md) | 舆论潮汐式密度起伏 | 待实施 |
-| [BG-31](tasks/BG-31_spatial-clusters.md) | 成组聚集的弹幕出生 | 待实施 |
-| [BG-32](tasks/BG-32_linked-faux-depth.md) | 缩放速度与层级联动的伪纵深 | 待实施 |
+| [BG-29](tasks/BG-29_local-text-animation.md) | 普通话语随机局部文字动画 | 待实施 |
+| [BG-30](tasks/BG-30_opinion-tide.md) | 底层复读潮汐密度节奏 | 待实施 |
+| [BG-31](tasks/BG-31_spatial-clusters.md) | 同一句复读成批出现 | 待实施 |
+| [BG-32](tasks/BG-32_linked-faux-depth.md) | 伪纵深视觉候选体验验证 | 候选暂缓 |
 | [BG-33](tasks/BG-33_impact-motion-wave.md) | 群体命中后的局部冲击波 | 待实施 |
 
 关联依赖及实施顺序以各卡的上游功能卡为准；共享场景与组件按实际 Owner 的任务流程依次集成。
+
+## 2026-10-09 新确认规则与单功能任务卡
+
+前景包含普通话语及挂有特性的普通话语，二者共用当前 Tier 少量同屏名额，击中后按配置的正常生成频率补充。前景话语具备描边，运动方式与速度按可读性限制；复读始终在底层慢速同向流动，遮挡特性实例始终最高层。旧 BG-16、BG-17 需求已改为少量前景及背景复读的实际性能与可读性验收，BG-32 伪纵深保持候选暂缓状态。
+
+| 任务卡 | 唯一功能 | 状态 |
+| --- | --- | --- |
+| [BG-34](tasks/BG-34_frequency-based-refill.md) | 按生成频率补足前景话语 | 待实施 |
+| [BG-35](tasks/BG-35_special-instance-cap.md) | 限制携带特性的前景实例数量 | 待实施 |
+| [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档后让超额前景实例自然回落 | 待实施 |
+| [BG-37](tasks/BG-37_foreground-text-outline.md) | 所有非复读话语文字描边 | 待实施 |
+| [BG-38](tasks/BG-38_effective-area-clear.md) | 有效攻击后清除命中区域全部话语 | 待实施 |
+| [BG-39](tasks/BG-39_tier-motion-proportions.md) | 按 Tier 改变前景运动类型权重 | 待实施 |
+| [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 普通前景话语速度上限 | 待实施 |
+
+本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。

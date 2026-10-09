@@ -147,3 +147,14 @@ BT-13 已接入【14. Assimilation】的真实继承输出，接口与验收范�
 - `LevelProfile.inheritable_trait_ids` 提供独立继承白名单，和当前关 `special_trait_ids` 分开；14 只登记白名单项，后续实例装配继续复用本系统支持 ID 与兼容规则。
 - `tests/fixtures/fo11/test_level_001.tres` 使用已有 `occlusion`，Godot smoke 已验证 `add_trait()` 接受该 ID、`are_compatible()` 通过，以及 14 写入 / 读取后保持同一稳定 ID。
 - 本次没有修改特性语义、生成分配或继承装配，也没有执行 BT-13。正式特性名单由策划填写生产关卡字段，fixture 仅供显式注入验收。
+
+## 2026-10-09 新确认规则与单功能任务卡
+
+特殊弹幕属于带有 TraitSet 的普通话语实例。每条实例可携带多项兼容特性；遮挡特性实例始终最高层、缓慢移动。携带特性的实例数量由 2/3 系统配置和计数，特性优先级继续复用本系统既有能力。
+
+| 任务卡 | 唯一功能 | 状态 |
+| --- | --- | --- |
+| [BT-14](tasks/BT-14_occlusion-top-z.md) | 遮挡实例保持最高显示层级 | 待实施 |
+| [BT-15](tasks/BT-15_occlusion-slow-velocity.md) | 遮挡实例缓慢移动 | 待实施 |
+
+本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。

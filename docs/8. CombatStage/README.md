@@ -95,3 +95,18 @@ CS-12 等 3/5/10 的清理入口存在。
 | [CS-17](tasks/CS-17_silence-and-burst.md) | 关键阶段沉默后爆发 | 待实施 |
 
 关联依赖及实施顺序以各卡的上游功能卡为准；共享场景与组件按实际 Owner 的任务流程依次集成。
+
+## 2026-10-09 新确认规则与单功能任务卡
+
+T0 为等待匹配对手阶段，对手回拉倍率为 0；进入 T1 后清屏、展示对手待机立绘和气泡对话，对话结束后恢复 T1 正常弹幕和回拉。升档同步刷新旧复读等待队列；降档只震屏，原有弹幕按寿命自然回落。T5 继续属于普通战斗，T5 结束后才进入 T6 / Paradox（矛盾击破）。T2～T5 的随机对手反击技能库继续保留后续专题设计。
+
+| 任务卡 | 唯一功能 | 状态 |
+| --- | --- | --- |
+| [CS-18](tasks/CS-18_tier-up-clear-old-repeat-requests.md) | 升档同步清理旧复读生成队列 | 待实施 |
+| [CS-19](tasks/CS-19_tier0-zero-pullback.md) | T0 的对手 PK 回拉倍率为零 | 待实施 |
+| [CS-20](tasks/CS-20_tier0-matching-status.md) | T0 显示等待连线状态 | 待实施 |
+| [CS-21](tasks/CS-21_tier1-opponent-portrait.md) | T1 连线展示对手待机立绘 | 待实施 |
+| [CS-22](tasks/CS-22_tier1-bubble-dialogue.md) | T1 连线播放对手气泡对话 | 待实施 |
+| [CS-23](tasks/CS-23_tier1-resume-on-dialogue-end.md) | T1 对话结束后进入正式 PK | 待实施 |
+
+本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。

@@ -103,9 +103,21 @@ RP-12 已复用 13 的本场读取链，并提供 19 已有候选入口可消费
 | 卡号 | 本卡唯一功能 | 状态 |
 | --- | --- | --- |
 | [RP-14](tasks/RP-14_plain-text-repeat.md) | 复读使用普通纯文本 | 待实施 |
-| [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 高密度下复读独立容量验收 | 待实施 |
-| [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随 Tier 升高逐步缩小 | 待实施 |
-| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随 Tier 升高加快流动 | 待实施 |
-| [RP-18](tasks/RP-18_repeat-infection-spread.md) | 原句命中后的复读空间感染 | 待实施 |
+| [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 复读独立同屏上限与容量验收 | 待实施 |
+| [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读从左向右缓慢移动 | 待实施 |
+| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读按生命周期渐隐 | 待实施 |
+| [RP-18](tasks/RP-18_repeat-infection-spread.md) | 有效命中形成同向复读潮 | 待实施 |
 
 关联依赖及实施顺序以各卡的上游功能卡为准；共享场景与组件按实际 Owner 的任务流程依次集成。
+
+## 2026-10-09 新确认规则与单功能任务卡
+
+当前 T0～T5 每次有效普通命中计划的复读数量沿用 3/6/8/12/15/20；复读同屏容量独立且实际数量随玩家命中浮动。复读采用灰色、纯文本、零描边，从左向右缓慢移动，按自身寿命渐隐并始终在最底层。RP-16～RP-18 的任务内容已根据最新确认规则修订。
+
+| 任务卡 | 唯一功能 | 状态 |
+| --- | --- | --- |
+| [RP-19](tasks/RP-19_repeat-grey-text.md) | 复读文字使用灰色 | 待实施 |
+| [RP-20](tasks/RP-20_repeat-zero-outline.md) | 复读文本描边宽度为零 | 待实施 |
+| [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读固定最低层级 | 待实施 |
+
+本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。
