@@ -49,6 +49,7 @@
 | LD-08 | 本关重开重置本场数据 | 2 个关键单元测试 |
 | LD-09 | 直播数据 UI 显示 | 无 |
 | LD-10 | 休息时刻展示本场结果 | 无新增自动化测试 |
+| [LD-11](tasks/LD-11_live-data-k-number-abbreviation.md) | 直播数据数字从 1000 起显示 k 缩写 | Godot HUD 显示与刷新验收 |
 
 ## 测试预算
 
@@ -85,3 +86,6 @@ LD-10 等 18. Rest。
 冻结时点为首次 Rest 展示，后续 LD-06 尚在运行的短时上涨继续按原规则推进 LiveSessionData，结果页保持当时快照。本卡没有修改短时上涨时长或收益规则。RestSession 的直播快照只属于运行时会话，跨进程历史直播结果浏览未在本卡实现。
 
 两个正式 Sandbox 分支已有 `show_result()` 所需 SaveData，无需新增 Lane A 接线；`show_unbroken_result(session)` 的无上下文兼容入口仍明确显示资料不可用。新增一个 `LiveResult` 原生 Label，沿用现有 Theme，未制作正式展示美术、配置数值或新增永久测试。真实 Godot 4.7.2 D3D12 smoke 与既有单测结果见 `直播数据表现系统_LD-10_2026-10-09_log.md`。
+## LD-11：四项直播数据 k 缩写
+
+[LD-11 任务卡](tasks/LD-11_live-data-k-number-abbreviation.md) 负责对观看、点赞、评论和粉丝统一执行显示层数字格式化：`999 → 999`、`1000 → 1.0k`、`1100 → 1.1k`、`12500 → 12.5k`。复用当前四个 `RichTextLabel` 和 `set_values()`，玩家区 ICON 在前、敌方区 ICON 在后。格式化前的整数仍是数据源与显式展示入口的真实值；切换图标/显示方向时沿用这些真实整数。
