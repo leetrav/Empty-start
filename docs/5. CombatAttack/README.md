@@ -49,6 +49,26 @@ FinalOracle 选择阶段由 Sandbox 将中央 `FinalOracleCandidateDisplay` 生�
 
 - DBG-01 增加 `AttackChargeInput.is_charge_held()`，供调试面板读取真实按住状态并显示“蓄力中”；阶段和蓄力比例仍由 `get_attack_phase()`、`get_charge_progress()` 提供。
 
+### CA-12 触屏输入与 Lane A 接线
+
+`AttackChargeInput.configure_mobile_input(config: MobileAttackInputConfig) -> bool` 注入移动端准心设计直径 `touch_reticle_diameter`。仓库尚无正式移动端数值表，本 Resource 默认为 0（未配置），拒绝零值、负值和非有限值；未注入时触屏攻击保持关闭。PC 已批准的准心尺寸保持原配置。
+
+触屏首次按下由 `_unhandled_input()` 接收，UI 可优先消费。接管单指后拖动更新准心，按住沿用现有蓄力计时，松开先更新最终坐标再调用原释放流程；未满蓄取消，满蓄沿用快照、飞行、结算和硬直。第二指不能改变攻击手势；触屏模拟鼠标事件不会重复触发攻击。系统取消、后台切换、暂停中抬指、战斗停止均丢弃当前触屏蓄力。暂停中保持按住则冻结进度，恢复后继续。
+
+`AimReticle.move_touch_aim(viewport_position, diameter)` 使用原有画布逆变换和中心偏移，准心显示及目标相交共用同一直径。布局刷新保留最近触屏位置，实体鼠标重新操作恢复 PC 尺寸。
+
+CA-12 / INT-04 鼠标回归修复（2026-10-09）：`AimReticle.restore_mouse_aim(viewport_position: Vector2)` 必须传入当前真实鼠标事件的 Viewport 位置。左键按下使用 `InputEventMouseButton.position`，恢复 PC 直径并按原画布逆变换设置中心；按下路径不再调用系统光标读取。这样触屏结束后直接按鼠标也能正确定位，无需额外 MouseMotion。初始化 / 布局刷新接口保持原行为。
+
+针对性 TEST_ONLY GUI 入口为 `res://tests/combat_attack/ca12_mouse_restore_gui.tscn`，使用 `Input.parse_input_event()`，覆盖无移动首按、Canvas / 父级缩放、触屏切回鼠标及触屏 / UI / HR-13 回归。修复前后 INT-04 整局对照与精确退出码见 CA-12 当日日志和 `evidence/CA-12_INT-04_2026-10-09_mouse_fix.txt`。这些证据来自 Windows 注入事件；硬件鼠标和 Android 实机仍待验收。
+
+**A 集成位置**：Sandbox `_ready()` 现有 `configure_target_query()` 之后，将场景读取的移动端配置传入 `configure_mobile_input()`，检查返回值。重开沿用已注入的只读配置，继续用现有 `set_combat_active()` 清理手势。本卡没有修改 Sandbox / Rest / 其他场景，也没有自动启用测试数值。
+
+**精确交接**：由 A 增加场景导出属性 `@export var mobile_input_config: MobileAttackInputConfig`，在 Inspector 给 Sandbox 实例指定正式移动尺寸 Resource；上述位置的一行调用为 `var mobile_input_ready: bool = _attack_charge_input.configure_mobile_input(mobile_input_config)`，返回 false 时报告配置未就绪。TEST_ONLY 联调 Scene 可显式绑定既有 fixture，正式 Scene 继续等待策划资源。当前 Sandbox 没有该导出属性或配置调用，生产触屏输入仍关闭。
+
+2026-10-09 基于 main `c03bd17` 的合并状态已用 Godot 4.7.2 重验：触屏 MISS / 反弹 / 遮挡均通过 `resolve_shot_results(hit_resolution_targets, shot_anomaly)` 交给 6 扣分一次；HR-13 的 `terminal_mode` 会阻止晚到触屏命中写普通历史。完整验收与环境限制见 CA-12 日志。
+
+正式数值到位前，A 仅在明确的 TEST_ONLY 联调入口加载 `res://tests/fixtures/combat_attack/ca12_test_only_mobile_input.tres`；其中 80 设计像素只用于 PC 模拟验收。正式发布须换成策划数值表导出的 `MobileAttackInputConfig`，不得将 fixture 当成正式平衡值。正式 Android 场景接线、构建及手机分辨率/手感验收见 CA-12 日志中的未验证项。
+
 ## 任务顺序
 
 | 任务卡 | 小功能 | 自动化测试 |
@@ -83,5 +103,5 @@ UI、飞行表现、硬直、暂停、触摸和跨系统传递全部用最小运
 ## 依赖顺序
 
 CA-01～09、CA-11 已完成。
-CA-10 已有真实接线；Sandbox 的假命中展示补做与运行验证见 `战斗攻击系统_CA-10-Sandbox_2026-10-09_log.md`。#92 文档 PR 待发布者集成本补丁后由原 Owner 回归。
-CA-12 放到 Android 输入适配阶段。
+CA-10 已有真实接线；#94 已合并 Sandbox 假命中复读展示修复，历史文档 PR #92 已关闭。
+CA-12 输入组件已通过 PC 真实场景模拟触屏 smoke；Android JDK/SDK 环境已于 2026-10-09 安装并用独立 TEST_ONLY Godot APK 验证，但正式 Sandbox 移动配置接线、游戏本体 APK 与真机验收仍待完成。

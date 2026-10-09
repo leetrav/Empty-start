@@ -241,6 +241,12 @@
 - **条件**：共享 `RestRoomEnvironment/RoomBackdrop` 的 `stretch_mode` 写为 `7`；Godot 4.7.2 的 TextureRect 拉伸枚举有效范围为 0～6。
 - **处理**：场景改为 `6`（`TextureRect.STRETCH_KEEP_ASPECT_COVERED`），实际 GUI 重跑并查看开局三态及战后截图。背景资源引用存在、解析成功均无法证明贴图实际可见。官方枚举依据：https://docs.godotengine.org/en/stable/classes/class_texturerect.html#enum-texturerect-stretchmode。
 
+### KT-39：鼠标按下重新读取系统光标覆盖有效事件位置
+
+- **现象**：CA-12 合入后 INT-04 第一发普通攻击 MISS，准心跳到约 `8.81e8`；实际注入事件位置为 `(727.2001,86.4)`。
+- **条件**：受限 Windows 隐藏 GUI 中，`get_global_mouse_position()` 返回异常大值；左键按下调用恢复方法重新读取该值。旧 CA-12 探针用按下后补 MouseMotion 掩盖过此问题。异常系统读数的底层原因、真实硬件鼠标行为尚未确认。
+- **处理**：真实按下将事件 Viewport 坐标传给 `restore_mouse_aim(viewport_position)`，沿用画布逆变换恢复 PC 尺寸与中心；首发验证不添加补定位事件。2026-10-09 同一 INT-04 隔离副本修复前 exit 1、修复后完整两路线 exit 0。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。

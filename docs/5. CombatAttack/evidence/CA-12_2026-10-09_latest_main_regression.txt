@@ -1,0 +1,15 @@
+CA-12 post-merge regressions on Godot 4.7.2.stable.steam.ed1daf0bf
+main base: 1b84c098ae0caa09760283bac917fa761de24c48
+Scope: seven existing Godot SceneTree test entries and four affected script syntax checks
+Actual Windows process exit codes:
+aim_overlap EXIT=0 PASS: edge contact / CA-02: 2 cases passed.
+charge_progress EXIT=0 PASS: charge progress persists through candidate changes / CA-03: 2 cases passed.
+cancel_undercharge EXIT=0 PASS: undercharged release clears progress / CA-04: 1 case passed.
+target_snapshot EXIT=0 PASS: late candidate is not added / CA-05: 2 cases passed.
+attack_boundaries EXIT=0 PASS INT-01 attack boundaries: repeat zero reward/history, synchronous stop, clear capacity, generated fact
+hr05 EXIT=0 PASS HR-05 aggregate target deltas before one PK update
+hr08 EXIT=0 PASS HR-08 pullback to zero cancels the pending hit
+hr13_script EXIT=0
+charge_script EXIT=0
+aim_script EXIT=0
+mobile_config_script EXIT=0
