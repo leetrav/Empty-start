@@ -2,14 +2,14 @@
 
 > 状态：需求已定，待各 UI 集成后实施
 > 类型：后期整合 / PresentationAssets
-> 依赖：PA-03 主战斗界面美术接入；PA-04～PA-09 及届时已完成的其他正式 UI 表现
+> 依赖：PA-03 主战斗界面美术接入；PA-04～PA-09、PA-11、PA-12 及届时已完成的其他正式 UI 表现
 
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、仓库已知问题记录
 - `docs/System_Collaboration.md`
 - `docs/Shared/PresentationAssets/README.md`
 - `docs/Shared/PresentationAssets/tasks/PA-03_battle-ui-art-integration.md`
-- `docs/Shared/PresentationAssets/tasks/PA-04_barrage-glossy-translucent-ui.md` 至 `PA-09` 的任务卡及最新完成日志
+- `docs/Shared/PresentationAssets/tasks/PA-04_barrage-glossy-translucent-ui.md` 至 `PA-09`、`PA-11`、`PA-12` 的任务卡及最新完成日志
 - `ui/theme/base_theme.tres`、`ui/theme/theme_preview.tscn`
 - `data/shared/presentation_asset_config.tres`
 - `scenes/sandbox/sandbox.tscn`、`scenes/sandbox/sandbox_battle_hud.gd`
@@ -29,7 +29,7 @@
 ## 本次任务
 
 ### 1. 完整战斗画面检查
-- 在正式集成的主战斗界面中，同时查看我方 / 对手主播区、PK / Tier、中央弹幕、复读与特殊弹幕、准星、战斗提示、直播数据及已完成的阶段表现。
+- 在正式集成的主战斗界面中，同时查看我方 / 对手主播区、PK / Tier、中央弹幕、复读与特殊弹幕、准星、战斗提示、直播数据、PA-11 的 CRT / 升降档箭头和 PA-12 的 Paradox 漫画切场。
 - 对照实际画面，整理色相 / 明度 / 饱和度、字体与字号层级、描边粗细、圆角形状、半透明与高光、阴影、元素留白、视觉权重和动画节奏的协调问题。
 - 对不同状态检查：低 / 高密度弹幕、普通命中、惩罚漫画提示、Tier 变化等已实现画面。
 - 与美术 / 策划共同确认需统一调整的项目、色号及个别保留差异的特殊效果。
