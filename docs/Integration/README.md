@@ -32,3 +32,7 @@ godot.windows.opt.tools.64.exe --path <隔离项目绝对路径> res://tests/int
 等待真实子进程，要求退出 0、两行 `INT04 ROUTE PASS`、最终 `PASS INT-04`，同时检查错误日志。最终证据包含已有根证书及用户 settings.cfg 写入权限错误；没有 GDScript / 资源加载 / INT-04 断言错误。Sandbox 单脚本 check-only 因该模式缺少 SaveManager 全局标识退出 1（KT-25），其实际编译运行已由实景验证；SceneRouter check-only 退出 0，原 DD-15 / EN-09 回归各 1/1 PASS。
 
 早期空经文截图在布局稳定前裁切标题；补齐输入抬起并等待布局稳定后，最终两条路线标题 Y=24、scroll=0，截图完整，无 Ending 源码修改。Android 设备、打包、正式美术与平衡、音频听感及完整人工操作体验均 UNVERIFIED。
+
+## INT-06 中央战斗区全高与操作 ICON（待开发）
+
+[INT-06 单功能程序任务卡](tasks/INT-06_battle-area-full-height-and-input-icon-overlay.md)：中央顶部保持 1024×72，中央 `BarrageArea` 调整为 1024×1008；旧底部交互栏空间归还弹幕场；中央战斗区左下角悬浮鼠标左键、ESC 两枚竖排操作 ICON。现有攻击进度与阶段程序入口继续提供给后续正式美术蓄力反馈，场景布局及 Paradox/神谕中央目标显示随之统一。该布局更新覆盖旧 INT-02 的中央 760px 弹幕区和 248px 底部区设计基线。
