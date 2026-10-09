@@ -1,5 +1,8 @@
 # 8. CombatStage 战斗阶段系统任务拆分
 
+> **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。开发前核对该表、本卡现行版、main 实际实现及最新完成日志。
+
+
 > **派工入口**：[2026-10-09 当前任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。本系统的已完成旧卡保留作功能实现依据；下方历史讨论章节的旧数值以现行派工入口覆盖。
 
 
@@ -148,3 +151,7 @@ T0 为等待匹配对手阶段，对手回拉倍率为 0；进入 T1 后清屏�
 | [CS-29](tasks/CS-29_retaliation-effective-by-current-tier.md) | 已抽反击按当前 Tier 生效 | 待开发 |
 
 **数值与术语记录：** 单场普通战斗的体验目标约为 **2～4 分钟**，后续通过 PK 得分、阈值、回拉等函数统一建模。向美术说明「正确弹幕加分、错误弹幕扣分」时，继续使用现有弹幕特性和 HitResolution 的得分结果作为实际程序判定来源。
+
+## 与 21. StreamerBubbleDialogue 的事件接线（2026-10-09）
+
+CS-22 在 T1 首次连线时触发配置好的开场对白，实际气泡展示由 [SD-02](../21.%20StreamerBubbleDialogue/tasks/SD-02_portrait-side-bubble-view.md)、[SD-03](../21.%20StreamerBubbleDialogue/tasks/SD-03_ordered-bubble-events.md)、[SD-06](../21.%20StreamerBubbleDialogue/tasks/SD-06_combat-state-dialogue-event.md) 负责；CS-23 继续根据开场对白序列完成事实恢复生成与对手回拉。CS-27 降至 T1 的嘲讽也通过 SD-06 映射，CS-26 降至 T0 将对手离线事实交给气泡队列清理。普通话语命中映射与指定话语触发对手台词分别归 SD-04、SD-05；定时对白归 SD-07。剧情数值与阶段所有权继续归 CombatStage/Sandbox。
