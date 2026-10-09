@@ -30,6 +30,11 @@ func is_entered() -> bool:
 	return not _entry_snapshot.is_empty()
 
 
+# 原始已提交普通命中历史为空时直接准备结局；圣典或过滤候选为空均不能替代此判断。
+func should_enter_empty_ending() -> bool:
+	return is_entered() and (_entry_snapshot["committed_normal_hit_history"] as Array).is_empty()
+
+
 # 后续演出只读取独立副本，避免调用方回写会话内部的冻结事实。
 func get_entry_snapshot() -> Dictionary:
 	return _entry_snapshot.duplicate(true)
