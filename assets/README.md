@@ -76,9 +76,12 @@ assets/
 | 4 | T4 | `assets/ui/combat/pk_bar/pk_bar_pos_04.png` |
 | 5 | T5 | `assets/ui/combat/pk_bar/pk_bar_pos_05.png` |
 | 6 | Paradox / T6 | `assets/ui/combat/pk_bar/pk_bar_pos_06.png` |
-| -1 至 -4 | 玩家 PK 被对手压低时的额外负向视觉档位 | `pk_bar_neg_01.png` ～ `pk_bar_neg_04.png` |
+| -4 | 玩家 PK 0%～10% | `pk_bar_neg_04.png` |
+| -3 | 玩家 PK 10%～20% | `pk_bar_neg_03.png` |
+| -2 | 玩家 PK 20%～30% | `pk_bar_neg_02.png` |
+| -1 | 玩家 PK 30%～40% | `pk_bar_neg_01.png` |
 
-- 负向 PK 区间暂以 **0%、10%、20%、30%、40%** 作为阶段阈值候选；**四张负向素材与五个分界值的逐张配对尚未确认**，实现时由策划配置相应范围，不按文件名猜测具体比例。
+- 负向素材 -4～-1 与玩家 PK **0%～10%、10%～20%、20%～30%、30%～40%** 的四段对应关系已由策划确认。边界具体包含方式由 PK 显示代码统一处理，保证数值变化时只显示一张正确档位图。
 - `pk_indicator_01.png` / `pk_indicator_02.png` 为两张独立 PK 指示器资源；具体使用侧及切换规则待 UI 集成按美术核定。
 
 ## 可由程序美术交付
