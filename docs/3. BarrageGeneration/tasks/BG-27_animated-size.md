@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：现有 BarrageView.pulse_presentation / CA-13
+- 前置：现有 BarrageView.pulse_presentation
+- 后续实测：CA-13
 
 ## 当前已实现的基础
 BarrageView 已有 pulse_presentation 临时缩放能力，连续随机缩放仍待新增。

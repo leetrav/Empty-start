@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：BG-28 / 当前 BarrageView、RepeatPlan
+- 前置：现有 BarrageView、RepeatPlan 纯文本显示
+- 后续兼容回归：BG-28
 
 ## 当前已实现的基础
 当前 BarrageView 继承 Label，所有弹幕暂时都以普通文本显示。

@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：RP-18 / RP-15
+- 前置：RP-18；现有 RP-15 独立复读容量
+- 实施节点：底层基础慢速复读可用后进行
 
 ## 当前已实现的基础
 RepeatDelayQueue 已有随机延迟与队列，BG 侧负责实例可见分布。

@@ -5,7 +5,7 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：BG-27 / 现有 CA-02、CA-05
+- 前置：BG-27；复用现有 CA-02、CA-05
 
 ## 当前已实现的基础
 当前 _capture_target_snapshot 遍历 BarrageView.get_global_rect()，准心和矩形相交入口已具备。

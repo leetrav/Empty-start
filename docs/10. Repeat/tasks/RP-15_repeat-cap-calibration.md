@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：RP-05、RP-06 / BG-17
+- 前置：现有 RP-05、RP-06 独立同屏与排队容量
+- 后续跨平台合并验收：BG-17
 
 ## 当前已实现的基础
 当前 playable_battle_config 配置复读屏幕 24、普通待生成 96；BarrageArea 和 RepeatDelayQueue 已提供完整容量。
