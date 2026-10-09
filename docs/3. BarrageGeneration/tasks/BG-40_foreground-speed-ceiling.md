@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：BG-20～BG-23 / CS-07
+- 前置：现有 CS-07 的移动倍率入口
+- 后续消费者：BG-20、BG-21、BG-22、BG-23
 
 ## 当前已实现的基础
 当前 _movement_speed_multiplier 直接乘 LevelProfile.base_move_speed_pixels_per_second。

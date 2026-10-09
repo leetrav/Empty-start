@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：BG-29 / RP-14
+- 前置：现有 BarrageView 与 RP-14 复读纯文本展示
+- 后续消费者：BG-29、BG-37、PA-04
 
 ## 当前已实现的基础
 BarrageView 当前继承 Label，仅有整条文字设置；富文本展示要与复读的纯文本区分。

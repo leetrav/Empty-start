@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：BT-03 / CA-14 / HR-06 / BG-38
+- 前置：现有 BT-03、HR-06、CA-14 多目标快照
+- 后续验收：BG-38；演出消费者 PA-06、PA-09
 
 ## 当前已实现的基础
 当前 _submit_arrival_to_hit_resolution() 会同时结算正常目标与遮挡，Sandbox 也会结束正常实例；且反弹与遮挡同实例时 TraitResult 优先反弹，需按 occlusion 特性存在事实触发本规则。

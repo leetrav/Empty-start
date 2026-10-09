@@ -5,7 +5,7 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：BG-24 / BT-14 / RP-21
+- 前置：BG-24、BT-14、RP-21
 
 ## 当前已实现的基础
 现有 BarrageView 暂无类别层级处理。

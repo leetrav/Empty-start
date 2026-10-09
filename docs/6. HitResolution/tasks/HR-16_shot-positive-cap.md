@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：HR-17 / CA-14 / 现有 HitResolution
+- 前置：现有 HR-05 整发结算、CA-14 多目标快照
+- 后续消费者：HR-17
 
 ## 当前已实现的基础
 当前 resolve_shot_results 汇总有符号 pk_delta 后只做玩家 PK 全局 [0,1] 限幅，单发正向限幅尚未实现。

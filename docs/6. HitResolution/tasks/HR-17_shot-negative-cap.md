@@ -5,7 +5,7 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：HR-16 / 现有 HR-05、HR-06
+- 前置：HR-16；现有 HR-05、HR-06 异常与整发结算入口
 
 ## 当前已实现的基础
 现有 Fake Card -0.005、Retaliation Copy -0.007、整发异常 -0.01 的映射已经实现，本卡只增加独立负值封顶。

@@ -5,7 +5,8 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
 - 当前相关 GDScript、场景和数值配置
-- 关联：现有 BarrageTraitSet.OCCLUSION / BG-25～BG-26
+- 前置：现有 BarrageTraitSet.OCCLUSION
+- 后续消费者：BG-25、BG-26；RP-21 固定背景层可并行
 
 ## 当前已实现的基础
 只对携带已有 occlusion 特性的话语增加表现层规则。
