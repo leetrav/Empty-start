@@ -5,7 +5,7 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot` 与本系统最新完成日志
 - `docs/4. BarrageTraits/README.md` 及本卡相关现有工程
-- 关联功能：BT-03、BG-25、BG-26
+- 关联功能：BT-03
 
 ## 本卡唯一功能
 遮挡实例保持最高显示层级。

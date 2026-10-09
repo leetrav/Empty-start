@@ -5,7 +5,7 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot` 与本系统最新完成日志
 - `docs/2. LevelConfiguration/README.md` 及本卡相关现有工程
-- 关联功能：BG-16、BG-34
+- 关联功能：现有 CombatStage Tier 配置及后续 BG-16、BG-34
 
 ## 本卡唯一功能
 按 Tier 配置前景话语数量。

@@ -5,7 +5,7 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot` 与本系统最新完成日志
 - `docs/3. BarrageGeneration/README.md` 及本卡相关现有工程
-- 关联功能：BG-28、RP-20
+- 关联功能：BG-28
 
 ## 本卡唯一功能
 所有非复读话语文字描边。

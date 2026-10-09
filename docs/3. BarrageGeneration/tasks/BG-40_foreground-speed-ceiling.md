@@ -5,7 +5,7 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot` 与本系统最新完成日志
 - `docs/3. BarrageGeneration/README.md` 及本卡相关现有工程
-- 关联功能：BG-20～BG-23
+- 关联功能：CS-07 与前景运动参数
 
 ## 本卡唯一功能
 普通前景话语速度上限。

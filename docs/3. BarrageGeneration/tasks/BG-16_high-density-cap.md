@@ -5,7 +5,7 @@
 ## 开始前阅读
 - `AGENTS.md`、`project.godot` 与本系统最新完成日志
 - `docs/3. BarrageGeneration/README.md` 及本卡相关现有工程
-- 关联功能：LC-11、BG-34
+- 关联功能：LC-11、现有 BG-07
 
 ## 本卡唯一功能
 按 Tier 维持少量前景话语名额。
