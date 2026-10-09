@@ -2,7 +2,7 @@
 
 ## 系统目标
 
-休息时刻系统负责一场直播结束后的结算与过渡。
+休息时刻系统负责新周目开局房间，以及一场直播结束后的结算与过渡。
 
 它读取本场结果，展示已经真正提交的成果，并决定：
 
@@ -102,9 +102,17 @@ RS-08 已核实并保护现有重复查看路径：用同一所属周目 SaveDat
 
 `RestResultView.show_result()` 只读取当前周目 `SaveData.tendency_state.get_primary_tendency_id()`，直接沿用 17 的开局全零和主导并列裁决；不接触累计值或本场暂存。缺有效上下文时使用不带倾向装饰的中性房间，`hide_result()` 同步复位。环境子节点均不接收鼠标，结果面板、圣典、败者卡、返回和继续信号仍沿用原 UI 接线。RS-07 不新增永久自动化单测；开发临时场景已做真实 Godot 4.7.2 UI 交互 Smoke，详见日期日志。
 
-## 新需求：RS-12 开局房间（待实施）
+## RS-12：新周目开局房间（2026-10-09）
 
 新周目先经过 ID-09 的「主播取名 → 12 身份卡 → 粉丝团取名」，正式确认并保存后，先进入主角房间。房间复用 `RestRoomEnvironment` 和 RS-07 当前已实现的三倾向装饰及光照；以开局身份的倾向显示初始房间状态，等待玩家点击「开始直播」后才启动第一普通关。开局此时无已完成关卡，也没有战后 `RestSession` 结果。首次房间入口与战后结算入口明确区分，详见 `tasks/RS-12_new-run-opening-room.md`。
+
+独立顶层场景 `ui/rest/rest_opening_room.tscn/.gd` 只读 `SaveManager.data` 的已确认主播名、粉丝团名及 `tendency_state.get_primary_tendency_id()`；直接组合现有 `rest_room_environment.tscn`，使用同一 `bg_player_room_1.png`。页面只有开局提示与“开始直播”，没有战后成果、历史或关卡完成操作。资料缺失时展示明确提示并禁用开播，直接启动不会生成新周目。三倾向装饰继续采用 RS-07 开发期视觉占位；本卡修正共享背景 TextureRect 的无效 `stretch_mode = 7` 为 `STRETCH_KEEP_ASPECT_COVERED = 6`，开局与战后页面均能显示真实底图。
+
+ID-09 页面在 `_ready()` 连接自身 `opening_saved(run_data)` 到 `_on_opening_saved()`，保存成功后请求 `SceneRouter.goto_opening_room() -> Error`。路由失败时保留已保存身份，按钮只重试房间跳转；成功期间保持忙碌标记。开局房间 `start_live() -> Error` 只在显式按钮请求后调用现有 `SceneRouter.goto_game()`，第一次成功后锁住页面，后续调用返回 `ERR_ALREADY_IN_USE`；切换失败可重试，周目对象变化时拒绝启动。
+
+**Lane A 交接**：Sandbox 原样保留。独立房间期间没有 Sandbox、AttackChargeInput、AimReticle、PK 回拉或弹幕节点；开播后才实例化正式 Sandbox，由其既有 `_ready()` → `restart_current_attempt()` 初始化第一关。共享 SceneRouter 仅增加 `OPENING_ROOM_SCENE_PATH` 和 `goto_opening_room()`，原游戏/重开路由保持。集成时 A 保留此入口和 ID-09 信号接收，不再叠加自动开播或另一份房间路由；当前无需 A 补接。
+
+实际 Godot 4.7.2 GUI smoke 已覆盖三倾向各一张正式身份、三步输入保存及磁盘读回、点击前零战斗节点、主动开播、同帧重复请求、房间/开播失败重试、战斗蓄力恢复，以及 TEST_ONLY 双关未击破 Rest → 下一关 → 神降临入口。证据与环境权限日志见 `休息时刻系统_RS-12_2026-10-09_log.md`。未新增永久纯逻辑单测；Android 和正式美术仍待验收。
 
 ## LD-10：本场直播结果展示
 
