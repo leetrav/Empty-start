@@ -1,5 +1,10 @@
 # CB-03 请求生成真假矛盾
 
+**状态：原阶段生成接线已实现 · 数量规则以 CB-13 为准。**
+
+**2026-10-09 现行口径：Sandbox 已调用 `BarrageArea.start_contradiction_generation()` 并使用 `ContradictionWindowConfig` 的独立 Paradox 参数。后续 T6 同屏固定 1 句真矛盾 + 5 句假矛盾由 CB-13 承接；原卡中的旧数量/倍率描述仅记录当时开发基线。**
+
+
 ## 开始前先阅读以下文档
 - AGENTS.md
 - project.godot

@@ -1,5 +1,10 @@
 # CS-11 PK 满进入矛盾阶段
 
+**状态：现有满 PK 阶段切换已实现。**
+
+**2026-10-09 现行口径：T0～T5 是 CombatStage 普通阶段；T5 PK 满时由现有 `get_stage_result()` 与 Sandbox 进入独立 ContradictionBreak，界面将显示 T6 / Paradox（CS-25），六句候选由 CB-13 承接。**
+
+
 ## 开始前先阅读以下文档
 - AGENTS.md
 - project.godot
