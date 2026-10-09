@@ -57,6 +57,10 @@ FinalOracle 选择阶段由 Sandbox 将中央 `FinalOracleCandidateDisplay` 生�
 
 `AimReticle.move_touch_aim(viewport_position, diameter)` 使用原有画布逆变换和中心偏移，准心显示及目标相交共用同一直径。布局刷新保留最近触屏位置，实体鼠标重新操作恢复 PC 尺寸。
 
+CA-12 / INT-04 鼠标回归修复（2026-10-09）：`AimReticle.restore_mouse_aim(viewport_position: Vector2)` 必须传入当前真实鼠标事件的 Viewport 位置。左键按下使用 `InputEventMouseButton.position`，恢复 PC 直径并按原画布逆变换设置中心；按下路径不再调用系统光标读取。这样触屏结束后直接按鼠标也能正确定位，无需额外 MouseMotion。初始化 / 布局刷新接口保持原行为。
+
+针对性 TEST_ONLY GUI 入口为 `res://tests/combat_attack/ca12_mouse_restore_gui.tscn`，使用 `Input.parse_input_event()`，覆盖无移动首按、Canvas / 父级缩放、触屏切回鼠标及触屏 / UI / HR-13 回归。修复前后 INT-04 整局对照与精确退出码见 CA-12 当日日志和 `evidence/CA-12_INT-04_2026-10-09_mouse_fix.txt`。这些证据来自 Windows 注入事件；硬件鼠标和 Android 实机仍待验收。
+
 **A 集成位置**：Sandbox `_ready()` 现有 `configure_target_query()` 之后，将场景读取的移动端配置传入 `configure_mobile_input()`，检查返回值。重开沿用已注入的只读配置，继续用现有 `set_combat_active()` 清理手势。本卡没有修改 Sandbox / Rest / 其他场景，也没有自动启用测试数值。
 
 **精确交接**：由 A 增加场景导出属性 `@export var mobile_input_config: MobileAttackInputConfig`，在 Inspector 给 Sandbox 实例指定正式移动尺寸 Resource；上述位置的一行调用为 `var mobile_input_ready: bool = _attack_charge_input.configure_mobile_input(mobile_input_config)`，返回 false 时报告配置未就绪。TEST_ONLY 联调 Scene 可显式绑定既有 fixture，正式 Scene 继续等待策划资源。当前 Sandbox 没有该导出属性或配置调用，生产触屏输入仍关闭。
