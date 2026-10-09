@@ -57,13 +57,13 @@ assets/
 | --- | --- | --- |
 | T0 | 对手未接入，不展示立绘 | 无 |
 | T1 | 待机 | `{alien/kiwi/fox}_idle.png` |
-| T2 | 美术变化版本 1 | `{alien/kiwi/fox}_tier_01.png` |
-| T3 | 同 T2，继续使用变化版本 1 | `{alien/kiwi/fox}_tier_01.png` |
+| T2 | **仍为 idle，叠加程序绘制漫画汗滴** | `{alien/kiwi/fox}_idle.png`（汗滴由 PA-15 绘制） |
+| T3 | 美术变化版本 1 | `{alien/kiwi/fox}_tier_01.png` |
 | T4 | 美术变化版本 2 | `{alien/kiwi/fox}_tier_02.png` |
 | T5 | 美术变化版本 3 | `{alien/kiwi/fox}_tier_03.png` |
-| 矛盾击破（Paradox） | 击败状态 | `{alien/kiwi/fox}_defeat.png` |
+| 矛盾阶段（Paradox） | **先维持 T5 的变化版本 3**；**只有真矛盾击破成功后**才进入败北演出 | `{alien/kiwi/fox}_tier_03.png` → （成功时）`{alien/kiwi/fox}_defeat.png` |
 
-外星人另有 `alien_defeat_transition.png`（击败过渡帧），可接在击败正式立绘之前；具体使用时序以正式演出确认结果为准。
+外星人真击破后使用 `alien_defeat_transition.png` 的融化过渡帧并变为 `alien_defeat.png`；狐狸使用现有四张花瓣部件形成花瓣雨；Kiwi 先用整张图局部变形模拟翅膀 / 双腿乱舞（方案 A），再切至 `kiwi_defeat.png`。Paradox 未击破时对手保留 `tier_03` 然后离线。详见 [PA-17](../docs/Shared/PresentationAssets/tasks/PA-17_opponent-breakthrough-defeat-performances.md)。
 
 ## 已确认：PK 条素材来源编号与阶段（2026-10-10）
 
@@ -83,6 +83,14 @@ assets/
 
 - 负向素材 -4～-1 与玩家 PK **0%～10%、10%～20%、20%～30%、30%～40%** 的四段对应关系已由策划确认。边界具体包含方式由 PK 显示代码统一处理，保证数值变化时只显示一张正确档位图。
 - `pk_indicator_01.png` 为 PK 条**默认笑脸仓鼠球**，`pk_indicator_02.png` 为**仅降档时短暂出现的惊慌仓鼠球**。二者使用同一个指示器位置：按玩家 PK 比例沿轨道移动，移动时伴随自身滚动；升档时笑脸蹦跳，降档时惊慌脸抖动蹦跳、结束恢复笑脸。接入详见 [PA-13](../docs/Shared/PresentationAssets/tasks/PA-13_pk-hamster-ball-indicator-animation.md)。
+
+## 新确认的动画资产使用
+
+- 日常全部主播立绘由 PA-14 用整图轻量呼吸 / 摇晃动效表现，仓鼠每次真实射击时有短促身体回弹。
+- PA-15 在 T2 用现有 idle 立绘叠加程序漫画汗滴，实际图像变化档位用卡片翻转与受击图形切换。
+- PA-16 对 PK 条正式底板使用短闪 / 调色换图，并保留 PA-13 仓鼠球独立滚动蹦跳。
+- PA-18：PK0 战败仓鼠球跌落、玩家直播断流、对手继续直播，然后进入失败 UI。
+- PA-19：Paradox 真击破走完终结神谕、或 Paradox 未击破进入 Rest 前，均播放直播 CRT 关机、画面上翻页、回主角房间、弹出结算。
 
 ## 可由程序美术交付
 
