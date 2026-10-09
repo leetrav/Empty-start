@@ -13,10 +13,6 @@ config_version=5
 run/main_scene="res://core/boot/boot.tscn"
 config/features=PackedStringArray("4.7")
 
-[audio]
-
-buses/default_bus_layout="res://default_bus_layout.tres"
-
 [autoload]
 
 SceneRouter="*res://core/autoload/scene_router.gd"
@@ -27,16 +23,18 @@ MCPRuntimeProbe="*res://addons/godot_mcp/runtime/mcp_runtime_probe.gd"
 
 [display]
 
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-
-[gui]
-
-theme/custom="res://ui/theme/base_theme.tres"
 
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
+
+[gui]
+
+theme/custom="res://ui/theme/base_theme.tres"
 
 [input]
 
