@@ -1,0 +1,206 @@
+## INT-04 实景驱动：按钮信号、原生输入、Timer、存读与顶层路由。
+extends Node
+
+var checks := 0
+var route_count := 0
+var dd_completed := 0
+var emphasis_count := 0
+
+func _ready() -> void:
+	get_tree().create_timer(100.0).timeout.connect(func(): _check(false, "整局超时"))
+	call_deferred("_execute")
+
+# 驱动留在根节点；所有页面继续由真实 SceneRouter 替换和销毁。
+func _execute() -> void:
+	get_tree().current_scene = null
+	SceneRouter.game_scene_override = preload("res://tests/integration/int_04_test_only_sandbox.tscn")
+	get_tree().scene_changed.connect(func(): route_count += 1)
+	for empty_history in [false, true]:
+		await _opening()
+		var sandbox = get_tree().current_scene
+		var run: SaveData = SaveManager.data
+		# 首轮真实失败再重开，本场暂存不得成为终局历史。
+		if not empty_history:
+			await _normal_hit(sandbox)
+			sandbox.debug_set_player_pk(0.0)
+			await _frames()
+			_check(not sandbox._normal_combat_active, "PK 零未失败")
+			sandbox.get_node("%RestartButton").pressed.emit()
+			await _frames()
+			_check(sandbox._normal_combat_active and run.get_committed_normal_hit_history().is_empty(), "失败重开历史污染")
+		for level in range(2):
+			if not empty_history:
+				await _normal_hit(sandbox)
+			sandbox.debug_set_player_pk(1.0)
+			await _frames()
+			var success: bool = not empty_history and level == 0
+			var profile: LevelProfile = sandbox._run_state.get_current_level_profile()
+			var line: LevelContradiction = profile.true_contradictions[0] if success else profile.false_contradictions[0]
+			# 弹幕由实际区域生成，真假结果必须经过真正满蓄释放。
+			sandbox._barrage_area.clear_current_barrages()
+			var view: BarrageView = sandbox._barrage_area.spawn_contradiction_barrage(profile, line)
+			_check(view != null, "矛盾弹幕未生成")
+			await _shoot(sandbox, view)
+			_check(sandbox._contradiction_break.get_outcome() == (ContradictionBreakSystem.Outcome.BREAKTHROUGH if success else ContradictionBreakSystem.Outcome.NOT_BROKEN), "真假结果错误")
+			if success:
+				await _wait(func(): return sandbox._final_oracle_session != null, "神谕未打开")
+				var candidate: Control = sandbox._attack_charge_input._selection_targets[0]
+				await _shoot(sandbox, candidate)
+			await _wait(func(): return sandbox._rest_session != null and sandbox._rest_session.is_open(), "Rest 未打开")
+			_check(sandbox._rest_result_view._overlay.visible, "真实 Rest 未显示")
+			var cards: int = run.loser_card_data.get_acquired_cards(sandbox.loser_card_catalog).size()
+			_check(cards == (1 if not empty_history else 0), "真击败奖励数量错误")
+			var saved_result := _facts(run)
+			sandbox._on_contradiction_outcome_locked(sandbox._contradiction_break.get_outcome())
+			if success:
+				_check(not sandbox._oracle_confirmation_state.confirm_selection(profile.level_id,
+					sandbox._oracle_confirmation_state.get_confirmed_selection(profile.level_id)), "重复确认被接受")
+			_check(_facts(run) == saved_result, "重复结果修改成果")
+			await _capture("%s_rest_%d" % ["empty" if empty_history else "main", level])
+			var continue_button: Button = sandbox._rest_result_view._continue_button
+			continue_button.pressed.emit()
+			continue_button.pressed.emit()
+			await _frames()
+			if level == 0:
+				_check(sandbox._run_state.get_current_level_profile().level_id == "test_level_02", "继续未进入第二关或重复推进")
+		if not empty_history:
+			await _wait(func(): return sandbox._divine_descent_spread != null and sandbox._divine_descent_spread.is_sentence_locked(), "DD 未锁句")
+			var spread: DivineDescentSpread = sandbox._divine_descent_spread
+			spread.locked_sentence_emphasized.connect(func(_id, _count): emphasis_count += 1)
+			spread.completed.connect(func(session):
+				dd_completed += 1
+				_check(session == sandbox._divine_descent_session, "DD 完成换了 Session"))
+			var snapshot: Dictionary = sandbox._divine_descent_session.get_entry_snapshot()
+			var facts := _facts(run)
+			var key := InputEventKey.new()
+			key.keycode = KEY_SPACE
+			key.pressed = true
+			Input.parse_input_event(key)
+			Input.flush_buffered_events()
+			key = InputEventKey.new()
+			key.keycode = KEY_SPACE
+			key.pressed = false
+			Input.parse_input_event(key)
+			Input.flush_buffered_events()
+			await _frames()
+			_check(emphasis_count == 1, "锁句真实输入未路由 DD-14")
+			_check(_facts(run) == facts and sandbox._divine_descent_session.get_entry_snapshot() == snapshot, "终局输入改变冻结成果")
+			_check(not sandbox._barrage_area.allows_trap_generation(), "终局陷阱边界未关闭")
+			_check(not sandbox._divine_descent_mode.allows_normal_pk_resolution() and not sandbox._divine_descent_mode.allows_tier_changes(), "终局普通规则未关闭")
+			var terminal_view: BarrageView
+			for child in sandbox._barrage_area.get_children():
+				if child is BarrageView and not child.is_queued_for_deletion():
+					terminal_view = child
+					break
+			_check(terminal_view != null and terminal_view.get_presentation_trait_ids() == [&"occlusion"], "DD-16 未读取冻结继承表现")
+			await _capture("main_divine_locked")
+			await _wait(func(): return spread.is_converging(), "DD-13 未达到真实收束")
+			_check(not spread.is_completed(), "DD-17 演出提前完成")
+			_check(not spread.begin_full_screen_emphasis(0.15, 0.6), "重复全屏演出被接受")
+			await get_tree().create_timer(0.18).timeout
+			await _capture("main_full_screen_emphasis")
+		await _wait(func(): return get_tree().current_scene is EndingPage, "Ending 顶层路由未完成")
+		await _frames()
+		_check(not is_instance_valid(sandbox), "Sandbox/终局未销毁")
+		var page: EndingPage = get_tree().current_scene
+		await get_tree().create_timer(0.15).timeout
+		print("INT04 Ending layout empty=", empty_history, " scroll=", page._scroll.scroll_vertical,
+			" title_y=", page.get_node("Margin/PageScroll/Content/Title").global_position.y,
+			" page_position=", page.position, " content_position=", page.get_node("Margin/PageScroll/Content").position)
+		_check(page._display_data.get("scripture", {}).get("is_empty") == empty_history, "结局经文空态错误")
+		_check(page._scripture_rows.get_child_count() == 2, "Ending 缺章行错误")
+		_check(run.live_session.fan_count == 14, "PK 胜利粉丝重复或缺失")
+		_check(SceneRouter.goto_ending(SceneRouter._ending_session) == ERR_ALREADY_IN_USE, "重复结局路由被接受")
+		var expected := _facts(run)
+		_check(SaveManager.load_game() == OK and _facts(SaveManager.data) == expected, "真实磁盘成果读回不一致")
+		await _capture("empty_ending" if empty_history else "main_ending")
+		print("INT04 ROUTE PASS empty_history=", empty_history, " facts=", expected)
+	_check(dd_completed == 1, "DD 演出完成次数错误")
+	print("PASS INT-04 full run checks=", checks, " top_level_routes=", route_count, " DD_completed=", dd_completed)
+	get_tree().quit(0)
+
+# 三步页面分别操作正式控件，保留十二张批准身份资源。
+func _opening() -> void:
+	_check(SceneRouter.goto_main_menu() == OK, "主菜单路由失败")
+	await _frames()
+	get_tree().current_scene.get_node("%StartButton").pressed.emit()
+	await _frames()
+	var setup = get_tree().current_scene
+	setup._streamer_name_input.text = "Jackie INT04 TEST_ONLY"
+	setup._streamer_continue.pressed.emit()
+	_check(setup._selection._buttons.size() == 12, "批准身份数量变化")
+	setup._selection._buttons[0].pressed.emit()
+	setup._selection.get_node("%NextButton").pressed.emit()
+	setup._fan_group_name_input.text = "INT04 TEST_ONLY fans"
+	setup._confirm_button.pressed.emit()
+	await _frames()
+	var room = get_tree().current_scene
+	_check(room.has_node("%StartLiveButton") and not room.has_node("%AttackChargeInput"), "开局房间未隔离战斗")
+	await _capture("opening_room")
+	room.get_node("%StartLiveButton").pressed.emit()
+	_check(room.start_live() == ERR_ALREADY_IN_USE, "重复开播未隔离")
+	await _frames()
+	_check(get_tree().current_scene._normal_combat_active, "开播未进入真实战斗")
+
+# 用实际普通话语产生 PK、倾向与历史，禁止直接写奖励或终局数据。
+func _normal_hit(sandbox) -> void:
+	var profile: LevelProfile = sandbox._run_state.get_current_level_profile()
+	sandbox._barrage_area.clear_current_barrages()
+	var speech: LevelSpeech = profile.get_normal_speech_pool()[0]
+	var view: BarrageView = sandbox._barrage_area.spawn_normal_barrage(profile, speech)
+	var previous: float = sandbox._hit_resolution.get_player_pk()
+	await _shoot(sandbox, view)
+	_check(sandbox._hit_resolution.get_player_pk() > previous, "普通真实攻击未增 PK")
+	_check(not sandbox._hit_resolution.get_normal_hit_history().is_empty(), "普通真实命中无历史")
+
+# 坐标通过 Viewport 变换，蓄力、飞行与硬直全由实际游戏帧推进。
+func _shoot(sandbox, target: Control) -> void:
+	await _frames()
+	var point: Vector2 = get_viewport().get_final_transform() * target.get_global_rect().get_center()
+	var motion := InputEventMouseMotion.new()
+	motion.position = point
+	Input.parse_input_event(motion)
+	for pressed in [true, false]:
+		var event := InputEventMouseButton.new()
+		event.position = point
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		Input.flush_buffered_events()
+		if pressed:
+			print("INT04 aim target=", target.get_global_rect().get_center(),
+				" raw_input=", point, " viewport_mouse=", sandbox._aim_reticle.get_global_mouse_position(),
+				" actual_aim=", sandbox._aim_reticle.get_aim_center_global_position())
+			await get_tree().create_timer(sandbox.battle_config.attack_timing.charge_time_s + 0.08).timeout
+	await get_tree().create_timer(sandbox.battle_config.attack_timing.projectile_flight_s + sandbox.battle_config.attack_timing.recovery_time_s + 0.1).timeout
+
+func _facts(run: SaveData) -> Dictionary:
+	return {"identity": run.identity_id, "fans": run.live_session.fan_count,
+		"tendency": [run.tendency_state.orthodox_total, run.tendency_state.heretical_total, run.tendency_state.absurd_total],
+		"history": run.get_committed_normal_hit_history(),
+		"scripture": run.scripture_data.get_ordered_entries().size(),
+		"cards": run.loser_card_data.acquired_streamer_ids.size(),
+		"assimilation": run.assimilation_data.get_current_content_snapshot()}
+
+func _wait(predicate: Callable, message: String) -> void:
+	var start := Time.get_ticks_msec()
+	while not predicate.call():
+		if Time.get_ticks_msec() - start > 15000:
+			_check(false, message)
+			return
+		await get_tree().process_frame
+
+func _frames() -> void:
+	for index in range(4):
+		await get_tree().process_frame
+
+func _capture(label: String) -> void:
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://.godot/int04_" + label + ".png")
+
+func _check(condition: bool, message: String) -> void:
+	checks += 1
+	if not condition:
+		push_error("FAIL INT-04: " + message)
+		get_tree().quit(1)
