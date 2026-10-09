@@ -48,11 +48,11 @@ func move_touch_aim(viewport_position: Vector2, diameter: float) -> void:
 	_set_aim_center_global_position(get_canvas_transform().affine_inverse() * viewport_position)
 
 
-# 实体鼠标重新操作时恢复原有 PC 尺寸。
-func restore_mouse_aim() -> void:
+# 实体鼠标按下时用本次事件坐标恢复 PC 瞄准，避免系统光标读取覆盖有效位置。
+func restore_mouse_aim(viewport_position: Vector2) -> void:
 	_touch_aim_active = false
 	_set_reticle_diameter(_mouse_reticle_diameter)
-	refresh_mouse_position()
+	_set_aim_center_global_position(get_canvas_transform().affine_inverse() * viewport_position)
 
 
 # 尺寸改变同步绘制边界，避免触屏仅扩大判定却未扩大显示。

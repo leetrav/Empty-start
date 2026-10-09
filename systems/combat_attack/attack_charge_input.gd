@@ -163,7 +163,7 @@ func _input(event: InputEvent) -> void:
 	if mouse_event.pressed:
 		if not get_tree().paused and can_start_charging():
 			if _aim_reticle != null:
-				_aim_reticle.restore_mouse_aim()
+				_aim_reticle.restore_mouse_aim(mouse_event.position)
 			_attack_held = true
 		return
 

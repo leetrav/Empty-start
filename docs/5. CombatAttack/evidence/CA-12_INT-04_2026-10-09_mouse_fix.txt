@@ -1,0 +1,382 @@
+CA-12 / INT-04 2026-10-09 mouse fix — actual Godot outputs
+HEAD 7fa27613; Windows 4.7.2 D3D12; E2E includes read-only Lane A INT-04 overlay
+ExitCodes: import=0; premature before=1; before_ready=1; after=0; gui_before=1; gui_verified=0; all checks/regressions below=0
+Environment: root certificate read denied; E2E settings.cfg save denied; import CSV/editor_data warnings. Hardware mouse/Android UNVERIFIED.
+
+=== before_ready STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: AMD - AMD Radeon(TM) Graphics
+
+INT04 aim target=(727.2001, 86.4) raw_input=(727.2001, 86.4) viewport_mouse=(880796032.0, 40.0) actual_aim=(880789376.0, 40.0)
+
+=== before_ready STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _ready (res://scenes/sandbox/sandbox.gd:91)
+       [5] _ready (res://tests/integration/int_04_test_only_sandbox.gd:31)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _ready (res://scenes/sandbox/sandbox.gd:91)
+       [4] _ready (res://tests/integration/int_04_test_only_sandbox.gd:31)
+ERROR: FAIL INT-04: 普通真实攻击未增 PK
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int_04_full_run.gd:205)
+       [1] _normal_hit (res://tests/integration/int_04_full_run.gd:153)
+       [2] _shoot (res://tests/integration/int_04_full_run.gd:175)
+ERROR: FAIL INT-04: 普通真实命中无历史
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int_04_full_run.gd:205)
+       [1] _normal_hit (res://tests/integration/int_04_full_run.gd:154)
+       [2] _shoot (res://tests/integration/int_04_full_run.gd:175)
+
+
+=== after STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: AMD - AMD Radeon(TM) Graphics
+
+INT04 aim target=(727.2001, 86.4) raw_input=(727.2001, 86.4) viewport_mouse=(671081088.0, -55.0) actual_aim=(727.2001, 86.4)
+INT04 aim target=(727.2001, 86.4) raw_input=(727.2001, 86.4) viewport_mouse=(671081088.0, -55.0) actual_aim=(727.2001, 86.4)
+INT04 aim target=(700.8, 86.4) raw_input=(700.8, 86.4) viewport_mouse=(671081088.0, -55.0) actual_aim=(700.8, 86.4)
+INT04 aim target=(576.0, 271.2) raw_input=(576.0, 271.2) viewport_mouse=(671081088.0, -55.0) actual_aim=(576.0, 271.2)
+INT04 aim target=(727.2001, 86.4) raw_input=(727.2001, 86.4) viewport_mouse=(671081088.0, -55.0) actual_aim=(727.2001, 86.4)
+INT04 aim target=(727.2001, 86.4) raw_input=(727.2001, 86.4) viewport_mouse=(671081088.0, -55.0) actual_aim=(727.2001, 86.4)
+INT04 Ending layout empty=false scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT04 ROUTE PASS empty_history=false facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [6, 0, 0], "history": [{ "original_sentence_id": "test_word_01", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 1 }, { "original_sentence_id": "test_word_09", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 2 }], "scripture": 1, "cards": 1, "assimilation": { "inherited_word_weights": { &"test_int04_pool_test_level_01": 1.0 }, "inherited_trait_ids": [&"occlusion"] } }
+INT04 aim target=(727.2001, 86.4) raw_input=(727.2001, 86.4) viewport_mouse=(671081088.0, -55.0) actual_aim=(727.2001, 86.4)
+INT04 aim target=(727.2001, 86.4) raw_input=(727.2001, 86.4) viewport_mouse=(671081088.0, -55.0) actual_aim=(727.2001, 86.4)
+INT04 Ending layout empty=true scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT04 ROUTE PASS empty_history=true facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [0, 0, 0], "history": [], "scripture": 0, "cards": 0, "assimilation": { "inherited_word_weights": {  }, "inherited_trait_ids": [] } }
+PASS INT-04 full run checks=62 top_level_routes=10 DD_completed=1
+
+=== after STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _ready (res://scenes/sandbox/sandbox.gd:91)
+       [5] _ready (res://tests/integration/int_04_test_only_sandbox.gd:31)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _ready (res://scenes/sandbox/sandbox.gd:91)
+       [4] _ready (res://tests/integration/int_04_test_only_sandbox.gd:31)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _execute (res://tests/integration/int_04_full_run.gd:28)
+       [5] _frames (res://tests/integration/int_04_full_run.gd:195)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _execute (res://tests/integration/int_04_full_run.gd:28)
+       [4] _frames (res://tests/integration/int_04_full_run.gd:195)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _on_rest_continue_requested (res://scenes/sandbox/sandbox.gd:586)
+       [5] _on_continue_pressed (res://ui/rest/rest_result_view.gd:204)
+       [6] _execute (res://tests/integration/int_04_full_run.gd:61)
+       [7] _capture (res://tests/integration/int_04_full_run.gd:200)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _on_rest_continue_requested (res://scenes/sandbox/sandbox.gd:586)
+       [4] _on_continue_pressed (res://ui/rest/rest_result_view.gd:204)
+       [5] _execute (res://tests/integration/int_04_full_run.gd:61)
+       [6] _capture (res://tests/integration/int_04_full_run.gd:200)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _ready (res://scenes/sandbox/sandbox.gd:91)
+       [5] _ready (res://tests/integration/int_04_test_only_sandbox.gd:31)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _ready (res://scenes/sandbox/sandbox.gd:91)
+       [4] _ready (res://tests/integration/int_04_test_only_sandbox.gd:31)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [4] _on_rest_continue_requested (res://scenes/sandbox/sandbox.gd:586)
+       [5] _on_continue_pressed (res://ui/rest/rest_result_view.gd:204)
+       [6] _execute (res://tests/integration/int_04_full_run.gd:61)
+       [7] _capture (res://tests/integration/int_04_full_run.gd:200)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:122)
+       [3] _on_rest_continue_requested (res://scenes/sandbox/sandbox.gd:586)
+       [4] _on_continue_pressed (res://ui/rest/rest_result_view.gd:204)
+       [5] _execute (res://tests/integration/int_04_full_run.gd:61)
+       [6] _capture (res://tests/integration/int_04_full_run.gd:200)
+
+
+=== gui_before STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: AMD - AMD Radeon(TM) Graphics
+
+CA12 first press system_mouse=(-958407168.0, -97.0) event=(727.2, 86.4) aim=(-958407936.0, -97.0)
+CA12 PASS missing mobile config disables touch
+CA12 PASS zero config rejected
+CA12 PASS explicit TEST_ONLY config
+CA12 PASS touch starts charge
+CA12 PASS drag center and diameter
+CA12 PASS drag preserves hold
+CA12 PASS second finger isolated
+CA12 PASS undercharge cancels
+CA12 PASS touch fully charges
+CA12 PASS emulated release ignored
+CA12 PASS touch release freezes final center
+CA12 PASS no duplicate shot
+CA12 PASS flight refuses touch
+CA12 PASS real timer recovery
+CA12 PASS empty touch shot MISS
+CA12 PASS MISS penalty once
+CA12 PASS MISS no normal history
+CA12 PASS OS cancelled full charge discarded
+CA12 PASS pause freezes charge
+CA12 PASS paused release cancels
+CA12 PASS focus out cancels
+CA12 PASS restart rejects stale release
+CA12 PASS GUI consumes touch
+CA12 PASS touch anomaly
+CA12 PASS single PK settlement
+CA12 PASS history boundary
+CA12 PASS touch anomaly reflect
+CA12 PASS single PK settlement reflect
+CA12 PASS history boundary reflect
+CA12 PASS touch anomaly occlusion
+CA12 PASS single PK settlement occlusion
+CA12 PASS history boundary occlusion
+CA12 PASS HR13 late arrival terminal mode
+CA12 PASS HR13 PK and history frozen
+CA12 GUI RESULT checks=37 shots=5 submissions=5 failures=3
+
+=== gui_before STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+ERROR: CA12 FAIL first press uses event without motion
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/combat_attack/ca12_mouse_restore_gui.gd:195)
+       [1] _run (res://tests/combat_attack/ca12_mouse_restore_gui.gd:46)
+       [2] _wait (res://tests/combat_attack/ca12_mouse_restore_gui.gd:189)
+ERROR: CA12 FAIL screen to canvas and scaled center
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/combat_attack/ca12_mouse_restore_gui.gd:195)
+       [1] _run (res://tests/combat_attack/ca12_mouse_restore_gui.gd:52)
+       [2] _wait (res://tests/combat_attack/ca12_mouse_restore_gui.gd:189)
+ERROR: CA12 FAIL touch to mouse restores size and event center without motion
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/combat_attack/ca12_mouse_restore_gui.gd:195)
+       [1] _run (res://tests/combat_attack/ca12_mouse_restore_gui.gd:125)
+       [2] _wait (res://tests/combat_attack/ca12_mouse_restore_gui.gd:189)
+
+
+=== gui_verified STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: AMD - AMD Radeon(TM) Graphics
+
+CA12 first press system_mouse=(2111824384.0, -160.0) event=(727.2, 86.4) aim=(727.2, 86.4)
+CA12 PASS first press uses event without motion
+CA12 PASS screen to canvas and scaled center
+CA12 PASS missing mobile config disables touch
+CA12 PASS zero config rejected
+CA12 PASS explicit TEST_ONLY config
+CA12 PASS touch starts charge
+CA12 PASS drag center and diameter
+CA12 PASS drag preserves hold
+CA12 PASS second finger isolated
+CA12 PASS undercharge cancels
+CA12 PASS touch fully charges
+CA12 PASS emulated release ignored
+CA12 PASS touch release freezes final center
+CA12 PASS no duplicate shot
+CA12 PASS flight refuses touch
+CA12 PASS real timer recovery
+CA12 PASS empty touch shot MISS
+CA12 PASS MISS penalty once
+CA12 PASS MISS no normal history
+CA12 PASS OS cancelled full charge discarded
+CA12 PASS pause freezes charge
+CA12 PASS paused release cancels
+CA12 PASS focus out cancels
+CA12 PASS restart rejects stale release
+CA12 PASS GUI consumes touch
+CA12 PASS touch to mouse restores size and event center without motion
+CA12 PASS touch anomaly
+CA12 PASS single PK settlement
+CA12 PASS history boundary
+CA12 PASS touch anomaly reflect
+CA12 PASS single PK settlement reflect
+CA12 PASS history boundary reflect
+CA12 PASS touch anomaly occlusion
+CA12 PASS single PK settlement occlusion
+CA12 PASS history boundary occlusion
+CA12 PASS HR13 late arrival terminal mode
+CA12 PASS HR13 PK and history frozen
+CA12 GUI RESULT checks=37 shots=5 submissions=5 failures=0
+
+=== gui_verified STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+
+=== aim_reticle STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+
+=== aim_reticle STDERR ===
+
+
+=== attack_charge_input STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+
+=== attack_charge_input STDERR ===
+
+
+=== gui_check_final STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+
+=== gui_check_final STDERR ===
+
+
+=== test_aim_overlap STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS: internal intersection
+PASS: edge contact
+CA-02: 2 cases passed.
+
+=== test_aim_overlap STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+
+=== test_charge_progress STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS: charge completes without target
+PASS: charge progress persists through candidate changes
+CA-03: 2 cases passed.
+
+=== test_charge_progress STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+
+=== test_cancel_undercharge STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS: undercharged release clears progress
+CA-04: 1 case passed.
+
+=== test_cancel_undercharge STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+
+=== test_target_snapshot STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS: same instance is recorded once
+PASS: late candidate is not added
+CA-05: 2 cases passed.
+
+=== test_target_snapshot STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+
+=== test_int01_attack_boundaries STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS INT-01 attack boundaries: repeat zero reward/history, synchronous stop, clear capacity, generated fact
+
+=== test_int01_attack_boundaries STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+
+=== test_hr_05_shot_aggregate STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS HR-05 aggregate target deltas before one PK update
+
+=== test_hr_05_shot_aggregate STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+
+=== test_hr_06_anomaly_priority STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS HR-06 bounce priority
+PASS HR-06 obstruction priority
+PASS HR-06 miss fallback
+
+=== test_hr_06_anomaly_priority STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+
+=== test_hr_08_pullback_zero_priority STDOUT ===
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS HR-08 pullback to zero cancels the pending hit
+
+=== test_hr_08_pullback_zero_priority STDERR ===
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
