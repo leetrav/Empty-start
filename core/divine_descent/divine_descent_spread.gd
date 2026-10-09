@@ -3,6 +3,7 @@ extends Node
 
 signal repeat_generated(original_sentence_id: StringName, view: BarrageView, current_weight: int)
 signal sentence_locked(candidate: Dictionary)
+signal convergence_started(candidate: Dictionary)
 
 var _candidates: Array[Dictionary] = []
 var _barrage_area: BarrageArea
@@ -13,6 +14,7 @@ var _display_template: String = ""
 var _generation_blocked: bool = false
 var _combat_mode: DivineDescentCombatMode
 var _locked_candidate: Dictionary = {}
+var _converging: bool = false
 
 
 # 原生 Timer 独立于玩家输入推进；全局暂停沿用 SceneTree 的暂停模式。
@@ -22,6 +24,7 @@ func _ready() -> void:
 	_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_timer.timeout.connect(_on_generation_timeout)
 	add_child(_timer)
+	set_process(false)
 
 
 # 从冻结来源初始化一个扩散工作池；频率、寿命和模板由组合方读取真实配置后注入。
@@ -77,13 +80,29 @@ func is_sentence_locked() -> bool:
 	return not _locked_candidate.is_empty()
 
 
-# 即时读取当前区域；占比不缓存，也不在本卡触发收束。
+# 即时读取当前区域；空可见集合返回零，占比不缓存。
 func get_locked_visible_ratio() -> float:
 	if not is_sentence_locked() or not is_instance_valid(_barrage_area) or not _barrage_area.is_inside_tree():
 		return 0.0
 	return DivineDescentCandidateFilter.calculate_visible_ratio(
 		_barrage_area.get_visible_barrage_records(), str(_locked_candidate["original_sentence_id"])
 	)
+
+
+# 读取首次收束状态，后续弹幕退出不会撤销已进入的阶段。
+func is_converging() -> bool:
+	return _converging
+
+
+# 锁句后按实际可见占比检查；空场为零，达到 90% 只进入一次。
+func _process(_delta: float) -> void:
+	if _converging or not is_running() or not is_sentence_locked():
+		return
+	if get_locked_visible_ratio() < 0.9:
+		return
+	_converging = true
+	stop()
+	convergence_started.emit(get_locked_candidate())
 
 
 # 只在真实归零时响应；后续重复通知不能覆盖首次结果。
@@ -102,6 +121,7 @@ func _try_lock_after_new_word_decay() -> void:
 		# 没有积压队列；收窄后续抽取池即取消其他句的生成，保留 Timer 和在场视图。
 		_candidates.clear()
 		_candidates.append(_locked_candidate.duplicate(true))
+		set_process(true)
 		sentence_locked.emit(get_locked_candidate())
 
 
@@ -133,10 +153,11 @@ func generate_next_repeat() -> BarrageView:
 	return view
 
 
-# 显式停止自动生成并保留当前工作池；锁句本身继续沿用原 Timer 周期。
+# 停止生成和收束检查并保留工作池；收束时沿用同一停止入口。
 func stop() -> void:
 	if _timer != null:
 		_timer.stop()
+	set_process(false)
 
 
 # 当前动态权重唯一归本扩散组件；读取副本不能回写工作池。
