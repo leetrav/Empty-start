@@ -1,0 +1,27 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.30 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+INT05_START_WINDOW=(1600, 900) ROOT=(1600, 900)
+INT05_CAPTURE opening_room WINDOW=(1600, 900) ROOT=(1600, 900) VISIBLE=(1152.0, 648.0)
+INT04 aim target=(727.2001, 86.4) raw_input=(1010.0, 120.0) viewport_mouse=(1266.48, 12.24) actual_aim=(727.2001, 86.40001)
+INT04 aim target=(727.2001, 86.4) raw_input=(1010.0, 120.0) viewport_mouse=(902.1602, 30.96) actual_aim=(727.2001, 86.40001)
+INT04 aim target=(700.8, 86.4) raw_input=(973.3334, 120.0) viewport_mouse=(1152.72, 78.48001) actual_aim=(700.8002, 86.40001)
+INT04 aim target=(576.0, 271.2) raw_input=(800.0, 376.6667) viewport_mouse=(230.4, -7.919998) actual_aim=(576.0001, 271.2)
+INT05_CAPTURE main_rest_0 WINDOW=(1600, 900) ROOT=(1600, 900) VISIBLE=(1152.0, 648.0)
+INT04 aim target=(727.2001, 86.4) raw_input=(1010.0, 120.0) viewport_mouse=(230.4, -7.919998) actual_aim=(727.2001, 86.40001)
+INT04 aim target=(727.2001, 86.4) raw_input=(1010.0, 120.0) viewport_mouse=(224.64, -5.040001) actual_aim=(727.2001, 86.40001)
+INT05_CAPTURE main_rest_1 WINDOW=(1600, 900) ROOT=(1600, 900) VISIBLE=(1152.0, 648.0)
+INT05_CAPTURE main_divine_locked WINDOW=(1600, 900) ROOT=(1600, 900) VISIBLE=(1152.0, 648.0)
+INT05_CAPTURE main_full_screen_emphasis WINDOW=(1600, 900) ROOT=(1600, 900) VISIBLE=(1152.0, 648.0)
+INT04 Ending layout empty=false scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT05_CAPTURE main_ending WINDOW=(1600, 900) ROOT=(1600, 900) VISIBLE=(1152.0, 648.0)
+INT04 ROUTE PASS empty_history=false facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [6, 0, 0], "history": [{ "original_sentence_id": "test_word_01", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 1 }, { "original_sentence_id": "test_word_09", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 2 }], "scripture": 1, "cards": 1, "assimilation": { "inherited_word_weights": { &"test_int04_pool_test_level_01": 1.0 }, "inherited_trait_ids": [&"occlusion"] } }
+INT05_CAPTURE opening_room WINDOW=(1600, 900) ROOT=(1600, 900) VISIBLE=(1152.0, 648.0)
+INT04 aim target=(727.2001, 86.4) raw_input=(1010.0, 120.0) viewport_mouse=(596.8801, 264.24) actual_aim=(727.2001, 86.40001)
+INT05_CAPTURE empty_rest_0 WINDOW=(1600, 900) ROOT=(1600, 900) VISIBLE=(1152.0, 648.0)
+INT04 aim target=(727.2001, 86.4) raw_input=(1010.0, 120.0) viewport_mouse=(1085.04, 218.16) actual_aim=(727.2001, 86.40001)
+INT05_CAPTURE empty_rest_1 WINDOW=(1600, 900) ROOT=(1600, 900) VISIBLE=(1152.0, 648.0)
+INT04 Ending layout empty=true scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT05_CAPTURE empty_ending WINDOW=(1600, 900) ROOT=(1600, 900) VISIBLE=(1152.0, 648.0)
+INT04 ROUTE PASS empty_history=true facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [0, 0, 0], "history": [], "scripture": 0, "cards": 0, "assimilation": { "inherited_word_weights": {  }, "inherited_trait_ids": [] } }
+PASS INT-04 full run checks=62 top_level_routes=10 DD_completed=1

@@ -1,0 +1,8 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.30 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+INT05_START_WINDOW=(1920, 1080) ROOT=(1920, 1080)
+INT05_CAPTURE opening_room WINDOW=(1920, 1080) ROOT=(1920, 1080) VISIBLE=(1152.0, 648.0)
+INT04 aim target=(727.2001, 86.4) raw_input=(1212.0, 144.0) viewport_mouse=(636.0, 181.2) actual_aim=(727.2001, 86.4)
+INT04 aim target=(727.2001, 86.4) raw_input=(1212.0, 144.0) viewport_mouse=(636.0, 181.2) actual_aim=(727.2001, 86.4)
+INT04 aim target=(700.8, 86.4) raw_input=(1168.0, 144.0) viewport_mouse=(636.0, 181.2) actual_aim=(700.8, 86.4)
