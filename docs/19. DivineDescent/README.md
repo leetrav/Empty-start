@@ -124,7 +124,7 @@ DD-17 等 20. Ending。
 ## DD-08 自动扩散组件
 
 - `DivineDescentSpread` 是独立 Node，进入树后调用 `start(session, barrage_area, speech_catalog, interval_seconds, repeat_lifetime_seconds, display_template, random_generator = null)`。每个终局 Session 组合一个扩散组件，由它唯一持有可变 `weight` 工作池；Session 继续只持有冻结来源。
-- 启动复用 DD-06 / DD-07 初始化权重。已有正文优先保留；存档候选只有原句 ID 时，按真实 `LevelCatalog.profiles` → `LevelProfile.get_normal_speech_pool()` 解析并复制正文，支持 #61 导表 Resource。空候选、缺少正文、未进入 Session 或非法时长会拒绝启动，既不补造句子也不丢弃候选。空历史路由仍留 DD-15。
+- 启动复用 DD-06 / DD-07 初始化权重。已有正文优先保留；存档候选只有原句 ID 时，按真实 `LevelCatalog.profiles` → `LevelProfile.get_normal_speech_pool()` 解析并复制正文，支持 #61 导表 Resource。空候选、缺少正文、未进入 Session 或非法时长会拒绝启动，既不补造句子也不丢弃候选。DD-15 已提供 Session 空历史分流查询，组合方在启动扩散前读取。
 - 调用方先让 BarrageArea 进入当前关卡上下文，之后可停止普通生成；扩散直接调用现有 `spawn_repeat_barrage(RepeatPlan)`。间隔、寿命与模板必须从当前真实配置显式注入，本组件没有自定策划值。现有配置组合可读取当前关基础间隔 / Tier 5 频率、运行配置的复读寿命与模板；终局专用配置后续可替换同一参数入口。
 - 原生可暂停 Timer 在无玩家输入时逐次推进；每次用当前工作池调用 Godot [`RandomNumberGenerator.rand_weighted()`](https://docs.godotengine.org/en/stable/classes/class_randomnumbergenerator.html#class-randomnumbergenerator-method-rand-weighted)，创建一条 NORMAL RepeatPlan。只有 BarrageArea 返回真实生成实例后，该原句 `weight +1` 并发出 `repeat_generated(original_sentence_id, view, current_weight)`，下一轮读取新值。
 - `generate_next_repeat()` 是一次生成公开命令，返回成功实例或 null；容量 / 位置不足返回 null，权重保持原值，Timer 下一轮重试，不建立积压队列。`is_generation_blocked()` 读取上次尝试是否失败，成功后清除；区域离树时停止。生成实例、位置、同屏容量和寿命继续由 3 持有。
@@ -175,3 +175,12 @@ DD-17 等 20. Ending。
 - 复用 BarrageView 的现有 Label / Theme；`pulse_presentation(scale_multiplier, return_seconds)` 立即达到注入倍率，再用原生 Tween 回到原缩放。连续调用取消旧 Tween 并重播同一峰值，避免倍率累乘。暂停单独使用 `TWEEN_PAUSE_STOP`，节点释放自动取消 Tween。原句、显示文本、逻辑尺寸、移动和截止时间保持原值，旧的其他句、隐藏视图和 UI 保持原样。
 - 正式强化倍率 / 时长与专用美术尚未提供，接口没有默认策划值或新生产配置。验收只在临时 TEST_ONLY 场景注入 `1.35 / 0.6 秒` 并使用测试句子；已有音频事件及批准的 12 身份保持原值。没有新增永久测试、Scene、Manager 或 Autoload。
 - Lane A 接线：在终局输入所有者中将一次玩家操作调用上述方法，保持普通攻击 / 结算入口关闭；演出结束或切页时停止路由。`stop()` 的既有职责仍为停止扩散生成和比例检查。输入不会生成弹幕或增加工作权重，不触发 PK、Tier、倾向、矛盾或存档写入。完整 Sandbox 路由与 DD-17 全屏强调 / Ending 转场仍待后续任务，本卡只验证独立真实组件。
+
+## DD-15 空原始普通命中历史（2026-10-09）
+
+- `DivineDescentSession.should_enter_empty_ending() -> bool` 是终局进入后的只读分流结果：未进入返回 false；首次冻结的 `committed_normal_hit_history` 为空返回 true。读取原始已提交普通命中历史，圣典、复读统计、收藏数量和 TT-13 过滤后的候选数量均不参与判断。
+- 圣典为空且普通历史非空返回 false，继续 DD-02 / DD-06 / DD-07 / DD-08 候选流程；真实 smoke 已确认可启动扩散并生成复读。原始历史仅有 neutral 时查询同样返回 false，TT-13 继续过滤该原句，Spread 继续沿用空候选拒绝启动规则；本卡没有定义该类数据的额外结局规则。
+- true 表示跳过扩散、衰减、锁句、收束和全屏强调的空记录路径，直接将**同一已进入 Session** 交给现有 `EndingSession.receive_final_state(session, full_level_catalog)`。Ending 的空圣典状态沿用 `not_formed_oracle`，已保存经文仍原样展示；此结果不会清空倾向、圣典、败者卡、吞并或历史，也不会重新计算最终倾向。
+- **Lane A 精确交接（TO INTEGRATE）**：在现有 `Sandbox.divine_descent_entered(session)` 通知后、启动 DD-05 / DD-08 前读取上述查询。true 分支创建一次 EndingSession，调用现有接收接口；接收成功后将 `get_display_data()` 交给 `EndingPage.show_ending()`，保持普通战斗关闭并结束该分支。false 分支继续候选流程，禁止将空圣典当成分流条件。Sandbox 已在发出通知前完成普通输入 / 生成停止，重复进入继续由 RS-10 现有入口拒绝。
+- EN-01 / EN-09 的接收和页面接口已用真实 Godot 4.7.2 验证兼容。`SceneRouter` 当前没有结局入口；正式顶层转场及 Session / 页面生命周期由 A 在所属集成任务中审查、接线，DD-17 正常历史完成事件仍留对应任务。DD-15 没有修改 Sandbox、Rest、Ending 或 SceneRouter，没有宣称整局 E2E 已完成。
+- 只新增一个关键单元用例 `tests/unit/divine_descent/test_dd_15_empty_history.gd`：无原始普通命中历史直接准备空态。复读 / 圣典存在以及后续源数据和 getter 副本变化仍保持首次空态结果。正式配置及批准的 12 身份原样保留；临时 TEST_ONLY 实景通过现有公开接口验证空态页面、非空历史扩散和冻结源数据，运行证据见本卡日志。
