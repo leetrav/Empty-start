@@ -1,0 +1,123 @@
+CA-12 merged runtime recheck / TEST_ONLY / 2026-10-09
+HEAD=58bd75ab21a9cab7ca55a1cbb119a58bc98795aa
+Target main=c03bd17da17c82ed6f2dcadce103f12b3675a516
+SMOKE_EXIT=0
+Command: --path . --rendering-method gl_compatibility --log-file .godot/ca12/recheck_smoke_final.log res://ca12_TEST_ONLY_tmp.tscn
+Temporary probe removed after verification.
+--- RUNTIME STDOUT ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 Core Profile Context 23.19.12.03.240603 - Compatibility - Using Device: ATI Technologies Inc. - AMD Radeon(TM) Graphics
+
+CA12 RECHECK TEST_ONLY ENGINE={ "major": 4, "minor": 7, "patch": 2, "hex": 263938, "status": "stable", "build": "steam", "hash": "ed1daf0bf001b61586d9930840f2f1394092c079", "timestamp": 0, "string": "4.7.2-stable (steam)" } DISPLAY=Windows
+CA12 PASS unconfigured production Sandbox leaves touch disabled
+CA12 PASS default zero config rejected
+CA12 PASS explicit TEST_ONLY injection accepted
+CA12 PASS touch press starts charge
+CA12 PASS drag center and configured diameter
+CA12 PASS second finger isolated
+CA12 PASS undercharge cancels
+CA12 PASS real frame hold fully charges
+CA12 PASS emulated mouse cannot release held touch
+CA12 PASS release freezes final position exactly once
+CA12 PASS flight rejects touch and duplicate mouse
+CA12 PASS real flight and recovery complete
+CA12 PASS BT11 MISS forwarded and deducted once
+CA12 PASS OS cancellation discards full charge
+CA12 PASS pause freezes progress
+CA12 PASS paused release cancels without deferred shot
+CA12 PASS focus notification clears gesture
+CA12 PASS stop restart ignores stale release
+CA12 PASS GUI consumes touch before attack
+CA12 PASS native PC mouse restores size and charge
+CA12 PASS spawn real TEST_ONLY target reflect
+CA12 PASS touch captures real target reflect
+CA12 PASS BT11 reflect forwarded with single penalty
+CA12 PASS spawn real TEST_ONLY target occlusion
+CA12 PASS touch captures real target occlusion
+CA12 PASS BT11 occlusion forwarded with single penalty
+CA12 PASS spawn real TEST_ONLY target 
+CA12 PASS touch captures real target 
+CA12 PASS normal touch reward and history preserved
+CA12 PASS spawn real TEST_ONLY target terminal
+CA12 PASS touch captures real target terminal
+CA12 PASS HR13 late touch arrival has zero reward and history
+CA12 RECHECK RESULT checks=32 shots=5 arrivals=5 failures=0
+--- RUNTIME STDERR (environment errors retained) ---
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+ERROR: SettingsManager: failed to save settings.cfg: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] save_settings (res://core/autoload/settings_manager.gd:77)
+       [1] close (res://ui/settings/settings_panel.gd:35)
+       [2] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [3] restart_current_attempt (res://scenes/sandbox/sandbox.gd:110)
+       [4] _ready (res://scenes/sandbox/sandbox.gd:80)
+       [5] _run (res://ca12_TEST_ONLY_tmp.gd:24)
+ERROR: SettingsPanel: 保存设置失败，Error: Can't open file
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] close (res://ui/settings/settings_panel.gd:37)
+       [1] resume_game (res://ui/pause_menu/pause_menu.gd:54)
+       [2] restart_current_attempt (res://scenes/sandbox/sandbox.gd:110)
+       [3] _ready (res://scenes/sandbox/sandbox.gd:80)
+       [4] _run (res://ca12_TEST_ONLY_tmp.gd:24)
+ERROR: Condition "f.is_null()" is true.
+   at: _save_to_cache (drivers/gles3/shader_gles3.cpp:648)
+--- EXISTING TEST EXIT CODES ---
+tests/unit/combat_attack/test_aim_overlap.gd EXIT=0
+tests/unit/combat_attack/test_charge_progress.gd EXIT=0
+tests/unit/combat_attack/test_cancel_undercharge.gd EXIT=0
+tests/unit/combat_attack/test_target_snapshot.gd EXIT=0
+tests/combat_attack/test_int01_attack_boundaries.gd EXIT=0
+tests/hit_resolution/test_hr_05_shot_aggregate.gd EXIT=0
+tests/hit_resolution/test_hr_08_pullback_zero_priority.gd EXIT=0
+--- final_test_aim_overlap.stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS: internal intersection
+PASS: edge contact
+CA-02: 2 cases passed.
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+--- final_test_cancel_undercharge.stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS: undercharged release clears progress
+CA-04: 1 case passed.
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+--- final_test_charge_progress.stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS: charge completes without target
+PASS: charge progress persists through candidate changes
+CA-03: 2 cases passed.
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+--- final_test_hr_05_shot_aggregate.stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS HR-05 aggregate target deltas before one PK update
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+--- final_test_hr_08_pullback_zero_priority.stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS HR-08 pullback to zero cancels the pending hit
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+--- final_test_int01_attack_boundaries.stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS INT-01 attack boundaries: repeat zero reward/history, synchronous stop, clear capacity, generated fact
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+--- final_test_target_snapshot.stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS: same instance is recorded once
+PASS: late candidate is not added
+CA-05: 2 cases passed.
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)

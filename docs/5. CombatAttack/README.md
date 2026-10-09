@@ -58,6 +58,10 @@ FinalOracle 选择阶段由 Sandbox 将中央 `FinalOracleCandidateDisplay` 生�
 
 **A 集成位置**：Sandbox `_ready()` 现有 `configure_target_query()` 之后，将场景读取的移动端配置传入 `configure_mobile_input()`，检查返回值。重开沿用已注入的只读配置，继续用现有 `set_combat_active()` 清理手势。本卡没有修改 Sandbox / Rest / 其他场景，也没有自动启用测试数值。
 
+**精确交接**：由 A 增加场景导出属性 `@export var mobile_input_config: MobileAttackInputConfig`，在 Inspector 给 Sandbox 实例指定正式移动尺寸 Resource；上述位置的一行调用为 `var mobile_input_ready: bool = _attack_charge_input.configure_mobile_input(mobile_input_config)`，返回 false 时报告配置未就绪。TEST_ONLY 联调 Scene 可显式绑定既有 fixture，正式 Scene 继续等待策划资源。当前 Sandbox 没有该导出属性或配置调用，生产触屏输入仍关闭。
+
+2026-10-09 基于 main `c03bd17` 的合并状态已用 Godot 4.7.2 重验：触屏 MISS / 反弹 / 遮挡均通过 `resolve_shot_results(hit_resolution_targets, shot_anomaly)` 交给 6 扣分一次；HR-13 的 `terminal_mode` 会阻止晚到触屏命中写普通历史。完整验收与环境限制见 CA-12 日志。
+
 正式数值到位前，A 仅在明确的 TEST_ONLY 联调入口加载 `res://tests/fixtures/combat_attack/ca12_test_only_mobile_input.tres`；其中 80 设计像素只用于 PC 模拟验收。正式发布须换成策划数值表导出的 `MobileAttackInputConfig`，不得将 fixture 当成正式平衡值。正式 Android 场景接线、构建及手机分辨率/手感验收见 CA-12 日志中的未验证项。
 
 ## 任务顺序
