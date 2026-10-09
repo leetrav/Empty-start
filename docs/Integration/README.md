@@ -21,7 +21,7 @@ Lane A 持有 Sandbox 与顶层路由接线。系统规则、倾向、历史、�
 
 ### 运行与边界
 
-指定基线 `1b84c098` 的 Godot 4.7.2 Windows D3D12 / Forward+ 实际 SceneTree 完成两条路线、真实磁盘存读、重开及去重检查，退出 0。运行期间新增的 CA-12 输入代码在本沙箱 GUI 的兼容复跑失败，最新 main 尚未获得完整路线 PASS；交 CA-12 Owner 核对。详见 [INT-04 日志](./INT-04_2026-10-09_log.md) 和 `evidence/INT-04_2026-10-09/`。
+指定基线 `1b84c098` 的 Godot 4.7.2 Windows D3D12 / Forward+ 实际 SceneTree 完成两条路线、真实磁盘存读、重开及去重检查，退出 0。运行期间曾发现 CA-12 旧输入代码在隐藏 GUI 中的准心跳位回归；现已由 #103 修复并合并。2026-10-09 12:16 基于最新 main 5ee1eff（合并 #103）的完整隔离工程已重新导入并实测：Godot 4.7.2 Windows D3D12 两条顶层流程全部通过，实际进程 ExitCode 0，62 checks、10 routes、DD_completed=1，stdout/stderr 存在本 evidence 目录 latest_main_pass_*。旧失败记录仅留作追溯，不代表当前阻断。详见 [INT-04 日志](./INT-04_2026-10-09_log.md) 和 `evidence/INT-04_2026-10-09/`。
 
 保护用户存档的复现方式：在忽略目录复制当前工程与这四个集成测试文件，关闭副本的编辑器 MCP 插件，仅将副本 SaveManager 的 `SAVE_PATH` 改为 `res://.godot/int04_save.res`；函数体保持原值。导入完成后运行：
 

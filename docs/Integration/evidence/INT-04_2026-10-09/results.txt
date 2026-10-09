@@ -32,3 +32,5 @@ No baseline INT-04 assertion, GDScript, or resource-loading error remains.
 Android devices/builds, final creative assets/balance, listening tests and full
 manual physical-input acceptance: UNVERIFIED.
 No commit, push, PR, merge, or deferred task was performed.
+
+2026-10-09 12:16 newest main 5ee1eff after #103 merged; fresh isolated import ExitCode=0; real Windows D3D12 E2E ExitCode=0; non-empty and empty routes PASS; checks=62; top_level_routes=10; DD_completed=1; E2E stderr 0 bytes; prior CA-12 regression resolved. Raw: latest_main_pass_stdout.txt and latest_main_pass_stderr.txt. Formal art/data and Android device remain UNVERIFIED.
