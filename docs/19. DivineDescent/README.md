@@ -167,3 +167,11 @@ DD-17 等 20. Ending。
 - `is_converging() -> bool` 读取首次收束状态；`convergence_started(candidate)` 只通知一次，参数为锁句独立副本。状态在通知前写入，随后视图退出或比例下降均不撤销收束。
 - 进入收束调用已有 `stop()`，停止扩散 Timer 与收束检查，保留锁句、工作权重和在场视图原生命周期；显式停止扩散也停止检查。组合方应在 `start()` 前订阅通知，晚订阅可读取 `is_converging()` 和 `get_locked_candidate()`。
 - 只新增一个关键单元用例：90% 阈值，同一用例验证未锁句、空可见集合、89% 保持扩散与 90% 首次进入。TEST_ONLY 内存内容仅用于验收，正式 Resource 与身份 CSV 保持原值。全屏强调、输入强化、Ending 转场及 Sandbox 主流程接线仍归后续任务。
+
+## DD-14 锁句输入强化（2026-10-09）
+
+- `DivineDescentSpread.emphasize_locked_sentence(scale_multiplier, return_seconds) -> bool` 为组合方的玩家输入入口。锁句前、暂停、区域失效及非法参数返回 false；锁句后（包括 DD-13 停止 Timer 的收束期间）重播当前可见锁定原句的缩放，并请求既有 `AudioManager.play_event(&"divine_descent_lock")`。空可见集合仍可播放声音，视图数量为零。
+- `locked_sentence_emphasized(original_sentence_id, affected_view_count)` 通知已处理的表现输入；原句 ID 来自首次锁句，数量为本次实际强化的视图数。该事件仅供表现观察，组合方不要接入普通命中、倾向或复读结算。
+- 复用 BarrageView 的现有 Label / Theme；`pulse_presentation(scale_multiplier, return_seconds)` 立即达到注入倍率，再用原生 Tween 回到原缩放。连续调用取消旧 Tween 并重播同一峰值，避免倍率累乘。暂停单独使用 `TWEEN_PAUSE_STOP`，节点释放自动取消 Tween。原句、显示文本、逻辑尺寸、移动和截止时间保持原值，旧的其他句、隐藏视图和 UI 保持原样。
+- 正式强化倍率 / 时长与专用美术尚未提供，接口没有默认策划值或新生产配置。验收只在临时 TEST_ONLY 场景注入 `1.35 / 0.6 秒` 并使用测试句子；已有音频事件及批准的 12 身份保持原值。没有新增永久测试、Scene、Manager 或 Autoload。
+- Lane A 接线：在终局输入所有者中将一次玩家操作调用上述方法，保持普通攻击 / 结算入口关闭；演出结束或切页时停止路由。`stop()` 的既有职责仍为停止扩散生成和比例检查。输入不会生成弹幕或增加工作权重，不触发 PK、Tier、倾向、矛盾或存档写入。完整 Sandbox 路由与 DD-17 全屏强调 / Ending 转场仍待后续任务，本卡只验证独立真实组件。
