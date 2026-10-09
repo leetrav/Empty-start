@@ -91,3 +91,19 @@ LD-10 等 18. Rest。
 ## LD-11：四项直播数据 k 缩写
 
 [LD-11 任务卡](tasks/LD-11_live-data-k-number-abbreviation.md) 负责对观看、点赞、评论和粉丝统一执行显示层数字格式化：`999 → 999`、`1000 → 1.0k`、`1100 → 1.1k`、`12500 → 12.5k`。复用当前四个 `RichTextLabel` 和 `set_values()`，玩家区 ICON 在前、敌方区 ICON 在后。格式化前的整数仍是数据源与显式展示入口的真实值；切换图标/显示方向时沿用这些真实整数。
+
+## LD-12～LD-16：双侧直播评论流（普通评论第一版）
+
+已确认：直播间评论采用**配置表随机文字**，每条评论有用户名、正文与粉丝/路人类型；玩家、对手两侧各自独立刷新并向上滚动。粉丝显示所在主播阵营粉丝牌，路人仅显示昵称和正文；本版只显示普通评论。刷新频率、滚动速度、同屏可见数采用可调参数，实机以清晰、不眼花缭乱为验收标准。
+
+此显示流独立于现有 LD-05 的 `comment_count`：LD-05 继续按真实弹幕/复读生成事实累计四项指标中的评论数；模拟直播聊天只展示观众评论文本与滚动，不引入额外 PK、粉丝资源或统计增量。
+
+| 任务卡 | 单功能 | 前置 |
+| --- | --- | --- |
+| [LD-12](tasks/LD-12_comment-feed-config-table.md) | 直播评论词库导表与配置读取 | 现有导表工具 |
+| [LD-13](tasks/LD-13_independent-random-chat-timing.md) | 玩家与对手直播评论分别随机刷新 | LD-12 |
+| [LD-14](tasks/LD-14_scrolling-chat-display.md) | 直播评论从下向上滚动显示 | LD-13 |
+| [LD-15](tasks/LD-15_camp-fan-badges.md) | 评论按粉丝身份显示双方专属粉丝牌 | LD-14 |
+| [LD-16](tasks/LD-16_chat-feed-lifecycle-wiring.md) | 战斗时启动与重置双方直播评论流 | LD-12～LD-15 |
+
+当前仓库中 `PresentationAssetConfig.player_fan_badge` 与 `LevelProfile.fan_badge_texture` 已可提供两侧资源；正式风格由现有美术资源替换入口承接。新词库为独立 `19_直播评论词库`，与 `09_直播数据` 数值规则表分别管理。
