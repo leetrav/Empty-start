@@ -160,3 +160,10 @@ DD-17 等 20. Ending。
 - `BarrageArea.get_visible_barrage_records()` 只提供当前区域内可见且与区域矩形相交的 BarrageView 记录，排除纯 UI、空记录、隐藏与待删除节点。部分仍在区域内的弹幕计一次；普通原句与复读都计入分母。
 - `DivineDescentCandidateFilter.calculate_visible_ratio(visible_records, locked_sentence_id)` 按 `original_sentence_id` 比较，每个实例计一次；复读模板和显示文本变化保持同一原句归属，同文异 ID 仍分别判断。查询保持源记录、锁句快照和工作权重原值。
 - 仅新增两个关键单元用例：原句归并复读变体、排除 UI。TEST_ONLY 文本与尺寸只存在于测试内存；正式 .tres 保持原值。达到 90% 的收束判定留 DD-13，本卡没有修改 Sandbox / Rest / Ending。
+
+## DD-13 达到 90% 后进入收束（2026-10-09）
+
+- `DivineDescentSpread` 锁句后每帧复用 DD-12 的 `get_locked_visible_ratio()`；占比 `>= 0.9` 时进入收束。未锁句和空可见集合均返回 0，无法触发；统计继续由 BarrageArea / DD-12 持有，没有新增计数或缓存。
+- `is_converging() -> bool` 读取首次收束状态；`convergence_started(candidate)` 只通知一次，参数为锁句独立副本。状态在通知前写入，随后视图退出或比例下降均不撤销收束。
+- 进入收束调用已有 `stop()`，停止扩散 Timer 与收束检查，保留锁句、工作权重和在场视图原生命周期；显式停止扩散也停止检查。组合方应在 `start()` 前订阅通知，晚订阅可读取 `is_converging()` 和 `get_locked_candidate()`。
+- 只新增一个关键单元用例：90% 阈值，同一用例验证未锁句、空可见集合、89% 保持扩散与 90% 首次进入。TEST_ONLY 内存内容仅用于验收，正式 Resource 与身份 CSV 保持原值。全屏强调、输入强化、Ending 转场及 Sandbox 主流程接线仍归后续任务。
