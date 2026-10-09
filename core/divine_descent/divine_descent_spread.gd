@@ -4,6 +4,7 @@ extends Node
 signal repeat_generated(original_sentence_id: StringName, view: BarrageView, current_weight: int)
 signal sentence_locked(candidate: Dictionary)
 signal convergence_started(candidate: Dictionary)
+signal locked_sentence_emphasized(original_sentence_id: StringName, affected_view_count: int)
 
 var _candidates: Array[Dictionary] = []
 var _barrage_area: BarrageArea
@@ -78,6 +79,34 @@ func get_locked_candidate() -> Dictionary:
 # 锁句状态从已保存结果读取，未归零或空候选时仍为 false。
 func is_sentence_locked() -> bool:
 	return not _locked_candidate.is_empty()
+
+
+# 组合方将终局玩家操作路由到这里；只重播锁句表现，倍率和时长由已批准配置或测试夹具注入。
+func emphasize_locked_sentence(scale_multiplier: float, return_seconds: float) -> bool:
+	if not is_inside_tree() or get_tree().paused or not is_sentence_locked():
+		return false
+	if not is_finite(scale_multiplier) or scale_multiplier <= 1.0 or not is_finite(return_seconds) or return_seconds <= 0.0:
+		return false
+	if not is_instance_valid(_barrage_area) or not _barrage_area.is_inside_tree():
+		return false
+	var sentence_id := StringName(str(_locked_candidate["original_sentence_id"]))
+	var affected: int = 0
+	var visible_records: Array[BarrageRuntimeRecord] = _barrage_area.get_visible_barrage_records()
+	for child in _barrage_area.get_children():
+		if not child is BarrageView:
+			continue
+		var view := child as BarrageView
+		if view.runtime_record == null or not visible_records.has(view.runtime_record):
+			continue
+		if StringName(view.runtime_record.original_sentence_id) == sentence_id:
+			if view.pulse_presentation(scale_multiplier, return_seconds):
+				affected += 1
+	# 音频只请求既有锁句事件；空场仍可强化声音，不补造视图、权重或存档事实。
+	var audio_manager: Node = get_node_or_null("/root/AudioManager")
+	if audio_manager != null:
+		audio_manager.play_event(&"divine_descent_lock")
+	locked_sentence_emphasized.emit(sentence_id, affected)
+	return true
 
 
 # 即时读取当前区域；空可见集合返回零，占比不缓存。
