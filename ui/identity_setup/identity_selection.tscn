@@ -56,10 +56,22 @@ theme_type_variation = &"MutedLabel"
 autowrap_mode = 3
 text = "请选择一张身份卡片"
 
-[node name="NextButton" type="Button" parent="Margins/Content"]
+[node name="Navigation" type="HBoxContainer" parent="Margins/Content"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="BackButton" type="Button" parent="Margins/Content/Navigation"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+text = "返回主播取名"
+
+[node name="NextButton" type="Button" parent="Margins/Content/Navigation"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
+size_flags_horizontal = 3
 theme_type_variation = &"PrimaryButton"
 disabled = true
 text = "下一步"

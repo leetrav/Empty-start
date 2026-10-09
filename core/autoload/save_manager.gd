@@ -27,6 +27,25 @@ func set_identity_data(streamer_name: String, identity_id: StringName, fan_group
 	return OK
 
 
+# 开局最终一步统一提交名称、身份锁和开局倾向；失败保存由页面重试，禁止再次初始化。
+func confirm_opening_identity(streamer_input: String, option: IdentityOption, fan_input: String, confirmation: IdentityConfirmationState) -> Error:
+	if data == null:
+		return ERR_UNCONFIGURED
+	if option == null or not IdentityOptions.CARDS.has(option) or confirmation == null:
+		return ERR_INVALID_PARAMETER
+	if not data.identity_id.is_empty() or confirmation.has_confirmed_identity():
+		return ERR_ALREADY_IN_USE
+	var identity_ids: Array[StringName] = []
+	for available_option in IdentityOptions.CARDS:
+		identity_ids.append(available_option.identity_id)
+	if not confirmation.confirm_identity(option.identity_id, identity_ids):
+		return ERR_INVALID_DATA
+	set_identity_data(IdentityNameRules.confirm_streamer_name(streamer_input), option.identity_id,
+		IdentityNameRules.confirm_fan_group_name(fan_input))
+	data.tendency_state.initialize_from_identity_option(option)
+	return OK
+
+
 func save_game() -> Error:
 	# 将当前 SaveData 写入固定用户存档路径，并返回 ResourceSaver 的结果。
 	if data == null:

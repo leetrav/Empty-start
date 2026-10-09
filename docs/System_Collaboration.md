@@ -660,6 +660,8 @@ README 里“等某系统”表示当前这张联调卡等待对应接口；同�
 
 ### 提交身份
 
+ID-09 开局页面持有三步临时输入，最终调用 `SaveManager.confirm_opening_identity()`，由存档所有者一次写入三项资料与开局倾向；页面随后调用 `save_game()`。保存成功只通知 `opening_saved(run_data: SaveData)`，当前无 RS-12 开局房间接收端，流程明确停在已保存的第三页。RS-12 接收该事实后由 SceneRouter 打开真实房间；房间内主动开播才启动第一关。开局没有战后 RestSession，房间接入与完整开局验收仍为 BLOCKED_RS12。
+
 同一周目里，用当前周目数据 + `level_id` 作为本场结果的唯一身份。
 
 需要“一场只提交一次”的系统都使用这份身份判断，例如：
