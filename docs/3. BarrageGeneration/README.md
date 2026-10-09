@@ -1,5 +1,33 @@
 # 3. BarrageGeneration 弹幕生成系统任务拆分
 
+## 2026-10-09 现行实现核对与任务状态
+
+**现行生成规则：** 前景普通话语与挂特性的特殊话语共用 T0～T5 各档少量容量，当前确认 T1=10/T2=13/T3=16，T4=19/T5=22 为当前递增规划，T0 待填。批次计时、随机抽词、实例容量和命中移除已存在，只需连接新 Tier 名额。复读另占独立容量，由左向右缓慢移动并固定底层；遮挡特性话语慢速且最高层。普通前景采用可读的多运动方式。Paradox 阶段按 CB-13 读取一真五假六句。
+
+| 卡片 | 按实际代码核对后的唯一功能 | 状态 |
+| --- | --- | --- |
+| [BG-16](tasks/BG-16_high-density-cap.md) | 按 Tier 读取前景容量 | 待开发 |
+| [BG-17](tasks/BG-17_pc-android-performance.md) | 分层性能与可读性验收 | 待组合实测 |
+| [BG-24](tasks/BG-24_overlap-pass-through.md) | 实例出生与运动允许重叠 | 待开发 |
+| [BG-27](tasks/BG-27_animated-size.md) | 连续缩放 | 已有脉冲入口 |
+| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景富文本 | 待开发 |
+| [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
+| [BG-30](tasks/BG-30_opinion-tide.md) | 复读潮的疏密起伏 | 待开发 |
+| [BG-31](tasks/BG-31_spatial-clusters.md) | 同句复读成批涌现 | 待开发 |
+| [BG-32](tasks/BG-32_linked-faux-depth.md) | 伪纵深观感 | 候选暂缓 |
+| [BG-33](tasks/BG-33_impact-motion-wave.md) | 命中短时运动冲击 | 待开发 |
+| [BG-34](tasks/BG-34_frequency-based-refill.md) | 既有定时批次与 Tier 名额接线 | 已有基础 |
+| [BG-35](tasks/BG-35_special-instance-cap.md) | 特殊实例占用独立容量 | 待开发 |
+| [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档超额自然回落 | 待开发 |
+| [BG-37](tasks/BG-37_foreground-text-outline.md) | 非复读文字描边 | 待开发 |
+| [BG-38](tasks/BG-38_effective-area-clear.md) | 现有命中结束目标接线回归 | 已有链路 |
+| [BG-39](tasks/BG-39_tier-motion-proportions.md) | 四种运动类型随 Tier 权重变化 | 待开发 |
+| [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 前景话语最大速度 | 待开发 |
+| [BG-41](tasks/BG-41_random-trait-selection.md) | 按已解锁池随机分配特性 | 技能池待定 |
+
+本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+
 ## DD-16 终局表现接口（2026-10-09）
 
 `BarrageArea.enter_terminal_presentation(trait_ids=[], trait_colors={})` 由 DivineDescentCombatMode / Spread 配置同一终局区域，只影响后续普通 / 复读实例。普通特性选择在终局忽略，运行记录 TraitSet 保持为空；冻结继承 ID 独立交给 BarrageView 的 `apply_terminal_trait_presentation()`，仅消费显式 Color 配色，缺配色沿用 Theme。`get_presentation_trait_ids()` 返回独立副本，原句和截止时间保持原值。区域终局状态持续至实例销毁，新普通周目创建新区域。

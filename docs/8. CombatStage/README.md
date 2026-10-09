@@ -1,5 +1,27 @@
 # 8. CombatStage 战斗阶段系统任务拆分
 
+## 2026-10-09 现行实现核对与任务状态
+
+**阶段结构：** `CombatStage` 现有 T0～T5 数据档，满 PK 后切入独立 `ContradictionBreak`，玩家看到 T6/Paradox（CS-25），普通 T5 继续战斗到满值。现有 `tier_state_changed` 在最终结算后发出，但本发 Sandbox 仍需完成命中处理；CS-14/CS-18 应在当发事实及队列协调后执行升档清屏、清旧请求。T0 回拉倍率改为 0（CS-19），T1 开场对白完成后再进入回拉与生成。T2～T5 每升档抽取一项对手反击技能仍待技能池设计。
+
+| 卡片 | 按实际代码核对后的唯一功能 | 状态 |
+| --- | --- | --- |
+| [CS-14](tasks/CS-14_tier-up-clear-all.md) | 本发结算完成后升档清屏 | 待开发 |
+| [CS-15](tasks/CS-15_tier-up-breakthrough.md) | 升档短暂突破演出 | 待开发 |
+| [CS-16](tasks/CS-16_tier-down-shake.md) | 降档只震动 | 待开发 |
+| [CS-17](tasks/CS-17_silence-and-burst.md) | 沉默爆发候选节点 | 待策划 |
+| [CS-18](tasks/CS-18_tier-up-clear-old-repeat-requests.md) | 现有队列清理升档接线 | 待接线 |
+| [CS-19](tasks/CS-19_tier0-zero-pullback.md) | T0 回拉倍率数值 0 | 数值调整 |
+| [CS-20](tasks/CS-20_tier0-matching-status.md) | T0 搜索对手文案 | 已有 HUD |
+| [CS-21](tasks/CS-21_tier1-opponent-portrait.md) | T0/T1 对手立绘出现 | 已有资源 |
+| [CS-22](tasks/CS-22_tier1-bubble-dialogue.md) | T1 开场气泡对白 | 待开发 |
+| [CS-23](tasks/CS-23_tier1-resume-on-dialogue-end.md) | T1 对话后恢复战斗 | 待接线 |
+| [CS-24](tasks/CS-24_tier-foreground-slot-catalog.md) | Tier 唯一前景容量字段 | 待开发 |
+| [CS-25](tasks/CS-25_paradox-tier6-stage-label.md) | T6/Paradox HUD 阶段标记 | 待接线 |
+
+本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+
 ## 系统目标
 
 INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar 和 AudioManager 的绑定，开局调用 `begin_combat()`。每次最终 PK 更新先同步档位，再由攻击提交回调读取档位创建复读计划；生成倍率只影响新弹幕。Tier 状态已连接可见反馈，Viewer / Like 的档位数值规则仍待配置。PK 满值由 Sandbox 停止普通战斗并启动真实 ContradictionBreak 入口。

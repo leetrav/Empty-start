@@ -1,5 +1,23 @@
 # 10. Repeat 复读系统任务拆分
 
+## 2026-10-09 现行实现核对与任务状态
+
+**现行复读底座：** `RepeatPlan` 已保存原句与结算 Tier；每次普通命中复读数量 T0～T5 分别为 3/6/8/12/15/20；`RepeatDelayQueue` 已有 0.5～3 秒延迟、独立待生成容量，`BarrageArea` 已有独立同屏容量。正式表现采用纯文本、灰色、无描边、低速左向右、逐渐透明和背景层级。已有实际生成统计保持原规则；升档旧队列清理由 CS-18 调用现成 `clear_normal_queue()`。
+
+| 卡片 | 按实际代码核对后的唯一功能 | 状态 |
+| --- | --- | --- |
+| [RP-14](tasks/RP-14_plain-text-repeat.md) | 现有纯文本兼容回归 | 已有基础 |
+| [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 现有复读独立容量实测 | 已有容量 |
+| [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读左向右慢速移动 | 待开发 |
+| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 待开发 |
+| [RP-18](tasks/RP-18_repeat-infection-spread.md) | 已有原句计划的复读潮表现 | 已有基础 |
+| [RP-19](tasks/RP-19_repeat-grey-text.md) | 灰色复读文字 | 待开发 |
+| [RP-20](tasks/RP-20_repeat-zero-outline.md) | 零描边复读 | 待开发 |
+| [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读最低层 | 待开发 |
+
+本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+
 ## 系统目标
 
 复读系统负责把“某句话被打中以后，大家跟着重复”变成可执行的数据和生成请求。
