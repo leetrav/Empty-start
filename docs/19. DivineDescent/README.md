@@ -130,19 +130,40 @@ DD-17 等 20. Ending。
 - `generate_next_repeat()` 是一次生成公开命令，返回成功实例或 null；容量 / 位置不足返回 null，权重保持原值，Timer 下一轮重试，不建立积压队列。`is_generation_blocked()` 读取上次尝试是否失败，成功后清除；区域离树时停止。生成实例、位置、同屏容量和寿命继续由 3 持有。
 - 不订阅攻击、复读命中或移除事件，命中不会触发扩散。NORMAL 复读继续走既有零收益命中规则；正式终局组合沿用 DD-04 的普通战斗关闭接口，本卡没有复制命中规则。
 - `get_current_candidates()` 返回动态工作池深拷贝，保留原句 ID、正文、倾向、命中 / 复读统计、首次提交顺序、基础权重和当前权重，供 DD-09 读取；修改副本不会回写。`stop()` 停止计时并保留工作池，`is_running()` 读取真实 Timer 状态；同一个组件启动后不重新初始化权重。
-- 当前仅在独立最小场景验证本组件，没有接入 RS-10 / Sandbox / Rest / Ending，没有执行 DD-09 锁句或后续演出。
+- 当前在独立最小场景验证本组件及 DD-09～11 锁句生成，没有接入 RS-10 / Sandbox / Rest / Ending，后续收束演出仍待对应任务。
 
 ## DD-09 新话归零后锁最高动态权重句
 
 - `DivineDescentSpread.bind_new_word_decay(combat_mode)` 订阅 DD-05 的真实 `new_word_rate_changed`，可以在扩散启动前或启动后调用；已完成衰减的晚绑定也会立即检查当前池。重复绑定同一模式不重复订阅，另一个模式不会替换本次来源。
-- 锁句同时要求 DD-05 的衰减完成且 `get_new_word_rate_multiplier() == 0.0`；未开始、尚有正新话率（包括极小正数）时保持未锁。归零后停止 DD-08 自动扩散，从其当前 `weight` 池选最高句，保存首次独立快照并只发一次 `sentence_locked(candidate)`。
+- 锁句同时要求 DD-05 的衰减完成且 `get_new_word_rate_multiplier() == 0.0`；未开始、尚有正新话率（包括极小正数）时保持未锁。归零后从 DD-08 当前 `weight` 池选最高句，保存首次独立快照并只发一次 `sentence_locked(candidate)`；DD-11 已让原 Timer 继续生成锁定句。
 - `get_locked_candidate()` 返回深拷贝，`is_sentence_locked()` 读取锁态；通知副本与读取副本均不能回写。`bind_new_word_decay()` / `start()` 可能同步锁句，组合方应先订阅通知；晚订阅可通过 getter 读取首次结果。锁句与动态池仍归扩散组件，Session 和已提交历史继续保持冻结。
 - `DivineDescentCandidateFilter.select_highest_weight_candidate(candidates)` 是纯最高权重选择接口；DD-10 已补齐并列裁决，依次比较当前 `weight` 降序、`first_committed_hit_order` 升序、`original_sentence_id` 升序。空候选返回 `{}`，不补造锁句。
-- 本卡没有实现 DD-11 的锁定句持续生成或待生成内容清理，没有提前结束已有弹幕生命周期。真实场景组合仍由后续任务接入，当前使用最小真实 DD-05 / DD-08 场景验收。
+- DD-11 已补齐锁定句持续生成与其他候选取消，已有弹幕生命周期继续由 BarrageView 管理。真实主流程组合仍由后续任务接入，当前使用最小真实 DD-05 / DD-08 场景验收。
 
 ## DD-10 锁句并列裁决
 
 - DD-09 归零锁句继续调用同一 `select_highest_weight_candidate(candidates)`；最高动态权重并列时，首次已提交普通命中更早者优先，顺序仍相同时按稳定原句 ID 的大小写敏感字符串升序选择。ID 使用字符串字典序，沿用 DD-02 提供的原句标识。
 - 选择只扫描当前工作池，保留输入数组顺序及所有字段，返回选中候选的深拷贝；输入重排不会改变不同原句的裁决结果。首次命中顺序直接读取冻结候选的 `first_committed_hit_order`，扩散生成次数只影响 `weight`。
 - 新增且仅新增两个关键单元用例：同权重优先较早已提交命中；同权重、同命中顺序优先较小稳定 ID。TEST_ONLY 数据仅存在于 `tests/unit/divine_descent/test_dd_10_lock_tie_break.gd` 内存中。
-- 本卡只补齐裁决，沿用 DD-09 的首次锁句快照与通知；DD-11 持续生成仍待后续任务。
+- 本卡只补齐裁决，沿用 DD-09 的首次锁句快照与通知；持续生成已由 DD-11 补齐。
+
+## DD-11 锁定句持续生成
+
+- 真实 DD-05 归零锁句后，`DivineDescentSpread` 在发出 `sentence_locked` 前将可变生成池收窄为锁定句的独立副本；`get_current_candidates()` 此后只返回这一句。首次锁句快照保持锁定时权重，成功生成继续只更新工作池权重，Session 冻结历史保持原值。
+- 当前扩散没有待生成队列，每次 Timer 到期才从工作池创建单条 RepeatPlan；取消其他候选后，锁前容量 / 位置失败的尝试也不会复活其他句。原 Timer 保留周期，继续通过同一 `generate_next_repeat()` / `spawn_repeat_barrage()` 生成；失败仍等待下一轮重试。晚绑定及启动时同步锁句同样持续生成，显式 `stop()` 仍可停止。
+- 锁句不会清屏或调整既有 BarrageView 的记录、移动参数、截止时间；场上其他旧句按原生命周期自然退出。没有新增队列、管理器、场景或正式配置。
+- 使用 Godot `4.7.2.stable.steam.ed1daf0bf` 的临时 TEST_ONLY 真实场景验证锁定句自动生成、容量失败后恢复、旧句自然到期及同步启动锁句；临时文件验收后移出仓库，未新增永久单元测试。可见占比由 DD-12 提供，完整主流程接线与后续演出仍归后续任务。
+
+## DD-12 锁定句可见占比（2026-10-09）
+
+- `DivineDescentSpread.get_locked_visible_ratio() -> float` 即时读取所属 BarrageArea，返回锁定原句可见实例数 / 全部可见弹幕实例数，范围为 0～1；未锁句、区域失效或可见集合为空时返回 0。没有缓存、计时推进或收束触发。
+- `BarrageArea.get_visible_barrage_records()` 只提供当前区域内可见且与区域矩形相交的 BarrageView 记录，排除纯 UI、空记录、隐藏与待删除节点。部分仍在区域内的弹幕计一次；普通原句与复读都计入分母。
+- `DivineDescentCandidateFilter.calculate_visible_ratio(visible_records, locked_sentence_id)` 按 `original_sentence_id` 比较，每个实例计一次；复读模板和显示文本变化保持同一原句归属，同文异 ID 仍分别判断。查询保持源记录、锁句快照和工作权重原值。
+- 仅新增两个关键单元用例：原句归并复读变体、排除 UI。TEST_ONLY 文本与尺寸只存在于测试内存；正式 .tres 保持原值。达到 90% 的收束判定留 DD-13，本卡没有修改 Sandbox / Rest / Ending。
+
+## DD-13 达到 90% 后进入收束（2026-10-09）
+
+- `DivineDescentSpread` 锁句后每帧复用 DD-12 的 `get_locked_visible_ratio()`；占比 `>= 0.9` 时进入收束。未锁句和空可见集合均返回 0，无法触发；统计继续由 BarrageArea / DD-12 持有，没有新增计数或缓存。
+- `is_converging() -> bool` 读取首次收束状态；`convergence_started(candidate)` 只通知一次，参数为锁句独立副本。状态在通知前写入，随后视图退出或比例下降均不撤销收束。
+- 进入收束调用已有 `stop()`，停止扩散 Timer 与收束检查，保留锁句、工作权重和在场视图原生命周期；显式停止扩散也停止检查。组合方应在 `start()` 前订阅通知，晚订阅可读取 `is_converging()` 和 `get_locked_candidate()`。
+- 只新增一个关键单元用例：90% 阈值，同一用例验证未锁句、空可见集合、89% 保持扩散与 90% 首次进入。TEST_ONLY 内存内容仅用于验收，正式 Resource 与身份 CSV 保持原值。全屏强调、输入强化、Ending 转场及 Sandbox 主流程接线仍归后续任务。

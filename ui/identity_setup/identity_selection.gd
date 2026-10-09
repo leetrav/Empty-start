@@ -1,0 +1,126 @@
+extends Control
+
+signal selection_changed(option: IdentityOption)
+signal next_requested(option: IdentityOption)
+
+var _selected_option: IdentityOption
+var _locked: bool = false
+var _buttons: Array[Button] = []
+
+@onready var _grid: GridContainer = %IdentityCards
+@onready var _scroll: ScrollContainer = %CardScroll
+@onready var _status: Label = %SelectionStatus
+@onready var _next: Button = %NextButton
+@onready var _margins: MarginContainer = $Margins
+
+# 只维护临时选择；正式确认、存档和步骤切换由 ID-09 调用方负责。
+func _ready() -> void:
+	for option in IdentityOptions.CARDS:
+		var button := Button.new()
+		button.name = String(option.identity_id)
+		button.custom_minimum_size = Vector2(280, 260)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.toggle_mode = true
+		_grid.add_child(button)
+		var selected_style := button.get_theme_stylebox("pressed").duplicate() as StyleBoxFlat
+		selected_style.set_border_width_all(3)
+		button.add_theme_stylebox_override("pressed", selected_style)
+		button.add_theme_stylebox_override("hover_pressed", selected_style)
+		var margin := MarginContainer.new()
+		margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for side in ["left", "right", "top", "bottom"]:
+			margin.add_theme_constant_override("margin_" + side, 20)
+		button.add_child(margin)
+		var content := VBoxContainer.new()
+		content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		content.add_theme_constant_override("separation", 12)
+		margin.add_child(content)
+		var title := _make_label(option.display_name, 30)
+		content.add_child(title)
+		content.add_child(_make_label(option.description, 21))
+		button.pressed.connect(_select_card.bind(option))
+		button.focus_entered.connect(_reveal_card.bind(button))
+		_buttons.append(button)
+	_next.pressed.connect(_request_next)
+	_wire_focus()
+	_refresh_selection()
+	resized.connect(_fit_layout)
+	get_window().size_changed.connect(_fit_layout.call_deferred)
+	_fit_layout()
+
+# 抵消项目默认画布缩放，按实际窗口像素排版；小窗口保留正文并滚动。
+func _fit_layout() -> void:
+	var canvas_scale := get_viewport().get_final_transform().get_scale()
+	_margins.scale = Vector2.ONE / canvas_scale
+	_margins.size = size * canvas_scale
+
+# 换行标签交由卡片接收鼠标，完整正文随容器高度展开。
+func _make_label(value: String, font_size: int) -> Label:
+	var label := Label.new()
+	label.text = value
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("font_size", font_size)
+	return label
+
+# 四列方向键按行列移动，底行向下到下一步。
+func _wire_focus() -> void:
+	for index in range(_buttons.size()):
+		var button := _buttons[index]
+		button.focus_neighbor_left = button.get_path_to(_buttons[index - 1] if index % 4 > 0 else button)
+		button.focus_neighbor_right = button.get_path_to(_buttons[index + 1] if index % 4 < 3 else button)
+		button.focus_neighbor_top = button.get_path_to(_buttons[index - 4] if index >= 4 else button)
+		button.focus_neighbor_bottom = button.get_path_to(_buttons[index + 4] if index < 8 else _next)
+	_next.focus_neighbor_top = _next.get_path_to(_buttons[8])
+
+# 使用网格局部坐标滚动，避免缩放后的全局矩形重复影响滚动距离。
+func _reveal_card(button: Button) -> void:
+	_scroll.scroll_horizontal = int(clampf(_scroll.scroll_horizontal, button.position.x + button.size.x - _scroll.size.x + 12, button.position.x))
+	_scroll.scroll_vertical = int(clampf(_scroll.scroll_vertical, button.position.y + button.size.y - _scroll.size.y + 12, button.position.y))
+
+# 玩家点选可反复切换，已确认周目由调用方传入锁定状态。
+func _select_card(option: IdentityOption) -> void:
+	if _locked:
+		return
+	_selected_option = option
+	_refresh_selection()
+	selection_changed.emit(option)
+
+# 可在入树前设置；回退恢复临时 ID，旧身份只允许作为已确认记录恢复。
+func restore_selection(identity_id: StringName, locked: bool = false) -> void:
+	_locked = locked
+	_selected_option = IdentityOptions.find_option(identity_id)
+	if not locked and not IdentityOptions.CARDS.has(_selected_option):
+		_selected_option = null
+	if is_node_ready():
+		_refresh_selection()
+
+# 向流程持有者提供当前具体身份及底层倾向。
+func get_selected_option() -> IdentityOption:
+	return _selected_option
+
+# 再次显示步骤时由调用方恢复键盘焦点。
+func focus_selection() -> void:
+	if _locked:
+		if not _next.disabled:
+			_next.grab_focus()
+		return
+	var index := IdentityOptions.CARDS.find(_selected_option)
+	_buttons[maxi(index, 0)].grab_focus()
+
+# 同一套样式显示选择，未知已存身份锁住页面以保留存档事实。
+func _refresh_selection() -> void:
+	for index in range(_buttons.size()):
+		_buttons[index].set_pressed_no_signal(_selected_option == IdentityOptions.CARDS[index])
+		_buttons[index].disabled = _locked
+	_next.disabled = _selected_option == null
+	if _selected_option != null:
+		_status.text = "已选择：%s" % _selected_option.display_name if IdentityOptions.CARDS.has(_selected_option) else "沿用本周目已确认身份"
+	else:
+		_status.text = "已保存身份无法识别，请保留存档并检查配置。" if _locked else "请选择一张身份卡片"
+
+# 仅通知下一步；本视图不会修改 SaveData 或跳转 Game / Rest。
+func _request_next() -> void:
+	if _selected_option != null:
+		next_requested.emit(_selected_option)

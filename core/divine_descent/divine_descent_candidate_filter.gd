@@ -125,3 +125,16 @@ static func _read_repeat_count(counts_by_line_id: Dictionary, sentence_id: Strin
 	if counts_by_line_id.has(string_name_id):
 		return maxi(int(counts_by_line_id.get(string_name_id, 0)), 0)
 	return 0
+
+
+# 每条可见实例计一次；显示文本变体沿用原句 ID，空集合或未锁句返回零。
+static func calculate_visible_ratio(
+		visible_records: Array[BarrageRuntimeRecord], locked_sentence_id: String
+) -> float:
+	if visible_records.is_empty() or locked_sentence_id.is_empty():
+		return 0.0
+	var locked_count: int = 0
+	for barrage_record: BarrageRuntimeRecord in visible_records:
+		if barrage_record.original_sentence_id == locked_sentence_id:
+			locked_count += 1
+	return float(locked_count) / float(visible_records.size())

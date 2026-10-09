@@ -73,3 +73,15 @@ LD-06 已接入 12 / 13 的正式击破成功与神谕确认事件；上涨幅�
 LD-07 已接入 Sandbox 的正式 PK 胜利入口；正式粉丝增量待策划配置。
 LD-08 等 7. OpponentPKBar 重开流程。
 LD-10 等 18. Rest。
+
+## LD-10：休息页面只读本场直播结果
+
+`LiveSessionData.commit_pk_win_fans()` 在首次实际入账时同步保存 `settled_fan_gains_by_level`，键为关卡 ID 字符串，值为该关实际增量；开播 / 重开保留记录，随原 SaveData 存档。去重继续使用 LD-07 的 `settled_fan_level_ids`，重复提交不覆盖增量。
+
+`LiveSessionData.get_result_snapshot(level_id)` 只读当前观看 / 点赞 / 评论 / 总粉丝与该关已提交 `fan_delta`，返回独立 Dictionary。旧存档或尚未提交的关卡缺少增量记录时返回 `null`，保留未知事实；正式零增量返回 0。
+
+`RestResultView.show_result(session, run_data, ...)` 沿用现有上下文，在首次展示时调用 `RestSession.capture_live_result(run_data)`，冻结此时的真实直播结果；后续使用 `get_live_result_snapshot()` 返回副本。同一 RestSession 的重复打开、页面重新实例化及切关后的回看均沿用首次快照，不重新提交粉丝。缺少周目 / LiveSessionData 时显示“本场直播数据暂不可用”；缺增量时显示“本场粉丝变化记录暂缺”。默认生产粉丝增量仍为 0。
+
+冻结时点为首次 Rest 展示，后续 LD-06 尚在运行的短时上涨继续按原规则推进 LiveSessionData，结果页保持当时快照。本卡没有修改短时上涨时长或收益规则。RestSession 的直播快照只属于运行时会话，跨进程历史直播结果浏览未在本卡实现。
+
+两个正式 Sandbox 分支已有 `show_result()` 所需 SaveData，无需新增 Lane A 接线；`show_unbroken_result(session)` 的无上下文兼容入口仍明确显示资料不可用。新增一个 `LiveResult` 原生 Label，沿用现有 Theme，未制作正式展示美术、配置数值或新增永久测试。真实 Godot 4.7.2 D3D12 smoke 与既有单测结果见 `直播数据表现系统_LD-10_2026-10-09_log.md`。

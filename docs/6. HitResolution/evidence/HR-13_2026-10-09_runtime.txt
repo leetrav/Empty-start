@@ -1,0 +1,168 @@
+HR-13 | Lane E | 2026-10-09 | base 7eaac65
+Godot 4.7.2.stable.steam.ed1daf0bf; temporary TEST_ONLY scene; permanent tests added: 0.
+
+=== smoke EXIT=1 ===
+--- stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS normal final shot freezes PK at full
+PASS normal final shot retains history and tendency
+PASS real system 12 window started
+FAIL false contradiction consumed one shot; system 12 pending
+FAIL false contradiction reaches system 10 actual generated stats
+PASS false contradiction excluded from normal repeat stats
+FAIL target spawn
+FAIL true contradiction outcome locked by system 12
+FAIL true contradiction reaches system 10 actual generated stats
+PASS true and false attacks bypass ordinary submission and PK signals
+FAIL contradictions preserve ordinary history and tendency
+PASS late ordinary arrival exercised real attack timer
+PASS disabled ordinary resolution exposes no downstream rewards
+PASS late ordinary arrival adds no history or PK signals
+FAIL target spawn
+PASS two false shots lock NOT_BROKEN in system 12
+PASS unbroken Rest path preserves PK and excludes contradiction history
+PASS false-only attempt has zero tendency
+
+--- stderr ---
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+FAIL: false contradiction consumed one shot; system 12 pending
+FAIL: false contradiction reaches system 10 actual generated stats
+FAIL: target spawn
+FAIL: true contradiction outcome locked by system 12
+FAIL: true contradiction reaches system 10 actual generated stats
+FAIL: contradictions preserve ordinary history and tendency
+FAIL: target spawn
+WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
+
+
+=== smoke2 EXIT=0 ===
+--- stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS normal final shot freezes PK at full
+PASS normal final shot retains history and tendency
+PASS real system 12 window started
+PASS false contradiction consumed one shot; system 12 pending
+PASS false contradiction reaches system 10 actual generated stats
+PASS false contradiction excluded from normal repeat stats
+PASS true contradiction outcome locked by system 12
+PASS true contradiction reaches system 10 actual generated stats
+PASS true and false attacks bypass ordinary submission and PK signals
+PASS contradictions preserve ordinary history and tendency
+PASS late ordinary arrival exercised real attack timer
+PASS disabled ordinary resolution exposes no downstream rewards
+PASS late ordinary arrival adds no history or PK signals
+PASS two false shots lock NOT_BROKEN in system 12
+PASS unbroken Rest path preserves PK and excludes contradiction history
+PASS false-only attempt has zero tendency
+HR13_RUNTIME_SMOKE_PASS
+
+--- stderr ---
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+
+=== smoke3 EXIT=0 ===
+--- stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS normal final shot freezes PK at full
+PASS normal final shot retains history and tendency
+PASS real system 12 window started
+PASS false contradiction consumed one shot; system 12 pending
+PASS false contradiction reaches system 10 actual generated stats
+PASS false contradiction excluded from normal repeat stats
+PASS true contradiction outcome locked by system 12
+PASS true contradiction reaches system 10 actual generated stats
+PASS true and false attacks bypass ordinary submission and PK signals
+PASS contradictions preserve ordinary history and tendency
+PASS late ordinary arrival exercised real attack timer
+PASS disabled ordinary resolution exposes no downstream rewards
+PASS late ordinary arrival adds no history or PK signals
+PASS official single false shot locks NOT_BROKEN in system 12
+PASS unbroken Rest path preserves PK and excludes contradiction history
+PASS false-only attempt has zero tendency
+HR13_RUNTIME_SMOKE_PASS
+
+--- stderr ---
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
+
+
+=== check1 EXIT=0 ===
+--- stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+
+--- stderr ---
+
+
+=== check2 EXIT=0 ===
+--- stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+
+--- stderr ---
+
+
+=== check3 EXIT=0 ===
+--- stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS HR-05 aggregate target deltas before one PK update
+
+--- stderr ---
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+
+=== check4 EXIT=0 ===
+--- stdout ---
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PASS HR-08 pullback to zero cancels the pending hit
+
+--- stderr ---
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+
+=== import EXIT=0 | stderr tail only ===
+WARNING: Locale 'text' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+WARNING: Locale 'clue' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+WARNING: Locale 'enabled' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+WARNING: Locale 'notes' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+WARNING: Locale 'base' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+WARNING: Locale 'spawn' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+WARNING: Locale 'move' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+WARNING: Locale 'normal' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+WARNING: Locale 'transition' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+WARNING: Locale 'icon' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+WARNING: Locale 'player' does not contain any translation. This locale will be ignored.
+   at: import (editor/import/resource_importer_csv_translation.cpp:239)
+ERROR: Cannot save file 'D:/steam/steamapps/common/Godot Engine/editor_data/editor_settings-4.7.tres'.
+   at: save (scene/resources/resource_format_text.cpp:1768)
+ERROR: Error saving editor settings to D:/steam/steamapps/common/Godot Engine/editor_data/editor_settings-4.7.tres
+   at: save (editor/settings/editor_settings.cpp:1525)
+WARNING: 495 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 10 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

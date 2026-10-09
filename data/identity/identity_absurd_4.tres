@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="IdentityOption" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/identity/identity_option.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+identity_id = &"identity_absurd_4"
+display_name = "必须想象"
+description = "石头又滚回去了，请保持微笑"
+tendency_id = "absurd"

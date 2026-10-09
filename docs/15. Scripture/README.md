@@ -30,6 +30,14 @@
 - `rollback_uncommitted(level_id)` 只撤回匹配当前关的暂存，正式 `entries` 保留。Sandbox 的真实 `restart_current_attempt()` 已调用该入口，读档后的本场暂存也适用。
 - Sandbox 周目初始化已经绑定 Scripture 接收方；场景节点结构保持现状。
 
+## SC-06：休息读取（2026-10-09 验收）
+
+- 现有 RS-03 / RS-05 / LD-10 链路已满足本卡，沿用实现，未新增接口、Scene 或永久自动化测试。
+- 本场新增由 `RestSession.read_committed_rewards(run_data, level_catalog, loser_card_catalog)` 按首次冻结的 `level_id` 调用所属周目的 `ScriptureData.get_entry_for_level()`，返回 `new_scripture_entry` 独立快照。成功确认且有正式记录时返回该关经文；无记录、只有暂存或 `pk_win_unbroken` 时返回 null，历史经文仍保留。
+- 历史入口复用 `RestResultView.show_result()` 的周目与完整关卡目录 → `ScriptureHistoryView.show_history()` → `EndingScriptureDisplayData.build_from_scripture()` → `get_chapter_slots()`。历史页包含此前和本场已确认经文，保留缺章及原章号 / 固定节号；`pending_entry` 排除。历史集合与本场新增读取分别表达，历史页没有另外保存经文。
+- 结果 UI 沿用新增成果空态与历史查看按钮；本卡没有增加本场经文专用展示区域。全空圣典仍显示目录缺章，未知资料沿用 RS-05 不可用提示；查看、返回、重开页面均只读取成果，LD-10 直播结果展示保持原路径。
+- 已用 Godot `4.7.2.stable.steam.ed1daf0bf` 单文件解析、真实 SceneTree headless 与 Windows D3D12 图形场景验证确认事件供给、无新增、暂存缺章、全空、固定节号及原生 Enter 查看 / 返回 / 继续。证据与边界见 `圣典系统_SC-06_2026-10-09_log.md`。
+
 ## SC-07：神降临读取
 
 - 19 的 `DivineDescentScriptureInput.build_snapshot(run_data)` 直接消费 `SaveData.scripture_data.get_ordered_entries()`，返回已提交经文的独立 `Array[Dictionary]` 快照；暂存经文排除，空圣典或缺少输入返回空数组。
