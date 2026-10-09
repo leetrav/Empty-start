@@ -41,13 +41,49 @@ assets/
 
 ## 接入说明
 - 主角固定立绘、临时直播背景、主角房间、粉丝牌 01 已映射至 `data/shared/presentation_asset_config.tres` 的现有字段。主角房间 `ui/rest/rest_room_environment.tscn` 同步更新路径。
-- 对手待机及 Tier / 击败帧目前只有已导入图片。关卡模板仍是示例主播时，先保留资产清单，待策划确认出场关系后配置 `LevelProfile` 与状态贴图。
+- 对手待机及多档变化/击败帧目前已经入库。文件名中的 `tier_01~03` 表示**美术提供的三个变化版本**，不是实际战斗 T1/T2/T3，实际阶段映射以如下表格为准。当前关卡模板仍是示例主播，不据此猜测外星人、Kiwi、狐狸的关卡出场顺序。
 - 狐狸玫瑰 4 张位于 `assets/characters/opponents/fox/effects/`，是角色独立装饰部件。
 - 外星人原 `defeat1` 与 `defeat2` 暂分别归为 `defeat_transition`、`defeat`；以美术最终标注为准。
-- PK 条的原 -1~-4 和 1~6 数字原样保留为 `neg_01~04`、`pos_01~06`，方便按素材表建立各阶段对应关系；现阶段不推断它们与 Tier 的对应值。
+- PK 条来源编号 1~6 保留为 `pos_01~06`，来源编号 -1~-4 保留为 `neg_01~04`；0 号素材当前**未收到**，具体见下表。
 - 两张玩家粉丝牌均保存。当前共享配置先引用 01，是否在正式弹幕和直播中显示，由后续策划 / UI 整合确认。
 - 现有历史 `.png.import` 的 UID 随搬移保留并更新 source / dest 路径；其余 PNG 交由 Godot 下次导入时生成元数据。
 - 日期日志中的旧资源路径属于历史交付记录，新任务使用本表和仓库最新 Resource 路径。
+
+## 已确认：对手立绘与战斗阶段（2026-10-10）
+
+以下三名对手（alien、kiwi、fox）共用同一套**运行阶段到美术版本**的映射：
+
+| 运行阶段 | 立绘版本 | 对应现有文件 |
+| --- | --- | --- |
+| T0 | 对手未接入，不展示立绘 | 无 |
+| T1 | 待机 | `{alien/kiwi/fox}_idle.png` |
+| T2 | 美术变化版本 1 | `{alien/kiwi/fox}_tier_01.png` |
+| T3 | 同 T2，继续使用变化版本 1 | `{alien/kiwi/fox}_tier_01.png` |
+| T4 | 美术变化版本 2 | `{alien/kiwi/fox}_tier_02.png` |
+| T5 | 美术变化版本 3 | `{alien/kiwi/fox}_tier_03.png` |
+| 矛盾击破（Paradox） | 击败状态 | `{alien/kiwi/fox}_defeat.png` |
+
+外星人另有 `alien_defeat_transition.png`（击败过渡帧），可接在击败正式立绘之前；具体使用时序以正式演出确认结果为准。
+
+## 已确认：PK 条素材来源编号与阶段（2026-10-10）
+
+| 来源编号 | 运行意义 | 当前文件 |
+| --- | --- | --- |
+| 0 | T0 | **0 号图尚未交付**，由现有 UI / 底板暂时代替，待美术确认 |
+| 1 | T1 | `assets/ui/combat/pk_bar/pk_bar_pos_01.png` |
+| 2 | T2 | `assets/ui/combat/pk_bar/pk_bar_pos_02.png` |
+| 3 | T3 | `assets/ui/combat/pk_bar/pk_bar_pos_03.png` |
+| 4 | T4 | `assets/ui/combat/pk_bar/pk_bar_pos_04.png` |
+| 5 | T5 | `assets/ui/combat/pk_bar/pk_bar_pos_05.png` |
+| 6 | Paradox / T6 | `assets/ui/combat/pk_bar/pk_bar_pos_06.png` |
+| -1 至 -4 | 玩家 PK 被对手压低时的额外负向视觉档位 | `pk_bar_neg_01.png` ～ `pk_bar_neg_04.png` |
+
+- 负向 PK 区间暂以 **0%、10%、20%、30%、40%** 作为阶段阈值候选；**四张负向素材与五个分界值的逐张配对尚未确认**，实现时由策划配置相应范围，不按文件名猜测具体比例。
+- `pk_indicator_01.png` / `pk_indicator_02.png` 为两张独立 PK 指示器资源；具体使用侧及切换规则待 UI 集成按美术核定。
+
+## 可由程序美术交付
+
+- 双主播对话气泡：可用 Godot `Control._draw()` 绘制底板、描边和可左右调整的尖尾，使用 `RichTextLabel` 加载对白、Tween 上浮与淡出。复用 SD-02 现有显示组件及 SD-03 的队列时序；正式字体后接 Theme，可保留气泡贴图替换入口。
 
 ## 尚需美术交付（已提出）
 - 房间背景：外星人、狐狸、蛙蛙。
