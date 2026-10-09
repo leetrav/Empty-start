@@ -6,6 +6,38 @@ var runtime_record: BarrageRuntimeRecord
 var _move_speed_pixels_per_second: float = 0.0
 var _active_area: Control
 var _pause_started_msec: int = -1
+var _presentation_tween: Tween
+var _presentation_base_scale: Vector2
+var _presentation_trait_ids: Array[StringName] = []
+
+## 特性只影响 Label 配色；按冻结 ID 顺序取首个显式颜色，缺正式样式时沿用 Theme。
+func apply_terminal_trait_presentation(trait_ids: Array[StringName], trait_colors: Dictionary) -> void:
+	_presentation_trait_ids = trait_ids.duplicate()
+	for trait_id: StringName in _presentation_trait_ids:
+		if trait_colors.get(trait_id) is Color:
+			add_theme_color_override("font_color", trait_colors[trait_id])
+			break
+
+## 表现 ID 返回副本，与攻击和结算读取的运行记录 TraitSet 分开。
+func get_presentation_trait_ids() -> Array[StringName]:
+	return _presentation_trait_ids.duplicate()
+
+
+## 仅缩放现有样式；连续输入重播同一峰值，保持原句、移动、判定尺寸和截止时间。
+func pulse_presentation(scale_multiplier: float, return_seconds: float) -> bool:
+	if not is_inside_tree() or is_queued_for_deletion() or get_tree().paused:
+		return false
+	if not is_finite(scale_multiplier) or scale_multiplier <= 1.0 or not is_finite(return_seconds) or return_seconds <= 0.0:
+		return false
+	if _presentation_tween != null and _presentation_tween.is_valid():
+		_presentation_tween.kill()
+	else:
+		_presentation_base_scale = scale
+	scale = _presentation_base_scale * scale_multiplier
+	# BarrageView 为补偿寿命使用 ALWAYS；表现 Tween 单独遵守全局暂停，离树释放随节点自动取消。
+	_presentation_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	_presentation_tween.tween_property(self, "scale", _presentation_base_scale, return_seconds)
+	return true
 
 ## 绑定本次弹幕的运行记录、移动速度和实际所属区域。
 func setup(barrage_record: BarrageRuntimeRecord, move_speed_pixels_per_second: float, active_area: Control) -> void:

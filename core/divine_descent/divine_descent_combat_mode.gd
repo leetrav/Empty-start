@@ -46,6 +46,7 @@ func enter_terminal_mode(
 	if contradiction_break != null:
 		contradiction_break.set_contradiction_break_enabled(false)
 	if _barrage_area != null:
+		_barrage_area.enter_terminal_presentation()
 		# 只切换后续表现参数；不清理现有视图，后续终局流程仍可复用生成入口。
 		_barrage_area.set_generation_multipliers(
 			_tier5_config.generation_count_multiplier,

@@ -347,8 +347,12 @@ PK 满后，普通战斗结束，进入【矛盾击破系统】。
 ```text
 PK 胜利但未击破
 → 本场没有神谕、败者卡和吞并奖励
-→ 直接进入休息时刻
+→ 本发有假矛盾复读：等待已排定复读全部生成、可见实例自然结束
+→ 本发无复读（空命中 / 超时）：即时进入休息时刻
+→ 单次打开休息结果
 ```
+
+CA-10 Sandbox（2026-10-09）：未击破结果在正式释放或窗口超时的原有时点不可逆锁定，攻击及真假矛盾生成立即停止。等待只消费本发已经排定的有限矛盾复读，结束条件复用 10 的 `get_pending_contradiction_count()` 和 3 的 `has_visible_contradiction_repeats()`；容量释放后继续生成，正寿命实例自然离场。Sandbox 对同场结果通知去重，重开清理旧队列并重置通知状态；普通 PK、倾向和奖励所有权保持现有分工。
 
 也就是说，“PK 打赢”和“真正揭穿对手”是两层结果。
 
@@ -659,6 +663,8 @@ README 里“等某系统”表示当前这张联调卡等待对应接口；同�
 13 在正式确认的同场校验后把这些静态值交给 14 现有登记 API；卡片资料交给 16 的既有 Catalog / 发卡入口。14 / 16 继续拥有运行成果、来源与去重。FO-11 已在 Sandbox 同一回调中按首次击败登记结果提交允许继承的普通池和白名单特性；`tests/fixtures/fo11/` 只提供显式注入的 TEST_ONLY 验收数据，生产默认目录没有替换，正式资源仍待配置。
 
 ### 提交身份
+
+ID-09 开局页面持有三步临时输入，最终调用 `SaveManager.confirm_opening_identity()`，由存档所有者一次写入三项资料与开局倾向；页面随后调用 `save_game()`。保存成功通知 `opening_saved(run_data: SaveData)`，RS-12 在页面接收该事实后调用 `SceneRouter.goto_opening_room()`。独立 `RestOpeningRoom` 仅读取同一 SaveData 的名称和主导倾向，组合共享 RestRoomEnvironment；此阶段未实例化 Sandbox。玩家点击“开始直播”后才调用现有 `goto_game()`，由 Sandbox 标准初始化第一关。房间跳转失败只重试路由，开播重复请求只接受一次；开局没有战后 RestSession、奖励或完成记录。Godot 4.7.2 三步开局到首战 GUI smoke 已通过，Android 实机仍待验证。
 
 同一周目里，用当前周目数据 + `level_id` 作为本场结果的唯一身份。
 

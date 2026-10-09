@@ -1,5 +1,11 @@
 # 3. BarrageGeneration 弹幕生成系统任务拆分
 
+## DD-16 终局表现接口（2026-10-09）
+
+`BarrageArea.enter_terminal_presentation(trait_ids=[], trait_colors={})` 由 DivineDescentCombatMode / Spread 配置同一终局区域，只影响后续普通 / 复读实例。普通特性选择在终局忽略，运行记录 TraitSet 保持为空；冻结继承 ID 独立交给 BarrageView 的 `apply_terminal_trait_presentation()`，仅消费显式 Color 配色，缺配色沿用 Theme。`get_presentation_trait_ids()` 返回独立副本，原句和截止时间保持原值。区域终局状态持续至实例销毁，新普通周目创建新区域。
+
+`allows_trap_generation()` 在终局返回 false，外部 `try_register_normal_capacity_occupant()` 同时拒绝准入；内部普通话语容量及复读容量照常工作。当前没有雷生成器或雷类型，未来外部陷阱源必须在创建前检查该公开边界。Sandbox 调用归 Lane A；完整接线及正式特性配色尚待集成，详见 19 README DD-16。
+
 ## 系统目标
 
 弹幕生成系统负责把“这一关允许出现的内容”真正变成场上的弹幕，并管理这些弹幕从出现到消失的生命周期。

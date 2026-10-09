@@ -16,7 +16,7 @@
 
 - `IdentityOption` 是可编辑的 Godot `Resource`，包含稳定身份 ID、显示名称、完整原文 `description`、`Texture2D` 图标引用和倾向 ID。
 - 倾向 ID 使用 `orthodox`、`heretical`、`absurd`，供后续系统读取；身份系统不负责累计倾向。
-- 身份确认后，身份设置页将所选 `IdentityOption.tendency_id` 交给 `SaveData.tendency_state.initialize_from_identity_option()`，只提供开局比较参照。
+- 最终确认时，`SaveManager.confirm_opening_identity()` 将所选身份交给 `SaveData.tendency_state.initialize_from_identity_option()`，只提供开局比较参照。
 - `data/identity/identity_*_1.tres` 至 `*_4.tres` 提供 12 份正式身份资源，标题、描述与 ID 来自 `data/source_tables/01_身份配置.csv`，图标保持为空。`IdentityOptions.CARDS` 保存任务卡规定的混排顺序；三份旧占位资源仅保留兼容用途，`IdentityOptions.find_option()` 可按正式或旧 ID 查询。
 - `IdentityNameRules.confirm_streamer_name()` 与 `confirm_fan_group_name()` 共用 `confirm_name()` 规则；空字符串和纯空白回退到各自默认值，其他输入原样保留。
 - 默认主播名目前为临时值“新主播”，正式文案确定后修改 `IdentityNameRules.DEFAULT_STREAMER_NAME`。
@@ -25,13 +25,13 @@
 - `IdentityConfirmationState` 锁定后的身份 ID 可通过 `SaveManager.set_identity_data()` 写入 SaveData，供本周目场景重建后继续读取。
 - `SaveData.streamer_name`、`SaveData.fan_group_name` 与 `SaveData.identity_id` 保存本周目确认结果；新周目初始化为空值，确认后由 `SaveManager.set_identity_data()` 一次写入。
 - 新增字段有明确空值默认，并兼容旧版 SaveData，因此 `SaveData.CURRENT_VERSION` 保持 `1`。
-- `ui/identity_setup/identity_setup.tscn` 提供主播名、粉丝团名、身份选项和当前选中态；确认时调用共享名称规则与身份锁定、写入并保存 SaveData，再由 SceneRouter 进入 Game。
-- 旧身份设置页在图标为空时仍用倾向字标占位；ID-08 新身份步骤只展示正式标题、描述，图标字段保留且不用于分组表现。
+- `ui/identity_setup/identity_setup.tscn/.gd` 提供三个独立全屏步骤。最终经 SaveManager 写入资料和开局倾向、保存成功后发出 `opening_saved(run_data: SaveData)`；RS-12 接收该事实后通过 SceneRouter 打开独立开局房间；路由失败仅重试进入房间。
+- 第二步只展示 ID-08 正式标题与描述，图标字段保留且不用于分组表现。
 
 ## 当前仓库状态
 
-- 身份流程已接通：主菜单 Start 新建 SaveData 并进入身份设置；确认后保存主播名、粉丝团名和身份 ID，并初始化三项倾向系统的开局参照，再由 SceneRouter 进入当前 Game 入口。
-- 身份选项数据类型、12 份正式资源、三份旧兼容资源、独立身份步骤、名称确认、身份锁定、周目存档字段和旧身份设置页面已建立。
+- 主菜单 Start 新建 SaveData 后进入主播取名 → 十二卡身份选择 → 粉丝团取名。最终提交、保存后经 RS-12 进入房间，玩家点击“开始直播”才进入 Game。
+- 身份选项数据类型、12 份正式资源、三份旧兼容资源、独立身份步骤、名称确认、身份锁定、周目存档字段和三步身份设置页面已建立。
 - `SaveManager` 已存在，并持有 `SaveData`。
 - `SaveData` 包含版本、游玩时间、当前场景、checkpoint、主播名、粉丝团名和身份 ID 字段。
 - 当前 `SceneRouter.goto_game()` 仍指向 Sandbox 技术测试场景，后续替换真实游戏入口时更新。
@@ -49,26 +49,26 @@
 | ID-06 | 接通主菜单 → 身份设置 → 游戏 | 无新增自动化测试 |
 | ID-07 | 自定义粉丝团名并写入本周目数据 | 复用 ID-02 名称确认测试 |
 | ID-08 | 十二身份卡片选择与开局三倾向映射（独立步骤已实现） | 1 个 CSV/映射回归用例、原锁定测试、真实图形 UI smoke 通过 |
-| ID-09 | 三步开局流程：主播取名 → 12 身份卡 → 粉丝团取名，最终进入房间（待实施） | 复用原有存档测试与真实流程 smoke；RS-12 负责开局房间入口 |
+| ID-09 | 三步开局流程：主播取名 → 12 身份卡 → 粉丝团取名，最终提交已实现，房间接入 BLOCKED_RS12 | 复用原有存档测试与真实流程 smoke；RS-12 负责开局房间入口 |
 
 ## ID-08 可复用身份步骤（2026-10-09）
 
 - `ui/identity_setup/identity_selection.tscn` 是身份第二步的独立全屏视图。基准 1920×1080 同时展示 4×3 卡片；1280×720 提供纵向滚动，960×540 提供双向滚动，状态与下一步控件常驻。卡片标题 30px、描述 21px，统一沿用现有 Theme，不显示底层倾向或图标。
 - `selection_changed(option: IdentityOption)` 通知临时选择变化；`next_requested(option: IdentityOption)` 交出具体身份和倾向。视图自身没有 SaveManager、TendencyState 或 SceneRouter 调用。
 - `restore_selection(identity_id: StringName, locked: bool = false)` 支持入树前设置与回退恢复。`get_selected_option()` 读取选择；重新显示后调用 `focus_selection()` 恢复键盘焦点。初始空选，下一步禁用。
-- ID-09 持有临时 ID，连接 `next_requested` 后切入第三步粉丝团取名，最终复用既有身份锁定、存档与倾向初始化入口提交。真实三步流程及 RS-12 房间跳转仍待对应任务完成。本卡运行 smoke 使用明确标注的临时 TEST_ONLY 第三步接收端。
+- ID-09 持有临时 ID，连接 `next_requested` 后切入第三步粉丝团取名，最终复用既有身份锁定、存档与倾向初始化入口提交。真实三步流程及 RS-12 房间跳转已接通。本卡运行 smoke 使用明确标注的临时 TEST_ONLY 第三步接收端。
 - 已确认的旧 `identity_orthodox`、`identity_heretical`、`identity_absurd` 以 `locked=true` 恢复时沿用旧 Resource、原 ID 和原开局倾向，卡片禁用、显示沿用记录；不映射到任何新角色。未知已存 ID 同样锁住并禁用下一步。调用方继续负责最终确认锁定。
 - 本次资源直接由既有 CSV 建立，正文未改动；Google Sheet 在线内容未能访问。现有导表工具仍负责 Sheet → CSV，后续修改身份正文时同步相应 `.tres` 并运行 `tests/unit/identity_mapping_test.gd` 核对完整正文与映射。没有增加导表基础设施。
-- 原 `identity_setup.tscn/.gd` 保留原有同页输入与保存入口，等待 ID-09 接线替换；ID-08 没有更改主菜单、Sandbox 或存档流程。
+- ID-09 已将 `identity_setup.tscn/.gd` 接为三步流程。身份卡底部提供默认隐藏的 `BackButton`，由流程显示，与下一步并排；原独立第二步默认行为保持。
 
-## 已确认的三步开局需求（ID-09 待实施）
+## 三步开局流程（ID-09 / RS-12 已接通）
 
 - 开局身份从当前 3 个占位选项升级为 12 张正式身份卡片，每张卡片展示标题与完整描述；正式内容来自 data/source_tables/01_身份配置.csv，与 Google Sheets 的「01_身份配置」对应。
 - 12 张卡片在 1920×1080 的身份页面固定采用 **4 列 × 3 行**混排，顺序详见 ID-08 任务卡。玩家侧仅看到角色扮演信息与统一交互反馈，内部三个倾向仅用于游戏逻辑。
 - 12 个独立 identity_id 分别保存具体选中身份，对应的运行时 tendency_id 仍只有 orthodox、heretical、absurd（每类 4 个）。表格中的 heresy 在 Godot 运行时映射为 heretical。
 - 现有 SaveData、IdentityConfirmationState、TendencyState 的存档与开局比较职责沿用；**主播名、身份选择、粉丝团名分成三个依次进入的独立全屏步骤**，各自仅显示当前步骤的输入/选择。
 - ID-09 确定顺序为「你叫什么？」→ 12 身份卡 →「粉丝团叫什么？」；最终确认后统一保存三项身份数据及开局倾向，然后经 RS-12 入口进入**休息时刻的主角房间**。第一场普通战斗须从房间主动开始。
-- 本节记录已确定设计；ID-08 独立身份卡视图已实现，ID-09 / RS-12 仍待开发与完整流程验收，当前主菜单入口仍沿用旧页面。
+- ID-09 三页、正式提交、保存、房间展示及主动进入第一普通关已完成真实 Godot 4.7.2 GUI 验收；详见 Rest 的 RS-12 日期日志。
 
 ## 测试预算
 
@@ -93,3 +93,12 @@ ID-07 完成后，本周目的主播名、粉丝团名和身份使用稳定数�
 - 【结局系统】读取主播名和开局身份。
 
 等 17、20 系统开发时再做具体接线，不在身份系统阶段提前实现它们。
+
+## ID-09 接口与状态边界（2026-10-09）
+
+- 第一步只输入主播名；继续时应用 `confirm_streamer_name()`。第二步复用 12 张正式卡，第三步只输入粉丝团名，可回看主播名与身份；任一中间步骤均不写 SaveData。回退保留名称和所选具体 ID。
+- `SaveManager.confirm_opening_identity(streamer_input, option, fan_input, confirmation) -> Error` 只接受正式 `IdentityOptions.CARDS` 中的 Resource；复用 IdentityConfirmationState 首次锁定及 `set_identity_data()`，在同一次最终调用中初始化开局倾向。已存身份或已锁定对象返回 `ERR_ALREADY_IN_USE`，不会覆盖或重新初始化。
+- 第三页提交后锁住输入和回退。保存失败保留同一周目、已确认值与倾向，按钮重试仅执行 `save_game()`；保存成功后发出一次 `opening_saved(run_data: SaveData)`。同步重入和连续确认不会再次写身份或初始化倾向。
+- 已存正式 / 旧三身份重新打开时显示第三页且锁定，不转换旧 ID；未知身份锁住且禁止继续。直接启动场景而没有 SaveData 时，第一步显示主菜单提示并禁止前进。
+- RS-12 已在页面连接 `opening_saved`，经 `SceneRouter.goto_opening_room()` 打开独立真实房间。成功期间保持忙碌锁；路由失败后按钮变为“重试进入房间”，仅重试路由，保留已存同一周目和身份。房间读取真实倾向与名称；显式开播才调用原 `goto_game()`，没有战后 RestSession。
+- RS-12 已补齐 ID-09 的房间与首战验收：三倾向各一张正式卡完成三步保存 → 房间 → 主动开播；房间 / 开播失败重试和连点保护通过。Android 实机触控未验证。

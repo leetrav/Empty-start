@@ -35,8 +35,8 @@ CA12 PASS BT11 reflect forwarded with single penalty
 CA12 PASS spawn real TEST_ONLY target occlusion
 CA12 PASS touch captures real target occlusion
 CA12 PASS BT11 occlusion forwarded with single penalty
-CA12 PASS spawn real TEST_ONLY target 
-CA12 PASS touch captures real target 
+CA12 PASS spawn real TEST_ONLY target
+CA12 PASS touch captures real target
 CA12 PASS normal touch reward and history preserved
 CA12 PASS spawn real TEST_ONLY target terminal
 CA12 PASS touch captures real target terminal

@@ -1,0 +1,13 @@
+﻿Engine: 4.7.2.stable.steam.ed1daf0bf
+Base: 9315853 / codex/lane-c-dd15-1009
+Session check-only: exit 0, stderr empty
+DD-15 unit check-only: exit 0, stderr empty
+DD-15 unit: exit 0, PASS 1/1
+Graphics smoke: exit 0, AMD Radeon OpenGL 3.3, Dummy audio
+Empty history: direct_empty=true, Ending received=true, empty page visible=true
+Nonempty history / absent scripture: direct_empty=false, spread_started=true, generated=true
+Neutral-only raw history: candidates_empty=true, direct_empty=false
+SaveData serialized bytes unchanged=true; Session unchanged=true; Ending frozen tendency same=true
+Final runtime stderr: existing root certificate store read error only (KT-36)
+MCP doctor unavailable. Sandbox/SceneRouter integration TO INTEGRATE by Lane A.
+No commits, push or PR. No formal configs or approved identity text changes.

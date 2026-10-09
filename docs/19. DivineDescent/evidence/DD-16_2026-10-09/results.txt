@@ -1,0 +1,18 @@
+DD-16 / 2026-10-09 / TEST_ONLY component acceptance
+Baseline: 165a4b8; branch: codex/lane-c-dd16-1009
+Engine: 4.7.2.stable.steam.ed1daf0bf
+Executable: D:/steam/steamapps/common/Godot Engine/godot.windows.opt.tools.64.exe
+Cached import: exit 0; known root certificate / editor settings permissions / exit resource cleanup errors.
+Four production scripts check-only after import: exit 0 each, stderr empty.
+Real Windows GUI scene: exit 0; PASS DD-16 TEST_ONLY real Windows GUI scene smoke.
+Renderer: OpenGL 3.3 Compatibility / AMD Radeon(TM) Graphics; audio: Dummy.
+GUI stderr: existing root certificate store read error only.
+Existing DD-13 regression: exit 0; PASS 1/1; same certificate store error.
+Same seed 1609, same two historical sentences, inherited vs empty: identical four choices, weights and first locked candidate.
+Six actual supported traits remain presentation-only; NORMAL hit type, selectable=true, split=false; explicit colors applied.
+Terminal trap admission denied; no actual landmine type or generator exists in this baseline.
+Old visible deadline unchanged across lock; old views naturally expired.
+Whole TEST_ONLY SaveData serialization bytes unchanged; snapshot getter isolation checked.
+Screenshot inspected: TEST_ONLY_graphics.png.
+No permanent test added. Temporary scene/script moved to %TEMP%/dd16-1009/TEST_ONLY_fixture/.
+Sandbox full integration, formal trait styling, Android: TO INTEGRATE / UNVERIFIED.

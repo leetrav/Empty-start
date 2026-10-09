@@ -51,6 +51,9 @@ func _ready() -> void:
 
 # 抵消项目默认画布缩放，按实际窗口像素排版；小窗口保留正文并滚动。
 func _fit_layout() -> void:
+	# 窗口缩放的延迟回调可能在切页后抵达，离树的视图无需继续排版。
+	if not is_inside_tree():
+		return
 	var canvas_scale := get_viewport().get_final_transform().get_scale()
 	_margins.scale = Vector2.ONE / canvas_scale
 	_margins.size = size * canvas_scale

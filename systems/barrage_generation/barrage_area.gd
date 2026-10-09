@@ -28,6 +28,22 @@ var _neutral_weight_multiplier: float = 1.0
 var _normal_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
 var _repeat_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
 var _next_spawn_row: int = 0
+var _terminal_presentation_only: bool = false
+var _terminal_trait_ids: Array[StringName] = []
+var _terminal_trait_colors: Dictionary = {}
+
+## 终局只保存表现 ID 和显式配色；不装配普通特性，不改动已在场实例。
+func enter_terminal_presentation(trait_ids: Array[StringName] = [], trait_colors: Dictionary = {}) -> void:
+	_terminal_presentation_only = true
+	var supported := BarrageTraitSet.new()
+	for trait_id: StringName in trait_ids:
+		supported.add_trait(trait_id)
+	_terminal_trait_ids = supported.get_trait_ids()
+	_terminal_trait_colors = trait_colors.duplicate()
+
+## 雷尚无独立生成器；陷阱调用方必须在创建前查询同一终局边界。
+func allows_trap_generation() -> bool:
+	return not _terminal_presentation_only
 
 ## 连接批次 Timer；区域直接使用父场景保存的 Rect，本组件负责生成和裁剪。
 func _ready() -> void:
@@ -102,7 +118,8 @@ func set_neutral_weight_multiplier(multiplier: float) -> void:
 
 ## 申请普通弹幕共享容量；未设置当前关卡或容量满时返回 false。
 func try_register_normal_capacity_occupant(occupant: Object) -> bool:
-	if _current_level_profile == null:
+	# 普通话语由内部入口登记；终局拒绝外部陷阱共享占位请求。
+	if _terminal_presentation_only or _current_level_profile == null:
 		return false
 	return _try_register_normal_capacity_occupant(occupant, _current_level_profile.normal_barrage_screen_cap)
 
@@ -269,7 +286,8 @@ func spawn_normal_barrage(
 
 	var barrage_record: BarrageRuntimeRecord = BarrageRuntimeRecord.new()
 	# 当前入口创建普通原句，陷阱和复读继续使用各自生成入口及类型信息。
-	if not barrage_record.trait_set.add_available_traits(selected_trait_ids, get_available_trait_ids(level_profile)):
+	# 终局忽略普通特性选择，只保留独立表现配置，避免反弹、分裂或不可选触发规则。
+	if not _terminal_presentation_only and not barrage_record.trait_set.add_available_traits(selected_trait_ids, get_available_trait_ids(level_profile)):
 		return null
 	barrage_record.text = speech.text
 	barrage_record.original_sentence_text = speech.text
@@ -285,6 +303,8 @@ func spawn_normal_barrage(
 		return null
 	var effective_move_speed: float = level_profile.base_move_speed_pixels_per_second * _movement_speed_multiplier
 	view.setup(barrage_record, effective_move_speed, self)
+	if _terminal_presentation_only:
+		view.apply_terminal_trait_presentation(_terminal_trait_ids, _terminal_trait_colors)
 	if not _try_register_normal_capacity_occupant(view, level_profile.normal_barrage_screen_cap):
 		view.free()
 		return null
@@ -357,6 +377,8 @@ func spawn_repeat_barrage(plan: RepeatPlan) -> BarrageView:
 		return null
 	var effective_move_speed: float = _current_level_profile.base_move_speed_pixels_per_second * _movement_speed_multiplier
 	view.setup(repeat_record, effective_move_speed, self)
+	if _terminal_presentation_only:
+		view.apply_terminal_trait_presentation(_terminal_trait_ids, _terminal_trait_colors)
 	if not _try_register_repeat_capacity_occupant(view):
 		view.free()
 		return null
