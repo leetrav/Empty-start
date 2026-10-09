@@ -1,23 +1,26 @@
-# CS-19 T0 的对手 PK 回拉倍率为零
+# CS-19 T0 对手 PK 回拉倍率调为 0
 
-**状态：待实施**
+**状态：只需配置与实测**
 
 ## 开始前阅读
-- `AGENTS.md`、`project.godot` 与本系统最新完成日志
-- `docs/8. CombatStage/README.md` 及本卡相关现有工程
-- 关联功能：CS-09、OpponentPKBar
+- `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
+- 当前相关 GDScript、场景和数值配置
+- 关联：现有 CombatStage.bind_opponent_pk_bar / OpponentPKBar
+
+## 当前已实现的基础
+data/combat_stage/tier_catalog.tres 当前 Tier0 的 multiplier=1.1；OpponentPKBar 已接受 0 倍率。
 
 ## 本卡唯一功能
-T0 的对手 PK 回拉倍率为零。
+T0 对手 PK 回拉倍率调为 0。
 
 ## 触发条件
-开局进入 T0 等待匹配对手时。
+普通战斗处于 T0 搜索对手阶段时
 
 ## 应发生的行为
-给对手回拉系统提供 Tier 0 的 0 倍回拉参数，进入 T1 后采用 T1 正式回拉配置。
+将正式 Tier0 配置中的 opponent_pullback_multiplier 设为 0；进入 T1 时继续读取已有 T1 回拉倍率。
 
 ## 验收
-T0 等待时 PK 保持当前值，T1 连线后按已配置对手回拉发生变化。
+T0 等待时 PK 随时间保持稳定，进入正式 T1 且对白完成后开始按当前配置回拉。
 
 ## 交付
-提交与本卡功能对应的变更及 Godot 实际运行结果，维护本系统 README 和本卡完成日志。
+提交本功能对应的变更与 Godot 实际运行验收结果，并更新系统 README 与完成日志。

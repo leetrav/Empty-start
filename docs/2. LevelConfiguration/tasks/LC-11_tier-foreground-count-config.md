@@ -1,23 +1,26 @@
-# LC-11 按 Tier 配置前景话语数量
+# LC-11 前景同屏数量配置读取入口
 
-**状态：待实施**
+**状态：已由 CS-24 统一承接 · 归档**
 
 ## 开始前阅读
-- `AGENTS.md`、`project.godot` 与本系统最新完成日志
-- `docs/2. LevelConfiguration/README.md` 及本卡相关现有工程
-- 关联功能：现有 CombatStage Tier 配置及后续 BG-16、BG-34
+- `AGENTS.md`、`project.godot`、本系统 README 与最新实际完成日志
+- 当前相关 GDScript、场景和数值配置
+- 关联：CS-24 / BG-16
+
+## 当前已实现的基础
+已核对 LevelProfile 现有 normal_barrage_screen_cap 为整关基础值，CombatStageTierConfig 尚未有前景名额字段；本卡归档为口径索引。
 
 ## 本卡唯一功能
-按 Tier 配置前景话语数量。
+前景同屏数量配置读取入口。
 
 ## 触发条件
-配置当前战斗各档位参数时。
+关卡加载当前战斗配置时
 
 ## 应发生的行为
-保存各 Tier 可编辑的前景话语同屏名额：T1=10、T2=13、T3=16；按每档增加三条的规划 T4=19、T5=22，T0 留给策划后续填写。名额包含普通话语和挂有特性的普通话语。
+当前关卡的基础生成配置继续由 LevelProfile 提供；T0～T5 各档前景名额统一读取 CombatStageTierConfig 的现行配置。
 
 ## 验收
-逐档读取配置时 T1/T2/T3 分别为 10/13/16；修改任一档配置后读取结果更新。
+关卡读取接口与 CS-24 的同一份 Tier 配置对应；前景容量按 BG-16 消费。
 
 ## 交付
-提交与本卡功能对应的变更及 Godot 实际运行结果，维护本系统 README 和本卡完成日志。
+提交本功能对应的变更与 Godot 实际运行验收结果，并更新系统 README 与完成日志。
