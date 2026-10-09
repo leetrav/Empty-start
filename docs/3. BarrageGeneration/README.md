@@ -189,3 +189,30 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编辑器预览与运行时沿用同一位置/尺寸，HUD 只整体缩放。StageLayoutProfile 保存区域设计规格；尺寸改变时按相同值编辑 Scene Rect，使配置规格和实际布局保持一致。
 
 `barrage_area.tscn` 根节点为中性 Full Rect，由父场景实例明确设置自己的区域。Sandbox 中为相对 BattleArea 的 `(0,72,1024,760)`；组件继续根据自身 `size` 管理生成、移动边界与裁剪。已删除陈旧的 `stage_layout_profile` 导出字段和内部 `_apply_stage_layout()`，生成/倍率/容量/生命周期公开方法保持原接口。
+
+## 2026-10-09 战斗打磨单功能开发卡
+
+本轮确认的高密度弹幕、四种运动、交叉层级、富文本、舆论潮汐、弹幕群聚、伪纵深、命中冲击波、复读感染、Tier 升降档与沉默爆发，现已拆为单一功能开发卡。每张卡仅定义触发条件、预期行为与验收结果；可调数值以实测和后续策划配置为准。卡片状态均为**待实施**。
+
+| 卡号 | 本卡唯一功能 | 状态 |
+| --- | --- | --- |
+| [BG-16](tasks/BG-16_high-density-cap.md) | 普通弹幕高密度容量 | 待实施 |
+| [BG-17](tasks/BG-17_pc-android-performance.md) | PC 与 Android 高密度性能验证 | 待实施 |
+| [BG-18](tasks/BG-18_four-edge-spawn.md) | 战斗区域四周随机出生 | 待实施 |
+| [BG-19](tasks/BG-19_interior-random-spawn.md) | 战斗区域内部随机出生 | 待实施 |
+| [BG-20](tasks/BG-20_random-straight-motion.md) | 随机方向直线穿越 | 待实施 |
+| [BG-21](tasks/BG-21_curved-motion.md) | 曲线漂移运动 | 待实施 |
+| [BG-22](tasks/BG-22_speed-change-motion.md) | 弹幕运动中加减速 | 待实施 |
+| [BG-23](tasks/BG-23_wandering-motion.md) | 弹幕游荡转向 | 待实施 |
+| [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 待实施 |
+| [BG-25](tasks/BG-25_random-start-layer.md) | 出生时随机前后层级 | 待实施 |
+| [BG-26](tasks/BG-26_moving-layer-order.md) | 运动中变化前后层级 | 待实施 |
+| [BG-27](tasks/BG-27_animated-size.md) | 运动中随机放大缩小 | 待实施 |
+| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 单句话语内部富文本混合样式 | 待实施 |
+| [BG-29](tasks/BG-29_local-text-animation.md) | 局部字词动态效果 | 待实施 |
+| [BG-30](tasks/BG-30_opinion-tide.md) | 舆论潮汐式密度起伏 | 待实施 |
+| [BG-31](tasks/BG-31_spatial-clusters.md) | 成组聚集的弹幕出生 | 待实施 |
+| [BG-32](tasks/BG-32_linked-faux-depth.md) | 缩放速度与层级联动的伪纵深 | 待实施 |
+| [BG-33](tasks/BG-33_impact-motion-wave.md) | 群体命中后的局部冲击波 | 待实施 |
+
+关联依赖及实施顺序以各卡的上游功能卡为准；共享场景与组件按实际 Owner 的任务流程依次集成。
