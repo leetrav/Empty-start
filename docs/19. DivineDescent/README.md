@@ -182,7 +182,7 @@ DD-17 等 20. Ending。
 - 圣典为空且普通历史非空返回 false，继续 DD-02 / DD-06 / DD-07 / DD-08 候选流程；真实 smoke 已确认可启动扩散并生成复读。原始历史仅有 neutral 时查询同样返回 false，TT-13 继续过滤该原句，Spread 继续沿用空候选拒绝启动规则；本卡没有定义该类数据的额外结局规则。
 - true 表示跳过扩散、衰减、锁句、收束和全屏强调的空记录路径，直接将**同一已进入 Session** 交给现有 `EndingSession.receive_final_state(session, full_level_catalog)`。Ending 的空圣典状态沿用 `not_formed_oracle`，已保存经文仍原样展示；此结果不会清空倾向、圣典、败者卡、吞并或历史，也不会重新计算最终倾向。
 - **Lane A 精确交接（TO INTEGRATE）**：在现有 `Sandbox.divine_descent_entered(session)` 通知后、启动 DD-05 / DD-08 前读取上述查询。true 分支创建一次 EndingSession，调用现有接收接口；接收成功后将 `get_display_data()` 交给 `EndingPage.show_ending()`，保持普通战斗关闭并结束该分支。false 分支继续候选流程，禁止将空圣典当成分流条件。Sandbox 已在发出通知前完成普通输入 / 生成停止，重复进入继续由 RS-10 现有入口拒绝。
-- EN-01 / EN-09 的接收和页面接口已用真实 Godot 4.7.2 验证兼容。`SceneRouter` 当前没有结局入口；正式顶层转场及 Session / 页面生命周期由 A 在所属集成任务中审查、接线，DD-17 正常历史完成事件仍留对应任务。DD-15 没有修改 Sandbox、Rest、Ending 或 SceneRouter，没有宣称整局 E2E 已完成。
+- EN-01 / EN-09 的接收和页面接口已用真实 Godot 4.7.2 验证兼容。`SceneRouter` 当前没有结局入口；正式顶层转场及 Session / 页面生命周期由 A 在所属集成任务中审查、接线，DD-17 正常历史完成事件见下方接口。DD-15 没有修改 Sandbox、Rest、Ending 或 SceneRouter，没有宣称整局 E2E 已完成。
 - 只新增一个关键单元用例 `tests/unit/divine_descent/test_dd_15_empty_history.gd`：无原始普通命中历史直接准备空态。复读 / 圣典存在以及后续源数据和 getter 副本变化仍保持首次空态结果。正式配置及批准的 12 身份原样保留；临时 TEST_ONLY 实景通过现有公开接口验证空态页面、非空历史扩散和冻结源数据，运行证据见本卡日志。
 
 ## DD-16 终局继承特性边界（2026-10-09）
@@ -194,3 +194,13 @@ DD-17 等 20. Ending。
 - 终局配置只影响新实例；锁句仅收窄生成候选，旧可见句原 ID、文本和 `expires_at_msec` 保持原值，继续自然退出。原有全局暂停寿命补偿保持既有含义；本卡没有把暂停补偿解释为锁句改写。区域终局状态随本实例生命周期保留，普通新周目需创建新区域。
 - **Lane A 精确交接（TO INTEGRATE）**：复用 RS-10 同一 Session / CombatMode / BarrageArea。正常历史分支在进入模式后启动 Spread（原参数保留，配色可缺省；正式配色到位后作为最后参数注入），新话与自动复读必须使用这个区域；不要调用普通特性装配或普通收益链。外部陷阱源在创建前查询 `allows_trap_generation()`，false 时停止生成，不能绕过失败的容量登记。DD-15 空历史分支继续原分流。销毁终局区域后再开始新周目，维持既有顶层路由归属。
 - 真实 Godot 4.7.2 Windows GUI 组件 smoke、四个生产脚本解析和现有 DD-13 回归通过，证据见本卡日志；新增永久单元测试为 0。Sandbox、正式配色及完整流程仍 TO INTEGRATE / UNVERIFIED。仅完成 DD-16，没有推进 DD-17。
+
+## DD-17 全屏强调完成事实（2026-10-09）
+
+- **工程核对**：任务卡写有“全屏强调演出已经完成”，基线 `e9dc2d2` 实际只有 DD-13 收束通知及 DD-14 单条锁句缩放；源码 / 场景没有终局全屏演出，DD-13～16 日志也记录该缺口。本卡按授权补最小 DD 本地演出，正式动画、美术和节奏继续待交付。
+- `DivineDescentSpread.begin_full_screen_emphasis(fade_seconds, hold_seconds) -> bool`：真实收束后启动一次。入树、未暂停且尚未启动才能接受；两项时长须为有限正数，由组合方显式提供。收束前、非法参数及重复调用返回 false。该方法保留 Session、首次锁句、权重、旧弹幕寿命与继承表现规则，沿用 DD-13 已停止生成的状态。
+- `DivineDescentEmphasis` 为本组件拥有的 CanvasLayer 子节点，layer=20；运行时组合全视口黑色遮罩及居中换行原句，沿用 base_theme。原生 Tween 依次淡入、停留、淡出，全局暂停会停动画，离树取消动画。遮罩属于 UI 装饰，不加入 BarrageArea 或可见比例统计；没有新生产素材、音频事件、Autoload、正式时长配置或持久测试。
+- `completed(session: DivineDescentSession)` **只在 Tween 真正 finished 后发出一次**，参数直接引用 `start()` 成功时接收的同一 Session，冻结字段仍由 DD-01 拥有。`is_completed()` 此时为 true；普通 `stop()`、场景销毁、暂停、输入均无法提前生成完成事实。之后 DD-14 表现输入返回 false。
+- **Lane A 精确交接（TO INTEGRATE）**：现有 `divine_descent_entered(session)` 后先做 DD-15 原始历史分流。空历史直接沿用 Ending 接收路径，跳过本演出。正常历史先连接同一 Spread 的 `completed`，再连接 `convergence_started` 调用 `begin_full_screen_emphasis()`，然后沿用 DD-05/08 启动顺序；收束通知已包含真实锁句，无需重算。演出时长未获正式批准，仅允许明确 TEST_ONLY 注入用于联调。输入仅经 DD-14 方法路由，切页时销毁终局节点 / 区域，普通输入及收益保持关闭。
+- **A / D 接收顺序**：在 `completed(final_session)` 处理器中，以同一已进入 Session 调用 D 已有 `EndingSession.receive_final_state(final_session, full_level_catalog)`，首次成功才将 `get_display_data()` 交给 `EndingPage.show_ending()`。目录必须包含全部普通关卡；默认配置沿用正式资源，空主图 / 教名 / 判词保持现状。SceneRouter 新顶层入口、结果保留与页面生命周期归 A；EndingSession / EndingPage 的接收与展示实现归 D。C 不调用路由或改写 D 文件。
+- **明确阻塞**：Sandbox 当前尚未组合正常历史扩散→收束→此演出→Ending；SceneRouter 尚无结局入口。独立真实场景已证明单次完成及 Ending 接收，生产完整转场 / Sandbox 全流程 **TO INTEGRATE / UNVERIFIED**，没有主路线 PASS。临时 TEST_ONLY 图形 smoke 和 DD-13 / DD-15 既有回归均 PASS、退出 0；新增持久自动测试 0，详见本卡日志与 evidence。

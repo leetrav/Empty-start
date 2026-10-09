@@ -5,6 +5,7 @@ signal repeat_generated(original_sentence_id: StringName, view: BarrageView, cur
 signal sentence_locked(candidate: Dictionary)
 signal convergence_started(candidate: Dictionary)
 signal locked_sentence_emphasized(original_sentence_id: StringName, affected_view_count: int)
+signal completed(session: DivineDescentSession)
 
 var _candidates: Array[Dictionary] = []
 var _barrage_area: BarrageArea
@@ -16,6 +17,9 @@ var _generation_blocked: bool = false
 var _combat_mode: DivineDescentCombatMode
 var _locked_candidate: Dictionary = {}
 var _converging: bool = false
+var _session: DivineDescentSession
+var _full_screen_emphasis: DivineDescentEmphasis
+var _completed: bool = false
 
 
 # 原生 Timer 独立于玩家输入推进；全局暂停沿用 SceneTree 的暂停模式。
@@ -48,6 +52,7 @@ func start(
 	if candidates.is_empty() or not _resolve_original_texts(candidates, speech_catalog):
 		return false
 	_candidates = candidates
+	_session = session
 	_barrage_area = barrage_area
 	# 仅消费进入时冻结的已获特性；候选、权重和锁句算法不读取表现配置。
 	var inherited_trait_ids: Array[StringName] = frozen["assimilation_content"]["inherited_trait_ids"]
@@ -86,7 +91,7 @@ func is_sentence_locked() -> bool:
 
 # 组合方将终局玩家操作路由到这里；只重播锁句表现，倍率和时长由已批准配置或测试夹具注入。
 func emphasize_locked_sentence(scale_multiplier: float, return_seconds: float) -> bool:
-	if not is_inside_tree() or get_tree().paused or not is_sentence_locked():
+	if not is_inside_tree() or get_tree().paused or not is_sentence_locked() or _completed:
 		return false
 	if not is_finite(scale_multiplier) or scale_multiplier <= 1.0 or not is_finite(return_seconds) or return_seconds <= 0.0:
 		return false
@@ -124,6 +129,32 @@ func get_locked_visible_ratio() -> float:
 # 读取首次收束状态，后续弹幕退出不会撤销已进入的阶段。
 func is_converging() -> bool:
 	return _converging
+
+
+# 收束后由组合方启动一次全屏演出；时长显式注入，不猜测正式节奏。
+func begin_full_screen_emphasis(fade_seconds: float, hold_seconds: float) -> bool:
+	if not is_inside_tree() or get_tree().paused or not _converging or _full_screen_emphasis != null:
+		return false
+	if not is_finite(fade_seconds) or fade_seconds <= 0.0 or not is_finite(hold_seconds) or hold_seconds <= 0.0:
+		return false
+	_full_screen_emphasis = DivineDescentEmphasis.new()
+	add_child(_full_screen_emphasis)
+	_full_screen_emphasis.finished.connect(_on_full_screen_emphasis_finished)
+	_full_screen_emphasis.play(str(_locked_candidate["original_sentence_text"]), fade_seconds, hold_seconds)
+	return true
+
+
+# 完成事实只来自真实 Tween 结束；发送进入时的同一 Session，Ending 无需重读存档。
+func _on_full_screen_emphasis_finished() -> void:
+	if _completed:
+		return
+	_completed = true
+	completed.emit(_session)
+
+
+# 演出被销毁或中断时不会形成完成事实。
+func is_completed() -> bool:
+	return _completed
 
 
 # 锁句后按实际可见占比检查；空场为零，达到 90% 只进入一次。

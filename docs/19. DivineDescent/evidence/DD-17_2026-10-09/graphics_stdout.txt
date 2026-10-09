@@ -1,0 +1,4 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 Core Profile Context 23.19.12.03.240603 - Compatibility - Using Device: ATI Technologies Inc. - AMD Radeon(TM) Graphics
+
+PASS DD-17 TEST_ONLY scene smoke: convergence -> real Tween -> notifications=1 received=true frozen=true; pause/repeat/cancel/empty branch

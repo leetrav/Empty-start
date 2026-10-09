@@ -1,0 +1,21 @@
+DD-17 ONLY | baseline e9dc2d2 | branch codex/lane-c-dd17-1009
+Godot 4.7.2.stable.steam.ed1daf0bf
+First async import: completed, exit unavailable; not used as exit evidence.
+Final cached import: EXIT 0; existing certificate/editor settings permission/exit resource warnings.
+divine_descent_spread.gd --check-only: PASS EXIT 0, empty stderr.
+divine_descent_emphasis.gd --check-only: PASS EXIT 0, empty stderr.
+TEST_ONLY Windows GUI real Node scene: PASS EXIT 0.
+Real DD-05 zero rate -> DD-13 convergence -> DD Tween fade/hold/fade -> one completed(same Session).
+EndingSession real receive=true, notifications=1, frozen=true; EndingPage displayed.
+Pause before completion: notifications=0; duplicate start/receive rejected.
+Cancelled presentation: no completion; completed DD rejects presentation input.
+DD-15 direct empty branch: real query + Ending reception PASS.
+Existing DD-13 regression: 1/1 PASS EXIT 0.
+Existing DD-15 regression: 1/1 PASS EXIT 0.
+GUI/regression stderr: existing root certificate read error only.
+Screenshot inspected: TEST_ONLY_emphasis.png, actual Tween hold stage.
+Permanent automated tests added: 0. Temporary fixture archived outside repository.
+Production full-screen emphasis absent at baseline; minimal local DD presentation implemented.
+Sandbox full-route: TO INTEGRATE / UNVERIFIED. SceneRouter ending entry missing; Lane A owns wiring.
+EndingSession/EndingPage unchanged (Lane D). No production test data or formal timing invented.
+git diff --check: PASS. No commit/push/PR; Git publisher owns publication.
