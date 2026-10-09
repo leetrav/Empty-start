@@ -33,6 +33,7 @@
 - CA-09 通过注入的 `HitResolution` 调用正常收益、整发落空 / 异常优先级、单次 `resolve_shot_results()` 和普通命中历史接口；HitResolution 持有唯一 PK。INT-01 Sandbox 从独立运行配置读取初始 PK（当前0.5），并把最终 PK 信号接给 CombatStage。
 - `shot_hit_resolution_submitted` 同发包含目标有效性、`ShotAnomaly`、逐目标 `BarrageTraitResult` / 奖励字典及 HitResolution 返回值。异常惩罚映射等待 HR-03；INT-01 由 Sandbox 据逐目标结果连接普通复读与本场倾向暂存。
 - FO-13 增加临时选择目标接口 `set_selection_targets(targets: Array[Control])` / `clear_selection_targets()`。目标模式仍复用同一准心、蓄力、发射和飞行流程；到达时按释放快照的准心中心裁决最近 Control，并发出 `selection_target_hit(target)`，绕过 HitResolution。
+- CA-10 Sandbox 补做（2026-10-09，#92 blocker）：最后一发假矛盾立即锁定未击破结果并禁止后续发射，Sandbox 保持矛盾队列调度，等本发有限复读全部生成且可见实例自然结束，再单次进入 Rest。空命中与超时没有复读时即时进入 Rest；真命中的复读、静音、神谕路径继续沿用原实现。复读数量、延迟、寿命与容量使用现有配置，未增加奖励或第二套管理器。
 
 ### INT-01 战斗生命周期与结算事实
 
@@ -82,5 +83,5 @@ UI、飞行表现、硬直、暂停、触摸和跨系统传递全部用最小运
 ## 依赖顺序
 
 CA-01～09、CA-11 已完成。
-CA-10 等 12. ContradictionBreak 和 10. Repeat 有真实接口。
+CA-10 已有真实接线；Sandbox 的假命中展示补做与运行验证见 `战斗攻击系统_CA-10-Sandbox_2026-10-09_log.md`。#92 文档 PR 待发布者集成本补丁后由原 Owner 回归。
 CA-12 放到 Android 输入适配阶段。
