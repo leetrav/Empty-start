@@ -1,6 +1,6 @@
 # PA-03 主战斗界面正式美术接入
 
-> **中央战斗区最新程序布局对接（2026-10-09）**：后续 [INT-06](../../Integration/tasks/INT-06_battle-area-full-height-and-input-icon-overlay.md) 采用顶部 72px + 全高弹幕区 1024×1008，左下角竖排鼠标左键、ESC 操作 ICON。正式蓄力反馈由美术独立交付，通过现有攻击进度接口接入新画面；本卡原 760px 弹幕区与 248px 底部区为历史基线。
+> **当前布局依据（2026-10-10）**：正式对接 [INT-06](../../Integration/tasks/INT-06_battle-area-full-height-and-input-icon-overlay.md) 的顶部 72px + 全高弹幕区 1024×1008，左下角竖排鼠标左键、ESC ICON；蓄力表现由 PA-08 的准星外环承担。历史已完成的旧底部栏布局仅见 PA-03 日期日志。
 
 
 ## 开始前先阅读
