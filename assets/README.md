@@ -82,7 +82,7 @@ assets/
 | -1 | 玩家 PK 30%～40% | `pk_bar_neg_01.png` |
 
 - 负向素材 -4～-1 与玩家 PK **0%～10%、10%～20%、20%～30%、30%～40%** 的四段对应关系已由策划确认。边界具体包含方式由 PK 显示代码统一处理，保证数值变化时只显示一张正确档位图。
-- `pk_indicator_01.png` / `pk_indicator_02.png` 为两张独立 PK 指示器资源；具体使用侧及切换规则待 UI 集成按美术核定。
+- `pk_indicator_01.png` 为 PK 条**默认笑脸仓鼠球**，`pk_indicator_02.png` 为**仅降档时短暂出现的惊慌仓鼠球**。二者使用同一个指示器位置：按玩家 PK 比例沿轨道移动，移动时伴随自身滚动；升档时笑脸蹦跳，降档时惊慌脸抖动蹦跳、结束恢复笑脸。接入详见 [PA-13](../docs/Shared/PresentationAssets/tasks/PA-13_pk-hamster-ball-indicator-animation.md)。
 
 ## 可由程序美术交付
 
