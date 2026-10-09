@@ -14,13 +14,13 @@
 ## 单功能任务
 | 卡号 | 功能 | 前置 |
 | --- | --- | --- |
-| [SD-01](tasks/SD-01_bubble-dialogue-config.md) | 双主播气泡对白的数据配置 | undefined |
-| [SD-02](tasks/SD-02_portrait-side-bubble-view.md) | 在双主播立绘四周绘制上浮气泡 | undefined |
-| [SD-03](tasks/SD-03_ordered-bubble-events.md) | 按事件到达顺序管理上浮气泡 | undefined |
-| [SD-04](tasks/SD-04_actual-hit-echo.md) | 将实际击中的话语映射为主播气泡 | undefined |
-| [SD-05](tasks/SD-05_specific-sentence-reply.md) | 击中特定话语触发对手预设对白 | undefined |
-| [SD-06](tasks/SD-06_combat-state-dialogue-event.md) | 根据连线、Tier、输赢状态播放配置对白 | undefined |
-| [SD-07](tasks/SD-07_timed-opponent-dialogue.md) | 战斗进行时按时间触发对手对白 | undefined |
+| [SD-01](tasks/SD-01_bubble-dialogue-config.md) | 双主播气泡对白的数据配置 | 现有 LevelProfile、SandboxBattleHud |
+| [SD-02](tasks/SD-02_portrait-side-bubble-view.md) | 在双主播立绘四周绘制上浮气泡 | SD-01、现有 SandboxBattleHud、PA-03 |
+| [SD-03](tasks/SD-03_ordered-bubble-events.md) | 按事件到达顺序管理上浮气泡 | SD-02、现有 CS-23 |
+| [SD-04](tasks/SD-04_actual-hit-echo.md) | 将实际击中的话语映射为主播气泡 | SD-01～SD-03、CA-14、CA-15、Sandbox 命中回调 |
+| [SD-05](tasks/SD-05_specific-sentence-reply.md) | 击中特定话语触发对手预设对白 | SD-01、SD-03、SD-04 |
+| [SD-06](tasks/SD-06_combat-state-dialogue-event.md) | 根据连线、Tier、输赢状态播放配置对白 | SD-01、SD-03；CS-22、CS-27 提供状态事件 |
+| [SD-07](tasks/SD-07_timed-opponent-dialogue.md) | 战斗进行时按时间触发对手对白 | SD-01、SD-03、Sandbox 战斗状态 |
 
 ## 需要策划后续确认
 1. 普通命中话语默认映射到玩家气泡、对手气泡还是由话语来源确定；暂由配置指定说话方。
