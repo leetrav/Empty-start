@@ -235,6 +235,12 @@
 - **条件**：`Window.size_changed` 使用 `call_deferred` 排版，同一帧旧场景离树；ID-09 GUI smoke 切换至 960×540 新周目时已复现。
 - **处理**：排版入口先检查 `is_inside_tree()`，离树视图直接返回。真实 GUI 复跑没有该脚本错误。
 
+### KT-38：TextureRect 无效拉伸枚举导致背景静默不绘制
+
+- **现象**：RS-12 真实 GUI 截图只显示倾向色块与装饰，已加载的房间贴图没有绘制，运行日志未报告相关脚本错误。
+- **条件**：共享 `RestRoomEnvironment/RoomBackdrop` 的 `stretch_mode` 写为 `7`；Godot 4.7.2 的 TextureRect 拉伸枚举有效范围为 0～6。
+- **处理**：场景改为 `6`（`TextureRect.STRETCH_KEEP_ASPECT_COVERED`），实际 GUI 重跑并查看开局三态及战后截图。背景资源引用存在、解析成功均无法证明贴图实际可见。官方枚举依据：https://docs.godotengine.org/en/stable/classes/class_texturerect.html#enum-texturerect-stretchmode。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。

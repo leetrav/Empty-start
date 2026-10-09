@@ -24,7 +24,7 @@ grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("2_room")
 expand_mode = 1
-stretch_mode = 7
+stretch_mode = 6
 
 [node name="RoomTint" type="ColorRect" parent="."]
 unique_name_in_owner = true

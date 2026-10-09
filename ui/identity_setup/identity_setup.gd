@@ -25,6 +25,7 @@ var _status_label: Label
 
 # 三页共享一个流程持有者，中间步骤只保存控件内的临时值。
 func _ready() -> void:
+	opening_saved.connect(_on_opening_saved)
 	_run_data = SaveManager.data
 	_identity_back.show()
 	_streamer_page = _build_name_page("StreamerPage", "① 你叫什么？")
@@ -169,7 +170,11 @@ func _restore_confirmed_run() -> void:
 
 # 唯一最终提交入口；忙碌和完成标记在外部调用前设置，防止同步重入。
 func _confirm_opening() -> void:
-	if _step != Step.FAN_GROUP or _busy or _completed:
+	if _step != Step.FAN_GROUP or _busy:
+		return
+	# 保存已经成功时只重试房间路由，保持同一周目及已锁定身份。
+	if _completed:
+		_on_opening_saved(_run_data)
 		return
 	if _run_data == null or SaveManager.data != _run_data:
 		_status_label.text = "当前周目已变化，请从主菜单重新开始。"
@@ -199,8 +204,26 @@ func _confirm_opening() -> void:
 	_completed = true
 	_confirm_button.text = "已保存"
 	_confirm_button.disabled = true
-	_status_label.text = "身份已保存。开局房间尚未接入（RS-12），当前流程停在此处。"
+	_status_label.text = "身份已保存，正在进入房间。"
 	opening_saved.emit(_run_data)
+
+# 接收保存事实后请求顶层切换；失败时允许重试，成功期间拒绝重复请求。
+func _on_opening_saved(run_data: SaveData) -> void:
+	if _busy:
+		return
+	if run_data == null or SaveManager.data != run_data:
+		_status_label.text = "当前周目已变化，请从主菜单重新开始。"
+		_confirm_button.disabled = true
+		return
+	_busy = true
+	_confirm_button.disabled = true
+	var error := SceneRouter.goto_opening_room()
+	if error != OK:
+		_busy = false
+		_status_label.text = "进入房间失败：%s。已保存身份保持，可重试。" % error_string(error)
+		_confirm_button.text = "重试进入房间"
+		_confirm_button.disabled = false
+		_confirm_button.grab_focus()
 
 # 名称与身份只在正式提交后锁定，重试保存沿用同一周目对象。
 func _lock_inputs() -> void:

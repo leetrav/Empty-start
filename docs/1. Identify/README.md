@@ -25,12 +25,12 @@
 - `IdentityConfirmationState` 锁定后的身份 ID 可通过 `SaveManager.set_identity_data()` 写入 SaveData，供本周目场景重建后继续读取。
 - `SaveData.streamer_name`、`SaveData.fan_group_name` 与 `SaveData.identity_id` 保存本周目确认结果；新周目初始化为空值，确认后由 `SaveManager.set_identity_data()` 一次写入。
 - 新增字段有明确空值默认，并兼容旧版 SaveData，因此 `SaveData.CURRENT_VERSION` 保持 `1`。
-- `ui/identity_setup/identity_setup.tscn/.gd` 提供三个独立全屏步骤。最终经 SaveManager 写入资料和开局倾向、保存成功后发出 `opening_saved(run_data: SaveData)`；当前 RS-12 未接入，页面明确停留并显示阻塞。
+- `ui/identity_setup/identity_setup.tscn/.gd` 提供三个独立全屏步骤。最终经 SaveManager 写入资料和开局倾向、保存成功后发出 `opening_saved(run_data: SaveData)`；RS-12 接收该事实后通过 SceneRouter 打开独立开局房间；路由失败仅重试进入房间。
 - 第二步只展示 ID-08 正式标题与描述，图标字段保留且不用于分组表现。
 
 ## 当前仓库状态
 
-- 主菜单 Start 新建 SaveData 后进入主播取名 → 十二卡身份选择 → 粉丝团取名。最终提交、保存和成功通知已实现；进入开局房间及首次开播仍受 RS-12 阻塞，当前不会自动进入 Game。
+- 主菜单 Start 新建 SaveData 后进入主播取名 → 十二卡身份选择 → 粉丝团取名。最终提交、保存后经 RS-12 进入房间，玩家点击“开始直播”才进入 Game。
 - 身份选项数据类型、12 份正式资源、三份旧兼容资源、独立身份步骤、名称确认、身份锁定、周目存档字段和三步身份设置页面已建立。
 - `SaveManager` 已存在，并持有 `SaveData`。
 - `SaveData` 包含版本、游玩时间、当前场景、checkpoint、主播名、粉丝团名和身份 ID 字段。
@@ -56,19 +56,19 @@
 - `ui/identity_setup/identity_selection.tscn` 是身份第二步的独立全屏视图。基准 1920×1080 同时展示 4×3 卡片；1280×720 提供纵向滚动，960×540 提供双向滚动，状态与下一步控件常驻。卡片标题 30px、描述 21px，统一沿用现有 Theme，不显示底层倾向或图标。
 - `selection_changed(option: IdentityOption)` 通知临时选择变化；`next_requested(option: IdentityOption)` 交出具体身份和倾向。视图自身没有 SaveManager、TendencyState 或 SceneRouter 调用。
 - `restore_selection(identity_id: StringName, locked: bool = false)` 支持入树前设置与回退恢复。`get_selected_option()` 读取选择；重新显示后调用 `focus_selection()` 恢复键盘焦点。初始空选，下一步禁用。
-- ID-09 持有临时 ID，连接 `next_requested` 后切入第三步粉丝团取名，最终复用既有身份锁定、存档与倾向初始化入口提交。真实三步流程已由 ID-09 接通；RS-12 房间跳转待接入。本卡运行 smoke 使用明确标注的临时 TEST_ONLY 第三步接收端。
+- ID-09 持有临时 ID，连接 `next_requested` 后切入第三步粉丝团取名，最终复用既有身份锁定、存档与倾向初始化入口提交。真实三步流程及 RS-12 房间跳转已接通。本卡运行 smoke 使用明确标注的临时 TEST_ONLY 第三步接收端。
 - 已确认的旧 `identity_orthodox`、`identity_heretical`、`identity_absurd` 以 `locked=true` 恢复时沿用旧 Resource、原 ID 和原开局倾向，卡片禁用、显示沿用记录；不映射到任何新角色。未知已存 ID 同样锁住并禁用下一步。调用方继续负责最终确认锁定。
 - 本次资源直接由既有 CSV 建立，正文未改动；Google Sheet 在线内容未能访问。现有导表工具仍负责 Sheet → CSV，后续修改身份正文时同步相应 `.tres` 并运行 `tests/unit/identity_mapping_test.gd` 核对完整正文与映射。没有增加导表基础设施。
 - ID-09 已将 `identity_setup.tscn/.gd` 接为三步流程。身份卡底部提供默认隐藏的 `BackButton`，由流程显示，与下一步并排；原独立第二步默认行为保持。
 
-## 三步开局流程（ID-09 已实现独立部分，RS-12 待接入）
+## 三步开局流程（ID-09 / RS-12 已接通）
 
 - 开局身份从当前 3 个占位选项升级为 12 张正式身份卡片，每张卡片展示标题与完整描述；正式内容来自 data/source_tables/01_身份配置.csv，与 Google Sheets 的「01_身份配置」对应。
 - 12 张卡片在 1920×1080 的身份页面固定采用 **4 列 × 3 行**混排，顺序详见 ID-08 任务卡。玩家侧仅看到角色扮演信息与统一交互反馈，内部三个倾向仅用于游戏逻辑。
 - 12 个独立 identity_id 分别保存具体选中身份，对应的运行时 tendency_id 仍只有 orthodox、heretical、absurd（每类 4 个）。表格中的 heresy 在 Godot 运行时映射为 heretical。
 - 现有 SaveData、IdentityConfirmationState、TendencyState 的存档与开局比较职责沿用；**主播名、身份选择、粉丝团名分成三个依次进入的独立全屏步骤**，各自仅显示当前步骤的输入/选择。
 - ID-09 确定顺序为「你叫什么？」→ 12 身份卡 →「粉丝团叫什么？」；最终确认后统一保存三项身份数据及开局倾向，然后经 RS-12 入口进入**休息时刻的主角房间**。第一场普通战斗须从房间主动开始。
-- ID-09 三页、正式提交和保存已验收；房间可见结果与第一场开播未实现，完整端到端验收等待 RS-12。
+- ID-09 三页、正式提交、保存、房间展示及主动进入第一普通关已完成真实 Godot 4.7.2 GUI 验收；详见 Rest 的 RS-12 日期日志。
 
 ## 测试预算
 
@@ -100,5 +100,5 @@ ID-07 完成后，本周目的主播名、粉丝团名和身份使用稳定数�
 - `SaveManager.confirm_opening_identity(streamer_input, option, fan_input, confirmation) -> Error` 只接受正式 `IdentityOptions.CARDS` 中的 Resource；复用 IdentityConfirmationState 首次锁定及 `set_identity_data()`，在同一次最终调用中初始化开局倾向。已存身份或已锁定对象返回 `ERR_ALREADY_IN_USE`，不会覆盖或重新初始化。
 - 第三页提交后锁住输入和回退。保存失败保留同一周目、已确认值与倾向，按钮重试仅执行 `save_game()`；保存成功后发出一次 `opening_saved(run_data: SaveData)`。同步重入和连续确认不会再次写身份或初始化倾向。
 - 已存正式 / 旧三身份重新打开时显示第三页且锁定，不转换旧 ID；未知身份锁住且禁止继续。直接启动场景而没有 SaveData 时，第一步显示主菜单提示并禁止前进。
-- **精确集成阻塞：RS-12 开局房间尚无入口。** 当前成功通知无人消费，页面显示“身份已保存。开局房间尚未接入（RS-12），当前流程停在此处。”。RS-12 owner 在此流程连接 `opening_saved`，由 SceneRouter 打开真实房间；房间路由失败的反馈与重试由该接入负责，不能重新提交身份。没有调用 `goto_game()` 或伪造战后 RestSession。
-- 合并 / 发布完整开局体验前需 RS-12 联调验收；ID-09 的任务卡验收第 6 项仍为 BLOCKED，第 8 项只完成三页到保存的真实 GUI 验证。Android 实机触控未验证。
+- RS-12 已在页面连接 `opening_saved`，经 `SceneRouter.goto_opening_room()` 打开独立真实房间。成功期间保持忙碌锁；路由失败后按钮变为“重试进入房间”，仅重试路由，保留已存同一周目和身份。房间读取真实倾向与名称；显式开播才调用原 `goto_game()`，没有战后 RestSession。
+- RS-12 已补齐 ID-09 的房间与首战验收：三倾向各一张正式卡完成三步保存 → 房间 → 主动开播；房间 / 开播失败重试和连点保护通过。Android 实机触控未验证。
