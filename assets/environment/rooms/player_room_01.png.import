@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://n0gs55cbvjxq"
-path="res://.godot/imported/chr_player_hamster_idle.png-98c831cceaa5d6dc545eba3dfd3598dd.ctex"
+uid="uid://u0cidawsb6ly"
+path="res://.godot/imported/player_room_01.png-6ae98a9005236c879286c7adefcefc6e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/chr_player_hamster_idle.png"
-dest_files=["res://.godot/imported/chr_player_hamster_idle.png-98c831cceaa5d6dc545eba3dfd3598dd.ctex"]
+source_file="res://assets/environment/rooms/player_room_01.png"
+dest_files=["res://.godot/imported/player_room_01.png-6ae98a9005236c879286c7adefcefc6e.ctex"]
 
 [params]
 

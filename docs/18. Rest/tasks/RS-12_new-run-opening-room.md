@@ -14,7 +14,7 @@
 - scenes/sandbox/sandbox.gd、ui/identity_setup/identity_setup.gd
 
 ## 已有功能
-- RS-07 已实现复用同一房间背景 res://assets/environment/bg_player_room_1.png，RestRoomEnvironment.apply_tendency() 能在正统、异端、荒谬间切换装饰和光照。
+- RS-07 已实现复用同一房间背景 res://assets/environment/rooms/player_room_01.png，RestRoomEnvironment.apply_tendency() 能在正统、异端、荒谬间切换装饰和光照。
 - 当前房间环境仅组合在战斗结束的 RestResultView Overlay 内。RestResultView.show_result() 需要 RestSession 已打开的有效战斗结果，RestSession.open_result() 只接受 pk_win_unbroken 或 breakthrough_oracle_complete 与有效 level_id。
 - SceneRouter.goto_game() 当前进入 scenes/sandbox/sandbox.tscn；Sandbox._ready() 随即 restart_current_attempt()，开始第一场普通弹幕和攻击。
 - 已有 RS-09 负责战后休息继续到下一普通关；RS-10 负责最后普通关进入神降临。这些已有进度和结算规则继续沿用。
@@ -44,7 +44,7 @@
 
 ### 验收条件
 1. 新周目在 ID-09 第三页确认保存后显示主角房间，不自动生成第一场弹幕、不启动攻击或敌方 PK 回拉。
-2. 房间复用 bg_player_room_1.png 和 RS-07 同一套视觉部件；从四个正统、异端、荒谬身份中各选一个进入时，读取对应开局倾向并展现房间差异。
+2. 房间复用 player_room_01.png 和 RS-07 同一套视觉部件；从四个正统、异端、荒谬身份中各选一个进入时，读取对应开局倾向并展现房间差异。
 3. 无 RestSession 成果时可正常进入开局房间；本次没有任何伪造的完成关卡、获奖、胜利或新增历史记录。
 4. 点击「开始直播」一次进入真实第一普通关，房间 UI 正确退出，恢复已有战斗输入、弹幕生成和 HUD。
 5. 再次重复开始请求不会多次初始化；当前 SaveData 的主播名、身份 ID、粉丝团名、开局倾向保持正确。
