@@ -56,6 +56,6 @@ $godot = 'D:\steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe'
 | Docs `tools/list` | 12 个工具，包括 `lookup_method`、`search_docs`、`lookup_signal` |
 | Docs `lookup_method` | `Node.add_child` 返回真实方法文档 |
 
-以上是直接通过 MCP 协议握手及工具调用实测。完整 Codex Agent 自动选用 MCP 的行为需要新会话另行验证；文档 MCP 检索结果应按项目使用的 Godot 4.7.2 API 再核对版本差异。Windows 防火墙须限制 HTTP 服务访问范围：本次 `netstat` 表明 19080 监听 `0.0.0.0`，虽然已配置 Bearer 鉴权，仍需避免向局域网开放此高权限服务。
+以上另经真实 Codex CLI `exec --json` 会话（Lane A / INT-08）补验：`godot-docs.lookup_method(Node, add_child)` 和 `godot-native.get_project_info()` 均在会话事件流中显示 `item.completed`；Native 返回 `C:/Users/lvy/.codex/worktrees/lane-a-int08-1010/Empty-start/`，证明会话覆盖地址 `19081` 成功接入隔离 worktree。该会话使用 `-c mcp_servers.godot-native.url=http://127.0.0.1:19081/mcp`，并通过本机 `HTTP_PROXY/HTTPS_PROXY/ALL_PROXY=http://127.0.0.1:7897` 连接模型服务，`NO_PROXY=127.0.0.1,localhost` 保留 MCP 本地直连。首轮因缺失代理曾出现模型请求超时，新会话重启后进入真实工具调用。文档检索结果依然需要按项目 Godot 4.7.2 API 核对版本差异。Windows 防火墙须限制 HTTP 服务访问范围：本次 `netstat` 表明 19080 监听 `0.0.0.0`，虽然已配置 Bearer 鉴权，仍需避免向局域网开放此高权限服务。
 
 后续 Agent 的默认开发流程：先读 `AGENTS.md` / `known_traps.md` / 任务卡 → 搜索已有实现 → Docs 核对 API → 如涉及编辑器操作，确认 Native 服务路径是本 Lane 工程 → Godot 真实运行 → 单卡提交、记录日志并开 PR → 等候调度方 Review。
