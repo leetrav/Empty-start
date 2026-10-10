@@ -5,6 +5,20 @@
 
 Lane A 持有 Sandbox 与顶层路由接线。系统规则、倾向、历史、奖励及结局显示继续归各系统所有者。
 
+## INT-07 神降临流程抽取（2026-10-10）
+
+`Sandbox` 组合运行时子节点 `DivineDescentFlow`。流程统一持有本次冻结 `DivineDescentSession`、`DivineDescentCombatMode`、子节点 `DivineDescentSpread` 及已接收的 `EndingSession`。原 DD / Ending 规则和生产配置沿用当前实现；没有新增 Autoload 或修改场景资源。
+
+- `start(run_data, catalog, current_level, tier_catalog, hit_resolution, combat_stage, contradiction_break, area, opponent_pk_bar, attack_input, battle_config, decay_config, presentation) -> bool`：入树后调用一次，注入同场组件与完整目录。返回 true 表示已进入终局；正式演出配置缺失仍停留在已进入状态并输出提示，保持 INT-04 行为。
+- `presentation` 消费 Sandbox 已有的 `repeat_interval_seconds`、`fade_seconds`、`hold_seconds`、`input_scale`、`input_return_seconds`、`trait_colors`，默认值与 TEST_ONLY 注入来源保持原值。
+- `entered(session)`：冻结及普通规则关闭后同步通知 Sandbox 收起普通、神谕和 Rest 阶段；Sandbox 继续转发原 `divine_descent_entered(session)`。原始空历史延迟接收 Ending；非空历史沿用扩散、衰减归零、锁句、90% 可见占比及真实 Tween 完成顺序。
+- `advance(delta)`、`handle_input(event) -> bool`：由 Sandbox 每帧及输入入口调用；暂停、停止或完成后不推进。只有实际接受的左键 / 非重复空格表现输入返回 true，Sandbox 此时消费事件。
+- `completed(result: EndingSession)`：同一冻结 Session 接收成功后通知一次。`get_result()` 返回同一已接收对象，Sandbox 只调用真实 SaveManager 存盘和 `SceneRouter.goto_ending(result)`。
+- `stop()`：显式停止新话生成及普通攻击，扩散子树离树并销毁，取消 Timer / Tween；中断不形成完成事实。场景离树执行最终清理。
+- `Sandbox.get_divine_descent_flow()` 与流程的 `get_session()`、`get_combat_mode()`、`get_spread()` 是联调读取入口。冻结快照和可变扩散池仍通过各原组件公开 getter 读取。
+
+Windows Godot 4.7.2 D3D12 / Forward+ 的 INT-04 两条真实 GUI 路线通过（68 checks、10 routes、DD_completed=1、退出 0），含成果存读、一次接收和节点销毁。8 个既有 DD 脚本、RS-10、EN-09 及新增流程完成 / 中断定向测试均 headless 退出 0；正式 Sandbox 直接 GUI 启动退出 0。具体过程、命令和单文件检查限制见 [INT-07 日志](Sandbox重构_INT-07_2026-10-10_log.md)。Android 实机、正式演出参数及人工操作体验仍未验收。INT-08 接手时使用上述流程接口；本卡未执行 INT-08/09/10。
+
 ## INT-04（2026-10-09）
 
 已接通真实 MainMenu → ID-09 三页 → RS-12 开局房间 → 主动开播 → 普通关 1 → Rest → 普通关 2 → DivineDescent → Ending。
