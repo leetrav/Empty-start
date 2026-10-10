@@ -143,6 +143,8 @@ func _opening() -> void:
 	setup._streamer_name_input.text = "Jackie INT04 TEST_ONLY"
 	setup._streamer_continue.pressed.emit()
 	_check(setup._selection._buttons.size() == 12, "批准身份数量变化")
+	# 当前身份牌先翻面再选中，整局夹具按玩家的两次点击流程进入第三页。
+	setup._selection._buttons[0].pressed.emit()
 	setup._selection._buttons[0].pressed.emit()
 	setup._selection.get_node("%NextButton").pressed.emit()
 	setup._fan_group_name_input.text = "INT04 TEST_ONLY fans"
