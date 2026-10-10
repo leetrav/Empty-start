@@ -1,0 +1,111 @@
+未修正，1152x648，EXIT=1
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.30 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-151.6666, 1445.0) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-151.6666, 1445.0) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1168.0, 162.0) raw_input=(700.8, 97.2) viewport_mouse=(-151.6666, 1445.0) actual_aim=(1168.0, 162.0)
+INT04 aim target=(960.0, 461.0) raw_input=(576.0, 276.6) viewport_mouse=(-151.6666, 1445.0) actual_aim=(960.0, 461.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-151.6666, 1445.0) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-151.6666, 1445.0) actual_aim=(1212.0, 162.0)
+INT04 Ending layout empty=false scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT04 ROUTE PASS empty_history=false facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [6, 0, 0], "history": [{ "original_sentence_id": "test_word_01", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 1 }, { "original_sentence_id": "test_word_09", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 2 }], "scripture": 1, "cards": 1, "assimilation": { "inherited_word_weights": { &"test_int04_pool_test_level_01": 1.0 }, "inherited_trait_ids": [&"occlusion"] } }
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-151.6666, 1445.0) actual_aim=(1212.0, 162.0)
+ERROR: FAIL INT-04: 真假结果错误
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int_04_full_run.gd:236)
+       [1] _execute (res://tests/integration/int_04_full_run.gd:53)
+       [2] _shoot (res://tests/integration/int_04_full_run.gd:206)
+
+临时诊断，1152x648，EXIT=1
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.30 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+DIAG release progress=1.0 held=true phase=0
+DIAG shot facts=[]
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+DIAG release progress=1.0 held=true phase=0
+DIAG shot facts=[]
+INT04 aim target=(1168.0, 162.0) raw_input=(700.8, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1168.0, 162.0)
+DIAG release progress=1.0 held=true phase=0
+DIAG shot facts=[{ "target_instance_id": 109169346980, "original_sentence_id": "test_contra_true_01", "original_sentence_text": "我从未删过评论，但所有评论都被我删除。" }]
+DIAG route=false level=0 outcome=1 remaining=0
+INT04 aim target=(960.0, 461.0) raw_input=(576.0, 276.6) viewport_mouse=(-123.3333, 1063.333) actual_aim=(960.0, 461.0)
+DIAG release progress=1.0 held=true phase=0
+DIAG shot facts=[]
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+DIAG release progress=1.0 held=true phase=0
+DIAG shot facts=[]
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+DIAG release progress=1.0 held=true phase=0
+DIAG shot facts=[{ "target_instance_id": 127271963074, "original_sentence_id": "test_contra_false_02", "original_sentence_text": "请再发一次刚才的弹幕。" }]
+DIAG route=false level=1 outcome=2 remaining=0
+INT04 Ending layout empty=false scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT04 ROUTE PASS empty_history=false facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [6, 0, 0], "history": [{ "original_sentence_id": "test_word_01", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 1 }, { "original_sentence_id": "test_word_09", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 2 }], "scripture": 1, "cards": 1, "assimilation": { "inherited_word_weights": { &"test_int04_pool_test_level_01": 1.0 }, "inherited_trait_ids": [&"occlusion"] } }
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+DIAG release progress=1.0 held=true phase=0
+DIAG shot facts=[{ "target_instance_id": 182938765686, "original_sentence_id": "test_contra_false_01", "original_sentence_text": "今天直播间非常吵。" }, { "target_instance_id": 183475636565, "original_sentence_id": "test_contra_true_01", "original_sentence_text": "我从未删过评论，但所有评论都被我删除。" }]
+DIAG route=true level=0 outcome=1 remaining=0
+ERROR: FAIL INT-04: 真假结果错误
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int_04_full_run.gd:240)
+       [1] _execute (res://tests/integration/int_04_full_run.gd:55)
+       [2] _shoot (res://tests/integration/int_04_full_run.gd:210)
+
+修正后，1152x648，EXIT=0
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.30 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1168.0, 162.0) raw_input=(700.8, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1168.0, 162.0)
+INT04 aim target=(960.0, 461.0) raw_input=(576.0, 276.6) viewport_mouse=(-123.3333, 1063.333) actual_aim=(960.0, 461.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 Ending layout empty=false scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT04 ROUTE PASS empty_history=false facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [6, 0, 0], "history": [{ "original_sentence_id": "test_word_01", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 1 }, { "original_sentence_id": "test_word_09", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 2 }], "scripture": 1, "cards": 1, "assimilation": { "inherited_word_weights": { &"test_int04_pool_test_level_01": 1.0 }, "inherited_trait_ids": [&"occlusion"] } }
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 Ending layout empty=true scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT04 ROUTE PASS empty_history=true facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [0, 0, 0], "history": [], "scripture": 0, "cards": 0, "assimilation": { "inherited_word_weights": {  }, "inherited_trait_ids": [] } }
+PASS INT-04 full run checks=88 top_level_routes=10 DD_completed=1
+
+修正后重复，1152x648，EXIT=0
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.30 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1168.0, 162.0) raw_input=(700.8, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1168.0, 162.0)
+INT04 aim target=(960.0, 461.0) raw_input=(576.0, 276.6) viewport_mouse=(-123.3333, 1063.333) actual_aim=(960.0, 461.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 Ending layout empty=false scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT04 ROUTE PASS empty_history=false facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [6, 0, 0], "history": [{ "original_sentence_id": "test_word_01", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 1 }, { "original_sentence_id": "test_word_09", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 2 }], "scripture": 1, "cards": 1, "assimilation": { "inherited_word_weights": { &"test_int04_pool_test_level_01": 1.0 }, "inherited_trait_ids": [&"occlusion"] } }
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 aim target=(1212.0, 162.0) raw_input=(727.2, 97.2) viewport_mouse=(-123.3333, 1063.333) actual_aim=(1212.0, 162.0)
+INT04 Ending layout empty=true scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT04 ROUTE PASS empty_history=true facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [0, 0, 0], "history": [], "scripture": 0, "cards": 0, "assimilation": { "inherited_word_weights": {  }, "inherited_trait_ids": [] } }
+PASS INT-04 full run checks=88 top_level_routes=10 DD_completed=1
+
+修正后，1920x1080，EXIT=0
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.30 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+INT04 aim target=(1212.0, 146.0) raw_input=(1212.0, 146.0) viewport_mouse=(310.0, 854.0) actual_aim=(1212.0, 146.0)
+INT04 aim target=(1212.0, 146.0) raw_input=(1212.0, 146.0) viewport_mouse=(310.0, 854.0) actual_aim=(1212.0, 146.0)
+INT04 aim target=(1168.0, 146.0) raw_input=(1168.0, 146.0) viewport_mouse=(310.0, 854.0) actual_aim=(1168.0, 146.0)
+INT04 aim target=(960.0, 453.0) raw_input=(960.0, 453.0) viewport_mouse=(310.0, 854.0) actual_aim=(960.0, 453.0)
+INT04 aim target=(1212.0, 146.0) raw_input=(1212.0, 146.0) viewport_mouse=(310.0, 854.0) actual_aim=(1212.0, 146.0)
+INT04 aim target=(1212.0, 146.0) raw_input=(1212.0, 146.0) viewport_mouse=(310.0, 854.0) actual_aim=(1212.0, 146.0)
+INT04 Ending layout empty=false scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT04 ROUTE PASS empty_history=false facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [6, 0, 0], "history": [{ "original_sentence_id": "test_word_01", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 1 }, { "original_sentence_id": "test_word_09", "tendency": "orthodox", "hit_count": 1, "first_committed_hit_order": 2 }], "scripture": 1, "cards": 1, "assimilation": { "inherited_word_weights": { &"test_int04_pool_test_level_01": 1.0 }, "inherited_trait_ids": [&"occlusion"] } }
+INT04 aim target=(1212.0, 146.0) raw_input=(1212.0, 146.0) viewport_mouse=(310.0, 854.0) actual_aim=(1212.0, 146.0)
+INT04 aim target=(1212.0, 146.0) raw_input=(1212.0, 146.0) viewport_mouse=(310.0, 854.0) actual_aim=(1212.0, 146.0)
+INT04 Ending layout empty=true scroll=0 title_y=24.0 page_position=(0.0, 0.0) content_position=(0.0, 0.0)
+INT04 ROUTE PASS empty_history=true facts={ "identity": &"identity_orthodox_1", "fans": 14, "tendency": [0, 0, 0], "history": [], "scripture": 0, "cards": 0, "assimilation": { "inherited_word_weights": {  }, "inherited_trait_ids": [] } }
+PASS INT-04 full run checks=88 top_level_routes=10 DD_completed=1
+

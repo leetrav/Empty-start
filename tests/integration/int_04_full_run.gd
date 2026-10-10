@@ -158,8 +158,6 @@ func _opening() -> void:
 	setup._streamer_name_input.text = "Jackie INT04 TEST_ONLY"
 	setup._streamer_continue.pressed.emit()
 	_check(setup._selection._buttons.size() == 12, "批准身份数量变化")
-	# 当前身份牌先翻面再选中，整局夹具按玩家的两次点击流程进入第三页。
-	setup._selection._buttons[0].pressed.emit()
 	setup._selection._buttons[0].pressed.emit()
 	# ID-10 首次点击翻开，再次点击才沿用正式单选与下一页入口。
 	setup._selection._buttons[0].pressed.emit()

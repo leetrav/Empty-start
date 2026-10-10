@@ -13,6 +13,8 @@ func _ready() -> void:
 	var source: LoserCardCatalog = preload("res://tests/fixtures/fo11/test_loser_card_catalog.tres")
 	for profile: LevelProfile in level_catalog.profiles:
 		profile.base_move_speed_pixels_per_second = 0.0
+		# 整局夹具逐发显式生成目标；延后自动批次，避免蓄力时真矛盾混入假矛盾命中。
+		profile.base_spawn_interval_seconds = 60.0
 		profile.normal_pool_inheritance = preload("res://tests/fixtures/fo11/test_normal_pool_inheritance.tres").duplicate(true)
 		profile.normal_pool_inheritance.pool_id = StringName("test_int04_pool_" + profile.level_id)
 		profile.inheritable_trait_ids = [&"occlusion"]
