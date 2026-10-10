@@ -34,3 +34,22 @@
 
 ## 派工建议
 先做 SD-01～03 的可复用显示能力；SD-04、05、06、07 作为互不重写 HUD 的事件消费者分别接线。阶段系已有卡片继续负责自己的触发条件，保持事件流单向。
+
+## SD-01 当前实现（2026-10-10）
+
+SD-01 数据配置已完成。代码和空的正式配置位于 `data/streamer_bubble_dialogue/`，完成记录见 [SD-01 日志](双主播气泡对话系统_SD-01_2026-10-10_log.md)。
+
+- `BubbleDialogueEntry` 是可在 Inspector 编辑的 Resource：`side` 使用 `SpeakerSide.PLAYER / OPPONENT`，`text` 为显示文本，`original_sentence_id` 沿用 `LevelSpeech` 的 String 原句 ID（可空），`event_id` 为 StringName 事件 ID，`display_duration_seconds` 为停留秒数，`priority` 为可编辑优先级。
+- `Priority.PLOT=2 > HIT=1 > TIMED_IDLE=0`；指定原句答话由策划填写对手侧和剧情优先级。条目初值为玩家侧、命中优先级、3 秒，正式时长仍待试玩确认。
+- `BubbleDialogueConfig.entries` 保存本场条目。`find_by_sentence(id, side=ANY_SIDE)` 按原句读取；`find_by_event(event_id, side=ANY_SIDE, original_sentence_id="")` 是事件请求的读取入口，空原句参数表示该事件的全部原句。结果保持配置顺序，允许同事件多句；空或未知查询 ID 返回空数组。读取返回共享的静态条目引用，消费者保持只读。
+- `create_hit_echo(original_sentence_id, original_sentence_text, is_valid_hit, is_repeat)` 从调用方提供的最终事实构造独立条目：有效的非复读命中映射到玩家侧，事件为 `actual_hit`，优先级为 HIT，文本完整保留原句；落空、复读及空白文本返回 null。时长读取当前 `hit_display_duration_seconds`。接口没有收益筛选，因此同样适用于有效负收益话语；它本身不判定命中。
+- `bubble_dialogue_config.tres` 当前无正式对白；策划可新增同类型配置，在 `entries` 中添加条目。后续组合方持有本场配置引用，按事件调用读取接口；本卡未向 `LevelProfile`、Sandbox 或 HUD 增加字段和接线。
+- 本卡只保存配置和生成请求数据。队列、显示上限、优先级调度、气泡 UI、实际命中接线与定时触发留给后续卡，不保存 PK、Tier 或命中历史。
+
+Windows 验证命令（Godot 4.7.2）：
+
+```powershell
+& ./tests/streamer_bubble_dialogue/run_windows.ps1 -GodotExe '<Godot 4.7.2 Windows exe>'
+```
+
+脚本将本模块复制到工作树 `.godot/sd01/harness` 的临时纯数据工程，避免无关 Autoload；执行三个脚本的 `--headless --check-only --script` 与 Resource 读写和查询 smoke。测试文本仅在 `tests/streamer_bubble_dialogue/` 的测试进程内创建；正式数据保持空。已验证 Windows headless，PC GUI、正式场景集成及 Android 硬件均未验证。
