@@ -1,0 +1,193 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.30 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+INT05_LAYOUT window=(1920, 1080) viewport=(1920.0, 1080.0) scale=(1.0, 1.0)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/PlayerPK(1600, 900)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/OpponentPK(1600, 900)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/Tier(1600, 900)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+INT05_LAYOUT window=(1600, 900) viewport=(1920.0, 1080.0) scale=(0.833333, 0.833333)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/PlayerPK(1280, 720)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/OpponentPK(1280, 720)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/Tier(1280, 720)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/ChargeFeedback/ChargeState(1280, 720)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 直播数据像素下限 PlayerStreamerArea/LiveDataHud(1280, 720)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:35)
+ERROR: INT05_LAYOUT 直播数据像素下限 OpponentStreamerArea/OpponentLiveDataHud(1280, 720)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:35)
+INT05_LAYOUT window=(1280, 720) viewport=(1920.0, 1080.0) scale=(0.666667, 0.666667)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/PlayerPK(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/OpponentPK(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/Tier(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/ChargeFeedback/ChargeState(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 直播数据像素下限 PlayerStreamerArea/LiveDataHud(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:35)
+ERROR: INT05_LAYOUT 直播数据像素下限 OpponentStreamerArea/OpponentLiveDataHud(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:35)
+INT05_LAYOUT window=(960, 540) viewport=(1920.0, 1080.0) scale=(0.5, 0.5)
+ERROR: INT05_LAYOUT HUD 等比 (1024, 768)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:28)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/PlayerPK(1024, 768)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/OpponentPK(1024, 768)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/Tier(1024, 768)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/ChargeFeedback/ChargeState(1024, 768)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 直播数据像素下限 PlayerStreamerArea/LiveDataHud(1024, 768)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:35)
+ERROR: INT05_LAYOUT 直播数据像素下限 OpponentStreamerArea/OpponentLiveDataHud(1024, 768)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:35)
+INT05_LAYOUT window=(1024, 768) viewport=(1920.0, 1440.0) scale=(0.533333, 0.711111)
+ERROR: INT05_LAYOUT HUD 等比 (1440, 900)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:28)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/PlayerPK(1440, 900)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/OpponentPK(1440, 900)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/Tier(1440, 900)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+INT05_LAYOUT window=(1440, 900) viewport=(1920.0, 1200.0) scale=(0.75, 0.833333)
+ERROR: INT05_LAYOUT HUD 等比 (1920, 810)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:28)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/PlayerPK(1920, 810)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/OpponentPK(1920, 810)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/Tier(1920, 810)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+INT05_LAYOUT window=(1920, 810) viewport=(2560.0, 1080.0) scale=(1.0, 0.75)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/PlayerPK(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/PKBar/OpponentPK(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/TopBattleStatus/Tier(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 文字像素下限 BattleArea/ChargeFeedback/ChargeState(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:31)
+ERROR: INT05_LAYOUT 直播数据像素下限 PlayerStreamerArea/LiveDataHud(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:35)
+ERROR: INT05_LAYOUT 直播数据像素下限 OpponentStreamerArea/OpponentLiveDataHud(960, 540)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _check (res://tests/integration/int05_window_layout_smoke.gd:66)
+       [1] _run (res://tests/integration/int05_window_layout_smoke.gd:35)
+INT05_LAYOUT window=(960, 540) viewport=(1920.0, 1080.0) scale=(0.5, 0.5)
+INT05_LAYOUT window=(1920, 1080) viewport=(1920.0, 1080.0) scale=(1.0, 1.0)
+INT05_LAYOUT checks=144 failures=36 (synthetic input; not physical mouse acceptance)

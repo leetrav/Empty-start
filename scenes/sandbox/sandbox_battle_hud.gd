@@ -1,7 +1,9 @@
-## 普通战斗界面只读取组合方的状态；设计矩形保存于 Scene，运行时只整体缩放。
+## 普通战斗界面只读取组合方的状态；运行时适配设计比例、文字与相邻容器。
 extends Control
 
 const PortraitMotion = preload("res://systems/presentation/streamer_portrait_motion.gd")
+const MIN_STATUS_PIXELS: float = 18.0
+const MIN_HINT_PIXELS: float = 14.0
 
 var player_portrait_motion: StreamerPortraitMotion
 var opponent_portrait_motion: StreamerPortraitMotion
@@ -30,7 +32,7 @@ var _opponent_connected: bool = false
 @onready var _restart_button: Button = %RestartButton
 
 
-# 保留 Scene 的全部设计矩形，只订阅窗口变化并初始化显示。
+# 以 Scene 的三列设计矩形为基准，订阅窗口变化并初始化显示。
 func _ready() -> void:
 	player_portrait_motion = PortraitMotion.new()
 	player_portrait_motion.attach_portrait(_player_portrait)
@@ -39,18 +41,66 @@ func _ready() -> void:
 	opponent_portrait_motion.attach_portrait(_opponent_portrait)
 	var parent_control: Control = get_parent() as Control
 	parent_control.resized.connect(_fit_parent_size)
+	get_window().size_changed.connect(_fit_parent_size.call_deferred)
 	_fit_parent_size()
 	reset_for_attempt()
 
 
-# 使用设计坐标统一缩放文字和容器，窗口变化时保持左右区和中央区的比例。
+# 等比居中设计画布，宽屏或窄屏不拉伸主播、弹幕和准心。
 func _fit_parent_size() -> void:
 	var parent_control: Control = get_parent() as Control
-	if parent_control == null or size.x <= 0.0 or size.y <= 0.0:
+	if not is_inside_tree() or parent_control == null or size.x <= 0.0 or size.y <= 0.0:
 		return
-	scale = parent_control.size / size
+	var fit_scale: float = minf(parent_control.size.x / size.x, parent_control.size.y / size.y)
+	scale = Vector2.ONE * fit_scale
+	position = (parent_control.size - size * fit_scale) * 0.5
+	_fit_readable_text()
 	# 准心继承同一设计缩放，布局更新后通过其公开入口重新对齐当前鼠标。
 	_aim_reticle.refresh_mouse_position()
+
+
+# 按最终窗口像素保留关键文字下限；调整容器空间，避免小窗口只放大字却裁切。
+func _fit_readable_text() -> void:
+	var output_scale: Vector2 = (get_viewport().get_final_transform() * get_global_transform_with_canvas()).get_scale()
+	var pixel_scale: float = maxf(minf(absf(output_scale.x), absf(output_scale.y)), 0.01)
+	var status_font: int = maxi(18, ceili(MIN_STATUS_PIXELS / pixel_scale))
+	var hint_font: int = maxi(20, ceili(MIN_HINT_PIXELS / pixel_scale))
+	for label: Label in [_player_pk_label, _opponent_pk_label, _tier_label]:
+		label.add_theme_font_size_override("font_size", status_font)
+		label.offset_bottom = status_font + 8.0
+	_battle_state.add_theme_font_size_override("font_size", hint_font)
+	var pk_bar: Control = $BattleArea/TopBattleStatus/PKBar
+	var status: Control = $BattleArea/TopBattleStatus
+	var bar_top: float = maxf(26.0, status_font + 8.0)
+	_pk_progress.offset_top = bar_top
+	_pk_progress.offset_bottom = bar_top + 18.0
+	_battle_state.offset_top = bar_top + 20.0
+	var status_height: float = maxf(72.0, bar_top + 20.0 + hint_font + 8.0)
+	_battle_state.offset_bottom = status_height
+	status.offset_bottom = status_height
+	pk_bar.offset_bottom = status_height
+	$BattleArea/BarrageArea.offset_top = status_height
+	$BattleArea/OracleCandidateDisplay.offset_top = status_height
+	_charge_label.add_theme_font_size_override("font_size", maxi(24, status_font))
+	_charge_label.offset_bottom = 18.0 + maxi(24, status_font)
+	_charge_progress.offset_top = maxf(54.0, _charge_label.offset_bottom + 12.0)
+	_charge_progress.offset_bottom = _charge_progress.offset_top + 20.0
+	var controls_hint: Label = $BattleArea/ChargeFeedback/ControlsHint
+	controls_hint.add_theme_font_size_override("font_size", hint_font)
+	controls_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	controls_hint.offset_bottom = 220.0
+	for hud: Control in [$PlayerStreamerArea/LiveDataHud, $OpponentStreamerArea/OpponentLiveDataHud]:
+		for metric: RichTextLabel in hud.get_node("Metrics").get_children():
+			metric.add_theme_font_size_override("normal_font_size", maxi(24, status_font))
+			metric.add_theme_font_size_override("bold_font_size", maxi(24, status_font))
+			metric.custom_minimum_size.y = maxf(48.0, status_font + 12.0)
+	# 失败层挂在未缩放的场景根节点，单独读取其变换，避免套用 HUD 的留边比例。
+	var overlay_scale: Vector2 = (get_viewport().get_final_transform() * _failure_overlay.get_global_transform_with_canvas()).get_scale().abs()
+	var overlay_pixels: float = maxf(minf(overlay_scale.x, overlay_scale.y), 0.01)
+	var failure_rows: VBoxContainer = _failure_overlay.get_node("CenterContainer/PanelContainer/Rows")
+	failure_rows.get_node("FailureTitle").add_theme_font_size_override("font_size", maxi(32, ceili(MIN_STATUS_PIXELS / overlay_pixels)))
+	failure_rows.get_node("FailureHint").add_theme_font_size_override("font_size", maxi(20, ceili(MIN_HINT_PIXELS / overlay_pixels)))
+	_restart_button.add_theme_font_size_override("font_size", maxi(26, ceili(MIN_STATUS_PIXELS / overlay_pixels)))
 
 
 # 主播名称由当前关资料提供，后续立绘可以替换占位节点。

@@ -21,6 +21,7 @@ const DEFAULT_MUSIC_VOLUME: float = 1.0
 const DEFAULT_SFX_VOLUME: float = 1.0
 const DEFAULT_UI_VOLUME: float = 1.0
 const DEFAULT_FULLSCREEN: bool = false
+const MIN_WINDOWS_CLIENT_SIZE: Vector2i = Vector2i(960, 540)
 
 var master_volume: float = DEFAULT_MASTER_VOLUME
 var music_volume: float = DEFAULT_MUSIC_VOLUME
@@ -33,6 +34,9 @@ var _settings_need_save: bool = false
 
 
 func _ready() -> void:
+	# Windows 窗口以 INT-05 最小验收尺寸为下限，避免继续缩小后文字和操作区相互挤压。
+	if DisplayServer.get_name().to_lower() == "windows":
+		get_window().min_size = MIN_WINDOWS_CLIENT_SIZE
 	# 启动时读取配置、应用设置，并为首次启动创建配置文件。
 	load_settings()
 	apply_settings()
