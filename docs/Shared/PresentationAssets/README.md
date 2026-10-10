@@ -1,5 +1,48 @@
 # PresentationAssets 表现资产接入
 
+> **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../../开发计划_2026-10-09_任务卡依赖整合.md)。开发前核对该表、本卡现行版、main 实际实现及最新完成日志。
+
+
+## 已交付美术资产
+
+当前 PNG 资产分类、命名、数量及引用入口见 [assets/README.md](../../../assets/README.md)。旧位置的 PNG 已按用途重新归类，后续美术接入从此清单查找最新路径。
+
+## 当前制作与集成安排（2026-10-10）
+
+策划正在考虑调整 Sandbox 的场景组织方式。PA-04～PA-19 的**独立程序美术资源、视觉组件、可调参数和完成通知**可按任务推进；需要集中修改 Sandbox、BattleHud 和跨系统生命周期的接线，由后续确认的场景集成负责人依据新结构完成。当前的演出需求与分支结果以各任务卡为准。
+
+PK 条贴图按 PA-16 规则：**玩家 PK 低于 40% 显示负向素材，40% 及以上显示最新 Tier 素材**。角色动画先采用 PA-14 的整图通用待机首版、PA-17 的 Kiwi 整图变形首版。现有粉丝牌继续沿用，外观去留在 PA-10 视觉整合时根据实际画面确定。
+
+## PA-14 双主播整图动效（2026-10-10）
+
+`systems/presentation/streamer_portrait_motion.gd` 使用绑定节点的原生 Tween：外层负责一次射击事件，内层负责循环漂浮、呼吸与微摆，PNG 本体可继续叠加其他表现。HUD 在 `_ready()` 为已有左右 TextureRect 插入这两层；原有素材显示接口继续使用缓存的立绘引用。运行时立绘路径增加 `<PortraitArt>Motion/Idle`，集成代码应使用现有 HUD API 或 `%PlayerPortraitArt` / `%OpponentPortraitArt`，避免硬编码旧子路径。
+
+Lane A 后续接线：
+
+```gdscript
+# HUD 已进入树后，绑定本场正式攻击来源；重复调用自动解除旧连接。
+battle_hud.bind_portrait_attack(attack_charge_input)
+battle_hud.configure_portrait_character("alien") # 支持 alien / kiwi / fox
+```
+
+`bind_portrait_attack(null)` 可解除来源。`play_player_shot(snapshot)` 仅应接正式 `shot_snapshot_created`；每发只走绑定或直接转发中的一种入口。当前 Lane E 按分工保留 `sandbox.gd` / `sandbox.tscn`，完整战斗的发射接线 **TO VERIFY / 待 Lane A 集成**。待机已由 HUD 自动启用。
+
+`refresh_pk()` 按 Tier 控制对手：T0 隐藏立绘及占位文字，T1 起显示当前 PNG；专属离线流程可调用 `set_opponent_portrait_connected(false)`。背景、汗滴、翻图、受击和 CRT 继续由对应卡负责。替换阶段 PNG 会复用当前动效层。
+
+可通过公开 `player_portrait_motion` / `opponent_portrait_motion` 调参：
+
+| 参数 | 默认 / 预设 | 作用 |
+| --- | --- | --- |
+| `idle_period` / `idle_phase` | 玩家 3.4s / 0；alien 3.8s / 2.2；kiwi 2.9s / 1.7；fox 4.1s / 3.2 | 周期 / 弧度相位；修改后 `restart_idle()` |
+| `float_distance` / `breath_amount` / `sway_degrees` | 2～4px / 1.5～2.5% / 0.5～0.8° | 角色预设待机强度 |
+| `body_pivot` | (0.5, 0.65) | 相对槽尺寸的躯干枢轴；随尺寸变化更新 |
+| `shot_direction` / `shot_distance` / `shot_compression` | 向右 / 9px / 6% | 前冲方向、距离、压缩 |
+| `recoil_count` / `recovery_seconds` | 2 / 0.18s | 后坐次数、最终回弹；默认总动作约 0.395s |
+
+`set_idle_strength(0.0)` 平顺减弱待机，事件结束调用 `set_idle_strength(1.0)` 恢复；外部 CRT / 受击请作用于原立绘槽或 PNG 本体，保留 PA-14 两个容器的变换归属。`reset_for_attempt()` 取消射击 Tween、恢复幅度并隐藏对手。
+
+Windows 验证入口为 `tests/presentation/pa14_portrait_motion_smoke.tscn`：继承正式 Sandbox Scene，仅在测试场景覆盖组合脚本，使用真实攻击输入、Timer 与 HUD；测试时长 / 分辨率处理仅存放于 `tests/`。Godot 4.7.2 Windows GUI 与 headless 各 23 项通过，GUI 实际 PNG 为 1920×1080。Android 硬件、项目默认 D3D12、PA-09 / PA-11 完整同屏演出仍 **UNVERIFIED**。详见 [PA-14 日志](表现资产_PA-14_2026-10-10_log.md)。
+
 ## 目标
 
 让程序可以稳定接入美术正式资源，同时保持占位素材和正式素材可以直接替换。
@@ -56,10 +99,26 @@ assets/
 | --- | --- | --- |
 | PA-01 | 建立表现资产引用规范与共享配置 | 无 |
 | PA-02 | 正式美术资产入库与数据接线 | 无 |
-| PA-03 | 主战斗界面正式美术接入 | 无 |
+| PA-03 | 主战斗正式美术接入，按 INT-06 全高弹幕区与 PA-08 环形准星更新布局 | 运行画面验证 |
 | PA-04 | 普通弹幕玻璃底板、倾向/强度外观与富文本文字表现 | 运行画面验证 |
-| PA-05 | 特殊弹幕材质：铁质、预裂玻璃、果冻、镂空文字 | 运行画面验证 |
+| PA-05 | 特殊弹幕外观：铁质、预裂玻璃、果冻、镂空字、假复读、水军反击 | 运行画面验证 |
 | PA-06 | 弹幕命中表现：曲线碎裂、漫画强调符号、硬碰、分裂、果冻回弹 | 运行画面验证 |
-| PA-07 | 漫画实体言弹：色块弹体、简洁高光与短促速度线 | 运行画面验证 |
+| PA-07 | 漫画实体言弹：准星中心起飞，单发弹体配合多目标命中反馈 | 运行画面验证 |
+| PA-08 | 极简准星：小空心圆、外围环形蓄力进度与状态动效 | 运行画面验证 |
+| PA-09 | 战斗结果 UI：命中点反馈、本发净 PK 为负时主播受击、PK 浮字 | 运行画面验证 |
+| PA-10 | PA-04～PA-19 等正式程序美术集成后的全局 Style 统一验收 | 整屏视觉验收 |
+| PA-11 | 战斗阶段切换：T0→T1 先上箭头再右侧直播画面 CRT、降档下箭头与震屏 | 运行画面验证 |
+| PA-12 | Paradox 程序美术：噤声、漫画双斜切、闪白冲击字、画面撕开及矛盾阶段表现 | 运行画面验证 |
+| PA-13 | PK 条仓鼠球指示器：随进度滚动、升降档蹦跳、降档惊慌表情 | 真实战斗画面验收 |
+| PA-14 | 双主播立绘常态微动、主角仓鼠真实发射时冲刺回弹 | 运行画面验收 |
+| PA-15 | 对手 T2 idle+漫画汗滴；T3～T5 卡牌翻图与受击漫画冲击 | 实际升降档画面 |
+| PA-16 | PK 条阶段 / 负向贴图短闪调色切换，配合 PA-13 滚动球 | 运行画面验证 |
+| PA-17 | 真击破对手专属败北：外星人融化、狐狸花瓣雨、Kiwi 方案 A；未击破 T5 离线 | 成败分支实际演示 |
+| PA-18 | PK 归零战败：仓鼠球跌落、玩家直播 CRT 断流、对手持续直播、失败 UI | 战败画面与重开 |
+| PA-19 | Paradox 两种结果均 CRT 关机、上翻页回主角房间，再弹战后结算 | 双分支战后结算 |
 
 PA-02 负责把正式美术资产导入工程并接到对应 Resource；PA-03 负责将已经接线的正式资源替换到 Sandbox 主战斗界面。
+
+## 最新任务卡分工口径（2026-10-09）
+
+普通前景话语和携带 `fake_card` 等特性的特殊实例使用有描边的清晰文字；普通复读以灰字、零文字描边和背景层级呈现。**普通复读为圆角气泡、假复读为更鲜艳的椭圆气泡**，假复读属于带特性的前景话语。PA-04 负责视觉材质与文字风格，BG-28/BG-37 负责普通前景文本能力，RP-19～RP-21 负责复读字色、描边与层级；PA-06 表现遮挡撞击时遵循 CA-15 的整发落空结算。

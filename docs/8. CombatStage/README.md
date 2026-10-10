@@ -1,5 +1,33 @@
 # 8. CombatStage 战斗阶段系统任务拆分
 
+> **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。开发前核对该表、本卡现行版、main 实际实现及最新完成日志。
+
+
+> **派工入口**：[2026-10-09 当前任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。本系统的已完成旧卡保留作功能实现依据；下方历史讨论章节的旧数值以现行派工入口覆盖。
+
+
+## 2026-10-09 现行实现核对与任务状态
+
+**阶段结构：** `CombatStage` 现有 T0～T5 数据档，满 PK 后切入独立 `ContradictionBreak`，玩家看到 T6/Paradox（CS-25），普通 T5 继续战斗到满值。现有 `tier_state_changed` 在最终结算后发出，但本发 Sandbox 仍需完成命中处理；CS-14/CS-18 应在当发事实及队列协调后执行升档清屏、清旧请求。T0 回拉倍率改为 0（CS-19），T1 开场对白完成后再进入回拉与生成。T2～T5 每档仅在本场首次到达时抽取一项反击（CS-28）；已抽技能按当前 Tier 生效，降档暂停高档反击、回升恢复原抽取结果（CS-29），具体候选池后续确定。降至 T0 对手离线（CS-26），降至 T1 触发嘲讽（CS-27）。
+
+| 卡片 | 按实际代码核对后的唯一功能 | 状态 |
+| --- | --- | --- |
+| [CS-14](tasks/CS-14_tier-up-clear-all.md) | 本发结算完成后升档清屏 | 待开发 |
+| [CS-15](tasks/CS-15_tier-up-breakthrough.md) | 升档短暂突破演出 | 待开发 |
+| [CS-16](tasks/CS-16_tier-down-shake.md) | 降档统一震动（离线与嘲讽由 CS-26/27 叠加） | 待开发 |
+| [CS-17](tasks/CS-17_silence-and-burst.md) | 沉默爆发候选节点 | 待策划 |
+| [CS-18](tasks/CS-18_tier-up-clear-old-repeat-requests.md) | 现有队列清理升档接线 | 待接线 |
+| [CS-19](tasks/CS-19_tier0-zero-pullback.md) | T0 回拉倍率数值 0 | 数值调整 |
+| [CS-20](tasks/CS-20_tier0-matching-status.md) | T0 搜索对手文案 | 已有 HUD |
+| [CS-21](tasks/CS-21_tier1-opponent-portrait.md) | T0/T1 对手立绘出现 | 已有资源 |
+| [CS-22](tasks/CS-22_tier1-bubble-dialogue.md) | T1 开场气泡对白 | 待开发 |
+| [CS-23](tasks/CS-23_tier1-resume-on-dialogue-end.md) | T1 对话后恢复战斗 | 待接线 |
+| [CS-24](tasks/CS-24_tier-foreground-slot-catalog.md) | Tier 唯一前景容量字段 | 待开发 |
+| [CS-25](tasks/CS-25_paradox-tier6-stage-label.md) | T6/Paradox HUD 阶段标记 | 待接线 |
+
+本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+
 ## 系统目标
 
 INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar 和 AudioManager 的绑定，开局调用 `begin_combat()`。每次最终 PK 更新先同步档位，再由攻击提交回调读取档位创建复读计划；生成倍率只影响新弹幕。Tier 状态已连接可见反馈，Viewer / Like 的档位数值规则仍待配置。PK 满值由 Sandbox 停止普通战斗并启动真实 ContradictionBreak 入口。
@@ -79,19 +107,51 @@ CS-10 的 Tier 状态与 AU-01 音效绑定已在 INT-01 Sandbox 接通；直播
 CS-11 等 12. ContradictionBreak 有真实入口后联调。
 CS-12 等 3/5/10 的清理入口存在。
 
-## 待整理：CS-13 升降档表现需求
+## 历史记录：CS-13 升降档表现需求初稿（已拆卡）
 
-策划新增需求：T0→T1 以及其他**向上突破**时短暂清空场上弹幕，并配合阶段突破动效；T1→T0 **不清屏**，用屏幕抖动表现降档。清屏类别、其他下行路径、多档跨越、时长和输入影响仍待确认。详见 `tasks/CS-13_pending-tier-transition-feedback.md`。**仅记录，未修改程序，暂不派工。**
+现行需求：全部普通战斗升档按 CS-18→CS-14→CS-15 处理旧队列清理、清屏和过渡；全部降档通过 CS-16 震屏并保留弹幕，降至 T0 另触发 CS-26 对手离线，降至 T1 另触发 CS-27 对手嘲讽。历史讨论档见 `tasks/CS-13_pending-tier-transition-feedback.md`。
 
 ## 2026-10-09 战斗打磨单功能开发卡
 
-本轮确认的高密度弹幕、四种运动、交叉层级、富文本、舆论潮汐、弹幕群聚、伪纵深、命中冲击波、复读感染、Tier 升降档与沉默爆发，现已拆为单一功能开发卡。每张卡仅定义触发条件、预期行为与验收结果；可调数值以实测和后续策划配置为准。卡片状态均为**待实施**。
+本轮确认的高密度弹幕、四种运动、交叉层级、富文本、舆论潮汐、弹幕群聚、伪纵深、命中冲击波、复读感染、Tier 升降档与沉默爆发，现已拆为单一功能开发卡。每张卡仅定义触发条件、预期行为与验收结果；可调数值以实测和后续策划配置为准。当前单卡状态以顶部现行表、各卡自身状态和 `docs/开发计划_2026-10-09_任务卡依赖整合.md` 为准。
 
 | 卡号 | 本卡唯一功能 | 状态 |
 | --- | --- | --- |
 | [CS-14](tasks/CS-14_tier-up-clear-all.md) | 所有升档清空全部可见弹幕 | 待实施 |
 | [CS-15](tasks/CS-15_tier-up-breakthrough.md) | 升档短暂突破动效 | 待实施 |
-| [CS-16](tasks/CS-16_tier-down-shake.md) | 全部降档只震屏 | 待实施 |
+| [CS-16](tasks/CS-16_tier-down-shake.md) | 降档统一震屏，其他剧情由 CS-26/27 提供 | 待实施 |
 | [CS-17](tasks/CS-17_silence-and-burst.md) | 关键阶段沉默后爆发 | 待实施 |
 
 关联依赖及实施顺序以各卡的上游功能卡为准；共享场景与组件按实际 Owner 的任务流程依次集成。
+
+## 2026-10-09 新确认规则与单功能任务卡
+
+T0 为等待匹配对手阶段，对手回拉倍率为 0；进入 T1 后清屏、展示对手待机立绘和气泡对话，对话结束后恢复 T1 正常弹幕和回拉。升档同步刷新旧复读等待队列；降档统一震屏且原有弹幕按寿命自然回落，落到 T0/T1 时可分别叠加离线/嘲讽。T5 继续属于普通战斗，T5 结束后才进入 T6 / Paradox（矛盾击破）。T2～T5 的随机对手反击技能库继续保留后续专题设计。
+
+| 任务卡 | 唯一功能 | 状态 |
+| --- | --- | --- |
+| [CS-18](tasks/CS-18_tier-up-clear-old-repeat-requests.md) | 升档同步清理旧复读生成队列 | 待实施 |
+| [CS-19](tasks/CS-19_tier0-zero-pullback.md) | T0 的对手 PK 回拉倍率为零 | 待实施 |
+| [CS-20](tasks/CS-20_tier0-matching-status.md) | T0 显示等待连线状态 | 待实施 |
+| [CS-21](tasks/CS-21_tier1-opponent-portrait.md) | T1 连线展示对手待机立绘 | 待实施 |
+| [CS-22](tasks/CS-22_tier1-bubble-dialogue.md) | T1 连线播放对手气泡对话 | 待实施 |
+| [CS-23](tasks/CS-23_tier1-resume-on-dialogue-end.md) | T1 对话结束后进入正式 PK | 待实施 |
+
+本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。
+
+## 2026-10-09 新增确认：降档剧情与反击技能生命周期
+
+对手的阶段表现与战斗 Tier 对应：**T1→T0 对手离线并恢复匹配提示**；**T2→T1 对手嘲讽**。降档仍沿用 CS-16 震屏和场上弹幕自然回落。T2、T3、T4、T5 在**每场战斗每个 Tier 首次到达**时各随机抽取一项反击；已抽结果本场记住，当前 Tier 只启用已抽取且所属 Tier 不高于当前档位的反击。降档暂停高档技能的后续触发，回升到原档后恢复此前抽取的技能。技能候选池、具体技能效果继续由策划后续确定。
+
+| 任务卡 | 单功能 | 状态 |
+| --- | --- | --- |
+| [CS-26](tasks/CS-26_tier1-to-tier0-disconnect.md) | 降至 T0 时对手离线 | 待开发 |
+| [CS-27](tasks/CS-27_tier2-to-tier1-taunt.md) | 降至 T1 时对手嘲讽表现 | 待开发 |
+| [CS-28](tasks/CS-28_first-entry-one-retaliation-per-tier.md) | 每个 Tier 本场首次到达抽取一次反击 | 待开发 |
+| [CS-29](tasks/CS-29_retaliation-effective-by-current-tier.md) | 已抽反击按当前 Tier 生效 | 待开发 |
+
+**数值与术语记录：** 单场普通战斗的体验目标约为 **2～4 分钟**，后续通过 PK 得分、阈值、回拉等函数统一建模。向美术说明「正确弹幕加分、错误弹幕扣分」时，继续使用现有弹幕特性和 HitResolution 的得分结果作为实际程序判定来源。
+
+## 与 21. StreamerBubbleDialogue 的事件接线（2026-10-09）
+
+CS-22 在 T1 首次连线时触发配置好的开场对白，实际气泡展示由 [SD-02](../21.%20StreamerBubbleDialogue/tasks/SD-02_portrait-side-bubble-view.md)、[SD-03](../21.%20StreamerBubbleDialogue/tasks/SD-03_ordered-bubble-events.md)、[SD-06](../21.%20StreamerBubbleDialogue/tasks/SD-06_combat-state-dialogue-event.md) 负责；CS-23 继续根据开场对白序列完成事实恢复生成与对手回拉。CS-27 降至 T1 的嘲讽也通过 SD-06 映射，CS-26 降至 T0 将对手离线事实交给气泡队列清理。普通话语命中映射与指定话语触发对手台词分别归 SD-04、SD-05；定时对白归 SD-07。剧情数值与阶段所有权继续归 CombatStage/Sandbox。

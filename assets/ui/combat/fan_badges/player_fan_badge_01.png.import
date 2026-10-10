@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cg8kr8bd65f7e"
-path="res://.godot/imported/bg_player_live.png-435addf184ddf1e768142e72f75fe023.ctex"
+uid="uid://bkxk2v5s0l5nh"
+path="res://.godot/imported/player_fan_badge_01.png-76f678b9beefe8bfe4528804d2112d70.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/environment/bg_player_live.png"
-dest_files=["res://.godot/imported/bg_player_live.png-435addf184ddf1e768142e72f75fe023.ctex"]
+source_file="res://assets/ui/combat/fan_badges/player_fan_badge_01.png"
+dest_files=["res://.godot/imported/player_fan_badge_01.png-76f678b9beefe8bfe4528804d2112d70.ctex"]
 
 [params]
 

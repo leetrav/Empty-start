@@ -98,7 +98,7 @@ RS-08 已核实并保护现有重复查看路径：用同一所属周目 SaveDat
 
 ## RS-07：同一房间按倾向改变装饰与光照
 
-休息结果页面复用 `res://assets/environment/bg_player_room_1.png` 的单间背景，环境独立子场景 `ui/rest/rest_room_environment.tscn` 仅切换背景调色、覆盖光照、左右装饰块与符号：正统暖金/对称，异端冷紫/倾斜，荒谬霓虹双色/错位。当前颜色、图形和符号仅为可替换的开发期视觉占位；后续美术可只替换 RoomEnvironment 内的贴图与装饰，无需改变 Rest 结算逻辑或三种背景。
+休息结果页面复用 `res://assets/environment/rooms/player_room_01.png` 的单间背景，环境独立子场景 `ui/rest/rest_room_environment.tscn` 仅切换背景调色、覆盖光照、左右装饰块与符号：正统暖金/对称，异端冷紫/倾斜，荒谬霓虹双色/错位。当前颜色、图形和符号仅为可替换的开发期视觉占位；后续美术可只替换 RoomEnvironment 内的贴图与装饰，无需改变 Rest 结算逻辑或三种背景。
 
 `RestResultView.show_result()` 只读取当前周目 `SaveData.tendency_state.get_primary_tendency_id()`，直接沿用 17 的开局全零和主导并列裁决；不接触累计值或本场暂存。缺有效上下文时使用不带倾向装饰的中性房间，`hide_result()` 同步复位。环境子节点均不接收鼠标，结果面板、圣典、败者卡、返回和继续信号仍沿用原 UI 接线。RS-07 不新增永久自动化单测；开发临时场景已做真实 Godot 4.7.2 UI 交互 Smoke，详见日期日志。
 
@@ -106,7 +106,7 @@ RS-08 已核实并保护现有重复查看路径：用同一所属周目 SaveDat
 
 新周目先经过 ID-09 的「主播取名 → 12 身份卡 → 粉丝团取名」，正式确认并保存后，先进入主角房间。房间复用 `RestRoomEnvironment` 和 RS-07 当前已实现的三倾向装饰及光照；以开局身份的倾向显示初始房间状态，等待玩家点击「开始直播」后才启动第一普通关。开局此时无已完成关卡，也没有战后 `RestSession` 结果。首次房间入口与战后结算入口明确区分，详见 `tasks/RS-12_new-run-opening-room.md`。
 
-独立顶层场景 `ui/rest/rest_opening_room.tscn/.gd` 只读 `SaveManager.data` 的已确认主播名、粉丝团名及 `tendency_state.get_primary_tendency_id()`；直接组合现有 `rest_room_environment.tscn`，使用同一 `bg_player_room_1.png`。页面只有开局提示与“开始直播”，没有战后成果、历史或关卡完成操作。资料缺失时展示明确提示并禁用开播，直接启动不会生成新周目。三倾向装饰继续采用 RS-07 开发期视觉占位；本卡修正共享背景 TextureRect 的无效 `stretch_mode = 7` 为 `STRETCH_KEEP_ASPECT_COVERED = 6`，开局与战后页面均能显示真实底图。
+独立顶层场景 `ui/rest/rest_opening_room.tscn/.gd` 只读 `SaveManager.data` 的已确认主播名、粉丝团名及 `tendency_state.get_primary_tendency_id()`；直接组合现有 `rest_room_environment.tscn`，使用同一 `player_room_01.png`。页面只有开局提示与“开始直播”，没有战后成果、历史或关卡完成操作。资料缺失时展示明确提示并禁用开播，直接启动不会生成新周目。三倾向装饰继续采用 RS-07 开发期视觉占位；本卡修正共享背景 TextureRect 的无效 `stretch_mode = 7` 为 `STRETCH_KEEP_ASPECT_COVERED = 6`，开局与战后页面均能显示真实底图。
 
 ID-09 页面在 `_ready()` 连接自身 `opening_saved(run_data)` 到 `_on_opening_saved()`，保存成功后请求 `SceneRouter.goto_opening_room() -> Error`。路由失败时保留已保存身份，按钮只重试房间跳转；成功期间保持忙碌标记。开局房间 `start_live() -> Error` 只在显式按钮请求后调用现有 `SceneRouter.goto_game()`，第一次成功后锁住页面，后续调用返回 `ERR_ALREADY_IN_USE`；切换失败可重试，周目对象变化时拒绝启动。
 

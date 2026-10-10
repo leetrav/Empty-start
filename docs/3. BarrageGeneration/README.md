@@ -1,5 +1,37 @@
 # 3. BarrageGeneration 弹幕生成系统任务拆分
 
+> **派工入口**：[2026-10-09 当前任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。本系统的已完成旧卡保留作功能实现依据；下方历史讨论章节的旧数值以现行派工入口覆盖。
+
+
+## 2026-10-09 现行实现核对与任务状态
+
+**现行生成规则：** 前景普通话语与挂特性的特殊话语共用 T0～T5 各档少量容量，当前确认 T1=10/T2=13/T3=16，T4=19/T5=22 为当前递增规划，T0 待填。批次计时、随机抽词、实例容量和命中移除已存在，只需连接新 Tier 名额。复读另占独立容量，在中央战斗区随机静止生成、按寿命渐隐并固定底层；遮挡特性话语在战斗区随机静止生成且固定最高层。普通前景采用可读的多运动方式。Paradox 阶段按 CB-13 读取一真五假六句。
+
+| 卡片 | 按实际代码核对后的唯一功能 | 状态 |
+| --- | --- | --- |
+| [BG-16](tasks/BG-16_high-density-cap.md) | 按 Tier 读取前景容量 | 待开发 |
+| [BG-17](tasks/BG-17_pc-android-performance.md) | 分层性能与可读性验收 | 待组合实测 |
+| [BG-42](tasks/BG-42_static-random-placement.md) | 复读和遮挡共用的中央区域随机静止落点 | 待开发 |
+| [BG-24](tasks/BG-24_overlap-pass-through.md) | 实例出生与运动允许重叠 | 待开发 |
+| [BG-27](tasks/BG-27_animated-size.md) | 连续缩放 | 已有脉冲入口 |
+| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景富文本 | 待开发 |
+| [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
+| [BG-30](tasks/BG-30_opinion-tide.md) | 复读潮的疏密起伏 | 待开发 |
+| [BG-31](tasks/BG-31_spatial-clusters.md) | 同句复读成批涌现（复用 RP-18） | 归档重复能力 |
+| [BG-32](tasks/BG-32_linked-faux-depth.md) | 伪纵深观感 | 候选暂缓 |
+| [BG-33](tasks/BG-33_impact-motion-wave.md) | 命中后的短时局部运动扰动 | 可选试玩后实施 |
+| [BG-34](tasks/BG-34_frequency-based-refill.md) | 既有定时批次与 Tier 名额接线 | 已有基础 |
+| [BG-35](tasks/BG-35_special-instance-cap.md) | 特殊实例占用独立容量 | 待开发 |
+| [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档超额自然回落 | 待开发 |
+| [BG-37](tasks/BG-37_foreground-text-outline.md) | 非复读文字描边 | 待开发 |
+| [BG-38](tasks/BG-38_effective-area-clear.md) | 现有命中结束目标接线回归 | 已有链路 |
+| [BG-39](tasks/BG-39_tier-motion-proportions.md) | 四种运动类型随 Tier 权重变化 | 待开发 |
+| [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 前景话语最大速度 | 待开发 |
+| [BG-41](tasks/BG-41_random-trait-selection.md) | 按已解锁池随机分配特性 | 技能池待定 |
+
+本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+
 ## DD-16 终局表现接口（2026-10-09）
 
 `BarrageArea.enter_terminal_presentation(trait_ids=[], trait_colors={})` 由 DivineDescentCombatMode / Spread 配置同一终局区域，只影响后续普通 / 复读实例。普通特性选择在终局忽略，运行记录 TraitSet 保持为空；冻结继承 ID 独立交给 BarrageView 的 `apply_terminal_trait_presentation()`，仅消费显式 Color 配色，缺配色沿用 Theme。`get_presentation_trait_ids()` 返回独立副本，原句和截止时间保持原值。区域终局状态持续至实例销毁，新普通周目创建新区域。
@@ -27,7 +59,7 @@
 
 - BG-01～BG-08、BG-11 与 BG-14 核心任务已完成；BG-10 消费 RepeatPlan 并维护独立复读容量。INT-01 提供指定目标结束与场上清理入口，由 Sandbox 根据真实结算结果调用。
 - Repeat 的延迟队列调用接线由 10. Repeat 的 RP-06 提供；INT-01 在 Sandbox 组合 CombatStage、命中移除和复读请求。
-- BG-12 已在隔离集成分支提供真假矛盾生成入口；CB-03 负责从当前关卡接入该入口，尚未合入 main。
+- BG-12 真/假矛盾生成入口与 CB-03 的当前关卡接线均已进入 main；现行一真五假六句固定出现由 CB-13 承接。
 - INT-01 在普通战斗失败、完成与重开时调用场上清理和 `RepeatDelayQueue.clear_normal_queue()`，完成当前普通战斗阶段的清理接线。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - INT-01 已接入普通战斗的特性结果、攻击、结算、Tier与复读调度；矛盾阶段及其他尚缺真实接口的联调继续保留对应任务卡。
@@ -58,9 +90,9 @@ BT-13 增加 `get_available_trait_ids(level_profile)`，读取当前 SaveManager
 | BG-14 | 读取舞台布局尺寸 | 无 |
 | BG-15 | 高密度动态弹幕与区域群体命中需求暂存（未完成，暂不派工） | 待后续正式拆卡确定 |
 
-## 待整理需求：BG-15（2026-10-09）
+## 历史记录：BG-15 初始高密度设想（已被现行拆卡取代）
 
-本轮讨论已确认：目标同屏容量 500～1000（最终依据 PC / Android 实机压测确定）；战斗区域四周及内部随机出生；直线、曲线、加减速、游荡四种运动；允许交叉、穿透、随机前后层级及运动中变层；弹幕动态缩放和变速；一句话内部不同样式与局部文字动画；视觉完全遮住仍可按实际区域群体命中；单发 PK 正向收益与负向惩罚分别封顶，但所有有效命中仍按实际结果进入对应系统结算。具体参数与实现方案仍未确定。
+本节是早期需求记录：原先提出普通话语 500～1000 同屏，现已调整为**每档少量可读前景 + 独立容量的多量灰字复读**，最终基于 BG-16、RP-15、BG-17 验收；战斗区域四周及内部随机出生；直线、曲线、加减速、游荡四种运动；允许交叉、穿透、随机前后层级及运动中变层；弹幕动态缩放和变速；一句话内部不同样式与局部文字动画；视觉完全遮住仍可按实际区域群体命中；单发 PK 正向收益与负向惩罚分别封顶，但所有有效命中仍按实际结果进入对应系统结算。具体参数与实现方案仍未确定。
 
 当前只记录在 `tasks/BG-15_pending-high-density-dynamic-barrage-requirements.md`，**未完成且暂不派工**。本次未修改程序实现；待关联的 05、06、10 等系统讨论后再整理具体 Agent 任务卡。
 
@@ -184,7 +216,7 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 
 ### BG-14 / INT-02 舞台设计规格与静态布局
 
-`data/stage_layout/stage_layout_profile.tres` 保存共享设计规格：基准 `1920×1080`，左右主播区各 `448×1080`，主播信息区 `448×128`、立绘区 `448×432`、直播数据区 `448×520`；中央 PK / Tier / 状态区 `1024×72`、弹幕区 `(448,72,1024,760)`、底部交互区 `1024×248`。这些区域相接覆盖整张基准舞台。
+`data/stage_layout/stage_layout_profile.tres` 当前仍保存 INT-02 的历史矩形：1920×1080、左右各 448px、中央顶部 72px，弹幕区 `(448,72,1024,760)`、底部交互区 248px。**最新目标**以 INT-06 为准：保留 72px 顶部，中央弹幕区扩展为 `(448,72,1024,1008)`，左下角悬浮操作 ICON；该布局是待实施任务。
 
 INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编辑器预览与运行时沿用同一位置/尺寸，HUD 只整体缩放。StageLayoutProfile 保存区域设计规格；尺寸改变时按相同值编辑 Scene Rect，使配置规格和实际布局保持一致。
 
@@ -192,27 +224,44 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 
 ## 2026-10-09 战斗打磨单功能开发卡
 
-本轮确认的高密度弹幕、四种运动、交叉层级、富文本、舆论潮汐、弹幕群聚、伪纵深、命中冲击波、复读感染、Tier 升降档与沉默爆发，现已拆为单一功能开发卡。每张卡仅定义触发条件、预期行为与验收结果；可调数值以实测和后续策划配置为准。卡片状态均为**待实施**。
+本轮确认的高密度弹幕、四种运动、交叉层级、富文本、舆论潮汐、弹幕群聚、伪纵深、命中冲击波、复读感染、Tier 升降档与沉默爆发，现已拆为单一功能开发卡。每张卡仅定义触发条件、预期行为与验收结果；可调数值以实测和后续策划配置为准。实际状态与可派工顺序以本 README 顶部现行表及 `docs/开发计划_2026-10-09_任务卡依赖整合.md` 为准。
 
 | 卡号 | 本卡唯一功能 | 状态 |
 | --- | --- | --- |
-| [BG-16](tasks/BG-16_high-density-cap.md) | 普通弹幕高密度容量 | 待实施 |
-| [BG-17](tasks/BG-17_pc-android-performance.md) | PC 与 Android 高密度性能验证 | 待实施 |
+| [BG-16](tasks/BG-16_high-density-cap.md) | 按 Tier 维持少量前景话语名额 | 待实施 |
+| [BG-17](tasks/BG-17_pc-android-performance.md) | 前景少量话语与大量复读的分层性能验收 | 待实施 |
 | [BG-18](tasks/BG-18_four-edge-spawn.md) | 战斗区域四周随机出生 | 待实施 |
 | [BG-19](tasks/BG-19_interior-random-spawn.md) | 战斗区域内部随机出生 | 待实施 |
-| [BG-20](tasks/BG-20_random-straight-motion.md) | 随机方向直线穿越 | 待实施 |
-| [BG-21](tasks/BG-21_curved-motion.md) | 曲线漂移运动 | 待实施 |
-| [BG-22](tasks/BG-22_speed-change-motion.md) | 弹幕运动中加减速 | 待实施 |
-| [BG-23](tasks/BG-23_wandering-motion.md) | 弹幕游荡转向 | 待实施 |
+| [BG-20](tasks/BG-20_random-straight-motion.md) | 前景普通话语随机方向直线运动 | 待实施 |
+| [BG-21](tasks/BG-21_curved-motion.md) | 前景普通话语连续曲线运动 | 待实施 |
+| [BG-22](tasks/BG-22_speed-change-motion.md) | 前景普通话语平缓加减速 | 待实施 |
+| [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 待实施 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 待实施 |
-| [BG-25](tasks/BG-25_random-start-layer.md) | 出生时随机前后层级 | 待实施 |
-| [BG-26](tasks/BG-26_moving-layer-order.md) | 运动中变化前后层级 | 待实施 |
-| [BG-27](tasks/BG-27_animated-size.md) | 运动中随机放大缩小 | 待实施 |
+| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 待实施 |
+| [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 待实施 |
+| [BG-27](tasks/BG-27_animated-size.md) | 普通前景话语的适度缩放 | 待实施 |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 单句话语内部富文本混合样式 | 待实施 |
-| [BG-29](tasks/BG-29_local-text-animation.md) | 局部字词动态效果 | 待实施 |
-| [BG-30](tasks/BG-30_opinion-tide.md) | 舆论潮汐式密度起伏 | 待实施 |
-| [BG-31](tasks/BG-31_spatial-clusters.md) | 成组聚集的弹幕出生 | 待实施 |
-| [BG-32](tasks/BG-32_linked-faux-depth.md) | 缩放速度与层级联动的伪纵深 | 待实施 |
+| [BG-29](tasks/BG-29_local-text-animation.md) | 普通话语随机局部文字动画 | 待实施 |
+| [BG-30](tasks/BG-30_opinion-tide.md) | 底层复读潮汐密度节奏 | 待实施 |
+| [BG-31](tasks/BG-31_spatial-clusters.md) | 同一句复读成批出现 | 待实施 |
+| [BG-32](tasks/BG-32_linked-faux-depth.md) | 伪纵深视觉候选体验验证 | 候选暂缓 |
 | [BG-33](tasks/BG-33_impact-motion-wave.md) | 群体命中后的局部冲击波 | 待实施 |
 
 关联依赖及实施顺序以各卡的上游功能卡为准；共享场景与组件按实际 Owner 的任务流程依次集成。
+
+## 2026-10-09 新确认规则与单功能任务卡
+
+前景包含普通话语及挂有特性的普通话语，二者共用当前 Tier 少量同屏名额，击中后按配置的正常生成频率补充。前景话语具备描边，运动方式与速度按可读性限制；复读在中央区随机静止生成并始终底层、按寿命渐隐；遮挡特性实例在随机位置静止显示并保持最高层。旧 BG-16、BG-17 需求已改为少量前景及背景复读的实际性能与可读性验收，BG-32 伪纵深保持候选暂缓状态。
+
+| 任务卡 | 唯一功能 | 状态 |
+| --- | --- | --- |
+| [BG-34](tasks/BG-34_frequency-based-refill.md) | 按生成频率补足前景话语 | 待实施 |
+| [BG-35](tasks/BG-35_special-instance-cap.md) | 限制携带特性的前景实例数量 | 待实施 |
+| [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档后让超额前景实例自然回落 | 待实施 |
+| [BG-37](tasks/BG-37_foreground-text-outline.md) | 所有非复读话语文字描边 | 待实施 |
+| [BG-38](tasks/BG-38_effective-area-clear.md) | 有效攻击后清除命中区域全部话语 | 待实施 |
+| [BG-39](tasks/BG-39_tier-motion-proportions.md) | 按 Tier 改变前景运动类型权重 | 待实施 |
+| [BG-42](tasks/BG-42_static-random-placement.md) | 复读与遮挡共享静止随机落点 | 待实施 |
+| [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 普通前景话语速度上限 | 待实施 |
+
+本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。

@@ -1,0 +1,56 @@
+# INT-07 提取神降临与结局转场流程
+
+**状态：待开发 · Sandbox 架构重构第 1 张卡**  
+**Owner：Lane A / Sandbox 集成**  
+**前置：INT-04 Windows TEST_ONLY 整局联调通过**  
+**后续：INT-08 → INT-09 → INT-10**
+
+## 开始前先阅读以下文档
+- `AGENTS.md`、`known_traps.md`、`project.godot`
+- `docs/Original/任务卡模板.md`
+- `docs/Integration/README.md`、`docs/Integration/tasks/INT-04_test_only_full_run.md`、`docs/Integration/INT-04_2026-10-09_log.md`
+- `docs/19. DivineDescent/README.md`、`docs/20. Ending/README.md`
+- `docs/开发计划_2026-10-09_任务卡依赖整合.md`
+- `scenes/sandbox/sandbox.gd`、`scenes/sandbox/sandbox.tscn`、`core/autoload/scene_router.gd`、`core/divine_descent/`、`tests/integration/int_04_full_run.gd`
+
+## 已经实现的功能
+- `Sandbox` 在最后一关 Rest Continue 后创建 `DivineDescentSession`，启用 `DivineDescentCombatMode`，按冻结历史进入扩散或空历史结局路线。
+- `DivineDescentSpread` 已提供自动扩散、新话衰减、锁句、90% 收束、输入强化和全屏强调完成事件。
+- `EndingSession.receive_final_state()`、`SceneRouter.goto_ending()` 已接通结局页面。
+- INT-04 已有 Windows Godot 4.7.2 的两条 TEST_ONLY 完整路线及存档读回证据。
+
+## 本次任务
+将神降临阶段的生命周期和内部流程提取为独立的 `DivineDescentFlow`，由 `Sandbox` 组合使用。
+
+1. 以最新 `main` 核对 `Sandbox` 的 `_enter_divine_descent()`、`_on_divine_convergence()`、`_finish_divine_descent()`、神降临输入分发、逐帧衰减和离树清理的现行行为及调用关系。
+2. 建立一个与现有 Godot 场景结构匹配的神降临流程组件，统一持有当次 `DivineDescentSession`、`DivineDescentCombatMode`、`DivineDescentSpread` 的生命周期。
+3. 通过公开入口接收当前关卡目录、现有战斗组件和已确定的终局配置；复用原有终局冻结、普通战斗关闭、扩散、收束及输入强化规则。
+4. 对外提供明确的开始、逐帧推进、终局输入处理、停止和结果读取接口；以完成信号交付已接收冻结事实的 `EndingSession`。
+5. 在 `Sandbox` 保留最后一关的顶层切换请求，调用流程组件的启动入口，并负责最终存盘和 `SceneRouter.goto_ending()`。
+6. 同步更新引用神降临内部状态的测试调用，使测试通过稳定的流程接口读取同一 `Session` 和扩散状态。
+7. 保留两条终局路线的完成顺序：空普通历史直接准备 Ending；存在有效历史时完成扩散、锁句、90% 收束和全屏强调后进入 Ending。
+
+## 验收条件
+1. `Sandbox` 可以启动独立神降临流程并收到一次完成通知，原冻结 `DivineDescentSession` 贯穿至 `EndingSession`。
+2. 普通历史路线通过真实扩散、衰减、锁句、收束和全屏强调；空历史路线完成零收藏结局。
+3. 神降临输入强化维持现有表现，终局期间的 PK、Tier、倾向、奖励与冻结快照保持 INT-04 已验收的结果。
+4. 顶层场景切换后，神降临计时、生成和输入组件完成生命周期清理。
+5. `INT-04` 两条路线、场景真实启动、存盘读回和现有神降临定向测试通过；记录 Godot 真实进程退出码、关键结果及相关 Output。
+
+## Godot 开发环境
+- Godot 版本：4.7.2
+- 脚本语言：GDScript
+- 项目根目录：仓库根目录
+- 目标平台：Windows / Android；本卡在 Windows 上完成真实运行验收
+- Godot 工程操作 MCP：Godot-MCP-Native
+- Godot 官方文档 MCP：godot_mcp
+
+## 执行要求
+1. 使用独立 branch，从最新 `main` 开始，先确认受影响脚本、节点、Resource、信号与当前测试入口。
+2. 通过 Godot 原生 Node / signal / 公开方法组合现有组件，保持每份运行事实的原有状态所有者。
+3. 修改 `.tscn` 时核对节点 owner、引用与生命周期；修改脚本后运行相关解析、场景和整局回归。
+4. 更新 `docs/Integration/README.md` 中的流程归属和交接接口；新增 `docs/Integration/Sandbox重构_INT-07_YYYY-MM-DD_log.md`。
+5. 完成本卡后提交独立 PR，并交付对应实际验证记录。
+
+## 最终汇报
+汇报流程组件及根场景分别改动的文件、公开接口、神降临两条路线的实测结果、存盘及顶层转场结果，以及 INT-08 可直接使用的交接入口。

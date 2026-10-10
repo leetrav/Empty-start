@@ -47,10 +47,7 @@ var _rest_result_view: RestResultView
 var _oracle_transition_timer: Timer
 var _oracle_transition_started: bool = false
 var _opening_fan_count: int = 0
-var _divine_descent_session: DivineDescentSession
-var _divine_descent_mode: DivineDescentCombatMode
-var _divine_descent_spread: DivineDescentSpread
-var _ending_session: EndingSession
+var _divine_descent_flow: DivineDescentFlow
 
 
 # 场景只创建生命周期对象并接线；PK、Tier、倾向等状态留在各自所有者。
@@ -94,7 +91,7 @@ func _ready() -> void:
 # 按当前关重建尝试；重开与切到下一关共用清理，保留此前周目成果。
 func restart_current_attempt() -> void:
 	# 已进入终局后不能通过普通重开入口恢复 PK、档位与矛盾规则。
-	if _divine_descent_session != null and _divine_descent_session.is_entered():
+	if _divine_descent_flow != null and _divine_descent_flow.get_session() != null:
 		return
 	var restarting_level: LevelProfile = _run_state.get_current_level_profile()
 	if restarting_level != null:
@@ -173,8 +170,8 @@ func restart_current_attempt() -> void:
 
 # 暂停由 SceneTree 冻结此节点，复读等待只使用实际游戏帧时间。
 func _process(delta: float) -> void:
-	if _divine_descent_mode != null and _divine_descent_spread != null and _ending_session == null:
-		_divine_descent_mode.advance_new_word_decay(delta)
+	if _divine_descent_flow != null:
+		_divine_descent_flow.advance(delta)
 	# 直播上涨只推进表现数据；SceneTree 暂停时此帧回调也暂停。
 	SaveManager.data.live_session.advance_short_boosts(delta)
 	# PK 满值已关闭普通结算；帧尾清理前也停止普通复读，避免迟到生成进入胜利统计。
@@ -200,7 +197,7 @@ func get_debug_snapshot() -> Dictionary:
 	var tendency_state: TendencyState = SaveManager.data.tendency_state
 	var barrage_counts: Dictionary = _barrage_area.get_current_barrage_counts()
 	var battle_phase: String = "普通战斗中（NORMAL_COMBAT）" if _normal_combat_active else "普通战斗未运行（INACTIVE）"
-	if _divine_descent_session != null and _divine_descent_session.is_entered():
+	if _divine_descent_flow != null and _divine_descent_flow.get_session() != null:
 		battle_phase = "神降临（DIVINE_DESCENT）"
 	elif _contradiction_stage_active:
 		battle_phase = "矛盾击破（CONTRADICTION_BREAK）"
@@ -591,23 +588,31 @@ func _on_rest_continue_requested() -> void:
 	rest_continue_requested.emit(finished_session)
 
 
-# 末关结果已提交后进入 19 的真实 Session；普通玩法边界复用现有终局模式。
+# 末关只发起独立终局流程，战斗事实和演出由组件持有。
 func _enter_divine_descent() -> void:
-	if _divine_descent_session != null or not _run_state.is_all_normal_levels_completed():
+	if _divine_descent_flow != null or not _run_state.is_all_normal_levels_completed():
 		return
-	var session: DivineDescentSession = DivineDescentSession.new()
-	if not session.enter(SaveManager.data):
-		push_error("Sandbox: 神降临入口无法冻结当前周目结果。")
-		return
-	var mode: DivineDescentCombatMode = DivineDescentCombatMode.new()
-	if not mode.enter_terminal_mode(
-		SAMPLE_TIER_CATALOG, _hit_resolution, _combat_stage,
-		_contradiction_break, _barrage_area, _opponent_pk_bar
-	):
-		push_error("Sandbox: 无法应用神降临普通战斗关闭边界。")
-		return
-	_divine_descent_session = session
-	_divine_descent_mode = mode
+	_divine_descent_flow = DivineDescentFlow.new()
+	add_child(_divine_descent_flow)
+	_divine_descent_flow.entered.connect(_on_divine_descent_entered)
+	_divine_descent_flow.completed.connect(_finish_divine_descent)
+	if not _divine_descent_flow.start(
+			SaveManager.data, level_catalog, _run_state.get_current_level_profile(),
+			SAMPLE_TIER_CATALOG, _hit_resolution, _combat_stage, _contradiction_break,
+			_barrage_area, _opponent_pk_bar, _attack_charge_input, battle_config, divine_decay_config,
+			{
+				"repeat_interval_seconds": divine_repeat_interval_seconds,
+				"fade_seconds": divine_fade_seconds, "hold_seconds": divine_hold_seconds,
+				"input_scale": divine_input_scale, "input_return_seconds": divine_input_return_seconds,
+				"trait_colors": divine_trait_colors,
+			}):
+		_divine_descent_flow.queue_free()
+		_divine_descent_flow = null
+		push_error("Sandbox: 无法启动神降临流程。")
+
+
+# 根场景收起普通、神谕和休息阶段，再通知外部终局已经进入。
+func _on_divine_descent_entered(session: DivineDescentSession) -> void:
 	_stop_normal_combat()
 	_contradiction_stage_active = false
 	_repeat_queue.clear_contradiction_queue()
@@ -621,64 +626,29 @@ func _enter_divine_descent() -> void:
 	_rest_session = null
 	_battle_hud.show_battle_state("神降临")
 	divine_descent_entered.emit(session)
-	# 空原始历史按 DD-15 直接接收；非空分支保持同一 Session、模式和区域。
-	if session.should_enter_empty_ending():
-		_finish_divine_descent.call_deferred(session)
-		return
-	if divine_repeat_interval_seconds <= 0.0 or divine_fade_seconds <= 0.0 or divine_hold_seconds <= 0.0:
-		push_warning("Sandbox: 终局演出参数待交付，请显式注入 TEST_ONLY 配置进行联调。")
-		return
-	_divine_descent_spread = DivineDescentSpread.new()
-	add_child(_divine_descent_spread)
-	_divine_descent_spread.completed.connect(_finish_divine_descent)
-	_divine_descent_spread.convergence_started.connect(_on_divine_convergence)
-	_divine_descent_spread.bind_new_word_decay(mode)
-	if not _divine_descent_spread.start(session, _barrage_area, level_catalog,
-			divine_repeat_interval_seconds, battle_config.repeat_lifetime_seconds,
-			battle_config.repeat_display_template, null, divine_trait_colors):
-		push_error("Sandbox: 神降临扩散无法读取冻结历史候选。")
-		return
-	if not _barrage_area.start_normal_generation(_run_state.get_current_level_profile()) or not mode.start_new_word_decay(divine_decay_config):
-		_divine_descent_spread.stop()
-		push_error("Sandbox: 神降临新话衰减启动失败。")
 
 
-# 收束仅由 DD-13 的真实可见比例触发，时长直接消费注入配置。
-func _on_divine_convergence(_candidate: Dictionary) -> void:
-	if not _divine_descent_spread.begin_full_screen_emphasis(divine_fade_seconds, divine_hold_seconds):
-		push_error("Sandbox: 神降临全屏强调启动失败。")
-
-
-# 只处理同一冻结会话的一次完成事实；接收、存盘与路由均不补发奖励。
-func _finish_divine_descent(session: DivineDescentSession) -> void:
-	if not is_inside_tree() or session != _divine_descent_session or _ending_session != null:
+# 完成信号已经携带接收结果；根场景只存盘并请求顶层路由。
+func _finish_divine_descent(result: EndingSession) -> void:
+	if not is_inside_tree():
 		return
-	if not session.should_enter_empty_ending() and (_divine_descent_spread == null or not _divine_descent_spread.is_completed()):
-		return
-	_ending_session = EndingSession.new()
-	if not _ending_session.receive_final_state(session, level_catalog):
-		push_error("Sandbox: Ending 拒绝终局固定结果。")
-		return
-	_attack_charge_input.set_combat_active(false)
-	_barrage_area.stop_normal_generation()
-	if _divine_descent_spread != null:
-		_divine_descent_spread.stop()
 	# 同一真实存档保留已提交倾向与奖励；写盘失败必须留下明确证据。
 	if SaveManager.save_game() != OK:
 		push_error("Sandbox: 终局成果存盘失败。")
-	var error := SceneRouter.goto_ending(_ending_session)
+	var error := SceneRouter.goto_ending(result)
 	if error != OK:
 		push_error("Sandbox: Ending 顶层路由失败：%s" % error_string(error))
 
 
-# 终局左键/空格仅交 DD-14 表现入口，普通攻击节点始终关闭。
+# 根场景只消费流程实际接受的终局输入。
 func _input(event: InputEvent) -> void:
-	if _divine_descent_spread == null or _ending_session != null or get_tree().paused:
-		return
-	var requested: bool = event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed
-	requested = requested or (event is InputEventKey and event.keycode == KEY_SPACE and event.pressed and not event.echo)
-	if requested and _divine_descent_spread.emphasize_locked_sentence(divine_input_scale, divine_input_return_seconds):
+	if _divine_descent_flow != null and _divine_descent_flow.handle_input(event):
 		get_viewport().set_input_as_handled()
+
+
+# 联调通过公开入口读取同一终局流程，避免依赖根场景的内部会话字段。
+func get_divine_descent_flow() -> DivineDescentFlow:
+	return _divine_descent_flow
 
 
 # 普通与复读都由同一生成事实计评论，等待请求和失败生成不提前入账。
@@ -819,8 +789,8 @@ func _stop_normal_combat() -> void:
 
 # 离开验收场时撤销尚未提交的本场倾向，已有周目成果由 SaveData 保留。
 func _exit_tree() -> void:
-	if _divine_descent_spread != null:
-		_divine_descent_spread.stop()
+	if _divine_descent_flow != null:
+		_divine_descent_flow.stop()
 	if is_instance_valid(_attack_charge_input):
 		_attack_charge_input.set_combat_active(false)
 	if SaveManager.data != null:

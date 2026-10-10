@@ -1,5 +1,8 @@
 # INT-02 Sandbox 主界面静态布局修正
 
+> **2026-10-09 后续布局变更**：本卡为 INT-02 已完成的旧布局基线，中央弹幕区 1024×760 与底部交互区 1024×248 将由 [INT-06](INT-06_battle-area-full-height-and-input-icon-overlay.md) 更新为顶部 72px + 全高弹幕区 1024×1008、左下两枚操作 ICON 浮层。
+
+
 ## 开始前先阅读以下文档
 
 - `AGENTS.md`

@@ -19,6 +19,15 @@ func _execute() -> void:
 		await _opening()
 		var sandbox = get_tree().current_scene
 		var run: SaveData = SaveManager.data
+		# INT-07 只从公开流程接口观察完成事实，覆盖两路的接收与离树清理。
+		var flows: Array[DivineDescentFlow] = []
+		var sessions: Array[DivineDescentSession] = []
+		var results: Array[EndingSession] = []
+		sandbox.divine_descent_entered.connect(func(session):
+			var flow: DivineDescentFlow = sandbox.get_divine_descent_flow()
+			flows.append(flow)
+			sessions.append(session)
+			flow.completed.connect(func(result): results.append(result)))
 		# 首轮真实失败再重开，本场暂存不得成为终局历史。
 		if not empty_history:
 			await _normal_hit(sandbox)
@@ -64,13 +73,13 @@ func _execute() -> void:
 			if level == 0:
 				_check(sandbox._run_state.get_current_level_profile().level_id == "test_level_02", "继续未进入第二关或重复推进")
 		if not empty_history:
-			await _wait(func(): return sandbox._divine_descent_spread != null and sandbox._divine_descent_spread.is_sentence_locked(), "DD 未锁句")
-			var spread: DivineDescentSpread = sandbox._divine_descent_spread
+			await _wait(func(): return sandbox.get_divine_descent_flow().get_spread() != null and sandbox.get_divine_descent_flow().get_spread().is_sentence_locked(), "DD 未锁句")
+			var spread: DivineDescentSpread = sandbox.get_divine_descent_flow().get_spread()
 			spread.locked_sentence_emphasized.connect(func(_id, _count): emphasis_count += 1)
 			spread.completed.connect(func(session):
 				dd_completed += 1
-				_check(session == sandbox._divine_descent_session, "DD 完成换了 Session"))
-			var snapshot: Dictionary = sandbox._divine_descent_session.get_entry_snapshot()
+				_check(session == sandbox.get_divine_descent_flow().get_session(), "DD 完成换了 Session"))
+			var snapshot: Dictionary = sandbox.get_divine_descent_flow().get_session().get_entry_snapshot()
 			var facts := _facts(run)
 			var key := InputEventKey.new()
 			key.keycode = KEY_SPACE
@@ -84,9 +93,9 @@ func _execute() -> void:
 			Input.flush_buffered_events()
 			await _frames()
 			_check(emphasis_count == 1, "锁句真实输入未路由 DD-14")
-			_check(_facts(run) == facts and sandbox._divine_descent_session.get_entry_snapshot() == snapshot, "终局输入改变冻结成果")
+			_check(_facts(run) == facts and sandbox.get_divine_descent_flow().get_session().get_entry_snapshot() == snapshot, "终局输入改变冻结成果")
 			_check(not sandbox._barrage_area.allows_trap_generation(), "终局陷阱边界未关闭")
-			_check(not sandbox._divine_descent_mode.allows_normal_pk_resolution() and not sandbox._divine_descent_mode.allows_tier_changes(), "终局普通规则未关闭")
+			_check(not sandbox.get_divine_descent_flow().get_combat_mode().allows_normal_pk_resolution() and not sandbox.get_divine_descent_flow().get_combat_mode().allows_tier_changes(), "终局普通规则未关闭")
 			var terminal_view: BarrageView
 			for child in sandbox._barrage_area.get_children():
 				if child is BarrageView and not child.is_queued_for_deletion():
@@ -102,6 +111,11 @@ func _execute() -> void:
 		await _wait(func(): return get_tree().current_scene is EndingPage, "Ending 顶层路由未完成")
 		await _frames()
 		_check(not is_instance_valid(sandbox), "Sandbox/终局未销毁")
+		_check(flows.size() == 1 and not is_instance_valid(flows[0]), "终局流程未一次进入并销毁")
+		_check(results.size() == 1 and results[0] == SceneRouter._ending_session,
+			"完成通知或 Ending 路由对象改变")
+		_check(results[0].get_final_snapshot()["tendency_result"] == sessions[0].get_entry_snapshot()["tendency_result"],
+			"Ending 未沿用首次冻结倾向")
 		var page: EndingPage = get_tree().current_scene
 		await get_tree().create_timer(0.15).timeout
 		print("INT04 Ending layout empty=", empty_history, " scroll=", page._scroll.scroll_vertical,
