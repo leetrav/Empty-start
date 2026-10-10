@@ -28,7 +28,10 @@ func _ready() -> void:
 	_status.position = Vector2(80, 70)
 	_status.add_theme_font_size_override("font_size", 28)
 	add_child(_status)
-	call_deferred("_run")
+	if "--keep-open" in OS.get_cmdline_user_args():
+		call_deferred("_loop_preview")
+	else:
+		call_deferred("_run")
 
 
 func _create_card(index: int) -> void:
@@ -87,8 +90,17 @@ func _run() -> void:
 	for index: int in _views.size():
 		_check(_portraits[index].texture == PORTRAITS[index][4], "%s rapid T3 to T5" % PORTRAITS[index][0])
 	print("PA15 RESULT checks=%d failures=%d" % [_checks, _failures])
-	if "--keep-open" not in OS.get_cmdline_user_args():
-		get_tree().quit(0 if _failures == 0 else 1)
+	get_tree().quit(0 if _failures == 0 else 1)
+
+
+# 在 Godot 窗口中持续展示各档位，方便直接观察汗滴滑落和翻面。
+func _loop_preview() -> void:
+	while is_inside_tree():
+		for tier: int in [1, 2, 3, 4, 5, 6, 5, 4, 3, 2]:
+			_status.text = "PA-15 · Tier %d · 循环演示" % tier
+			for view: OpponentTierPortrait in _views:
+				view.show_tier(tier)
+			await get_tree().create_timer(1.5 if tier == 2 else 0.8).timeout
 
 
 func _capture(label: String) -> void:
