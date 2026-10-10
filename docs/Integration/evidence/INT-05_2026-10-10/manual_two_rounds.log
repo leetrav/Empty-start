@@ -1,0 +1,30 @@
+INT-05 two focused desktop UI rounds; baseline 69d23fa; Windows Godot 4.7.2 OpenGL; isolated user://
+Fixture-driven gameplay; desktop clicks/scroll/maximize/restore only. Not an INT-04 complete run.
+Fullscreen size trace:
+MANUAL_HOLD main_menu window=(1152, 648) viewport=(1920.0, 1080.0) mode=0
+MANUAL_CONTINUE main_menu window=(2560, 1440) viewport=(1920.0, 1080.0) mode=3
+MANUAL_HOLD opening_room window=(2560, 1440) viewport=(1920.0, 1080.0) mode=3
+MANUAL_CONTINUE opening_room window=(2560, 1440) viewport=(1920.0, 1080.0) mode=3
+MANUAL_HOLD main_rest_0 window=(2560, 1440) viewport=(1920.0, 1080.0) mode=3
+MANUAL_CONTINUE main_rest_0 window=(2560, 1440) viewport=(1920.0, 1080.0) mode=3
+MANUAL_HOLD main_rest_1 window=(2560, 1440) viewport=(1920.0, 1080.0) mode=3
+MANUAL_CONTINUE main_rest_1 window=(2560, 1440) viewport=(1920.0, 1080.0) mode=3
+MANUAL_HOLD main_divine_locked window=(2560, 1440) viewport=(1920.0, 1080.0) mode=3
+Observed fullscreen Ending after animation completed; closed before resuming DD assertions.
+Clicked both Rest history entries and return in fullscreen and 960x540; all responded.
+Right edge and bottom-right drag attempts did not resize the window; FS-04 incomplete.
+Small-window size trace:
+MANUAL_HOLD main_menu window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+MANUAL_CONTINUE main_menu window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+MANUAL_HOLD opening_room window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+MANUAL_CONTINUE opening_room window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+MANUAL_HOLD main_rest_0 window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+MANUAL_CONTINUE main_rest_0 window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+MANUAL_HOLD main_rest_1 window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+MANUAL_CONTINUE main_rest_1 window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+MANUAL_HOLD main_ending window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+MANUAL_CONTINUE main_ending window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+MANUAL_HOLD main_menu window=(960, 540) viewport=(1920.0, 1080.0) mode=0
+Ending display-only fixture: 12 chapters, 8 lines per chapter, final judgement.
+Desktop wheel: bottom -> chapters 10/11 -> chapter 12/final judgement; maximize -> wheel up -> restore -> wheel down to final judgement -> wheel up to title.
+Window restored to 960x540. Both verification processes closed intentionally; no complete-run PASS claimed.
