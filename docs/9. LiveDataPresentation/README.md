@@ -114,4 +114,10 @@ LD-10 等 18. Rest。
 | [LD-15](tasks/LD-15_camp-fan-badges.md) | 评论按粉丝身份显示双方专属粉丝牌 | LD-14 |
 | [LD-16](tasks/LD-16_chat-feed-lifecycle-wiring.md) | 战斗时启动与重置双方直播评论流 | LD-12～LD-15 |
 
+当前仓库中 `PresentationAssetConfig.player_fan_badge` 与 `LevelProfile.fan_badge_texture` 已可提供两侧资源；正式风格由现有美术资源替换入口承接。新词库为独立 `19_直播评论词库`，与 `09_直播数据` 数值规则表分别管理。
+
+## 2026-10-10 直播评论按对手配置
+
+策划 `19_直播评论词库` 在原 `comment_id / username / text / audience_type / side_scope / weight / enabled` 后新增可选 `streamer_id`。LD-12导表按 `side_scope` 与当前 `LevelProfile.streamer_id` 共同过滤；`streamer_id` 空表示通用评论，指定值表示该对手专属评论。LD-16在直播开场、重开与关卡切换时按新对手重取候选，并复用当前侧粉丝牌。四项直播统计继续由现有LiveSessionData更新，随机聊天属于展示。
+
 当前仓库中 `PresentationAssetConfig.player_fan_badge` 与 `LevelProfile.fan_badge_texture` 已可提供评论专属粉丝牌纹理；顶部粉丝团名归 PA-20。`19_直播评论词库` 与 `25_直播观众账号` 是两张相互引用的普通评论数据表，均与 `09_直播数据` 真实业务计数分离。

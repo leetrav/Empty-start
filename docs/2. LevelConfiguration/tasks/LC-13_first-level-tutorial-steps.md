@@ -1,30 +1,37 @@
-# LD-12 直播评论词库导表与配置读取
+# LC-13 首关新手教学按步骤配置播放
 
-**状态：待开发 · 普通直播评论流**
+**状态：规格确认，24表三步当前未启用；trigger_event/completion_event稳定ID和启用状态待策划确认后开发**
+**类型：关卡配置 / 教学流程**
+**关联：LC-10、现有 CombatAttack、AimReticle、Sandbox、24_新手教学配置**
 
 ## 开始前先阅读以下文档
-- docs/Original/任务卡模板.md、known_traps.md
-- `AGENTS.md`、`project.godot`、本系统 README 及最新完成日志
-- 现有 `LiveDataHud`、`Sandbox`、源表导出器与主播粉丝牌资源
-- 前置或接口参考：现有 `tools/export_game_data.py`、直播数据与关卡数据读取方式；后续 LD-13
+- `AGENTS.md`、`project.godot`、`known_traps.md`
+- `docs/2. LevelConfiguration/README.md`、`data/level_configuration/level_profile.gd`
+- 现有 Sandbox、`AttackChargeInput`、`AimReticle` 的实际输入/命中接口
+- Google Sheets `02_主播关卡`、`24_新手教学配置` 最新字段
 
 ## 已经实现的功能
-当前 `data/source_tables/09_直播数据.csv` 是观看、点赞、评论计数与粉丝规则表；现有 `tools/export_game_data.py` 使用 `SHEET_NAMES`、`RULES`、`NUMERIC` 校验并导出策划表。
+- 第一关正式ID为 `level_001`，对手为 `alien`，保留完整的直播PK和Tier流程。
+- 游戏已有瞄准、蓄力、发射和实际命中事件，Sandbox HUD 已有战斗提示显示区域。
+- 02表的第一关 `tutorial_config_id=tutorial_level_001`；24表有瞄准、蓄力、发射三个待启用步骤草案。
 
 ## 本次任务
-直播观众账号与评论文本配置导表、关联读取。
 
 ### 触发条件
-策划完成直播账号、普通评论内容配置或进入需要生成直播评论的一场战斗时。
+当前关有已确认并在24表启用的教学步骤，且本场 LevelProfile 提供有效 tutorial_config_id 时。
 
 ### 预期行为
-新增独立的「19_直播评论词库」策划表及同名 CSV 导表入口，定义每条评论的 `comment_id`（稳定 ID）、`username`（用户名）、`text`（评论正文）、`audience_type`（fan / passerby）、`side_scope`（player / opponent / both）、`weight`（随机权重）、`enabled`（是否参加抽取）及可选 `streamer_id`（限定对手主播的稳定ID）。延续既有导表器及资源读取约定，向后续评论生成提供可读取、按侧和当前主播筛选、仅包含启用且合法条目的配置数据。`streamer_id` 为空时属于通用评论，填写具体对手ID时只在该主播对应关卡参与候选。策划以后按此结构直接补充评论文本与昵称。
+24 表的瞄准、蓄力和发射三步目前全部 disabled；trigger_event 与 completion_event 的稳定ID及其对应真实输入/攻击事件须先由策划和程序现有接口共同确认，然后才实施步骤处理。按照既有瞄准/蓄力/发射的事实推进并复用 Sandbox HUD 与周目存储入口，配置为禁用或未填写时首关正常进行战斗。
+
+进入具有有效 `tutorial_config_id` 的关卡时，读取24表中启用的教学条目，按 `step_order` 依次响应真实 `trigger_event`，显示 `hint_text`，并在对应 `completion_event` 确认后推进到下一步骤。使用现有瞄准与攻击事件作为触发与完成事实，并在正式绑定时确立稳定事件ID。
+
+提供本周目教学步骤完成记录，让战斗重开、关卡切换和已有教学完成状态与显示保持一致。提示与实际战斗共用同一个HUD和输入来源；PC及Android均从现有输入抽象取得操作事实。
 
 ### 验收条件
-策划表导出后，每条有效评论可正确读取用户名、正文、粉丝/路人、可用阵营与权重；指定玩家或对手时按 `side_scope` 取得候选，并按当前关 `LevelProfile.streamer_id` 同时选出通用评论与该对手专属评论；修改配置后再次导表可生效；保留文字中的标点、Emoji 与空格。
-
-## 本卡专项交付说明
-提交本卡对应的程序、Godot 实际运行验证与日期日志，更新本系统 README。
+- 02表仅首关带有教学配置关联，按24表启用的步骤播放并依次完成。
+- 瞄准、蓄力和实际发射触发分别来自真实输入；按顺序推进，重开时已完成步骤的处理符合当前周目记录。
+- 其余三关使用正常PK流程；修改24表文本/顺序/启用状态后重新导表可以生效。
+- Windows与Android相关输入和HUD提示经Godot实景验证。
 
 ## Godot 开发环境
 - Godot 版本：4.7.2（开工核对 `project.godot`）
@@ -82,11 +89,6 @@
 - 每张开发任务使用独立 branch，按 `AGENTS.md` 提交对应系统的完成日志；合并前同步最新目标分支重新验证。
 
 ## 最终汇报
-提交与本卡功能对应的变更及 Godot 实际运行结果，维护本系统 README 和本卡完成日志。
-- **改动文件**：逐个说明文件、Scene、Resource 与公开接口的修改。
-- **场景 / 节点变化**：列出相关 Scene 和 Node 的增删调整。
-- **当前能做什么**：给出本卡完成后的可验证能力。
-- **还不能做什么**：写清未覆盖、未验证及需人工确认的部分。
-- **验证结果**：记录 Godot MCP、CLI、真实运行及必要的人工/截图验收结果。
-- **下一步建议**：只提出由本卡实际状态支持的工作。
-- **任务交接**：更新对应系统 README，按 `系统名_任务卡_YYYY-MM-DD_log.md` 写入并提交日期日志，包含主要变更、验证结果、遗留项、接手入口与文档更新情况。
+- **数据开工前置**：24表三步启用值、trigger_event、completion_event 与稳定事件ID对应表须由策划明确；Agent 依据实际输入接口实现，不自行创造事件协议。
+- **验收边界**：真实瞄准/蓄力/发射、暂停和重开的步骤状态由现有系统提供；正式 Windows/Android 结果按实测报告。完成日志：关卡配置系统_LC-13_YYYY-MM-DD_log.md。
+提交LC-13日期日志，记录事件ID映射、配置来源与实际教学操作验收结果。
