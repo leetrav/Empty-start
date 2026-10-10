@@ -166,3 +166,7 @@ LevelProfile 新增可选 normal_speech_pool_source: LevelSpeechPool，使用 ge
 | [LC-12](tasks/LC-12_special-trait-instance-cap.md) | 特殊特性话语的同屏实例上限配置 | 待实施 |
 
 本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。
+
+## 2026-10-10 新版主播粉丝团名称
+
+策划总表的 `02_主播关卡.fan_group_name` 用于该关对手直播间**主播名右侧**的 `❤粉丝团名❤` 文字，原字段名 `fan_badge_text` 已弃用。PA-20 将把此名称接入 `LevelProfile` 和正式 BattleHud，玩家侧仍直接读取 `SaveData.fan_group_name`。对手 `fan_badge_id / fan_badge_texture` 与玩家共享资源 `player_fan_badge` 继续用于 LD-15 直播评论内粉丝身份标记。参见 `docs/Shared/PresentationAssets/tasks/PA-20_header-fan-group-name.md`。

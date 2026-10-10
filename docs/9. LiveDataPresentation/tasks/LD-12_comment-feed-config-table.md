@@ -12,16 +12,19 @@
 当前 `data/source_tables/09_直播数据.csv` 是观看、点赞、评论计数与粉丝规则表；现有 `tools/export_game_data.py` 使用 `SHEET_NAMES`、`RULES`、`NUMERIC` 校验并导出策划表。
 
 ## 本次任务
-直播评论词库导表与配置读取。
+直播观众账号与评论文本配置导表、关联读取。
 
 ### 触发条件
-策划编辑直播评论配置，或一场战斗创建玩家/对手评论流时。
+策划完成直播账号、普通评论内容配置或进入需要生成直播评论的一场战斗时。
 
 ### 预期行为
-新增独立的「19_直播评论词库」策划表及同名 CSV 导表入口，定义每条评论的 `comment_id`（稳定 ID）、`username`（用户名）、`text`（评论正文）、`audience_type`（fan / passerby）、`side_scope`（player / opponent / both）、`weight`（随机权重）和 `enabled`（是否参加抽取）。延续既有导表器及资源读取约定，向后续评论生成提供可读取、按侧筛选、仅包含启用且合法条目的配置数据。策划以后按此结构直接补充评论文本与昵称。
+从同一份 Google 策划总表中读取两张独立数据表并延续现有 `tools/export_game_data.py` 的导出惯例：
+- `25_直播观众账号`：`viewer_id`（全局稳定账号ID）、`display_name`（用户名/昵称）、`audience_type`（fan或passerby）、`side_scope`（player/opponent/both）、`streamer_id`（可选特定对手）、`weight`（账号抽取权重）、`enabled`、`notes`。
+- `19_直播评论词库`：`comment_id`、`viewer_id`（引用观众账号）、`text`（普通评论正文）、`streamer_id`（可选限定对应对手）、`weight`（话语抽取权重）、`enabled`、`notes`。
+使用 `viewer_id` 将评论内容关联到账号身份，在提供给下一卡的候选数据中同时包含昵称、账号ID、正文、粉丝/路人类型、直播阵营及当前对手过滤结果。同一账号可以拥有多条不同评论，保留用户原始昵称与文本中的标点、Emoji、空格。只把合法、已启用且引用有效账号的评论加入本次候选集。沿用已有导表器校验/生成模式，将两个新表对应至 Godot 可消费的正式数据入口。
 
 ### 验收条件
-策划表导出后，每条有效评论可正确读取用户名、正文、粉丝/路人、可用阵营与权重；指定玩家或对手时可以筛选出对应候选；修改配置后再次导表可生效；保留文字中的标点、Emoji 与空格。
+为 `viewer_fan_001` 配置多条评论后显示同一昵称；`viewer_passerby_001` 读取路人身份；对手专用账号/文本仅在关联主播符合当前 `LevelProfile.streamer_id` 时提供；缺失账号引用、重复ID和禁用记录均能被校验或过滤，字段修改后重新导表可生效。
 
 ## 本卡专项交付说明
 提交本卡对应的程序、Godot 实际运行验证与日期日志，更新本系统 README。

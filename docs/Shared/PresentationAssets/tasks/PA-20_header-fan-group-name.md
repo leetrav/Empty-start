@@ -1,30 +1,32 @@
-# LD-16 战斗时启动与重置双方直播评论流
+# PA-20 战斗主播信息区以粉丝团名替换静态粉丝牌
 
-**状态：待开发 · 普通直播评论流**
+**状态：待开发 · 最新 HUD 顶部规则**
 
 ## 开始前先阅读以下文档
-- docs/Original/任务卡模板.md、known_traps.md
-- `AGENTS.md`、`project.godot`、本系统 README 及最新完成日志
-- 现有 `LiveDataHud`、`Sandbox`、源表导出器与主播粉丝牌资源
-- 前置或接口参考：LD-12～LD-15；现有 Sandbox / LiveDataHud / LevelProfile
+- `AGENTS.md`、`project.godot`、`docs/Original/任务卡模板.md`
+- `scenes/sandbox/sandbox.tscn`、`scenes/sandbox/sandbox_battle_hud.gd`
+- `core/save/save_data.gd`、`data/level_configuration/level_profile.gd`、`docs/2. LevelConfiguration/README.md`
+- `docs/9. LiveDataPresentation/tasks/LD-15_camp-fan-badges.md`、当前最新完成日志
 
 ## 已经实现的功能
-`Sandbox` 当前实例化 `%LiveDataHud` 与 `%OpponentLiveDataHud` 并通过 `bind_live_session()` / `set_values()` 更新四项数字；双侧评论尚未接入其生命周期。
+当前 `BattleHud` 的左右 `InfoArea` 各有主播名 Label 和静态 `PlayerFanBadge` / `OpponentFanBadge` TextureRect；`SaveData.fan_group_name` 已在开局录入、保存并由休息房间读取；对手 `LevelProfile` 已有主播名和粉丝牌图片接口。策划总表 `02_主播关卡` 旧 `fan_badge_text` 字段更新为 `fan_group_name`。
 
 ## 本次任务
-战斗时启动与重置双方直播评论流。
+将**双方主播信息区右上角的固定粉丝牌图片槽**替换为粉丝团名称文字。
 
 ### 触发条件
-Sandbox 开始本场直播、暂停恢复、重开、切关或离开直播时。
+玩家开播进入主战斗画面、读取本周目资料、切换当前对手或重开当前关时。
 
 ### 预期行为
-把 LD-12～LD-15 的双侧评论流接到当前 `LiveDataHud`，每次开播分别启动双方评论时钟；暂停/恢复时同步冻结和恢复滚动，重开与切关时清理旧行并重新以当前关对手ID选取账号池、评论池与对应粉丝牌纹理，直播结束停止刷新。继续使用现有四项指标的真实数据绑定，按 PA-20 最新主播信息区文字布局展示本场主播与粉丝团。
+继续沿用 `PlayerStreamerArea/PlayerInfoArea`、`OpponentStreamerArea/OpponentInfoArea` 现有主播名显示入口，在原顶部粉丝牌槽位置使用右对齐文字标签显示 `❤粉丝团名❤`，与主播名称形成同一行的 `主播名    ❤粉丝团名❤` 排列。玩家侧从 `SaveManager.data.fan_group_name`（即 `SaveData`）读取真实自定义名称；对手侧从当前 `LevelProfile` 增加的可编辑 `fan_group_name` 字段读取，供 `02_主播关卡.fan_group_name` 导表接入。主播信息区的静态粉丝牌 TextureRect 按本版布局调整为文本显示位，复用现有 HUD 资源与事件入口。左右 448px 信息区应适应较长合法名称、窗口缩放与上下文替换；空值时提供短占位文字保证排版完整。
+
+原有玩家 `PresentationAssetConfig.player_fan_badge` 和对手 `LevelProfile.fan_badge_texture` 继续服务 LD-15 的直播评论粉丝徽章，不承担顶部名字展示。
 
 ### 验收条件
-玩家与对手均能显示各自评论流；切关后原对手的专属昵称和文本不再进入新对手直播间；暂停及恢复表现连续，重开不残留旧评论；直播数据四项指标和顶部粉丝团文字各自正常刷新。
+自定义粉丝团名从开局房间进入战斗后可在玩家主播名右方以 `❤名字❤` 展示；修改对手关卡粉丝团名后对手右上角显示对应文字，切关与重开同步更新；顶部原静态粉丝牌不再占位；已有评论徽章图片资源仍可由 LD-15 使用；1920×1080/1280×720 和 Android 缩放下主播名与团名清晰可辨。
 
 ## 本卡专项交付说明
-提交本卡对应的程序、Godot 实际运行验证与日期日志，更新本系统 README。
+提交本卡对应的 HUD 与配置接线变更、Godot 实际运行验证和日期日志，更新表现资产系统 README。
 
 ## Godot 开发环境
 - Godot 版本：4.7.2（开工核对 `project.godot`）
@@ -90,3 +92,4 @@ Sandbox 开始本场直播、暂停恢复、重开、切关或离开直播时。
 - **验证结果**：记录 Godot MCP、CLI、真实运行及必要的人工/截图验收结果。
 - **下一步建议**：只提出由本卡实际状态支持的工作。
 - **任务交接**：更新对应系统 README，按 `系统名_任务卡_YYYY-MM-DD_log.md` 写入并提交日期日志，包含主要变更、验证结果、遗留项、接手入口与文档更新情况。
+
