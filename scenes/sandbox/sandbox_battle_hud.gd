@@ -2,9 +2,11 @@
 extends Control
 
 const PortraitMotion = preload("res://systems/presentation/streamer_portrait_motion.gd")
+const TierPortrait = preload("res://systems/presentation/opponent_tier_portrait.gd")
 
 var player_portrait_motion: StreamerPortraitMotion
 var opponent_portrait_motion: StreamerPortraitMotion
+var opponent_tier_portrait: OpponentTierPortrait
 var _portrait_attack: AttackChargeInput
 var _opponent_connected: bool = false
 
@@ -37,6 +39,8 @@ func _ready() -> void:
 	opponent_portrait_motion = PortraitMotion.new()
 	opponent_portrait_motion.configure_character("alien")
 	opponent_portrait_motion.attach_portrait(_opponent_portrait)
+	opponent_tier_portrait = TierPortrait.new()
+	opponent_tier_portrait.attach_portrait(_opponent_portrait)
 	var parent_control: Control = get_parent() as Control
 	parent_control.resized.connect(_fit_parent_size)
 	_fit_parent_size()
@@ -75,8 +79,15 @@ func configure_streamer_assets(
 
 	_set_texture_rect(_opponent_live_background, opponent_live_background, TextureRect.STRETCH_KEEP_ASPECT_COVERED)
 	_set_texture_rect(_opponent_portrait, opponent_portrait, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
+	opponent_tier_portrait.configure_textures(opponent_portrait, null, null, null)
 	_set_texture_rect(_opponent_fan_badge, opponent_fan_badge, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
 	_opponent_portrait_placeholder.visible = opponent_portrait == null
+	set_opponent_portrait_connected(_opponent_connected)
+
+
+# LC-10 接入正式 23 表后，可将当前关的四张阶段图一次性交给本入口。
+func configure_opponent_tier_textures(idle: Texture2D, tier_01: Texture2D, tier_02: Texture2D, tier_03: Texture2D) -> void:
+	opponent_tier_portrait.configure_textures(idle, tier_01, tier_02, tier_03)
 	set_opponent_portrait_connected(_opponent_connected)
 
 
@@ -99,6 +110,7 @@ func play_player_shot(snapshot: AttackTargetSnapshot) -> void:
 func set_opponent_portrait_connected(connected: bool) -> void:
 	_opponent_connected = connected
 	_opponent_portrait.visible = connected and _opponent_portrait.texture != null
+	opponent_tier_portrait.visible = connected and _opponent_portrait.texture != null
 	_opponent_portrait_placeholder.visible = connected and _opponent_portrait.texture == null
 
 
@@ -117,6 +129,7 @@ func _set_texture_rect(texture_rect: TextureRect, texture: Texture2D, stretch_mo
 
 # PK 唯一值归 HitResolution，HUD 只将它映射为玩家占比和对手占比。
 func refresh_pk(player_pk: float, current_tier: int) -> void:
+	opponent_tier_portrait.show_tier(current_tier)
 	set_opponent_portrait_connected(current_tier > 0)
 	var player_share: float = clampf(player_pk, 0.0, 1.0)
 	_pk_progress.value = player_share
@@ -156,6 +169,7 @@ func reset_for_attempt() -> void:
 	opponent_portrait_motion.reset_shot()
 	player_portrait_motion.set_idle_strength(1.0)
 	opponent_portrait_motion.set_idle_strength(1.0)
+	opponent_tier_portrait.reset_for_tier()
 	set_opponent_portrait_connected(false)
 	_failure_overlay.hide()
 	show_battle_state("瞄准弹幕，蓄满后松开左键")
