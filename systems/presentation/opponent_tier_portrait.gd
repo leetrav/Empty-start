@@ -8,6 +8,9 @@ signal flip_finished(tier: int)
 @export var flip_seconds: float = 0.32
 @export_range(0.02, 0.5) var narrow_scale: float = 0.08
 @export var rebound_scale: float = 1.07
+@export var kiwi_flip_seconds: float = 0.42
+@export var kiwi_burst_scale: float = 1.09
+@export var kiwi_shake_pixels: float = 7.0
 
 var current_tier: int = 0
 var fx: OpponentTierFx
@@ -18,7 +21,10 @@ var _tier_02: Texture2D
 var _tier_03: Texture2D
 var _flip_tween: Tween
 var _shudder_tween: Tween
+var _impact_tween: Tween
 var _pending_texture: Texture2D
+var _character_id: String = ""
+var _impact_backdrop: Control
 
 
 # 插入 PA-14 的 Idle 层内部，让汗滴、切图与现有呼吸动作共同移动。
@@ -34,10 +40,17 @@ func attach_portrait(portrait: TextureRect) -> void:
 	portrait.reparent(self, false)
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	portrait.pivot_offset = portrait.size * 0.5
+	_impact_backdrop = Control.new()
+	_impact_backdrop.name = "TierImpactBackdrop"
+	_impact_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_impact_backdrop)
+	move_child(_impact_backdrop, 0)
+	_impact_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	fx = TierFx.new()
 	fx.name = "TierFx"
 	add_child(fx)
 	fx.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fx.bind_backdrop(_impact_backdrop)
 	resized.connect(_refresh_pivot)
 	_refresh_pivot()
 
@@ -51,6 +64,12 @@ func configure_textures(idle: Texture2D, tier_01: Texture2D, tier_02: Texture2D,
 	reset_for_tier(current_tier)
 
 
+# 三名对手共用白色冲击条；Kiwi 的翻图节奏仍单独处理。
+func configure_character(character_id: String) -> void:
+	_character_id = character_id
+	fx.configure_character(character_id)
+
+
 func show_tier(tier: int) -> void:
 	var target_tier: int = clampi(tier, 0, 6)
 	var target: Texture2D = _texture_for_tier(target_tier)
@@ -58,9 +77,17 @@ func show_tier(tier: int) -> void:
 		return
 	current_tier = target_tier
 	fx.set_sweat(target_tier == 2)
+	fx.clear_impact()
 	if _flip_tween != null:
 		_flip_tween.kill()
 		_flip_tween = null
+	if _shudder_tween != null:
+		_shudder_tween.kill()
+		_shudder_tween = null
+	if _impact_tween != null:
+		_impact_tween.kill()
+		_impact_tween = null
+	position = Vector2.ZERO
 	_portrait.scale = Vector2.ONE
 	if _portrait.texture == target or _portrait.texture == null or target == null:
 		_portrait.texture = target
@@ -68,6 +95,9 @@ func show_tier(tier: int) -> void:
 			_play_shudder()
 		return
 	_pending_texture = target
+	if _character_id == "kiwi":
+		_play_kiwi_flip()
+		return
 	var half: float = maxf(flip_seconds, 0.08) * 0.5
 	_flip_tween = create_tween().set_trans(Tween.TRANS_CUBIC)
 	_flip_tween.tween_method(_set_horizontal_scale, 1.0, narrow_scale, half).set_ease(Tween.EASE_IN)
@@ -85,9 +115,13 @@ func reset_for_tier(tier: int = 0) -> void:
 	if _shudder_tween != null:
 		_shudder_tween.kill()
 		_shudder_tween = null
+	if _impact_tween != null:
+		_impact_tween.kill()
+		_impact_tween = null
 	position = Vector2.ZERO
 	current_tier = clampi(tier, 0, 6)
 	_portrait.scale = Vector2.ONE
+	_pending_texture = null
 	_portrait.texture = _texture_for_tier(current_tier)
 	fx.reset_fx()
 	fx.set_sweat(current_tier == 2)
@@ -109,6 +143,33 @@ func _set_horizontal_scale(value: float) -> void:
 	_portrait.scale = Vector2(value, 1.0)
 
 
+# Kiwi 在翻面后快速放大、定格、回弹；时长与幅度单独调参。
+func _play_kiwi_flip() -> void:
+	var compress: float = maxf(kiwi_flip_seconds, 0.32) * 0.29
+	_flip_tween = create_tween().set_trans(Tween.TRANS_CUBIC)
+	_flip_tween.tween_method(_set_horizontal_scale, 1.0, narrow_scale, compress).set_ease(Tween.EASE_IN)
+	_flip_tween.tween_callback(_swap_at_edge)
+	_flip_tween.tween_method(_set_kiwi_scale, narrow_scale, kiwi_burst_scale, 0.105).set_ease(Tween.EASE_OUT)
+	_flip_tween.tween_interval(0.06)
+	_flip_tween.tween_method(_set_kiwi_scale, kiwi_burst_scale, 0.98, 0.085).set_ease(Tween.EASE_IN_OUT)
+	_flip_tween.tween_method(_set_kiwi_scale, 0.98, 1.0, 0.05).set_ease(Tween.EASE_OUT)
+	_flip_tween.tween_callback(_finish_flip)
+
+
+func _set_kiwi_scale(value: float) -> void:
+	_portrait.scale = Vector2(value, lerpf(1.0, value, 0.78))
+
+
+# 位移用独立 Tween，反复改档时统一取消并归零。
+func _play_kiwi_shake() -> void:
+	var amount: float = kiwi_shake_pixels
+	_impact_tween = create_tween().set_trans(Tween.TRANS_SINE)
+	_impact_tween.tween_property(self, "position", Vector2(amount, -amount * 0.35), 0.025)
+	_impact_tween.tween_property(self, "position", Vector2(-amount * 0.6, amount * 0.3), 0.028)
+	_impact_tween.tween_property(self, "position", Vector2(amount * 0.28, -amount * 0.1), 0.032)
+	_impact_tween.tween_property(self, "position", Vector2.ZERO, 0.055)
+
+
 func _play_shudder() -> void:
 	if _shudder_tween != null:
 		_shudder_tween.kill()
@@ -122,10 +183,14 @@ func _play_shudder() -> void:
 func _swap_at_edge() -> void:
 	_portrait.texture = _pending_texture
 	fx.play_impact()
+	if _character_id == "kiwi":
+		_play_kiwi_shake()
 
 
 func _finish_flip() -> void:
 	_flip_tween = null
+	_pending_texture = null
+	_portrait.scale = Vector2.ONE
 	flip_finished.emit(current_tier)
 
 
