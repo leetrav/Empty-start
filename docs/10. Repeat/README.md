@@ -14,11 +14,13 @@
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
 | [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 待开发 |
 | [RP-18](tasks/RP-18_repeat-infection-spread.md) | 已有原句计划的复读潮表现 | 已有基础 |
-| [RP-19](tasks/RP-19_repeat-grey-text.md) | 灰色复读文字 | 待开发 |
+| [RP-19](tasks/RP-19_repeat-grey-text.md) | 灰色复读文字 | 已完成（2026-10-12） |
 | [RP-20](tasks/RP-20_repeat-zero-outline.md) | 零描边复读 | 待开发 |
 | [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读最低层 | 待开发 |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+**RP-19（2026-10-12）** `BarrageView.repeat_font_color` 是可调灰色来源，默认 `#b8bfcb`，同时设置普通 Label 与 RichTextLabel。终局特性着色只覆盖普通前景，复读继续保持低干扰灰色。
 
 
 ## 系统目标
@@ -138,7 +140,7 @@ RP-12 已复用 13 的本场读取链，并提供 19 已有候选入口可消费
 
 | 任务卡 | 唯一功能 | 状态 |
 | --- | --- | --- |
-| [RP-19](tasks/RP-19_repeat-grey-text.md) | 复读文字使用灰色 | 待实施 |
+| [RP-19](tasks/RP-19_repeat-grey-text.md) | 复读文字使用灰色 | 已完成（2026-10-12） |
 | [RP-20](tasks/RP-20_repeat-zero-outline.md) | 复读文本描边宽度为零 | 待实施 |
 | [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读固定最低层级 | 待实施 |
 
