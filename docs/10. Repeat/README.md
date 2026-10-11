@@ -13,12 +13,19 @@
 | [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 现有复读独立容量实测 | 已有容量 |
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
 | [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 待开发 |
-| [RP-18](tasks/RP-18_repeat-infection-spread.md) | 已有原句计划的复读潮表现 | 已有基础 |
+| [RP-18](tasks/RP-18_repeat-infection-spread.md) | 同句普通复读延迟接续并静止散布 | 已完成 · 2026-10-12 |
 | [RP-19](tasks/RP-19_repeat-grey-text.md) | 灰色复读文字 | 待开发 |
 | [RP-20](tasks/RP-20_repeat-zero-outline.md) | 零描边复读 | 待开发 |
 | [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读最低层 | 待开发 |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+### RP-18 同句静止复读接续涌现（2026-10-12）
+
+- `BattleAttemptFlow` 在有效普通话语命中后创建 `RepeatPlan`；`RepeatDelayQueue` 为每条同句请求抽取独立延迟并在战斗帧推进到期项。
+- 到期计划通过 `BarrageArea.spawn_repeat_barrage(plan, true)` 进入中央区域随机静止落点。运行记录保留原句 ID 与原文，生成统计只累加实际成功实例，实例到期后由弹幕区域释放容量。
+- Godot 4.7.2 headless Sandbox smoke 使用真实攻击输入触发普通命中，并验证同句三条复读、原句 ID、静止位置、寿命清理及容量补位。GUI 组件 smoke 展示同句复读群，画面在本地临时目录检查。
+- 当前 main 已有上述运行链路；本卡完成联调验收，未修改运行脚本、Scene 或 Resource。
 
 
 ## 系统目标
@@ -128,7 +135,7 @@ RP-12 已复用 13 的本场读取链，并提供 19 已有候选入口可消费
 | [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 复读独立同屏上限与容量验收 | 待实施 |
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
 | [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读按生命周期渐隐 | 待实施 |
-| [RP-18](tasks/RP-18_repeat-infection-spread.md) | 有效命中形成同向复读潮 | 待实施 |
+| [RP-18](tasks/RP-18_repeat-infection-spread.md) | 有效命中形成同向复读潮 | 已完成 · 2026-10-12 |
 
 关联依赖及实施顺序以各卡的上游功能卡为准；共享场景与组件按实际 Owner 的任务流程依次集成。
 
