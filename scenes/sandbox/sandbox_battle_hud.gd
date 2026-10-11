@@ -2,11 +2,14 @@
 extends Control
 
 signal dialogue_sequence_completed(sequence_id: StringName, side: int)
+signal tier_breakthrough_finished(previous_tier: int, current_tier: int, completed: bool)
 
 const PortraitMotion = preload("res://systems/presentation/streamer_portrait_motion.gd")
 const DialogueQueueScript = preload("res://ui/streamer_bubble_dialogue/streamer_bubble_dialogue_queue.gd")
 const HAMSTER_LIVE_BACKGROUND: Texture2D = preload("res://assets/environment/live/hamster/background.png")
 const HAMSTER_LIVE_FOREGROUND: Texture2D = preload("res://assets/environment/live/hamster/foreground_desk.png")
+const TIER_BREAKTHROUGH_SCALE: float = 1.28
+const TIER_BREAKTHROUGH_SECONDS: float = 0.32
 
 @export_range(1, 8, 1) var max_visible_dialogue_bubbles_per_side: int = 3
 # 策划可在 HUD Inspector 中配置 T0 对手匹配等待文案。
@@ -20,6 +23,9 @@ var _paradox_stage_active: bool = false
 var _last_status_tier: int = -1
 var _active_opponent_status_text: String = ""
 var _dialogue_queue: Node
+var _tier_breakthrough_tween: Tween
+var _tier_breakthrough_previous_tier: int = -1
+var _tier_breakthrough_current_tier: int = -1
 # 保留攻击状态供后续获批的正式反馈视图读取；Sandbox 继续通过原公开刷新入口提交。
 var attack_progress: float = 0.0
 var attack_phase: int = AttackChargeInput.AttackPhase.READY
@@ -223,6 +229,52 @@ func _refresh_stage_label(current_tier: int) -> void:
 	_tier_label.text = "T6 / Paradox" if _paradox_stage_active else "Tier %d" % current_tier
 
 
+# 复用当前 Tier 标签做一次短暂弹出；演出参数留在代码，不新增视觉资源配置。
+func play_tier_breakthrough(previous_tier: int, current_tier: int) -> bool:
+	if previous_tier < 0 or current_tier <= previous_tier or not is_node_ready():
+		return false
+	cancel_tier_breakthrough()
+	_tier_breakthrough_previous_tier = previous_tier
+	_tier_breakthrough_current_tier = current_tier
+	_tier_label.pivot_offset = _tier_label.size * 0.5
+	_tier_label.scale = Vector2.ONE * TIER_BREAKTHROUGH_SCALE
+	_tier_breakthrough_tween = create_tween()
+	_tier_breakthrough_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tier_breakthrough_tween.tween_property(_tier_label, "scale", Vector2.ONE, TIER_BREAKTHROUGH_SECONDS)
+	_tier_breakthrough_tween.finished.connect(
+		_on_tier_breakthrough_tween_finished.bind(_tier_breakthrough_tween)
+	)
+	return true
+
+
+# 重开打断过渡时恢复标签并通知协调方取消本次恢复请求。
+func cancel_tier_breakthrough() -> void:
+	if _tier_breakthrough_tween == null:
+		return
+	var previous_tier: int = _tier_breakthrough_previous_tier
+	var current_tier: int = _tier_breakthrough_current_tier
+	var tween: Tween = _tier_breakthrough_tween
+	_tier_breakthrough_tween = null
+	tween.kill()
+	_reset_tier_breakthrough_label()
+	tier_breakthrough_finished.emit(previous_tier, current_tier, false)
+
+
+# Tween 实际结束后才交回恢复 / 对白接线。
+func _on_tier_breakthrough_tween_finished(tween: Tween) -> void:
+	if tween != _tier_breakthrough_tween:
+		return
+	var previous_tier: int = _tier_breakthrough_previous_tier
+	var current_tier: int = _tier_breakthrough_current_tier
+	_tier_breakthrough_tween = null
+	_reset_tier_breakthrough_label()
+	tier_breakthrough_finished.emit(previous_tier, current_tier, true)
+
+
+func _reset_tier_breakthrough_label() -> void:
+	_tier_label.scale = Vector2.ONE
+
+
 # 蓄力与阶段归 CombatAttack；HUD 保留最新数值，供后续获批的美术反馈接入。
 func refresh_attack(progress: float, phase: int) -> void:
 	attack_progress = clampf(progress, 0.0, 1.0)
@@ -261,6 +313,7 @@ func show_failure() -> void:
 
 # 重开复位本场 HUD 提示并读取当前 T0 等待文案，各系统状态仍由所属对象初始化。
 func reset_for_attempt() -> void:
+	cancel_tier_breakthrough()
 	# 重开/失败后的下一场从待机准星开始，避免保留上一发充能高亮。
 	_aim_reticle.reset_visual_state()
 	player_portrait_motion.reset_shot()
