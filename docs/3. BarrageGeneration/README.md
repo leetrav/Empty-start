@@ -16,7 +16,7 @@
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景可选周期加减速 | 已实现；BG-40 限速、BG-21 曲线组合及 GUI 运动验证通过 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 实例出生与运动允许重叠 | 待开发 |
 | [BG-27](tasks/BG-27_animated-size.md) | 连续缩放 | 已有脉冲入口 |
-| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景富文本 | 待开发 |
+| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
 | [BG-30](tasks/BG-30_opinion-tide.md) | 复读潮的疏密起伏 | 待开发 |
 | [BG-31](tasks/BG-31_spatial-clusters.md) | 同句复读成批涌现（复用 RP-18） | 归档重复能力 |
@@ -30,6 +30,12 @@
 | [BG-39](tasks/BG-39_tier-motion-proportions.md) | 四种运动类型随 Tier 权重变化 | 待开发 |
 | [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 前景话语最大速度 | 普通直线、BG-21 曲线和 BG-22 加减速均按统一上限验证；BG-20/23 实现后补验 |
 | [BG-41](tasks/BG-41_random-trait-selection.md) | 按已解锁池随机分配特性 | 技能池待定 |
+
+### BG-28 普通前景单句局部富文本
+
+LevelSpeech.local_style_bbcode 可选保存普通前景话语的局部 BBCode 样式。BarrageArea 在实例入树后调用 BarrageView.set_visual_bbcode()，富文本解析出的正文必须与 BarrageRuntimeRecord.text 完全一致，否则清除覆盖并回退原文。RichTextLabel 实际内容高度纳入视图尺寸，保证局部大字号文本完整显示。复读仍沿用纯文本记录与原句 ID。
+
+该字段默认为空；当前正式数据表和导表器没有此列。BG-28 提供由 Resource 或调用方设置的展示入口，正式台词尚未配置局部样式。
 
 **BT-14 固定层级契约：** `BarrageView.REPEAT_Z_INDEX=0`、`FOREGROUND_Z_INDEX=1`、`OCCLUSION_Z_INDEX=RenderingServer.CANVAS_ITEM_Z_MAX`（Godot 4.7.2 为 4096）。BG-25 / BG-26 的普通前景层级使用 1～4095，4096 专供遮挡实例保持最高层。
 
@@ -270,7 +276,7 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 待实施 |
 | [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 待实施 |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通前景话语的适度缩放 | 待实施 |
-| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 单句话语内部富文本混合样式 | 待实施 |
+| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 单句话语内部富文本混合样式 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 普通话语随机局部文字动画 | 待实施 |
 | [BG-30](tasks/BG-30_opinion-tide.md) | 底层复读潮汐密度节奏 | 待实施 |
 | [BG-31](tasks/BG-31_spatial-clusters.md) | 同一句复读成批出现 | 待实施 |
