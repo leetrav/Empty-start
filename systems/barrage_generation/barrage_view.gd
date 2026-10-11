@@ -30,7 +30,14 @@ var _motion_curve_offset: float = 0.0
 var _active_area: Control
 var _pause_started_msec: int = -1
 var _presentation_tween: Tween
-var _presentation_base_scale: Vector2
+var _presentation_base_scale: Vector2 = Vector2.ONE
+var _presentation_pulse_multiplier: float = 1.0
+var _animated_size_enabled: bool = false
+var _animated_size_min_scale: float = 1.0
+var _animated_size_max_scale: float = 1.0
+var _animated_size_cycle_seconds: float = 0.0
+var _animated_size_phase: float = 0.0
+var _animated_size_multiplier: float = 1.0
 var _presentation_trait_ids: Array[StringName] = []
 var _visual_bbcode: String = ""
 
@@ -56,7 +63,7 @@ func get_presentation_trait_ids() -> Array[StringName]:
 	return _presentation_trait_ids.duplicate()
 
 
-# 缩放视觉本体，不更改实际话语、移动参数、弹幕判定与绝对寿命。
+# 组合短时表现脉冲与 BG-27 缓和缩放；实际命中矩形沿用 Control 当前变换。
 func pulse_presentation(scale_multiplier: float, return_seconds: float) -> bool:
 	if not is_inside_tree() or is_queued_for_deletion() or get_tree().paused:
 		return false
@@ -65,10 +72,33 @@ func pulse_presentation(scale_multiplier: float, return_seconds: float) -> bool:
 	if _presentation_tween != null and _presentation_tween.is_valid():
 		_presentation_tween.kill()
 	else:
-		_presentation_base_scale = scale
-	scale = _presentation_base_scale * scale_multiplier
+		_presentation_base_scale = scale / maxf(_animated_size_multiplier, 0.0001)
+	_presentation_pulse_multiplier = scale_multiplier
+	_apply_presentation_scale()
 	_presentation_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_STOP)
-	_presentation_tween.tween_property(self, "scale", _presentation_base_scale, return_seconds)
+	_presentation_tween.tween_property(self, "_presentation_pulse_multiplier", 1.0, return_seconds)
+	_presentation_tween.finished.connect(_on_presentation_tween_finished)
+	return true
+
+
+# 为单条普通移动话语配置平滑缩放；复读、矛盾、静止实例不会启用。
+func configure_animated_size(min_scale: float, max_scale: float, cycle_seconds: float) -> bool:
+	if runtime_record == null or runtime_record.is_repeat or runtime_record.is_contradiction or _stationary_position:
+		return false
+	if not is_finite(min_scale) or not is_finite(max_scale) or not is_finite(cycle_seconds):
+		return false
+	if min_scale <= 0.0 or min_scale >= 1.0 or max_scale <= 1.0 or max_scale <= min_scale or cycle_seconds <= 0.0:
+		return false
+
+	_animated_size_min_scale = min_scale
+	_animated_size_max_scale = max_scale
+	_animated_size_cycle_seconds = cycle_seconds
+	_animated_size_phase = randf()
+	_animated_size_enabled = true
+	_presentation_base_scale = scale
+	pivot_offset = size * 0.5
+	_animated_size_multiplier = _get_animated_size_multiplier()
+	_apply_presentation_scale()
 	return true
 
 
@@ -89,6 +119,7 @@ func setup(
 	_speed_change_cycle_seconds = maxf(speed_change_cycle_seconds, 0.0) if is_finite(speed_change_cycle_seconds) else 0.0
 	_speed_change_elapsed_seconds = 0.0
 	_active_area = active_area
+	_presentation_base_scale = scale
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# 保留普通前景层级供后续换层；遮挡使用引擎允许的最大 Z，始终压过前景和复读。
@@ -243,6 +274,8 @@ func _fit_visual_to_sentence(sentence: String) -> void:
 	var new_size: Vector2 = Vector2(content_width + horizontal_padding * 2.0, maxf(48.0, multi_size.y + vertical_padding * 2.0))
 	custom_minimum_size = new_size
 	reset_size()
+	if _animated_size_enabled:
+		pivot_offset = new_size * 0.5
 	var rich: RichTextLabel = get_node_or_null("RichBody") as RichTextLabel
 	if rich != null:
 		rich.position = Vector2(horizontal_padding, vertical_padding * 0.5)
@@ -272,6 +305,12 @@ func _process(delta: float) -> void:
 	if current_time_msec >= runtime_record.expires_at_msec:
 		queue_free()
 		return
+	if _animated_size_enabled:
+		_animated_size_phase = fposmod(
+			_animated_size_phase + maxf(delta, 0.0) / _animated_size_cycle_seconds, 1.0
+		)
+		_animated_size_multiplier = _get_animated_size_multiplier()
+	_apply_presentation_scale()
 	if _stationary_position:
 		# 窗口缩放后继续完整留在当前区域；空间不足时销毁并沿用离树释放容量。
 		if not _constrain_stationary_position_to_area():
@@ -288,6 +327,25 @@ func _process(delta: float) -> void:
 	var active_rect: Rect2 = Rect2(Vector2.ZERO, _active_area.size)
 	if not active_rect.intersects(Rect2(position, size)):
 		queue_free()
+
+
+# 用余弦曲线在最小与最大倍率间平滑往返，周期首尾速度为零。
+func _get_animated_size_multiplier() -> float:
+	var blend: float = 0.5 - 0.5 * cos(_animated_size_phase * TAU)
+	return lerpf(_animated_size_min_scale, _animated_size_max_scale, blend)
+
+
+# 把呼吸缩放与短时命中表现合成为单一 Control scale。
+func _apply_presentation_scale() -> void:
+	var target_scale: Vector2 = _presentation_base_scale * _animated_size_multiplier * _presentation_pulse_multiplier
+	if not scale.is_equal_approx(target_scale):
+		scale = target_scale
+
+
+# Tween 完成后立即应用回落到当前呼吸倍率的尺寸。
+func _on_presentation_tween_finished() -> void:
+	_presentation_pulse_multiplier = 1.0
+	_apply_presentation_scale()
 
 
 ## 普通前景沿平滑周期从零速加到 BG-40 上限，再平滑减速；周期两端保持连续。
