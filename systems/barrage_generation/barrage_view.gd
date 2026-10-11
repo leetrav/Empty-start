@@ -114,19 +114,35 @@ func setup(
 	_apply_special_text_layout()
 
 
-# 独立视觉富文本接口。由 BG-28 的正式局部样式数据接入时调用，复读保留纯文本。
+# 普通前景应用局部 BBCode；显示正文必须和运行记录原文一致，复读始终保留纯文本。
 func set_visual_bbcode(bbcode: String) -> bool:
 	if runtime_record == null or runtime_record.is_repeat or _uses_fake_repeat_appearance() or get_special_material() == &"retaliation_copy":
 		return false
 	var rich: RichTextLabel = get_node_or_null("RichBody") as RichTextLabel
 	if rich == null:
 		return false
+	if bbcode.is_empty():
+		_visual_bbcode = ""
+		rich.text = ""
+		rich.hide()
+		text = runtime_record.text
+		_fit_visual_to_sentence(runtime_record.text)
+		return true
+	rich.text = bbcode
+	if rich.get_parsed_text() != runtime_record.text:
+		# 配置正文不匹配时恢复原文，避免表现覆盖战斗记录事实。
+		rich.text = ""
+		rich.hide()
+		text = runtime_record.text
+		_visual_bbcode = ""
+		_fit_visual_to_sentence(runtime_record.text)
+		push_warning("BarrageView: BBCode 正文与运行记录原文不一致，已回退纯文本。")
+		return false
 	_visual_bbcode = bbcode
-	rich.visible = not bbcode.is_empty()
-	text = "" if rich.visible else runtime_record.text
-	if rich.visible:
-		rich.text = bbcode
+	rich.show()
+	text = ""
 	_fit_visual_to_sentence(runtime_record.text)
+	_fit_visual_to_rich_text(rich)
 	return true
 
 
@@ -248,6 +264,16 @@ func _fit_visual_to_sentence(sentence: String) -> void:
 		rich.position = Vector2(horizontal_padding, vertical_padding * 0.5)
 		rich.size = Vector2(new_size.x - horizontal_padding * 2.0, new_size.y - vertical_padding)
 		rich.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+
+# 按局部字体 / 字号的实际排版高度扩展弹幕框，避免富文本被裁切。
+func _fit_visual_to_rich_text(rich: RichTextLabel) -> void:
+	var required_height: float = float(rich.get_content_height()) + vertical_padding
+	if required_height <= size.y:
+		return
+	custom_minimum_size.y = required_height
+	reset_size()
+	rich.size = Vector2(size.x - horizontal_padding * 2.0, size.y - vertical_padding)
 
 
 # 暂停时记录起点；恢复后继续沿用原有的毫秒级到期补偿。
