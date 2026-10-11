@@ -15,7 +15,7 @@
 | [BG-21](tasks/BG-21_curved-motion.md) | 普通前景可选平滑曲线运动 | 已合并 main；聚焦回归和 GUI 运动证据通过 |
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景可选周期加减速 | 已实现；BG-40 限速、BG-21 曲线组合及 GUI 运动验证通过 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 实例出生与运动允许重叠 | 待开发 |
-| [BG-27](tasks/BG-27_animated-size.md) | 连续缩放 | 已有脉冲入口 |
+| [BG-27](tasks/BG-27_animated-size.md) | 普通移动前景话语缓和缩放 | Godot 4.7.2 GUI 实测通过（2026-10-12） |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景富文本 | 待开发 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
 | [BG-30](tasks/BG-30_opinion-tide.md) | 复读潮的疏密起伏 | 待开发 |
@@ -54,6 +54,8 @@
 **BG-21（2026-10-11）** `BarrageArea.curved_foreground_motion_enabled` 默认关闭；开启后仅后续普通移动前景实例使用平滑单弧，`curved_foreground_motion_amplitude_pixels` 调整最大弧高，实际幅度按落点可用上下空间收窄。`BarrageView` 使用 2 px 烘焙步长的 `Curve2D` 弧长，以线性采样推进并满足 BG-40 限速入口；视图高度保持在区域内。默认关闭时沿用原横向直线；BG-42 静止请求优先保持静止，Repeat 与 Paradox 仍使用独立既有路径。没有接入 BG-39 Tier 权重。`test_bg21_curved_motion.gd` 覆盖开关、弧高调整、BG-40 逐帧速度上限、完整视图边界，以及静止、Repeat 和 Paradox 隔离。图形测试保存 TEST_ONLY 轨迹图到 `evidence/BG21_curved_motion_gui.png`；图中尾迹记录实际视图位置，正式词库可读性仍需完整游戏人工验收。
 
 **BG-22（2026-10-11）** `BarrageArea.speed_change_foreground_motion_enabled` 默认关闭；开启后仅后续普通移动前景实例加减速。`speed_change_foreground_motion_cycle_seconds` 可在 Inspector 设为 2～16 秒，默认 6 秒；每周期从零速平滑加速到 BG-40 返回的速度上限，再平滑减速到零，运动方向仍向左。`BarrageView` 用 smoothstep 平滑周期接缝，并将当帧速度用于直线路径或 BG-21 曲线路径弧长，因此组合运行时的路径速度仍不超过 BG-40 上限。BG-42 静止请求优先保持静止，Repeat 和 Paradox 不读取该选项；没有接入 BG-39 Tier 权重。`test_bg22_speed_change_motion.gd` 使用实际 `BarrageArea` / `BarrageView`，覆盖默认匀速、4 秒可调周期、加速与减速速度样本、逐帧速度上限、曲线叠加及隔离规则。图形运行保存 TEST_ONLY 轨迹和样本速度到 `evidence/BG22_speed_change_motion_gui.png`；该组件级验证不代表正式词库或完整局内体验验收。
+
+**BG-27（2026-10-12）** `BarrageArea` 为普通移动前景提供 Inspector 可调缩放范围，默认 `0.96～1.04`、一次往返 6 秒。`BarrageView.configure_animated_size()` 只由普通生成路径启用，使用每实例独立初相位的余弦曲线平滑放大和缩小，并围绕视图中心缩放。静止请求、复读、矛盾与终局实例维持各自尺寸规则。现有 `pulse_presentation()` 与缓和缩放合成同一 `Control.scale`，短时命中和终局脉冲不会覆盖持续缩放。攻击查询继续读取 `BarrageView.get_global_rect()`，该矩形随当前缩放同步变化；当前 GUI smoke 的 28 项检查全部通过。默认值是可调起始值，不代表正式策划平衡数据；程序美术、正式导表及 Android 实机验收不在本卡范围。
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 
