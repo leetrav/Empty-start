@@ -370,7 +370,9 @@ func spawn_normal_barrage(
 		view.free()
 		return null
 	add_child(view)
-	if not _place_barrage_for_spawn_request(view, should_use_random_static_placement):
+	if not _place_barrage_for_spawn_request(
+		view, should_use_random_static_placement, not should_use_random_static_placement
+	):
 		# 场上没有可见空位时归还刚申请的容量，普通 Timer 后续继续尝试。
 		end_barrage(view.get_instance_id())
 		return null
@@ -458,10 +460,12 @@ func has_visible_contradiction_repeats() -> bool:
 	return false
 
 ## 只对调用方显式请求的实例使用随机静止定位，其他实例继续沿用轮换行。
-func _place_barrage_for_spawn_request(view: BarrageView, random_static_placement: bool) -> bool:
+func _place_barrage_for_spawn_request(
+		view: BarrageView, random_static_placement: bool, allow_overlap: bool = false
+) -> bool:
 	if random_static_placement:
 		return _place_random_static_barrage(view)
-	return _place_new_barrage(view)
+	return _place_new_barrage(view, allow_overlap)
 
 
 ## 按实际视图尺寸和当前区域尺寸均匀抽取完整位于区域内的静止落点。
@@ -474,8 +478,8 @@ func _place_random_static_barrage(view: BarrageView) -> bool:
 	return true
 
 
-## 从轮换行寻找当前真实空位；上一轮横移目标仍占着入口时跳到其他行。
-func _place_new_barrage(view: BarrageView) -> bool:
+## 普通移动前景保留轮换落点但允许重叠；其余调用维持原空位扫描。
+func _place_new_barrage(view: BarrageView, allow_overlap: bool = false) -> bool:
 	var start_x: float = maxf(size.x - view.size.x, 0.0)
 	var top_margin: float = minf(48.0, maxf(size.y - view.size.y, 0.0))
 	var row_step: float = view.size.y + 16.0
@@ -484,18 +488,19 @@ func _place_new_barrage(view: BarrageView) -> bool:
 	for row_offset: int in range(row_count):
 		var row_index: int = (_next_spawn_row + row_offset) % row_count
 		var candidate_position: Vector2 = Vector2(start_x, top_margin + float(row_index) * row_step)
-		var candidate_rect: Rect2 = Rect2(candidate_position, view.size).grow(8.0)
-		var overlaps_existing: bool = false
-		for child in get_children():
-			if child == view or not child is BarrageView or child.is_queued_for_deletion():
+		if not allow_overlap:
+			var candidate_rect: Rect2 = Rect2(candidate_position, view.size).grow(8.0)
+			var overlaps_existing: bool = false
+			for child in get_children():
+				if child == view or not child is BarrageView or child.is_queued_for_deletion():
+					continue
+				var existing_view: BarrageView = child as BarrageView
+				var existing_rect: Rect2 = Rect2(existing_view.position, existing_view.size).grow(8.0)
+				if candidate_rect.intersects(existing_rect):
+					overlaps_existing = true
+					break
+			if overlaps_existing:
 				continue
-			var existing_view: BarrageView = child as BarrageView
-			var existing_rect: Rect2 = Rect2(existing_view.position, existing_view.size).grow(8.0)
-			if candidate_rect.intersects(existing_rect):
-				overlaps_existing = true
-				break
-		if overlaps_existing:
-			continue
 		view.position = candidate_position
 		_next_spawn_row = (row_index + 1) % row_count
 		return true

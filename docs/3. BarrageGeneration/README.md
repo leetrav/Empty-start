@@ -14,7 +14,7 @@
 | [BG-42](tasks/BG-42_static-random-placement.md) | 复读和遮挡共用的中央区域随机静止落点 | 已合并 main |
 | [BG-21](tasks/BG-21_curved-motion.md) | 普通前景可选平滑曲线运动 | 已合并 main；聚焦回归和 GUI 运动证据通过 |
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景可选周期加减速 | 已实现；BG-40 限速、BG-21 曲线组合及 GUI 运动验证通过 |
-| [BG-24](tasks/BG-24_overlap-pass-through.md) | 实例出生与运动允许重叠 | 待开发 |
+| [BG-24](tasks/BG-24_overlap-pass-through.md) | 普通移动前景出生重叠与运动穿透 | 已实现；TEST_ONLY 两实例真实运行 smoke 通过 |
 | [BG-27](tasks/BG-27_animated-size.md) | 连续缩放 | 已有脉冲入口 |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景富文本 | 待开发 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
@@ -30,6 +30,8 @@
 | [BG-39](tasks/BG-39_tier-motion-proportions.md) | 四种运动类型随 Tier 权重变化 | 待开发 |
 | [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 前景话语最大速度 | 普通直线、BG-21 曲线和 BG-22 加减速均按统一上限验证；BG-20/23 实现后补验 |
 | [BG-41](tasks/BG-41_random-trait-selection.md) | 按已解锁池随机分配特性 | 技能池待定 |
+
+**BG-24（2026-10-12）** 普通移动前景使用原轮换出生行，不再因候选位置与已有视图重叠而改行或拒绝；各 `BarrageView` 继续按各自速度、暂停补偿、寿命和离场逻辑运行。只对移动普通前景启用，静止随机落点、Repeat 和 Paradox 保留原定位规则。Godot 4.7.2 临时真实 Area / View smoke 验证同位置出生重叠、不同速度实例运动穿过交叠，以及两者继续运动并离开交集；原句 ID 与每个运行时记录独立。没有修改 Sandbox / Flow。
 
 **BT-14 固定层级契约：** `BarrageView.REPEAT_Z_INDEX=0`、`FOREGROUND_Z_INDEX=1`、`OCCLUSION_Z_INDEX=RenderingServer.CANVAS_ITEM_Z_MAX`（Godot 4.7.2 为 4096）。BG-25 / BG-26 的普通前景层级使用 1～4095，4096 专供遮挡实例保持最高层。
 
@@ -54,6 +56,8 @@
 **BG-21（2026-10-11）** `BarrageArea.curved_foreground_motion_enabled` 默认关闭；开启后仅后续普通移动前景实例使用平滑单弧，`curved_foreground_motion_amplitude_pixels` 调整最大弧高，实际幅度按落点可用上下空间收窄。`BarrageView` 使用 2 px 烘焙步长的 `Curve2D` 弧长，以线性采样推进并满足 BG-40 限速入口；视图高度保持在区域内。默认关闭时沿用原横向直线；BG-42 静止请求优先保持静止，Repeat 与 Paradox 仍使用独立既有路径。没有接入 BG-39 Tier 权重。`test_bg21_curved_motion.gd` 覆盖开关、弧高调整、BG-40 逐帧速度上限、完整视图边界，以及静止、Repeat 和 Paradox 隔离。图形测试保存 TEST_ONLY 轨迹图到 `evidence/BG21_curved_motion_gui.png`；图中尾迹记录实际视图位置，正式词库可读性仍需完整游戏人工验收。
 
 **BG-22（2026-10-11）** `BarrageArea.speed_change_foreground_motion_enabled` 默认关闭；开启后仅后续普通移动前景实例加减速。`speed_change_foreground_motion_cycle_seconds` 可在 Inspector 设为 2～16 秒，默认 6 秒；每周期从零速平滑加速到 BG-40 返回的速度上限，再平滑减速到零，运动方向仍向左。`BarrageView` 用 smoothstep 平滑周期接缝，并将当帧速度用于直线路径或 BG-21 曲线路径弧长，因此组合运行时的路径速度仍不超过 BG-40 上限。BG-42 静止请求优先保持静止，Repeat 和 Paradox 不读取该选项；没有接入 BG-39 Tier 权重。`test_bg22_speed_change_motion.gd` 使用实际 `BarrageArea` / `BarrageView`，覆盖默认匀速、4 秒可调周期、加速与减速速度样本、逐帧速度上限、曲线叠加及隔离规则。图形运行保存 TEST_ONLY 轨迹和样本速度到 `evidence/BG22_speed_change_motion_gui.png`；该组件级验证不代表正式词库或完整局内体验验收。
+
+**BG-24（2026-10-12）** 普通移动前景使用原轮换行和出生位置，但不再因该位置与当前视图重叠而跳行或拒绝；各 `BarrageView` 继续独立沿已有移动、暂停、寿命和离场逻辑运行，矩形交叠时不追加避让或推开。该规则只传给移动的 `spawn_normal_barrage()` 路径；BG-42 静止请求、Repeat 与 Paradox 继续使用原定位 / 空位检查。临时真实运行 smoke 使用 TEST_ONLY 同关内容、两份内存关卡配置（速度 20 与 100）和 BarrageArea：固定 1280×150 区域产生同位置重叠，随后实例按各自速度通过交叠并自然离开交集，同时核对原句 ID 和各自实例身份。临时 scene / script 已删除。无需修改 Sandbox / Flow。
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 
@@ -266,7 +270,7 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-21](tasks/BG-21_curved-motion.md) | 前景普通话语连续曲线运动 | 待实施 |
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 前景普通话语平缓加减速 | 待实施 |
 | [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 待实施 |
-| [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 待实施 |
+| [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 已实现，等待合并 |
 | [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 待实施 |
 | [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 待实施 |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通前景话语的适度缩放 | 待实施 |
