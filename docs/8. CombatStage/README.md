@@ -8,7 +8,7 @@
 
 ## 2026-10-09 现行实现核对与任务状态
 
-**阶段结构：** `CombatStage` 的运行档位为 T0～T5，普通 T5 继续战斗到满 PK。进入真实 `ContradictionBreak` 后，SandboxBattleHud 显示 `T6 / Paradox`（CS-25）；此文案沿用运行 Tier 5、PK 比例与现有胜负流程。CS-18 已在整发命中、倾向及复读登记和 `shot_resolved` 消费者处理后，仅对本发实际升档调用 `clear_pending_normal_repeats()` 清空旧普通请求；CS-14 仍负责升档后的可见弹幕清理。T0 回拉倍率为 0（CS-19）；CS-22 的 T1 连线开场事件与完播通知已验收，正式对白配置仍为空；CS-15 已将开场对白结束后的恢复接入正式尝试流程；CS-23 可按现行入口单卡核对。T2～T5 每档仅在本场首次到达时抽取一项反击（CS-28）；已抽技能按当前 Tier 生效，降档暂停高档反击、回升恢复原抽取结果（CS-29），具体候选池后续确定。降至 T0 对手离线（CS-26），降至 T1 触发嘲讽（CS-27）。
+**阶段结构：** `CombatStage` 的运行档位为 T0～T5，普通 T5 继续战斗到满 PK。进入真实 `ContradictionBreak` 后，SandboxBattleHud 显示 `T6 / Paradox`（CS-25）；此文案沿用运行 Tier 5、PK 比例与现有胜负流程。CS-18 已在整发命中、倾向及复读登记和 `shot_resolved` 消费者处理后，仅对本发实际升档调用 `clear_pending_normal_repeats()` 清空旧普通请求；CS-14 仍负责升档后的可见弹幕清理。T0 回拉倍率为 0（CS-19）；CS-22 的 T1 连线开场事件与完播通知已验收，正式对白配置仍为空；CS-15 已接入开场对白完播后的恢复；CS-23 已通过真实 T0→T1 攻击与双句对白联调验收。T2～T5 每档仅在本场首次到达时抽取一项反击（CS-28）；已抽技能按当前 Tier 生效，降档暂停高档反击、回升恢复原抽取结果（CS-29），具体候选池后续确定。降至 T0 对手离线（CS-26），降至 T1 触发嘲讽（CS-27）。
 CS-14 已实现：升档整发通知完成后清除可见弹幕，保留新 Tier 的普通生成能力。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
@@ -18,11 +18,11 @@ CS-14 已实现：升档整发通知完成后清除可见弹幕，保留新 Tier
 | [CS-16](tasks/CS-16_tier-down-shake.md) | 降档统一震动（离线与嘲讽由 CS-26/27 叠加） | 待开发 |
 | [CS-17](tasks/CS-17_silence-and-burst.md) | 沉默爆发候选节点 | 待策划 |
 | [CS-18](tasks/CS-18_tier-up-clear-old-repeat-requests.md) | 现有队列清理升档接线 | 已完成 · Godot 4.7.2 聚焦运行通过 |
-| [CS-19](tasks/CS-19_tier0-zero-pullback.md) | T0 回拉倍率数值 0 | 配置完成；Sandbox T0/T1 现行回拉验证通过，对白后恢复已由 CS-15 接入，CS-23 待验收 |
+| [CS-19](tasks/CS-19_tier0-zero-pullback.md) | T0 回拉倍率数值 0 | 配置完成；Sandbox T0/T1 现行回拉验证通过，对白后恢复已由 CS-15 接入，CS-23 联调验收通过 |
 | [CS-20](tasks/CS-20_tier0-matching-status.md) | T0 搜索对手文案 | 已完成：开局/重开显示可配置等待状态，T1 接线后切换为对手已连线 |
 | [CS-21](tasks/CS-21_tier1-opponent-portrait.md) | T0/T1 对手立绘出现 | 部分完成：显隐与回切已验证；level_001 素材映射待确认 |
 | [CS-22](tasks/CS-22_tier1-bubble-dialogue.md) | T1 开场气泡对白 | 部分完成：事件序列与完播通知已验收；正式对白待配置 |
-| [CS-23](tasks/CS-23_tier1-resume-on-dialogue-end.md) | T1 对话后恢复战斗 | CS-15 已接入，待单卡验收 |
+| [CS-23](tasks/CS-23_tier1-resume-on-dialogue-end.md) | T1 对话后恢复战斗 | 已完成 · 真实升档对白完播恢复验收通过 |
 | [CS-24](tasks/CS-24_tier-foreground-slot-catalog.md) | Tier 唯一前景容量字段与 BarrageArea 读取接口 | 已完成 |
 | [CS-25](tasks/CS-25_paradox-tier6-stage-label.md) | T6/Paradox HUD 阶段标记 | 已完成 |
 | [CS-26](tasks/CS-26_tier1-to-tier0-disconnect.md) | 降至 T0 时对手离线 | 部分完成：离线与对白清理已验收；震屏待 CS-16 |
@@ -46,7 +46,7 @@ INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar �
 
 ## 当前已实现数据
 
-`data/combat_stage/tier_catalog.tres` 为 Tier 0～5 的静态配置来源。`CombatStageTierCatalog.get_tier_config(tier)` 按档位读取各自的升/降档阈值、生成数量/频率/移动/寿命倍率、对手回拉倍率、每次命中复读数和对手立绘状态标识。正式对手回拉倍率 T0～T5 为 `0/1.3/1.6/1.8/2.0/2.2`；CS-19 的 Godot 4.7.2 Sandbox 运行测试确认 T0 玩家 PK 稳定、当前 T1 流程仍通过原 PK 所有者回拉。T1 开场对白事件与完播通知已由 CS-22 验收；CS-15 已接入对白完播后的回拉与生成恢复，CS-23 后续按现行入口单卡验收。
+`data/combat_stage/tier_catalog.tres` 为 Tier 0～5 的静态配置来源。`CombatStageTierCatalog.get_tier_config(tier)` 按档位读取各自的升/降档阈值、生成数量/频率/移动/寿命倍率、对手回拉倍率、每次命中复读数和对手立绘状态标识。正式对手回拉倍率 T0～T5 为 `0/1.3/1.6/1.8/2.0/2.2`；CS-19 的 Godot 4.7.2 Sandbox 运行测试确认 T0 玩家 PK 稳定、当前 T1 流程仍通过原 PK 所有者回拉。T1 开场对白事件与完播通知已由 CS-22 验收；CS-15 已接入对白完播后的回拉与生成恢复，CS-23 已用真实升档和 TEST_ONLY 双句对白验收完播恢复。
 
 CS-25 由 `ContradictionOracleFlow.entered` 驱动 SandboxBattleHud 的 `set_paradox_stage_active(active, current_tier)`。真实矛盾流程进入时显示 `T6 / Paradox`；Final Oracle、Rest、失败和新尝试接线会按当前 `CombatStage.get_current_tier()` 恢复普通档位文字。该展示不增加 Tier 6 配置，也不改 PK 比例、胜负判定或矛盾规则。聚焦场景 `tests/combat_stage/cs25_paradox_stage_label_smoke.tscn` 覆盖 HUD 内容、真实矛盾流程、六个候选、Rest、失败重试及第二次尝试；GUI 视口截图保存在 `evidence/cs25_2026-10-11/`。截图与运行断言使用现有 `level_001.tres` 示例内容，正式四关文本仍需策划确认。
 
@@ -174,4 +174,4 @@ T0 为等待匹配对手阶段，对手回拉倍率为 0；进入 T1 后清屏�
 
 ## 与 21. StreamerBubbleDialogue 的事件接线（2026-10-09）
 
-CS-22 在 T1 首次连线时触发配置好的开场对白，实际气泡展示由 [SD-02](../21.%20StreamerBubbleDialogue/tasks/SD-02_portrait-side-bubble-view.md)、[SD-03](../21.%20StreamerBubbleDialogue/tasks/SD-03_ordered-bubble-events.md)、[SD-06](../21.%20StreamerBubbleDialogue/tasks/SD-06_combat-state-dialogue-event.md) 负责；CS-15 已将开场对白序列完播后的生成与对手回拉恢复接入正式流程，CS-23 可按现行实现单卡验收。CS-27 降至 T1 的嘲讽也通过 SD-06 映射，CS-26 降至 T0 将对手离线事实交给气泡队列清理。普通话语命中映射与指定话语触发对手台词分别归 SD-04、SD-05；定时对白归 SD-07。剧情数值与阶段所有权继续归 CombatStage/Sandbox。
+CS-22 在 T1 首次连线时触发配置好的开场对白，实际气泡展示由 [SD-02](../21.%20StreamerBubbleDialogue/tasks/SD-02_portrait-side-bubble-view.md)、[SD-03](../21.%20StreamerBubbleDialogue/tasks/SD-03_ordered-bubble-events.md)、[SD-06](../21.%20StreamerBubbleDialogue/tasks/SD-06_combat-state-dialogue-event.md) 负责；CS-15 已将开场对白序列完播后的生成与对手回拉恢复接入正式流程，CS-23 已验证完播后恢复正式战斗流程。CS-27 降至 T1 的嘲讽也通过 SD-06 映射，CS-26 降至 T0 将对手离线事实交给气泡队列清理。普通话语命中映射与指定话语触发对手台词分别归 SD-04、SD-05；定时对白归 SD-07。剧情数值与阶段所有权继续归 CombatStage/Sandbox。
