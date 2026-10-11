@@ -8,7 +8,7 @@
 
 ## 2026-10-09 现行实现核对与任务状态
 
-**阶段结构：** `CombatStage` 的运行档位为 T0～T5，普通 T5 继续战斗到满 PK。进入真实 `ContradictionBreak` 后，SandboxBattleHud 显示 `T6 / Paradox`（CS-25）；此文案沿用运行 Tier 5、PK 比例与现有胜负流程。CS-18 已在整发命中、倾向及复读登记和 `shot_resolved` 消费者处理后，仅对本发实际升档调用 `clear_pending_normal_repeats()` 清空旧普通请求；CS-14 仍负责升档后的可见弹幕清理。T0 回拉倍率为 0（CS-19）；CS-22 的 T1 连线开场事件与完播通知已验收，正式对白配置仍为空；CS-23 负责开场对白结束后的回拉与生成恢复，目前待接线。T2～T5 每档仅在本场首次到达时抽取一项反击（CS-28）；已抽技能按当前 Tier 生效，降档暂停高档反击、回升恢复原抽取结果（CS-29），具体候选池后续确定。降至 T0 对手离线（CS-26），降至 T1 触发嘲讽（CS-27）。
+**阶段结构：** `CombatStage` 的运行档位为 T0～T5，普通 T5 继续战斗到满 PK。进入真实 `ContradictionBreak` 后，SandboxBattleHud 显示 `T6 / Paradox`（CS-25）；此文案沿用运行 Tier 5、PK 比例与现有胜负流程。CS-18 已在整发命中、倾向及复读登记和 `shot_resolved` 消费者处理后，仅对本发实际升档调用 `clear_pending_normal_repeats()` 清空旧普通请求；CS-14 仍负责升档后的可见弹幕清理。T0 回拉倍率为 0（CS-19）；CS-22 的 T1 连线开场事件与完播通知已验收，正式对白配置仍为空；CS-23 负责开场对白结束后的回拉与生成恢复，目前待接线。T2～T5 每档仅在本场首次到达时抽取一项反击（CS-28）；已抽技能按当前 Tier 生效，降档暂停高档反击、回升恢复原抽取结果（CS-29），具体候选池后续确定。降至 T0 对手离线（CS-26）；降至 T1 由 SD-06 的 `combat_tier1_taunt` 触发嘲讽，CS-27 Sandbox 联调已通过。
 CS-14 已实现：升档整发通知完成后清除可见弹幕，保留新 Tier 的普通生成能力。
 
 CS-16 比较 HUD 已记录 Tier 与新最终 Tier；下降时通过 Tween 短时移动 BattleArea。HUD Inspector 可调整位移幅度和持续时间，当前默认初值为 6 设计像素、0.18 秒。该表现只移动显示父节点，BarrageArea 继续推进现存弹幕的运动与寿命。
@@ -28,6 +28,7 @@ CS-16 比较 HUD 已记录 Tier 与新最终 Tier；下降时通过 Tween 短时
 | [CS-24](tasks/CS-24_tier-foreground-slot-catalog.md) | Tier 唯一前景容量字段与 BarrageArea 读取接口 | 已完成 |
 | [CS-25](tasks/CS-25_paradox-tier6-stage-label.md) | T6/Paradox HUD 阶段标记 | 已完成 |
 | [CS-26](tasks/CS-26_tier1-to-tier0-disconnect.md) | 降至 T0 时对手离线 | 部分完成：离线、对白清理与 CS-16 震屏已联测；正式立绘映射待确认 |
+| [CS-27](tasks/CS-27_tier2-to-tier1-taunt.md) | T2+ 降至 T1 时嘲讽，并继续 T1 普通战斗 | 已完成 · Godot 4.7.2 Sandbox Headless：37 checks，0 failures |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 
