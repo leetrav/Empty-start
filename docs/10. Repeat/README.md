@@ -12,13 +12,20 @@
 | [RP-14](tasks/RP-14_plain-text-repeat.md) | 现有纯文本兼容回归 | 已有基础 |
 | [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 现有复读独立容量实测 | 已有容量 |
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
-| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 待开发 |
+| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 已完成 · 2026-10-12 |
 | [RP-18](tasks/RP-18_repeat-infection-spread.md) | 已有原句计划的复读潮表现 | 已有基础 |
 | [RP-19](tasks/RP-19_repeat-grey-text.md) | 灰色复读文字 | 待开发 |
 | [RP-20](tasks/RP-20_repeat-zero-outline.md) | 零描边复读 | 待开发 |
 | [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读最低层 | 待开发 |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+### RP-17 复读生命周期淡出（2026-10-12）
+
+- `BarrageRuntimeRecord.capture_lifetime_at_spawn()` 固定生成时总寿命与绝对到期时间。
+- `BarrageView` 对 `is_repeat` 实例按 `剩余寿命 / 捕获总寿命` 连续设置 `modulate.a`；普通前景透明度保持不变。该入口覆盖普通、矛盾和神降临历史复读。
+- 暂停时沿用 `BarrageView` 既有到期补偿，复读保持暂停前透明度；恢复后按剩余寿命继续淡出。
+- Godot 4.7.2 GUI smoke 验收出生、中段、暂停/恢复和寿命末端状态。运行截图依仓库 `.gitignore` 保存在本地 `.godot` 临时目录。
 
 
 ## 系统目标
@@ -127,7 +134,7 @@ RP-12 已复用 13 的本场读取链，并提供 19 已有候选入口可消费
 | [RP-14](tasks/RP-14_plain-text-repeat.md) | 复读使用普通纯文本 | 待实施 |
 | [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 复读独立同屏上限与容量验收 | 待实施 |
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
-| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读按生命周期渐隐 | 待实施 |
+| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读按生命周期渐隐 | 已完成 · 2026-10-12 |
 | [RP-18](tasks/RP-18_repeat-infection-spread.md) | 有效命中形成同向复读潮 | 待实施 |
 
 关联依赖及实施顺序以各卡的上游功能卡为准；共享场景与组件按实际 Owner 的任务流程依次集成。

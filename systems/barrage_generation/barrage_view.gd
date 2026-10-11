@@ -72,7 +72,7 @@ func pulse_presentation(scale_multiplier: float, return_seconds: float) -> bool:
 	return true
 
 
-# 在添加到区域之前配置尺寸和材质；周期加减速只由普通移动前景显式传入。
+# 在进入场景树前配置单条视图；复读初始透明度恢复可见，移动参数由入口传入。
 func setup(
 	barrage_record: BarrageRuntimeRecord,
 	move_speed_pixels_per_second: float,
@@ -89,6 +89,10 @@ func setup(
 	_speed_change_cycle_seconds = maxf(speed_change_cycle_seconds, 0.0) if is_finite(speed_change_cycle_seconds) else 0.0
 	_speed_change_elapsed_seconds = 0.0
 	_active_area = active_area
+	if barrage_record.is_repeat:
+		var initial_modulate: Color = modulate
+		initial_modulate.a = 1.0
+		modulate = initial_modulate
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# 保留普通前景层级供后续换层；遮挡使用引擎允许的最大 Z，始终压过前景和复读。
@@ -262,13 +266,26 @@ func _update_pause_compensation(is_tree_paused: bool, current_time_msec: int) ->
 	return false
 
 
-# 移动与自然结束继续只由区域和运行记录负责，外观不另建计时状态。
+# 复读透明度按剩余寿命连续计算；暂停时由到期补偿保持当前比例。
+func _update_repeat_fade(current_time_msec: int) -> void:
+	if not runtime_record.is_repeat or runtime_record.lifetime_duration_msec <= 0:
+		return
+	var remaining_msec: int = maxi(runtime_record.expires_at_msec - current_time_msec, 0)
+	var alpha_ratio: float = clampf(
+		float(remaining_msec) / float(runtime_record.lifetime_duration_msec), 0.0, 1.0
+	)
+	var current_modulate: Color = modulate
+	current_modulate.a = alpha_ratio
+	modulate = current_modulate
+
+# 移动、复读淡出与自然结束沿用运行记录寿命；区域继续负责空间与实例释放。
 func _process(delta: float) -> void:
 	if runtime_record == null:
 		return
 	var current_time_msec: int = Time.get_ticks_msec()
 	if _update_pause_compensation(get_tree().paused, current_time_msec):
 		return
+	_update_repeat_fade(current_time_msec)
 	if current_time_msec >= runtime_record.expires_at_msec:
 		queue_free()
 		return
