@@ -110,7 +110,11 @@ func setup(
 	# PA-05 只读取现有实例 TraitSet，选择外观不改变战斗结算或命中对象。
 	var special: BarrageSpecialSurface = get_glass_surface() as BarrageSpecialSurface
 	if special != null and barrage_record.trait_set != null and not barrage_record.is_repeat:
-		special.configure_traits(barrage_record.trait_set.get_trait_ids(), barrage_record.text, get_theme_font("font"))
+		# 复制品装饰文字与前景话语使用同一描边参数。
+		special.configure_traits(
+			barrage_record.trait_set.get_trait_ids(), barrage_record.text, get_theme_font("font"),
+			foreground_outline_size, outline_color
+		)
 	_apply_special_text_layout()
 
 
@@ -187,13 +191,15 @@ func get_glass_surface() -> BarrageGlassSurface:
 # 用对应文字类型配置默认填充、阴影、描边与 RichTextLabel 可选覆盖层。
 func _set_visual_material() -> void:
 	var repeat: bool = runtime_record != null and (runtime_record.is_repeat or _uses_fake_repeat_appearance())
+	# 假牌可以借用复读调色；只有真实复读实例关闭前景描边。
+	var is_repeat: bool = runtime_record != null and runtime_record.is_repeat
 	var surface: BarrageGlassSurface = get_glass_surface()
 	if surface != null and runtime_record != null:
 		surface.configure(runtime_record.tendency_id, 1 if repeat else roundi(runtime_record.strength), repeat)
 	_set_visual_font_color(repeat_font_color if repeat else foreground_font_color)
-	add_theme_color_override("font_outline_color", Color.TRANSPARENT if repeat else outline_color)
+	add_theme_color_override("font_outline_color", Color.TRANSPARENT if is_repeat else outline_color)
 	var strong: bool = not repeat and runtime_record != null and roundi(runtime_record.strength) >= 3
-	add_theme_constant_override("outline_size", 0 if repeat else foreground_outline_size + (1 if strong else 0))
+	add_theme_constant_override("outline_size", 0 if is_repeat else foreground_outline_size + (1 if strong else 0))
 	# S3 只加重文字笔画，不改变字号和已确定的气泡尺寸规则。
 	if strong:
 		var thick_font := FontVariation.new()
@@ -211,8 +217,8 @@ func _set_visual_material() -> void:
 		rich.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		rich.visible = false
 		rich.add_theme_color_override("default_color", repeat_font_color if repeat else foreground_font_color)
-		rich.add_theme_color_override("font_outline_color", Color.TRANSPARENT if repeat else outline_color)
-		rich.add_theme_constant_override("outline_size", 0 if repeat else foreground_outline_size + (1 if strong else 0))
+		rich.add_theme_color_override("font_outline_color", Color.TRANSPARENT if is_repeat else outline_color)
+		rich.add_theme_constant_override("outline_size", 0 if is_repeat else foreground_outline_size + (1 if strong else 0))
 		rich.add_theme_color_override("font_shadow_color", Color.TRANSPARENT if repeat else text_shadow_color)
 		rich.add_theme_constant_override("shadow_offset_x", 0 if repeat else text_shadow_offset)
 		rich.add_theme_constant_override("shadow_offset_y", 0 if repeat else text_shadow_offset)
