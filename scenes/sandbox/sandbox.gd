@@ -50,6 +50,8 @@ var _barrage_impact_presenter: BarrageImpactPresenter
 var _pa09_feedback: Control
 var _combat_state_dialogue_presenter: Node
 var _timed_opponent_dialogue_presenter: Node
+# 仅跟踪 PA-11 连线演出后的对白呈现，战斗状态仍由 Flow 拥有。
+var _pa11_connection_dialogue_active: bool = false
 
 
 # 场景只创建生命周期对象并接线；PK、Tier、倾向等状态留在各自所有者。
@@ -185,6 +187,7 @@ func restart_current_attempt() -> void:
 
 # 当前关的角色和素材由一次尝试启动事实提供；HUD 只呈现组合方状态。
 func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage: CombatStage, _queue: RepeatDelayQueue) -> void:
+	_pa11_connection_dialogue_active = false
 	_barrage_impact_presenter.reset_effects()
 	_pa09_feedback.call("clear_feedback")
 	_battle_hud.reset_for_attempt(stage.get_current_tier())
@@ -206,6 +209,7 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 
 # 普通战斗失败后，HUD 恢复当前普通阶段文案并显示失败界面。
 func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: HitResolution, _repeat_stats: RepeatGenerationStats) -> void:
+	_pa11_connection_dialogue_active = false
 	_barrage_impact_presenter.reset_effects()
 	_pa09_feedback.call("clear_feedback")
 	_battle_hud.set_paradox_stage_active(false, _battle_attempt_flow.get_current_tier())
@@ -215,6 +219,7 @@ func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: Hit
 # T1 连线对白完整结束后恢复本档战斗，再向外转发已完成事实。
 func _on_dialogue_event_sequence_completed(event_id: StringName, sequence_id: StringName, side: int) -> void:
 	if event_id == &"combat_connected":
+		_pa11_connection_dialogue_active = false
 		_battle_attempt_flow.resume_after_tier1_dialogue()
 	dialogue_event_sequence_completed.emit(event_id, sequence_id, side)
 
@@ -238,6 +243,8 @@ func _on_tier_breakthrough_finished(
 		return
 	if previous_tier == CombatStage.INITIAL_TIER and current_tier > CombatStage.INITIAL_TIER:
 		_battle_hud.set_opponent_portrait_connected(true)
+	# 空配置可能同步完播，所以必须在完成入口发出通知前设置此标记。
+	_pa11_connection_dialogue_active = previous_tier == 0 and current_tier == 1
 	if not _battle_attempt_flow.finish_tier_breakthrough_transition():
 		push_error("Sandbox: 升档突破过渡结束后无法恢复当前流程。")
 
@@ -255,6 +262,12 @@ func _on_final_oracle_opened(session: FinalOracleSession) -> void:
 
 # 暂停由 SceneTree 冻结此节点，复读等待只使用实际游戏帧时间。
 func _process(delta: float) -> void:
+	# PA-11：战斗提前结束时取消旧演出，防止它向已停止流程发出完成通知。
+	if not _battle_attempt_flow.is_normal_combat_active() and _battle_hud.is_stage_transition_playing():
+		_battle_hud.cancel_tier_breakthrough()
+	if not _battle_attempt_flow.is_normal_combat_active() and _pa11_connection_dialogue_active:
+		_pa11_connection_dialogue_active = false
+		_battle_hud.clear_dialogue_bubbles(BubbleDialogueEntry.SpeakerSide.OPPONENT)
 	if _divine_descent_flow != null:
 		_divine_descent_flow.advance(delta)
 	# 直播上涨只推进表现数据；SceneTree 暂停时此帧回调也暂停。
