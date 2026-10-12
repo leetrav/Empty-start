@@ -15,7 +15,7 @@
 | [BG-42](tasks/BG-42_static-random-placement.md) | 复读和遮挡共用的中央区域随机静止落点 | 已合并 main |
 | [BG-21](tasks/BG-21_curved-motion.md) | 普通前景可选平滑曲线运动 | 已合并 main；聚焦回归和 GUI 运动证据通过 |
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景可选周期加减速 | 已实现；BG-40 限速、BG-21 曲线组合及 GUI 运动验证通过 |
-| [BG-23](tasks/BG-23_wandering-motion.md) | 普通前景低速游荡 | 已实现；可复播 demo 观察到多次转向 |
+| [BG-23](tasks/BG-23_wandering-motion.md) | 普通前景低速游荡 | 已实现；独立 PR #203 开放，demo 观察到多次转向 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 普通移动前景出生重叠与运动穿透 | 已实现；TEST_ONLY 两实例真实运行 smoke 通过 |
 | [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景随机初始层级 | 已由独立 PR #196 合入 main |
 | [BG-26](tasks/BG-26_moving-layer-order.md) | 普通前景运动中随机改变层级 | 已实现，PR #197 开放；基于含 BG-25 #196 的 main |
@@ -294,7 +294,7 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-20](tasks/BG-20_random-straight-motion.md) | 前景普通话语随机方向直线运动 | 待实施 |
 | [BG-21](tasks/BG-21_curved-motion.md) | 前景普通话语连续曲线运动 | 待实施 |
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 前景普通话语平缓加减速 | 待实施 |
-| [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 已实现，独立方向状态与可复播演示已提交 |
+| [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 已实现，PR #203 开放 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 待实施 |
 | [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 已实现，PR #196 已合 main |
 | [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 已实现，PR #197 开放；基于含 BG-25 #196 的 main |

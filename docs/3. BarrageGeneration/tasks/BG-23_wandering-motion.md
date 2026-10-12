@@ -1,6 +1,6 @@
 # BG-23 前景普通话语低速游荡
 
-**状态：已实现，待 PR review**
+**状态：已实现，PR #203 开放待 review**
 
 ## 开始前先阅读以下文档
 - `docs/Original/任务卡模板.md` 与 `known_traps.md`（通用执行规范与已知风险）
