@@ -36,9 +36,14 @@ func _smoke() -> void:
 	var terminal_colors: Dictionary = {&"orthodox": Color("#D74848")}
 	normal.apply_terminal_trait_presentation([&"orthodox"], terminal_colors)
 	repeat.apply_terminal_trait_presentation([&"orthodox"], terminal_colors)
+	var normal_rich: RichTextLabel = normal.get_node("RichBody") as RichTextLabel
 	var repeat_rich: RichTextLabel = repeat.get_node("RichBody") as RichTextLabel
 	if not _expect(
-		repeat.z_index < normal.z_index and repeat.get_theme_constant("outline_size") == 0
+		repeat.z_index < normal.z_index
+		and normal.get_theme_constant("outline_size") == normal.foreground_outline_size
+		and normal_rich.get_theme_constant("outline_size") == normal.foreground_outline_size
+		and repeat.get_theme_constant("outline_size") == 0
+		and repeat_rich.get_theme_constant("outline_size") == 0
 		and repeat.get_theme_color("font_color").is_equal_approx(repeat.repeat_font_color)
 		and repeat_rich.get_theme_color("default_color").is_equal_approx(repeat.repeat_font_color)
 		and repeat.get_presentation_trait_ids() == [&"orthodox"]

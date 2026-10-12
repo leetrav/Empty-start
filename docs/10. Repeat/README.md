@@ -15,7 +15,7 @@
 | [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 待开发 |
 | [RP-18](tasks/RP-18_repeat-infection-spread.md) | 同句普通复读延迟接续并静止散布 | 已完成 · 2026-10-12 |
 | [RP-19](tasks/RP-19_repeat-grey-text.md) | 灰色复读文字 | 已完成（2026-10-12） |
-| [RP-20](tasks/RP-20_repeat-zero-outline.md) | 零描边复读 | 待开发 |
+| [RP-20](tasks/RP-20_repeat-zero-outline.md) | 零描边复读 | 已完成（2026-10-12） |
 | [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读始终位于全部话语底层 | 已完成 · 2026-10-12 |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
@@ -44,6 +44,8 @@
 - 当前 main 已有上述运行链路；本卡完成联调验收，未修改运行脚本、Scene 或 Resource。
 
 **RP-19（2026-10-12）** `BarrageView.repeat_font_color` 是可调灰色来源，默认 `#b8bfcb`，同时设置普通 Label 与 RichTextLabel。终局特性着色只覆盖普通前景，复读继续保持低干扰灰色。
+
+**RP-20（2026-10-12）** `BarrageView` 依据运行时 `is_repeat` 将 Label 与 RichTextLabel 的 `outline_size` 设为 0。BG-37 已将真复读识别与假牌复读配色分开：真复读保持零描边，假牌作为前景话语继续保留前景描边。
 
 ## 系统目标
 
@@ -162,8 +164,8 @@ RP-12 已复用 13 的本场读取链，并提供 19 已有候选入口可消费
 
 | 任务卡 | 唯一功能 | 状态 |
 | --- | --- | --- |
-| [RP-19](tasks/RP-19_repeat-grey-text.md) | 复读文字使用灰色 | 待实施 |
-| [RP-20](tasks/RP-20_repeat-zero-outline.md) | 复读文本描边宽度为零 | 待实施 |
+| [RP-19](tasks/RP-19_repeat-grey-text.md) | 复读文字使用灰色 | 已完成（2026-10-12） |
+| [RP-20](tasks/RP-20_repeat-zero-outline.md) | 复读文本描边宽度为零 | 已完成（2026-10-12） |
 | [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读固定最低层级 | 待实施 |
 
 本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。
