@@ -170,3 +170,21 @@ PA-02 负责把正式美术资产导入工程并接到对应 Resource；PA-03 �
 ## PA-08 正式 Sandbox 视觉接线补齐（2026-10-11）
 
 `PA-08` 独立组件已于 PR #111 合并，但真实 Sandbox 的 HUD 原来只刷新蓄力条，缺少调用 `AimReticle.set_charge_visual_state()` 与 `play_shot_feedback()`。现由 `scenes/sandbox/sandbox_battle_hud.gd` 复用既有 `bind_portrait_attack` 所绑定的 AttackChargeInput：每帧把真实蓄力进度/按住/满蓄同步给准星，正式 `shot_snapshot_created` 时触发短闪，重开清理视觉状态。视觉设计 96×96、实际命中直径 144 与现有游戏 HUD 都未修改。Windows Godot 4.7.2 的真实 Sandbox 四态 GPU 截图在 `previews/pa08_sandbox_{idle,charging,full,firing}_1280.jpg`；验收与遗留见 `表现资产_PA-08_2026-10-11_log.md`。Android 真机仍需后续验收。
+
+## PA-20 主播信息区粉丝团名（2026-10-12）
+
+**当前状态：HUD 接线与可视预览已完成；正式 LevelProfile 导表映射待数据工具确认。**
+
+玩家主播行读取 `SaveManager.data.streamer_name / fan_group_name`，对手行读取当前 `LevelProfile.streamer_name / fan_group_name`；BattleHud 用固定宽度双 Label、测量文本并缩小字号，极长值以省略号收尾，空粉丝团名显示 `❤粉丝团❤`。`LevelProfile.fan_group_name` 已提供可编辑 Resource 字段，正式导表映射未改，待数据工具字段确认；当前空样例仍显示占位。`player_fan_badge` 与 `fan_badge_texture` 保留在原 Resource，顶部不再绘制图标，LD-15 仍是评论粉丝牌消费者。
+
+演示入口：[PA-20 Sandbox HUD 场景](../../../tests/presentation/pa20_fan_group_name_demo.tscn)，在 Godot Editor 打开后按 F6 可重播。该场景继承真实 Sandbox Scene，在内存 SaveData / LevelProfile 上按开播、切关、长名、重开顺序运行；不会保存玩家存档。D3D12 / Forward+ 真实 Godot 预览如下：
+
+- [1920×1080 开播](previews/pa20_fan_group_name_1920x1080_01_start.png)
+- [1920×1080 切关](previews/pa20_fan_group_name_1920x1080_02_level_switch.png)
+- [1920×1080 长名布局](previews/pa20_fan_group_name_1920x1080_03_long_names.png)
+- [1920×1080 重开](previews/pa20_fan_group_name_1920x1080_04_restart.png)
+- [1280×720 长名布局](previews/pa20_fan_group_name_1280x720_03_long_names.png)
+- [1280×720 重开](previews/pa20_fan_group_name_1280x720_04_restart.png)
+- [PA-20 5.6 秒 Godot 实际渲染视频（AVI）](previews/pa20_fan_group_name_1920x1080.avi)
+
+未修改 PA-11 / PA-15 演出逻辑。演示复用 PA-14 现有立绘待机；完整 Rest/LevelRunState 战斗切关路由、Android 真机与正式导表映射仍待各自接口 / 工具验证。详见 [PA-20 日志](表现资产_PA-20_2026-10-12_log.md)。
