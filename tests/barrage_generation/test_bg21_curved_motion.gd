@@ -53,6 +53,7 @@ func _run_test() -> void:
 	area.repeat_barrage_screen_cap = 8
 	area.maximum_foreground_move_speed_pixels_per_second = 96.0
 	area.curved_foreground_motion_amplitude_pixels = 96.0
+	area.random_straight_direction_spread_degrees = 0.0
 	var profile := LevelProfile.new()
 	profile.streamer_id = "bg21_test_streamer"
 	profile.base_batch_count = 0
@@ -70,25 +71,33 @@ func _run_test() -> void:
 	if straight_view == null:
 		failures.append("disabled curve option preserves ordinary foreground spawning")
 	else:
-		var straight_start_y: float = straight_view.position.y
+		var straight_start: Vector2 = straight_view.position
+		var straight_direction: Vector2 = _get_spawn_inward_direction(area, straight_view)
 		var straight_speed: Dictionary = await _measure_motion(straight_view, SAMPLE_SECONDS)
-		if absf(straight_view.position.y - straight_start_y) > 0.1:
-			failures.append("disabled curve option preserves the existing horizontal path")
+		var straight_delta: Vector2 = straight_view.position - straight_start
+		var straight_cross_track: float = absf(
+			straight_direction.x * straight_delta.y - straight_direction.y * straight_delta.x
+		)
+		if straight_direction == Vector2.ZERO or straight_delta.dot(straight_direction) <= 0.0 or straight_cross_track > 0.1:
+			failures.append("disabled curve option preserves the selected edge's straight inward path")
 		_expect_speed("straight ordinary foreground", float(straight_speed.get("speed", -1.0)), 96.0, failures)
 		area.end_barrage(straight_view.get_instance_id())
 		await process_frame
 
 	area.curved_foreground_motion_enabled = true
+	seed(21022)
 	var curved_view: BarrageView = area.spawn_normal_barrage(profile, short_speech)
 	var curve_height: float = 0.0
 	if curved_view == null:
 		failures.append("enabled curve option spawns an ordinary foreground view")
 	else:
 		var curve_start: Vector2 = curved_view.position
+		var curve_direction: Vector2 = _get_spawn_inward_direction(area, curved_view)
 		var gui_trail: Dictionary = _begin_gui_motion_trail(area, curved_view) if DisplayServer.get_name() != "headless" else {}
 		var curved_motion: Dictionary = await _measure_motion(curved_view, SAMPLE_SECONDS)
-		curve_height = absf(curved_view.position.y - curve_start.y)
-		if curve_height < 8.0 or curved_view.position.x >= curve_start.x:
+		var curve_delta: Vector2 = curved_view.position - curve_start
+		curve_height = absf(curve_direction.x * curve_delta.y - curve_direction.y * curve_delta.x)
+		if curve_height < 8.0 or curve_delta.dot(curve_direction) <= 0.0:
 			failures.append("ordinary foreground follows a visible curve while progressing across the area")
 		if not _is_fully_inside(area, curved_view):
 			failures.append("curved foreground keeps the full readable view inside the battle area")
@@ -103,13 +112,18 @@ func _run_test() -> void:
 
 	# 调低弧高后再次生成，确认 Inspector 参数改变后续普通实例的实际轨迹。
 	area.curved_foreground_motion_amplitude_pixels = 32.0
+	seed(21022)
 	var small_curve_view: BarrageView = area.spawn_normal_barrage(profile, short_speech)
 	if small_curve_view == null:
 		failures.append("ordinary foreground spawns with a smaller configured curve amplitude")
 	else:
 		var small_curve_start: Vector2 = small_curve_view.position
+		var small_curve_direction: Vector2 = _get_spawn_inward_direction(area, small_curve_view)
 		await _measure_motion(small_curve_view, SAMPLE_SECONDS)
-		var small_curve_height: float = absf(small_curve_view.position.y - small_curve_start.y)
+		var small_curve_delta: Vector2 = small_curve_view.position - small_curve_start
+		var small_curve_height: float = absf(
+			small_curve_direction.x * small_curve_delta.y - small_curve_direction.y * small_curve_delta.x
+		)
 		if small_curve_height < 2.0 or small_curve_height >= curve_height:
 			failures.append("configured curve amplitude controls the next ordinary view's arc height")
 		area.end_barrage(small_curve_view.get_instance_id())
@@ -172,10 +186,15 @@ func _run_test() -> void:
 		failures.append("Paradox keeps the existing fixed six-candidate generation")
 	else:
 		var paradox_start: Vector2 = paradox_views[0].position
+		# 先让矛盾视图推进首帧，避免把实例进树前的时间计入移动速度。
+		await process_frame
 		var paradox_motion: Dictionary = await _measure_motion(paradox_views[0], 0.2)
 		if absf(paradox_views[0].position.y - paradox_start.y) > 0.1:
 			failures.append("Paradox candidates retain their straight horizontal path")
-		_expect_speed("Paradox config speed", float(paradox_motion.get("horizontal_speed", -1.0)), 540.0, failures)
+		# KT-40 的短帧样本实测有 5.7 px/s 离散偏差；保留紧凑容差验证矛盾速度不变。
+		var measured_paradox_speed: float = float(paradox_motion.get("horizontal_speed", -1.0))
+		if absf(measured_paradox_speed - 540.0) > 8.0:
+			failures.append("Paradox config speed %.1f px/s; expected 540.0 ± 8.0" % measured_paradox_speed)
 		if float(paradox_motion.get("horizontal_speed", -1.0)) <= area.maximum_foreground_move_speed_pixels_per_second:
 			failures.append("Paradox speed remains independent of the ordinary foreground ceiling")
 
@@ -258,6 +277,21 @@ func _is_fully_inside(area: BarrageArea, view: BarrageView) -> bool:
 	return view.position.x >= 0.0 and view.position.y >= 0.0 \
 		and view.position.x + view.size.x <= area.size.x \
 		and view.position.y + view.size.y <= area.size.y
+
+
+## 从 BG-18 的实际边缘落点反推出内向基线，保持 BG-21 测试不假设只从右侧出生。
+func _get_spawn_inward_direction(area: BarrageArea, view: BarrageView) -> Vector2:
+	var max_x: float = area.size.x - view.size.x
+	var max_y: float = area.size.y - view.size.y
+	if is_zero_approx(view.position.y):
+		return Vector2.DOWN
+	if is_equal_approx(view.position.y, max_y):
+		return Vector2.UP
+	if is_zero_approx(view.position.x):
+		return Vector2.RIGHT
+	if is_equal_approx(view.position.x, max_x):
+		return Vector2.LEFT
+	return Vector2.ZERO
 
 
 ## 对齐 Sandbox 当前战斗区域的实际基准尺寸。
