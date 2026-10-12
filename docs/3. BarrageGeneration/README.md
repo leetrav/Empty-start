@@ -5,7 +5,7 @@
 
 ## 2026-10-11 现行实现核对与任务状态
 
-**现行生成规则：** 前景普通话语与挂特性的特殊话语共用 T0～T5 各档少量容量，T1=10、T2=13、T3=16、T4=19、T5=22。T0 的 0 表示未填，普通阶段沿用 `LevelProfile.normal_barrage_screen_cap`。BG-16 已接入 CS-24 的 Tier 名额；普通话语与带特性话语共用同一账本，实例离树释放容量。Paradox 继续采用关卡上限，复读保留独立容量。复读可由生成调用方显式请求中央战斗区随机静止落点；普通话语装配 `occlusion` 后由 BT-15 自动使用该能力。普通移动前景由 BG-18 每次从上、下、左、右均匀选边，在边缘可容纳完整视图的范围内随机出生，并以对应的内向向量交给 `BarrageView`；限速、曲线与周期加减速继续由既有运动配置处理。BG-20 随机方向直线和 BG-23 游荡仍待开发。BG-42 静止请求、遮挡、Repeat 与 Paradox 不使用 BG-18 边缘移动出生；尚未接入 BG-39 Tier 运动权重。Paradox 阶段按 CB-13 读取一真五假六句。
+**现行生成规则：** 前景普通话语与挂特性的特殊话语共用 T0～T5 各档少量容量，T1=10、T2=13、T3=16、T4=19、T5=22。T0 的 0 表示未填，普通阶段沿用 `LevelProfile.normal_barrage_screen_cap`。BG-16 已接入 CS-24 的 Tier 名额；普通话语与带特性话语共用同一账本，实例离树释放容量。Paradox 继续采用关卡上限，复读保留独立容量。复读可由生成调用方显式请求中央战斗区随机静止落点；普通话语装配 `occlusion` 后由 BT-15 自动使用该能力。普通移动前景由 BG-18 每次从上、下、左、右均匀选边，在边缘可容纳完整视图的范围内随机出生，并以对应的内向向量交给 `BarrageView`；限速、曲线与周期加减速继续由既有运动配置处理。BG-23 可选低速游荡已经接入独立状态入口；BG-20 随机方向直线仍待开发。BG-42 静止请求、遮挡、Repeat 与 Paradox 不使用 BG-18 边缘移动出生；尚未接入 BG-39 Tier 运动权重。Paradox 阶段按 CB-13 读取一真五假六句。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
@@ -15,6 +15,7 @@
 | [BG-42](tasks/BG-42_static-random-placement.md) | 复读和遮挡共用的中央区域随机静止落点 | 已合并 main |
 | [BG-21](tasks/BG-21_curved-motion.md) | 普通前景可选平滑曲线运动 | 已合并 main；聚焦回归和 GUI 运动证据通过 |
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景可选周期加减速 | 已实现；BG-40 限速、BG-21 曲线组合及 GUI 运动验证通过 |
+| [BG-23](tasks/BG-23_wandering-motion.md) | 普通前景低速游荡 | 已实现；可复播 demo 观察到多次转向 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 普通移动前景出生重叠与运动穿透 | 已实现；TEST_ONLY 两实例真实运行 smoke 通过 |
 | [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景随机初始层级 | 已由独立 PR #196 合入 main |
 | [BG-26](tasks/BG-26_moving-layer-order.md) | 普通前景运动中随机改变层级 | 已实现，PR #197 开放；基于含 BG-25 #196 的 main |
@@ -64,7 +65,7 @@ LevelSpeech.local_style_bbcode 可选保存普通前景话语的局部 BBCode �
 
 `test_bg42_static_random_placement.gd` 用实际 `BarrageArea` / `BarrageView` 覆盖默认移动、短长文本边界、随机位置分布、1024×760 当前尺寸、1024×1008 扩高、缩小区域时视图夹回 / 移除与容量恢复、过小区域拒绝、暂停和寿命。图形运行保存当前战斗区视觉截图到 `evidence/BG42_static_random_placement.png`；真实 Sandbox 场景文件未修改。
 
-**BG-40（2026-10-11）** `BarrageArea.maximum_foreground_move_speed_pixels_per_second` 是 Inspector 可调的普通移动前景速度上限，默认值为 100 px/s，与当前 `LevelProfile.base_move_speed_pixels_per_second` 基础值一致。`get_foreground_move_speed_pixels_per_second(level_profile)` 是普通前景唯一限速入口，按 `max(基础速度, 0) × max(当前 CS-07 Tier 倍率, 0)` 计算后裁切到上限；倍率更新继续只影响之后新建的普通前景实例。当前 `BarrageView._process()` 保留默认向左移动，支持 BG-21 曲线路径和 BG-22 周期加减速；曲线沿弧长按当帧加减速值推进，路径速度受同一上限约束。BG-22 默认关闭，Inspector 可将单次完整加速和减速周期设为 2～16 秒，默认 6 秒。BG-20 随机方向直线和 BG-23 游荡仍待各自任务接入。
+**BG-40（2026-10-11）** `BarrageArea.maximum_foreground_move_speed_pixels_per_second` 是 Inspector 可调的普通移动前景速度上限，默认值为 100 px/s，与当前 `LevelProfile.base_move_speed_pixels_per_second` 基础值一致。`get_foreground_move_speed_pixels_per_second(level_profile)` 是普通前景唯一限速入口，按 `max(基础速度, 0) × max(当前 CS-07 Tier 倍率, 0)` 计算后裁切到上限；倍率更新继续只影响之后新建的普通前景实例。当前 `BarrageView._process()` 保留默认向左移动，支持 BG-21 曲线路径和 BG-22 周期加减速；曲线沿弧长按当帧加减速值推进，路径速度受同一上限约束。BG-22 默认关闭，Inspector 可将单次完整加速和减速周期设为 2～16 秒，默认 6 秒。BG-23 低速倍率施加在该限速之后；BG-20 随机方向直线仍待对应任务接入。
 
 该限速只接在普通移动前景生成路径。显式 BG-42 静止请求传入零速度；Repeat 沿用原基础速度与当前倍率计算；Paradox 六候选继续读取自身 `ContradictionWindowConfig`。`test_bg40_foreground_speed_ceiling.gd` 使用实际 Tier Catalog 与 `CombatStage` 检查 T1～T5、T1/T5 真实位移、降档后的新实例、Repeat / Paradox 隔离和静止请求。测试句为脚本内 TEST_ONLY 合成数据，不作为正式关卡或正式玩法可读性验收。GUI smoke 保存 TEST_ONLY 短句的 Godot 渲染截图到 `evidence/BG40_foreground_speed_ceiling_test.png`。
 
@@ -79,6 +80,8 @@ LevelSpeech.local_style_bbcode 可选保存普通前景话语的局部 BBCode �
 **BG-25（2026-10-12）** `BarrageView.setup()` 将真实复读记录固定为 `REPEAT_Z_INDEX=0`，携带 `occlusion` 的非复读话语固定为 `OCCLUSION_Z_INDEX=4096`，其余前景在 `FOREGROUND_Z_INDEX=1` 到 `OCCLUSION_Z_INDEX - 1=4095` 间逐条均匀抽取初始层级。伪装成复读外观但 `is_repeat=false` 的普通实例仍走前景随机层级。初始层级由独立 PR #196 交付，现已合入 main。
 
 **BG-26（2026-10-12）** `BarrageArea.normal_foreground_layer_change_interval_seconds` 控制后续普通移动前景的换层间隔，默认 2 秒，设为 0 可关闭。每条视图拥有自己的间隔计时，到期后从 1～4095 中选一个不同于当前值的新 Z 层；暂停时计时冻结。静止请求、遮挡实例和 Repeat 保持原层级。该默认值为可调试玩起点，正式平衡仍可从 BarrageArea Inspector 调整。
+
+**BG-23（2026-10-12）** `BarrageArea.normal_foreground_wandering_enabled` 选择 BG-23 模式；`normal_foreground_wandering_speed_multiplier` 默认 0.35，`normal_foreground_wandering_direction_change_interval_seconds` 默认 2 秒，均可从 Inspector 调整。速度沿用当前关卡 / Tier 速度和 BG-40 上限，再乘低速倍率。`BarrageView.configure_wandering_motion()` 管理独立方向状态，按随机左右转角定时换向，并在完整视图触及区域边缘时反射；它保留 BG-20 使用的 `_move_direction`。终局、静止、复读、矛盾和遮挡实例不启用该路径。可复播的真实 BarrageArea 示例位于 [`bg23_wandering_motion_demo.tscn`](../../tests/barrage_generation/bg23_wandering_motion_demo.tscn)，R 键可重播。
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 
@@ -291,7 +294,7 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-20](tasks/BG-20_random-straight-motion.md) | 前景普通话语随机方向直线运动 | 待实施 |
 | [BG-21](tasks/BG-21_curved-motion.md) | 前景普通话语连续曲线运动 | 待实施 |
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 前景普通话语平缓加减速 | 待实施 |
-| [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 待实施 |
+| [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 已实现，独立方向状态与可复播演示已提交 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 待实施 |
 | [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 已实现，PR #196 已合 main |
 | [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 已实现，PR #197 开放；基于含 BG-25 #196 的 main |

@@ -1,6 +1,6 @@
 # BG-23 前景普通话语低速游荡
 
-**状态：待实施**
+**状态：已实现，待 PR review**
 
 ## 开始前先阅读以下文档
 - `docs/Original/任务卡模板.md` 与 `known_traps.md`（通用执行规范与已知风险）
@@ -9,7 +9,7 @@
 - 关联功能：BG-40
 
 ## 已经实现的功能
-- 现有 `BarrageArea` 与 `BarrageView` 提供弹幕生成、展示、实例生命周期的基础。当前具体移动模式、速度参数与场景配置按实际工程核查；本卡在现有接口上扩展。
+- BG-18 将四边出生的内向方向交给 `BarrageView`；BG-40 提供受限速的普通前景速度。本卡在独立的 `configure_wandering_motion()` 状态入口上扩展，不复用 BG-20 的直线方向状态。
 
 ## 本次任务
 前景普通话语低速游荡。
@@ -18,10 +18,10 @@
 普通前景话语选择游荡运动时。
 
 ### 预期行为
-在区域中以可调间隔改变移动方向，同时保持适合阅读的运动速度。
+开启 `BarrageArea.normal_foreground_wandering_enabled` 后，普通移动前景以较低速度在区域内游荡，并按 `normal_foreground_wandering_direction_change_interval_seconds` 可调间隔随机转向。速度倍率 `normal_foreground_wandering_speed_multiplier` 默认 0.35；当前试玩转向间隔为 2 秒。BG-40 速度上限继续生效。
 
 ### 验收条件
-观察同一前景话语多次转向并完成既有生命周期。
+观察同一前景话语多次转向并完成既有生命周期。可从 `tests/barrage_generation/bg23_wandering_motion_demo.tscn` 重播真实 BarrageArea 单条生成演示，R 键重载场景。
 
 ## Godot 开发环境
 - Godot 版本：4.7.2（开工核对 `project.godot`）
