@@ -16,9 +16,16 @@
 | [RP-18](tasks/RP-18_repeat-infection-spread.md) | 已有原句计划的复读潮表现 | 已有基础 |
 | [RP-19](tasks/RP-19_repeat-grey-text.md) | 灰色复读文字 | 待开发 |
 | [RP-20](tasks/RP-20_repeat-zero-outline.md) | 零描边复读 | 待开发 |
-| [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读最低层 | 待开发 |
+| [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读始终位于全部话语底层 | 已完成 · 2026-10-12 |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+## RP-21 复读层级验收（2026-10-12）
+
+- 复用 `BarrageView.setup()` 的现有层级规则：复读 `z_index = 0`、普通及矛盾话语 `z_index = 1`、带 `occlusion` 特性的普通话语使用 `RenderingServer.CANVAS_ITEM_Z_MAX`。
+- 层级在实例 setup 时确定；之后移动 / 静止定位只更新位置，不改层级。BarrageArea 普通、矛盾与 RP-16 复读入口继续使用同一个 BarrageView 场景。
+- RP-21 smoke 验证真实 Sandbox BattleAttemptFlow 队列生成复读、普通移动前景、已定义的遮挡实例与真实矛盾阶段视图：读取层级为 repeat 0、normal/contradiction 1、occlusion 4096；复读在完整配置寿命内维持底层且静止，普通前景仍移动。
+- 现有实现已符合要求，本卡没有改动运行代码或正式关卡 Resource。
 
 
 ## 系统目标
