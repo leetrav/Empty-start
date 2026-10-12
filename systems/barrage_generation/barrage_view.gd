@@ -49,9 +49,11 @@ func _ready() -> void:
 		_apply_special_text_layout()
 
 
-# 终局原有特性表现入口，仍按冻结的颜色优先级覆盖文字而不改变弹幕事实。
+# 记录终局冻结的特性 ID；复读保留灰色，普通前景继续使用对应倾向色。
 func apply_terminal_trait_presentation(trait_ids: Array[StringName], trait_colors: Dictionary) -> void:
 	_presentation_trait_ids = trait_ids.duplicate()
+	if runtime_record != null and runtime_record.is_repeat:
+		return
 	for trait_id: StringName in _presentation_trait_ids:
 		if trait_colors.get(trait_id) is Color:
 			_set_visual_font_color(trait_colors[trait_id])
