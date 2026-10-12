@@ -51,6 +51,8 @@ var _neutral_weight_multiplier: float = 1.0
 var _foreground_slot_count: int = 0
 ## 普通话语与陷阱共用的容量账本。
 var _normal_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
+## 带特性普通话语另占一个实例名额；同一视图无论有几项特性都只登记一次。
+var _special_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
 var _repeat_capacity_ledger: BarrageCapacityLedger = BarrageCapacityLedger.new()
 var _next_spawn_row: int = 0
 var _terminal_presentation_only: bool = false
@@ -176,6 +178,13 @@ func _get_foreground_capacity_limit(level_profile: LevelProfile) -> int:
 		return level_profile.normal_barrage_screen_cap
 	return _foreground_slot_count
 
+
+## 未配置每关特殊上限时，暂沿用普通前景容量作为兼容回退。
+func _get_special_foreground_capacity_limit(level_profile: LevelProfile, foreground_capacity_limit: int) -> int:
+	if level_profile == null or level_profile.special_instance_screen_cap < 0:
+		return foreground_capacity_limit
+	return level_profile.special_instance_screen_cap
+
 ## 申请普通弹幕共享容量；未设置当前关卡或容量满时返回 false。
 func try_register_normal_capacity_occupant(occupant: Object) -> bool:
 	# 普通话语由内部入口登记；终局拒绝外部陷阱共享占位请求。
@@ -183,12 +192,14 @@ func try_register_normal_capacity_occupant(occupant: Object) -> bool:
 		return false
 	return _try_register_normal_capacity_occupant(occupant, _get_foreground_capacity_limit(_current_level_profile))
 
-## 释放占位对象；普通弹幕节点离树时会自动调用此入口。
+## 普通视图离树时同时释放前景名额和可能占用的特殊名额。
 func release_normal_capacity_occupant(occupant: Object) -> bool:
-	if not _normal_capacity_ledger.release(occupant):
+	var normal_released: bool = _normal_capacity_ledger.release(occupant)
+	var special_released: bool = _special_capacity_ledger.release(occupant)
+	if not normal_released and not special_released:
 		return false
 	# 只有满容量曾暂停计时时才恢复；正在运行的周期保留剩余时间，命中不会推迟下一批。
-	if _spawn_timer.is_stopped():
+	if normal_released and _spawn_timer.is_stopped():
 		_restart_spawn_timer()
 	return true
 
@@ -353,6 +364,11 @@ func spawn_normal_barrage(
 	# 终局忽略普通特性选择，只保留独立表现配置，避免反弹、分裂或不可选触发规则。
 	if not _terminal_presentation_only and not barrage_record.trait_set.add_available_traits(selected_trait_ids, get_available_trait_ids(level_profile)):
 		return null
+	var has_selected_traits: bool = not barrage_record.trait_set.get_trait_ids().is_empty()
+	var special_capacity_limit: int = _get_special_foreground_capacity_limit(level_profile, capacity_limit)
+	if has_selected_traits and not _special_capacity_ledger.has_capacity(special_capacity_limit):
+		# 特殊名额用尽只拒绝当前带特性请求，不暂停未满的普通前景生成。
+		return null
 	barrage_record.text = speech.text
 	barrage_record.original_sentence_text = speech.text
 	barrage_record.source_id = level_profile.streamer_id
@@ -410,6 +426,11 @@ func spawn_normal_barrage(
 	if not _try_register_normal_capacity_occupant(view, capacity_limit):
 		view.free()
 		return null
+	if has_selected_traits and not _try_register_special_capacity_occupant(view, special_capacity_limit):
+		# 特殊登记失败时同步归还刚申请的普通前景名额。
+		release_normal_capacity_occupant(view)
+		view.free()
+		return null
 	add_child(view)
 	if not speech.local_style_bbcode.is_empty():
 		view.set_visual_bbcode(speech.local_style_bbcode)
@@ -424,6 +445,11 @@ func spawn_normal_barrage(
 		return null
 	barrage_generated.emit(view)
 	return view
+
+
+## 特殊账本按弹幕视图身份登记，多个兼容特性仍共用一个名额。
+func _try_register_special_capacity_occupant(occupant: Object, capacity_limit: int) -> bool:
+	return _special_capacity_ledger.try_register(occupant, capacity_limit)
 
 
 ## 单条矛盾沿用区域定位；完整候选集成功后才统一发布生成通知。

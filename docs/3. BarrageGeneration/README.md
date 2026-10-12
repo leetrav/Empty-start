@@ -5,7 +5,7 @@
 
 ## 2026-10-11 现行实现核对与任务状态
 
-**现行生成规则：** 前景普通话语与挂特性的特殊话语共用 T0～T5 各档少量容量，T1=10、T2=13、T3=16、T4=19、T5=22。T0 的 0 表示未填，普通阶段沿用 `LevelProfile.normal_barrage_screen_cap`。BG-16 已接入 CS-24 的 Tier 名额；普通话语与带特性话语共用同一账本，实例离树释放容量。Paradox 继续采用关卡上限，复读保留独立容量。复读可由生成调用方显式请求中央战斗区随机静止落点；普通话语装配 `occlusion` 后由 BT-15 自动使用该能力。普通移动前景由 BG-18 每次从上、下、左、右均匀选边，在边缘可容纳完整视图的范围内随机出生，并以对应的内向向量交给 `BarrageView`；限速、曲线与周期加减速继续由既有运动配置处理。BG-20 随机方向直线和 BG-23 游荡仍待开发。BG-42 静止请求、遮挡、Repeat 与 Paradox 不使用 BG-18 边缘移动出生；尚未接入 BG-39 Tier 运动权重。Paradox 阶段按 CB-13 读取一真五假六句。
+**现行生成规则：** 前景普通话语与挂特性的特殊话语共同占用 T0～T5 各档少量容量，T1=10、T2=13、T3=16、T4=19、T5=22。T0 的 0 表示未填，普通阶段沿用 `LevelProfile.normal_barrage_screen_cap`。BG-16 已接入 CS-24 的 Tier 名额；带特性实例另占 BG-35 特殊名额，同一实例携带多项兼容特性仍只计一个特殊名额，离树时与普通前景名额一并释放。未配置 LC-12 每关值时，当前暂以普通前景容量回退；06 全局特殊基础值和正式导表尚未接入。Paradox 继续采用关卡上限，复读保留独立容量。复读可由生成调用方显式请求中央战斗区随机静止落点；普通话语装配 `occlusion` 后由 BT-15 自动使用该能力。普通移动前景由 BG-18 每次从上、下、左、右均匀选边，在边缘可容纳完整视图的范围内随机出生，并以对应的内向向量交给 `BarrageView`；限速、曲线与周期加减速继续由既有运动配置处理。BG-20 随机方向直线和 BG-23 游荡仍待开发。BG-42 静止请求、遮挡、Repeat 与 Paradox 不使用 BG-18 边缘移动出生；尚未接入 BG-39 Tier 运动权重。Paradox 阶段按 CB-13 读取一真五假六句。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
@@ -26,13 +26,19 @@
 | [BG-32](tasks/BG-32_linked-faux-depth.md) | 伪纵深观感 | 候选暂缓 |
 | [BG-33](tasks/BG-33_impact-motion-wave.md) | 命中后的短时局部运动扰动 | 可选试玩后实施 |
 | [BG-34](tasks/BG-34_frequency-based-refill.md) | 既有定时批次按 Tier 名额补位 | T2=13 组件级计时回归通过；Sandbox 布局待联调 |
-| [BG-35](tasks/BG-35_special-instance-cap.md) | 特殊实例占用独立容量 | 待开发 |
+| [BG-35](tasks/BG-35_special-instance-cap.md) | 特殊实例占用独立容量 | 已实现，待 PR Review |
 | [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档超额自然回落 | T3→T2 自然回落与计时补位实测通过 |
 | [BG-37](tasks/BG-37_foreground-text-outline.md) | 非复读文字描边 | 已完成（2026-10-12） |
 | [BG-38](tasks/BG-38_effective-area-clear.md) | 现有命中结束目标接线回归 | Godot 4.7.2 场景回归 48 项通过 |
 | [BG-39](tasks/BG-39_tier-motion-proportions.md) | 四种运动类型随 Tier 权重变化 | 待开发 |
 | [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 前景话语最大速度 | 普通直线、BG-21 曲线和 BG-22 加减速均按统一上限验证；BG-20/23 实现后补验 |
 | [BG-41](tasks/BG-41_random-trait-selection.md) | 按已解锁池随机分配特性 | 技能池待定 |
+
+## BG-35 带特性普通话语的独立同屏上限
+
+`LevelProfile.special_instance_screen_cap` 可为本关配置带特性普通前景的独立上限；未配置值 `-1` 当前回退到本场普通前景上限，待 06 全局特殊基础值接入后再替换该回退。每个 TraitSet 非空的普通视图同时登记普通和特殊账本；多项兼容特性按视图身份登记一次。特殊名额用尽只拒绝新的带特性请求，普通容量未满时普通话语仍可生成；视图离树时由现有普通容量释放入口同时归还两个名额。复读、矛盾候选和 BG-41 特性随机分配沿用各自任务边界。
+
+`tests/barrage_generation/test_bg35_special_instance_cap.gd` 使用实际 `BarrageArea` / `BarrageView` 验证上限为 1 时的双特性实例、普通容量共同占用、普通流量保留与离树后重新生成。Godot GUI 运行截图见 `evidence/BG35_special_instance_cap.png`；正式 05/06 表字段和特殊基础值仍待配置系统导表工作完成。
 
 ## BG-30 复读潮疏密节奏验收（2026-10-12）
 
@@ -234,11 +240,11 @@ BarrageArea 暴露可编辑的 `base_lifetime_seconds` 临时基础值（默认 
 
 ### BG-07 普通弹幕共享同屏上限
 
-BarrageArea 的普通容量在 Tier 名额大于 0 时采用当前 Tier 值；T0 的 0 沿用 `LevelProfile.normal_barrage_screen_cap`。普通话语与带特性话语由同一入口登记，陷阱等普通占用者通过 `try_register_normal_capacity_occupant()` 和 `release_normal_capacity_occupant()` 复用同一账本。实例离树自动释放；容量满时普通批次 Timer 暂停，释放后恢复。Paradox 继续使用关卡上限，复读继续使用独立账本。BG-07 管理共享账本与生命周期；Tier 名额接线由 BG-16 完成。
+BarrageArea 的普通容量在 Tier 名额大于 0 时采用当前 Tier 值；T0 的 0 沿用 `LevelProfile.normal_barrage_screen_cap`。普通话语与带特性话语由同一入口登记，陷阱等普通占用者通过 `try_register_normal_capacity_occupant()` 和 `release_normal_capacity_occupant()` 复用普通账本；带特性视图还登记 BG-35 特殊账本。实例离树自动归还其占用名额；普通容量满时普通批次 Timer 暂停，释放后恢复。Paradox 继续使用关卡上限，复读继续使用独立账本。BG-07 管理普通账本与生命周期；Tier 名额接线由 BG-16 完成。
 
 ### BG-16 按当前 Tier 控制前景容量
 
-`CombatStageTierConfig.foreground_slot_count` 通过 `CombatStage.bind_barrage_area()` 发布给 `BarrageArea.set_foreground_slot_count()`。普通阶段 T1～T5 分别使用 10、13、16、19、22 个前景名额；T0 的 0 继续回退到 `LevelProfile.normal_barrage_screen_cap`。普通话语、带兼容特性的普通话语及外部普通容量占用者共享这些名额，节点离树后释放。矛盾阶段保持原关卡容量，复读仍由独立容量账本控制。
+`CombatStageTierConfig.foreground_slot_count` 通过 `CombatStage.bind_barrage_area()` 发布给 `BarrageArea.set_foreground_slot_count()`。普通阶段 T1～T5 分别使用 10、13、16、19、22 个前景名额；T0 的 0 继续回退到 `LevelProfile.normal_barrage_screen_cap`。所有普通话语、带兼容特性的普通话语及外部普通容量占用者共享这些普通名额；带特性普通话语再受 `LevelProfile.special_instance_screen_cap` 限制。节点离树后释放其全部已登记名额。矛盾阶段保持原关卡容量，复读仍由独立容量账本控制。
 
 ### BG-08 到期与离开区域自然移除
 
@@ -312,7 +318,7 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | 任务卡 | 唯一功能 | 状态 |
 | --- | --- | --- |
 | [BG-34](tasks/BG-34_frequency-based-refill.md) | 按生成频率补足前景话语 | 待实施 |
-| [BG-35](tasks/BG-35_special-instance-cap.md) | 限制携带特性的前景实例数量 | 待实施 |
+| [BG-35](tasks/BG-35_special-instance-cap.md) | 限制携带特性的前景实例数量 | 已实现，待 PR Review |
 | [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档后让超额前景实例自然回落 | 已实施（2026-10-10） |
 | [BG-37](tasks/BG-37_foreground-text-outline.md) | 所有非复读话语文字描边 | 已完成（2026-10-12） |
 | [BG-38](tasks/BG-38_effective-area-clear.md) | 有效攻击后清除命中区域全部话语 | 已完成回归（2026-10-11） |

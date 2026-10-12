@@ -46,6 +46,8 @@ func get_normal_speech_pool() -> Array[LevelSpeech]:
 
 ## 特性 ID 的正式取值由弹幕特性系统定义，关卡只保存本关选择的 ID。
 @export var special_trait_ids: Array[String] = []
+## 本关携带特性实例同屏上限；-1 表示暂沿用当前普通前景上限。
+@export var special_instance_screen_cap: int = -1
 
 ## 真正击败后允许继承的特性白名单，独立于本关启用的特殊玩法列表。
 @export var inheritable_trait_ids: Array[StringName] = []
