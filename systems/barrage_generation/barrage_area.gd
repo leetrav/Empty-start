@@ -14,6 +14,9 @@ signal barrage_generated(view: BarrageView)
 @export var repeat_barrage_screen_cap: int = 24
 ## 普通移动前景的最高速度；默认沿用现有关卡基础速度，避免 Tier 倍率让短句快速掠过。
 @export var maximum_foreground_move_speed_pixels_per_second: float = 100.0
+@export_group("BG-20 普通前景随机直线方向")
+## 围绕出生边内向法线随机偏转的最大角度；保留向内主分量，避免初始运动朝区域外。
+@export_range(0.0, 45.0, 1.0) var random_straight_direction_spread_degrees: float = 30.0
 @export_group("BG-21 普通前景曲线运动")
 ## 开启后，仅新生成的普通移动前景使用平滑曲线；静止请求、复读与矛盾保持原行为。
 @export var curved_foreground_motion_enabled: bool = false
@@ -385,7 +388,15 @@ func spawn_normal_barrage(
 	if not should_use_random_static_placement:
 		# 方向仅用于本次边缘出生；运动速度和生命周期仍走现有普通前景路径。
 		random_spawn_edge = randi_range(NormalSpawnEdge.TOP, NormalSpawnEdge.RIGHT)
-		inward_move_direction = _get_inward_direction_for_edge(random_spawn_edge)
+		# BG-20 只改变当前直线模式；曲线与加减速继续沿用原出生法线。
+		var uses_existing_motion_variant: bool = (
+			curved_foreground_motion_enabled or speed_change_foreground_motion_enabled
+		)
+		inward_move_direction = (
+			_get_inward_direction_for_edge(random_spawn_edge)
+			if uses_existing_motion_variant
+			else _get_random_inward_direction_for_edge(random_spawn_edge)
+		)
 	# BG-42 静止实例保持零速度；移动前景沿用限速、曲线和周期加减速配置。
 	var base_move_speed: float = (
 		0.0 if should_use_random_static_placement else get_foreground_move_speed_pixels_per_second(level_profile)
@@ -579,6 +590,14 @@ func _get_inward_direction_for_edge(edge: int) -> Vector2:
 		NormalSpawnEdge.RIGHT:
 			return Vector2.LEFT
 	return Vector2.LEFT
+
+
+# 在出生边的内向法线周围随机偏转；最大偏角限制在 45 度内以维持明确向内运动。
+func _get_random_inward_direction_for_edge(edge: int) -> Vector2:
+	var inward_direction: Vector2 = _get_inward_direction_for_edge(edge)
+	var safe_spread_degrees: float = clampf(random_straight_direction_spread_degrees, 0.0, 45.0)
+	var random_offset_radians: float = deg_to_rad(randf_range(-safe_spread_degrees, safe_spread_degrees))
+	return inward_direction.rotated(random_offset_radians).normalized()
 
 
 ## 普通移动前景保留轮换落点但允许重叠；其余调用维持原空位扫描。

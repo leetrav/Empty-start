@@ -81,6 +81,7 @@ func _run_test() -> void:
 	area.base_lifetime_seconds = 60.0
 	area.repeat_barrage_screen_cap = 8
 	area.maximum_foreground_move_speed_pixels_per_second = SPEED_CEILING
+	area.random_straight_direction_spread_degrees = 0.0
 	if area.speed_change_foreground_motion_enabled:
 		failures.append("speed-change mode is disabled by default")
 	var profile := LevelProfile.new()
@@ -101,10 +102,15 @@ func _run_test() -> void:
 		failures.append("default ordinary foreground still spawns")
 	else:
 		var default_start: Vector2 = default_view.position
+		var default_direction: Vector2 = _get_spawn_inward_direction(area, default_view)
 		var default_motion: Dictionary = await _measure_motion(default_view, 0.35)
-		if absf(default_view.position.y - default_start.y) > 0.1:
-			failures.append("default ordinary foreground keeps its existing horizontal path")
-		_expect_speed("default ordinary foreground", float(default_motion.get("horizontal_speed", -1.0)), SPEED_CEILING, failures)
+		var default_delta: Vector2 = default_view.position - default_start
+		var default_cross_track: float = absf(
+			default_direction.x * default_delta.y - default_direction.y * default_delta.x
+		)
+		if default_direction == Vector2.ZERO or default_delta.dot(default_direction) <= 0.0 or default_cross_track > 0.1:
+			failures.append("default ordinary foreground keeps its selected inward straight path")
+		_expect_speed("default ordinary foreground", float(default_motion.get("speed", -1.0)), SPEED_CEILING, failures)
 		area.end_barrage(default_view.get_instance_id())
 		await process_frame
 
@@ -121,6 +127,7 @@ func _run_test() -> void:
 		failures.append("enabled speed-change ordinary foreground spawns")
 	else:
 		var start_position: Vector2 = changing_view.position
+		var changing_direction: Vector2 = _get_spawn_inward_direction(area, changing_view)
 		var cycle_started_seconds: float = _frame_delta_recorder.elapsed_seconds
 		monitor = MotionMonitor.new()
 		monitor.watch(changing_view)
@@ -150,8 +157,12 @@ func _run_test() -> void:
 			failures.append("ordinary foreground speed rises smoothly from the cycle start toward its peak")
 		if decelerating_speed >= peak_speed:
 			failures.append("ordinary foreground speed decelerates after the cycle peak")
-		if changing_view.position.x >= start_position.x or absf(changing_view.position.y - start_position.y) < 5.0:
-			failures.append("accelerating ordinary view follows the enabled curved path across the area")
+		var changing_delta: Vector2 = changing_view.position - start_position
+		var curve_offset: float = absf(
+			changing_direction.x * changing_delta.y - changing_direction.y * changing_delta.x
+		)
+		if changing_delta.dot(changing_direction) <= 0.0 or curve_offset < 5.0:
+			failures.append("accelerating ordinary view follows the enabled curved path from its spawn edge")
 		if monitor.max_step_speed > SPEED_CEILING + 0.1:
 			failures.append("combined curve and acceleration stay within the BG-40 speed ceiling")
 		if monitor.max_speed_change_per_second > 80.0:
@@ -272,6 +283,21 @@ func _wait_until_elapsed(target_seconds: float) -> void:
 func _expect_speed(label: String, actual: float, expected: float, failures: Array[String]) -> void:
 	if actual < 0.0 or absf(actual - expected) > SPEED_TOLERANCE:
 		failures.append("%s speed %.1f px/s; expected %.1f ± %.1f" % [label, actual, expected, SPEED_TOLERANCE])
+
+
+## 从实际出生边计算 BG-18 的内向基线，令本卡速度周期测试保持可复现。
+func _get_spawn_inward_direction(area: BarrageArea, view: BarrageView) -> Vector2:
+	var max_x: float = area.size.x - view.size.x
+	var max_y: float = area.size.y - view.size.y
+	if is_zero_approx(view.position.y):
+		return Vector2.DOWN
+	if is_equal_approx(view.position.y, max_y):
+		return Vector2.UP
+	if is_zero_approx(view.position.x):
+		return Vector2.RIGHT
+	if is_equal_approx(view.position.x, max_x):
+		return Vector2.LEFT
+	return Vector2.ZERO
 
 
 ## 使用脚本内 TEST_ONLY 短句验证真实 BarrageView 组件，不读取正式存档或词库。
