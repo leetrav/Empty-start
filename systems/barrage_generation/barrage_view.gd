@@ -29,6 +29,8 @@ var _contradiction_ease_out_active: bool = false
 var _requested_curve_amplitude_pixels: float = 0.0
 var _speed_change_cycle_seconds: float = 0.0
 var _speed_change_elapsed_seconds: float = 0.0
+var _foreground_layer_change_interval_seconds: float = 0.0
+var _foreground_layer_change_elapsed_seconds: float = 0.0
 var _motion_curve: Curve2D
 var _motion_curve_origin: Vector2 = Vector2.ZERO
 var _motion_curve_offset: float = 0.0
@@ -131,7 +133,8 @@ func setup(
 	stationary_position: bool = false,
 	curve_amplitude_pixels: float = 0.0,
 	speed_change_cycle_seconds: float = 0.0,
-	move_direction: Vector2 = Vector2.LEFT
+	move_direction: Vector2 = Vector2.LEFT,
+	foreground_layer_change_interval_seconds: float = 0.0
 ) -> void:
 	runtime_record = barrage_record
 	text = barrage_record.text
@@ -141,6 +144,11 @@ func setup(
 	_requested_curve_amplitude_pixels = maxf(curve_amplitude_pixels, 0.0) if is_finite(curve_amplitude_pixels) else 0.0
 	_speed_change_cycle_seconds = maxf(speed_change_cycle_seconds, 0.0) if is_finite(speed_change_cycle_seconds) else 0.0
 	_speed_change_elapsed_seconds = 0.0
+	_foreground_layer_change_interval_seconds = (
+		maxf(foreground_layer_change_interval_seconds, 0.0)
+		if is_finite(foreground_layer_change_interval_seconds) else 0.0
+	)
+	_foreground_layer_change_elapsed_seconds = 0.0
 	_active_area = active_area
 	_presentation_base_scale = scale
 	if barrage_record.is_repeat:
@@ -366,6 +374,30 @@ func _update_repeat_fade(current_time_msec: int) -> void:
 	current_modulate.a = alpha_ratio
 	modulate = current_modulate
 
+
+# 普通移动前景按独立间隔换到不同的前景 Z，遮挡与复读沿用固定层级。
+func _update_moving_foreground_layer(delta: float) -> void:
+	if runtime_record.is_repeat or runtime_record.is_contradiction or _stationary_position:
+		return
+	if _move_speed_pixels_per_second <= 0.0:
+		return
+	if _foreground_layer_change_interval_seconds <= 0.0:
+		return
+	if runtime_record.trait_set != null and runtime_record.trait_set.has_trait(BarrageTraitSet.OCCLUSION):
+		return
+
+	_foreground_layer_change_elapsed_seconds += maxf(delta, 0.0)
+	if _foreground_layer_change_elapsed_seconds < _foreground_layer_change_interval_seconds:
+		return
+	_foreground_layer_change_elapsed_seconds = fposmod(
+		_foreground_layer_change_elapsed_seconds, _foreground_layer_change_interval_seconds
+	)
+	# 从剩余普通层级中抽样，保证本次更新真的改变覆盖顺序。
+	var next_layer_index: int = randi_range(FOREGROUND_Z_INDEX, OCCLUSION_Z_INDEX - 2)
+	if next_layer_index >= z_index:
+		next_layer_index += 1
+	z_index = next_layer_index
+
 # 移动、复读淡出与自然结束沿用运行记录寿命；区域继续负责空间与实例释放。
 func _process(delta: float) -> void:
 	if runtime_record == null:
@@ -383,6 +415,7 @@ func _process(delta: float) -> void:
 		)
 		_animated_size_multiplier = _get_animated_size_multiplier()
 	_apply_presentation_scale()
+	_update_moving_foreground_layer(delta)
 	if runtime_record.is_contradiction:
 		_advance_contradiction_ease_out(delta)
 		if not is_instance_valid(_active_area):
