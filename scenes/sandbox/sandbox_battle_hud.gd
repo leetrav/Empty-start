@@ -10,6 +10,11 @@ const HAMSTER_LIVE_BACKGROUND: Texture2D = preload("res://assets/environment/liv
 const HAMSTER_LIVE_FOREGROUND: Texture2D = preload("res://assets/environment/live/hamster/foreground_desk.png")
 const TIER_BREAKTHROUGH_SCALE: float = 1.28
 const TIER_BREAKTHROUGH_SECONDS: float = 0.32
+const STREAMER_NAME_BASE_FONT_SIZE: int = 32
+const STREAMER_NAME_MIN_FONT_SIZE: int = 20
+const FAN_GROUP_NAME_BASE_FONT_SIZE: int = 22
+const FAN_GROUP_NAME_MIN_FONT_SIZE: int = 16
+const FAN_GROUP_NAME_PLACEHOLDER: String = "粉丝团"
 
 @export_range(1, 8, 1) var max_visible_dialogue_bubbles_per_side: int = 3
 # 策划可在 HUD Inspector 中配置 T0 对手匹配等待文案。
@@ -39,15 +44,15 @@ var attack_phase: int = AttackChargeInput.AttackPhase.READY
 @onready var _battle_state: Label = %BattleStateFeedback
 @onready var _player_name: Label = $PlayerStreamerArea/PlayerInfoArea/PlayerName
 @onready var _opponent_name: Label = $OpponentStreamerArea/OpponentInfoArea/OpponentName
+@onready var _player_fan_group_name: Label = $PlayerStreamerArea/PlayerInfoArea/PlayerFanGroupName
+@onready var _opponent_fan_group_name: Label = $OpponentStreamerArea/OpponentInfoArea/OpponentFanGroupName
 @onready var _player_portrait: TextureRect = $PlayerStreamerArea/PlayerPortraitPlaceholder/PlayerPortraitArt
 @onready var _player_live_background: TextureRect = $PlayerStreamerArea/PlayerPortraitPlaceholder/PlayerLiveBackground
 @onready var _player_live_foreground: TextureRect = $PlayerStreamerArea/PlayerPortraitPlaceholder/PlayerLiveForeground
-@onready var _player_fan_badge: TextureRect = $PlayerStreamerArea/PlayerInfoArea/PlayerFanBadge
 @onready var _player_portrait_placeholder: Label = $PlayerStreamerArea/PlayerPortraitPlaceholder/PlaceholderLabel
 @onready var _player_bubble_stack: StreamerBubbleStack = %PlayerBubbleStack
 @onready var _opponent_portrait: TextureRect = $OpponentStreamerArea/OpponentPortraitPlaceholder/OpponentPortraitArt
 @onready var _opponent_live_background: TextureRect = $OpponentStreamerArea/OpponentPortraitPlaceholder/OpponentLiveBackground
-@onready var _opponent_fan_badge: TextureRect = $OpponentStreamerArea/OpponentInfoArea/OpponentFanBadge
 @onready var _opponent_portrait_placeholder: Label = $OpponentStreamerArea/OpponentPortraitPlaceholder/PlaceholderLabel
 @onready var _opponent_bubble_stack: StreamerBubbleStack = %OpponentBubbleStack
 @onready var _player_pk_label: Label = %PlayerPK
@@ -96,27 +101,65 @@ func _fit_parent_size() -> void:
 func configure_streamers(player_name: String, opponent_name: String) -> void:
 	_player_name.text = player_name
 	_opponent_name.text = opponent_name
+	_fit_streamer_header_label(_player_name, STREAMER_NAME_BASE_FONT_SIZE, STREAMER_NAME_MIN_FONT_SIZE)
+	_fit_streamer_header_label(_opponent_name, STREAMER_NAME_BASE_FONT_SIZE, STREAMER_NAME_MIN_FONT_SIZE)
 
 
-# 只显示 PA-02 已接入 Resource 的主播素材；空资源继续保留文字占位。
+# 从周目 SaveData 与当前关卡 Resource 收到真实团名；空值只影响显示占位。
+func configure_fan_group_names(player_fan_group_name: String, opponent_fan_group_name: String) -> void:
+	_player_fan_group_name.text = _format_fan_group_name(player_fan_group_name)
+	_opponent_fan_group_name.text = _format_fan_group_name(opponent_fan_group_name)
+	_fit_streamer_header_label(
+		_player_fan_group_name, FAN_GROUP_NAME_BASE_FONT_SIZE, FAN_GROUP_NAME_MIN_FONT_SIZE
+	)
+	_fit_streamer_header_label(
+		_opponent_fan_group_name, FAN_GROUP_NAME_BASE_FONT_SIZE, FAN_GROUP_NAME_MIN_FONT_SIZE
+	)
+
+
+# 固定包裹爱心，空数据使用短名称保持左右栏布局完整。
+func _format_fan_group_name(fan_group_name: String) -> String:
+	var trimmed_name: String = fan_group_name.strip_edges()
+	if trimmed_name.is_empty():
+		trimmed_name = FAN_GROUP_NAME_PLACEHOLDER
+	return "❤%s❤" % trimmed_name
+
+
+# 名字按当前可用宽度缩小字号；极长文本由 Label 以省略号收尾，避免压住另一栏。
+func _fit_streamer_header_label(label: Label, base_font_size: int, min_font_size: int) -> void:
+	var font: Font = label.get_theme_font("font")
+	if font == null or label.size.x <= 0.0:
+		return
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS_FORCE
+	var fitted_font_size: int = min_font_size
+	for candidate_size: int in range(base_font_size, min_font_size - 1, -1):
+		var text_width: float = font.get_string_size(
+			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, candidate_size
+		).x
+		if text_width <= label.size.x:
+			fitted_font_size = candidate_size
+			break
+	label.add_theme_font_size_override("font_size", fitted_font_size)
+
+
+# 顶栏徽章槽已改为名称文字；纹理参数保留旧调用兼容，资源归 LD-15 评论消费者读取。
 func configure_streamer_assets(
 	player_portrait: Texture2D,
 	player_live_background: Texture2D,
-	player_fan_badge: Texture2D,
+	_player_fan_badge: Texture2D,
 	opponent_portrait: Texture2D,
 	opponent_live_background: Texture2D,
-	opponent_fan_badge: Texture2D
+	_opponent_fan_badge: Texture2D
 ) -> void:
+	# 保留既有调用签名兼容；评论粉丝牌继续从 PresentationAssetConfig / LevelProfile 读取。
 	_set_texture_rect(_player_live_background, player_live_background, TextureRect.STRETCH_KEEP_ASPECT_COVERED)
 	# 仓鼠直播背景的透明桌面位于立绘之前景；替换背景时不混入不匹配的桌面。
 	_set_texture_rect(_player_live_foreground, HAMSTER_LIVE_FOREGROUND if player_live_background == HAMSTER_LIVE_BACKGROUND else null, TextureRect.STRETCH_KEEP_ASPECT_COVERED)
 	_set_texture_rect(_player_portrait, player_portrait, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
-	_set_texture_rect(_player_fan_badge, player_fan_badge, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
 	_player_portrait_placeholder.visible = player_portrait == null
 
 	_set_texture_rect(_opponent_live_background, opponent_live_background, TextureRect.STRETCH_KEEP_ASPECT_COVERED)
 	_set_texture_rect(_opponent_portrait, opponent_portrait, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
-	_set_texture_rect(_opponent_fan_badge, opponent_fan_badge, TextureRect.STRETCH_KEEP_ASPECT_CENTERED)
 	_opponent_portrait_placeholder.visible = opponent_portrait == null
 	set_opponent_portrait_connected(_opponent_connected)
 

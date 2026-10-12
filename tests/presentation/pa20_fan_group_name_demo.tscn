@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/sandbox/sandbox.tscn" id="1_sandbox"]
+[ext_resource type="Script" path="res://tests/presentation/pa20_fan_group_name_demo.gd" id="2_driver"]
+
+[node name="PA20FanGroupNameDemo" instance=ExtResource("1_sandbox")]
+script = ExtResource("2_driver")
