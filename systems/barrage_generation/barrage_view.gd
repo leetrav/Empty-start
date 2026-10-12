@@ -20,6 +20,7 @@ const OCCLUSION_Z_INDEX: int = RenderingServer.CANVAS_ITEM_Z_MAX
 
 var runtime_record: BarrageRuntimeRecord
 var _move_speed_pixels_per_second: float = 0.0
+var _move_direction: Vector2 = Vector2.LEFT
 var _stationary_position: bool = false
 var _contradiction_ease_out_curve: Curve
 var _contradiction_ease_out_duration_seconds: float = 0.0
@@ -129,12 +130,14 @@ func setup(
 	active_area: Control,
 	stationary_position: bool = false,
 	curve_amplitude_pixels: float = 0.0,
-	speed_change_cycle_seconds: float = 0.0
+	speed_change_cycle_seconds: float = 0.0,
+	move_direction: Vector2 = Vector2.LEFT
 ) -> void:
 	runtime_record = barrage_record
 	text = barrage_record.text
 	_stationary_position = stationary_position
 	_move_speed_pixels_per_second = 0.0 if stationary_position else move_speed_pixels_per_second
+	_move_direction = move_direction.normalized() if move_direction.length_squared() > 0.0001 else Vector2.LEFT
 	_requested_curve_amplitude_pixels = maxf(curve_amplitude_pixels, 0.0) if is_finite(curve_amplitude_pixels) else 0.0
 	_speed_change_cycle_seconds = maxf(speed_change_cycle_seconds, 0.0) if is_finite(speed_change_cycle_seconds) else 0.0
 	_speed_change_elapsed_seconds = 0.0
@@ -397,7 +400,7 @@ func _process(delta: float) -> void:
 	if _requested_curve_amplitude_pixels > 0.0 and _ensure_curved_motion():
 		_move_along_curve(delta, current_move_speed)
 	else:
-		position.x -= current_move_speed * delta
+		position += _move_direction * current_move_speed * delta
 	if not is_instance_valid(_active_area):
 		queue_free()
 		return
@@ -462,36 +465,59 @@ func _get_current_move_speed(delta: float) -> float:
 	return _move_speed_pixels_per_second * eased_progress
 
 
-## 按生成时落点构造完整横穿战斗区的单弧路径，幅度受区域上下边界约束。
+## 按生成方向构造单弧路径，幅度受区域各边界约束。
 func _ensure_curved_motion() -> bool:
 	if _motion_curve != null:
 		return true
 	if not is_instance_valid(_active_area) or _move_speed_pixels_per_second <= 0.0:
 		return false
 	var area_size: Vector2 = _active_area.size
-	var available_up: float = maxf(position.y, 0.0)
-	var available_down: float = maxf(area_size.y - size.y - position.y, 0.0)
-	var curve_direction: float = 1.0
-	if available_up > 0.0 and available_down > 0.0:
-		curve_direction = -1.0 if randi_range(0, 1) == 0 else 1.0
-	elif available_up > 0.0:
-		curve_direction = -1.0
-	var available_height: float = available_up if curve_direction < 0.0 else available_down
-	var curve_height: float = minf(_requested_curve_amplitude_pixels, available_height)
-	if curve_height < 4.0 or area_size.x <= 0.0:
+	var travel_distance: float = area_size.x * absf(_move_direction.x) + area_size.y * absf(_move_direction.y)
+	var curve_normal: Vector2 = Vector2(_move_direction.y, -_move_direction.x)
+	var available_positive: float = _get_available_motion_space(curve_normal, area_size)
+	var available_negative: float = _get_available_motion_space(-curve_normal, area_size)
+	var available_height: float = 0.0
+	if available_positive > 0.0 and available_negative > 0.0:
+		if randi_range(0, 1) == 0:
+			curve_normal = -curve_normal
+			available_height = available_negative
+		else:
+			available_height = available_positive
+	elif available_positive > 0.0:
+		available_height = available_positive
+	elif available_negative > 0.0:
+		curve_normal = -curve_normal
+		available_height = available_negative
+	else:
 		return false
-
-	var horizontal_travel: float = area_size.x
-	var control_height: float = curve_height * 4.0 / 3.0 * curve_direction
+	var curve_height: float = minf(_requested_curve_amplitude_pixels, available_height)
+	if curve_height < 4.0 or travel_distance <= 0.0:
+		return false
+	var tangent_offset: Vector2 = _move_direction * travel_distance / 3.0
+	var control_offset: Vector2 = curve_normal * curve_height * 4.0 / 3.0
 	_motion_curve = Curve2D.new()
 	_motion_curve.bake_interval = 2.0
-	_motion_curve.add_point(Vector2.ZERO, Vector2.ZERO, Vector2(-horizontal_travel / 3.0, control_height))
+	_motion_curve.add_point(Vector2.ZERO, Vector2.ZERO, tangent_offset + control_offset)
 	_motion_curve.add_point(
-		Vector2(-horizontal_travel, 0.0), Vector2(horizontal_travel / 3.0, control_height), Vector2.ZERO
+		_move_direction * travel_distance, -tangent_offset + control_offset, Vector2.ZERO
 	)
 	_motion_curve_origin = position
 	_motion_curve_offset = 0.0
 	return _motion_curve.get_baked_length() > 0.0
+
+
+## 返回当前完整视图沿给定方向可在区域内移动的最大距离。
+func _get_available_motion_space(direction: Vector2, area_size: Vector2) -> float:
+	var available_distance: float = INF
+	if direction.x > 0.0:
+		available_distance = minf(available_distance, (area_size.x - size.x - position.x) / direction.x)
+	elif direction.x < 0.0:
+		available_distance = minf(available_distance, position.x / -direction.x)
+	if direction.y > 0.0:
+		available_distance = minf(available_distance, (area_size.y - size.y - position.y) / direction.y)
+	elif direction.y < 0.0:
+		available_distance = minf(available_distance, position.y / -direction.y)
+	return maxf(available_distance, 0.0)
 
 
 ## 沿细分弧长按当帧速度线性采样，避免加减速与曲线叠加后超过 BG-40 上限。
