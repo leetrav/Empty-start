@@ -2,6 +2,8 @@
 class_name BarrageArea
 extends Control
 
+enum NormalSpawnEdge { TOP, BOTTOM, LEFT, RIGHT }
+
 ## 普通话语与复读均在视图进入场景树并完成定位后通知成功生成。
 signal barrage_generated(view: BarrageView)
 
@@ -367,6 +369,12 @@ func spawn_normal_barrage(
 	var should_use_random_static_placement: bool = (
 		random_static_placement or barrage_record.trait_set.has_trait(BarrageTraitSet.OCCLUSION)
 	)
+	var random_spawn_edge: int = -1
+	var inward_move_direction: Vector2 = Vector2.LEFT
+	if not should_use_random_static_placement:
+		# 方向仅用于本次边缘出生；运动速度和生命周期仍走现有普通前景路径。
+		random_spawn_edge = randi_range(NormalSpawnEdge.TOP, NormalSpawnEdge.RIGHT)
+		inward_move_direction = _get_inward_direction_for_edge(random_spawn_edge)
 	# BG-42 静止实例保持零速度；移动前景沿用限速、曲线和周期加减速配置。
 	var effective_move_speed: float = (
 		0.0 if should_use_random_static_placement else get_foreground_move_speed_pixels_per_second(level_profile)
@@ -388,7 +396,7 @@ func spawn_normal_barrage(
 	)
 	view.setup(
 		barrage_record, effective_move_speed, self, should_use_random_static_placement,
-		curve_amplitude, speed_change_cycle, layer_change_interval
+		curve_amplitude, speed_change_cycle, inward_move_direction, layer_change_interval
 	)
 	if not _terminal_presentation_only and not should_use_random_static_placement:
 		# 只让普通移动前景缓和缩放；静止、复读、矛盾和终局实例沿用各自外观。
@@ -405,9 +413,12 @@ func spawn_normal_barrage(
 	add_child(view)
 	if not speech.local_style_bbcode.is_empty():
 		view.set_visual_bbcode(speech.local_style_bbcode)
-	if not _place_barrage_for_spawn_request(
-		view, should_use_random_static_placement, not should_use_random_static_placement
-	):
+	var placement_succeeded: bool = (
+		_place_barrage_for_spawn_request(view, true)
+		if should_use_random_static_placement
+		else _place_random_edge_barrage(view, random_spawn_edge)
+	)
+	if not placement_succeeded:
 		# 场上没有可见空位时归还刚申请的容量，普通 Timer 后续继续尝试。
 		end_barrage(view.get_instance_id())
 		return null
@@ -517,6 +528,40 @@ func _place_random_static_barrage(view: BarrageView) -> bool:
 		return false
 	view.position = Vector2(randf_range(0.0, max_x), randf_range(0.0, max_y))
 	return true
+
+
+## 从完整视图仍位于区域内的四条边抽取位置，并让新话语朝区域内部移动。
+func _place_random_edge_barrage(view: BarrageView, edge: int) -> bool:
+	var max_x: float = size.x - view.size.x
+	var max_y: float = size.y - view.size.y
+	if max_x < 0.0 or max_y < 0.0:
+		return false
+	match edge:
+		NormalSpawnEdge.TOP:
+			view.position = Vector2(randf_range(0.0, max_x), 0.0)
+		NormalSpawnEdge.BOTTOM:
+			view.position = Vector2(randf_range(0.0, max_x), max_y)
+		NormalSpawnEdge.LEFT:
+			view.position = Vector2(0.0, randf_range(0.0, max_y))
+		NormalSpawnEdge.RIGHT:
+			view.position = Vector2(max_x, randf_range(0.0, max_y))
+		_:
+			return false
+	return true
+
+
+## 为选中的边返回指向战斗区域内部的移动方向。
+func _get_inward_direction_for_edge(edge: int) -> Vector2:
+	match edge:
+		NormalSpawnEdge.TOP:
+			return Vector2.DOWN
+		NormalSpawnEdge.BOTTOM:
+			return Vector2.UP
+		NormalSpawnEdge.LEFT:
+			return Vector2.RIGHT
+		NormalSpawnEdge.RIGHT:
+			return Vector2.LEFT
+	return Vector2.LEFT
 
 
 ## 普通移动前景保留轮换落点但允许重叠；其余调用维持原空位扫描。
