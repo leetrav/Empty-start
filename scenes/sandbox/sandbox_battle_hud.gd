@@ -14,6 +14,9 @@ const TIER_BREAKTHROUGH_SECONDS: float = 0.32
 @export_range(1, 8, 1) var max_visible_dialogue_bubbles_per_side: int = 3
 # 策划可在 HUD Inspector 中配置 T0 对手匹配等待文案。
 @export_multiline var t0_matching_status_text: String = "等待对手连线……"
+# 震动幅度与时长可由 HUD Inspector 调整；0 可关闭该表现。
+@export_range(0.0, 32.0, 0.5) var tier_down_shake_amplitude: float = 6.0
+@export_range(0.0, 1.0, 0.01) var tier_down_shake_duration_seconds: float = 0.18
 
 var player_portrait_motion: StreamerPortraitMotion
 var opponent_portrait_motion: StreamerPortraitMotion
@@ -26,6 +29,8 @@ var _dialogue_queue: Node
 var _tier_breakthrough_tween: Tween
 var _tier_breakthrough_previous_tier: int = -1
 var _tier_breakthrough_current_tier: int = -1
+var _tier_down_shake_tween: Tween
+var _tier_down_shake_origin: Vector2 = Vector2.ZERO
 # 保留攻击状态供后续获批的正式反馈视图读取；Sandbox 继续通过原公开刷新入口提交。
 var attack_progress: float = 0.0
 var attack_phase: int = AttackChargeInput.AttackPhase.READY
@@ -49,6 +54,7 @@ var attack_phase: int = AttackChargeInput.AttackPhase.READY
 @onready var _opponent_pk_label: Label = $BattleArea/TopBattleStatus/PKBar/OpponentPK
 @onready var _pk_progress: ProgressBar = %PlayerShare
 @onready var _tier_label: Label = %Tier
+@onready var _battle_area: Control = $BattleArea
 @onready var _failure_overlay: Control = %FailureOverlay
 @onready var _restart_button: Button = %RestartButton
 
@@ -202,8 +208,11 @@ func _set_texture_rect(texture_rect: TextureRect, texture: Texture2D, stretch_mo
 func refresh_pk(player_pk: float, current_tier: int) -> void:
 	# 匹配提示、对手立绘和对白侧只在真实 Tier 变化时切换；PK 连续刷新不重复清理离线对白。
 	if current_tier != _last_status_tier:
+		var previous_tier: int = _last_status_tier
 		var opponent_was_connected: bool = _opponent_connected
 		_last_status_tier = current_tier
+		if previous_tier >= 0 and current_tier < previous_tier:
+			_play_tier_down_shake()
 		if opponent_was_connected and current_tier == 0:
 			# 对手刚离线时优先显示重新匹配状态，避免旧战斗提示遮住离线事实。
 			_show_opponent_status(t0_matching_status_text)
@@ -216,6 +225,52 @@ func refresh_pk(player_pk: float, current_tier: int) -> void:
 	_player_pk_label.text = "玩家 PK %.1f%%" % (player_share * 100.0)
 	_opponent_pk_label.text = "对手 %.1f%%" % ((1.0 - player_share) * 100.0)
 	_refresh_stage_label(current_tier)
+
+
+# 只移动战斗区的显示父节点；弹幕逻辑、运动和寿命继续正常推进。
+func _play_tier_down_shake() -> void:
+	_cancel_tier_down_shake()
+	if tier_down_shake_amplitude <= 0.0 or tier_down_shake_duration_seconds <= 0.0:
+		return
+	_tier_down_shake_origin = _battle_area.position
+	var directions: Array[Vector2] = [
+		Vector2(-1.0, -0.35),
+		Vector2(1.0, 0.35),
+		Vector2(-0.65, 0.25),
+		Vector2(0.45, -0.2),
+		Vector2(-0.2, 0.0),
+		Vector2.ZERO,
+	]
+	var step_seconds: float = tier_down_shake_duration_seconds / directions.size()
+	_tier_down_shake_tween = create_tween()
+	_tier_down_shake_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	for direction: Vector2 in directions:
+		_tier_down_shake_tween.tween_property(
+			_battle_area,
+			"position",
+			_tier_down_shake_origin + direction * tier_down_shake_amplitude,
+			step_seconds
+		)
+	var active_tween: Tween = _tier_down_shake_tween
+	active_tween.finished.connect(_finish_tier_down_shake.bind(active_tween))
+
+
+# 震动结束后回到原布局位置。
+func _finish_tier_down_shake(active_tween: Tween) -> void:
+	if active_tween != _tier_down_shake_tween:
+		return
+	_tier_down_shake_tween = null
+	_battle_area.position = _tier_down_shake_origin
+
+
+# 重开或被新降档覆盖时取消旧 Tween，并恢复战斗区原位。
+func _cancel_tier_down_shake() -> void:
+	if _tier_down_shake_tween == null:
+		return
+	var active_tween: Tween = _tier_down_shake_tween
+	_tier_down_shake_tween = null
+	active_tween.kill()
+	_battle_area.position = _tier_down_shake_origin
 
 
 # 仅切换 HUD 阶段文案；普通 CombatStage Tier 与 PK 仍由战斗流程持有。
@@ -314,6 +369,7 @@ func show_failure() -> void:
 # 重开复位本场 HUD 提示并读取当前 T0 等待文案，各系统状态仍由所属对象初始化。
 func reset_for_attempt() -> void:
 	cancel_tier_breakthrough()
+	_cancel_tier_down_shake()
 	# 重开/失败后的下一场从待机准星开始，避免保留上一发充能高亮。
 	_aim_reticle.reset_visual_state()
 	player_portrait_motion.reset_shot()
