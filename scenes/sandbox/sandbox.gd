@@ -204,7 +204,7 @@ func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: Hit
 	_battle_hud.show_failure()
 
 
-# 只转发完整配置序列的完成事实，供 CS-23 在后续接入中等待 T1 开场对白结束。
+# T1 连线对白完整结束后恢复本档战斗，再向外转发已完成事实。
 func _on_dialogue_event_sequence_completed(event_id: StringName, sequence_id: StringName, side: int) -> void:
 	if event_id == &"combat_connected":
 		_battle_attempt_flow.resume_after_tier1_dialogue()
