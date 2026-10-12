@@ -15,6 +15,7 @@
 | [BG-21](tasks/BG-21_curved-motion.md) | 普通前景可选平滑曲线运动 | 已合并 main；聚焦回归和 GUI 运动证据通过 |
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景可选周期加减速 | 已实现；BG-40 限速、BG-21 曲线组合及 GUI 运动验证通过 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 普通移动前景出生重叠与运动穿透 | 已实现；TEST_ONLY 两实例真实运行 smoke 通过 |
+| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景随机初始层级 | 已实现，已更新 PR #186 |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通移动前景话语缓和缩放 | Godot 4.7.2 GUI 实测通过（2026-10-12） |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
@@ -73,6 +74,8 @@ LevelSpeech.local_style_bbcode 可选保存普通前景话语的局部 BBCode �
 
 **BG-24（2026-10-12）** 普通移动前景使用原轮换行和出生位置，但不再因该位置与当前视图重叠而跳行或拒绝；各 `BarrageView` 继续独立沿已有移动、暂停、寿命和离场逻辑运行，矩形交叠时不追加避让或推开。该规则只传给移动的 `spawn_normal_barrage()` 路径；BG-42 静止请求、Repeat 与 Paradox 继续使用原定位 / 空位检查。临时真实运行 smoke 使用 TEST_ONLY 同关内容、两份内存关卡配置（速度 20 与 100）和 BarrageArea：固定 1280×150 区域产生同位置重叠，随后实例按各自速度通过交叠并自然离开交集，同时核对原句 ID 和各自实例身份。临时 scene / script 已删除。无需修改 Sandbox / Flow。
 
+**BG-25（2026-10-12）** `BarrageView.setup()` 将真实复读记录固定为 `REPEAT_Z_INDEX=0`，携带 `occlusion` 的非复读话语固定为 `OCCLUSION_Z_INDEX=4096`，其余前景在 `FOREGROUND_Z_INDEX=1` 到 `OCCLUSION_Z_INDEX - 1=4095` 间逐条均匀抽取初始层级。伪装成复读外观但 `is_repeat=false` 的普通实例仍走前景随机层级。该改动只影响生成时的 `z_index`，BG-26 的运动中换层仍未实现；通过 Godot 4.7.2 runtime smoke 检查真实 BarrageView 配置结果。
+
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 
 
@@ -107,6 +110,7 @@ LevelSpeech.local_style_bbcode 可选保存普通前景话语的局部 BBCode �
 - INT-01 在普通战斗失败、完成与重开时调用场上清理和 `RepeatDelayQueue.clear_normal_queue()`，完成当前普通战斗阶段的清理接线。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - INT-01 已接入普通战斗的特性结果、攻击、结算、Tier与复读调度；矛盾阶段及其他尚缺真实接口的联调继续保留对应任务卡。
+- CB-14（2026-10-12）由 `BarrageArea.start_contradiction_generation()` 将 `ContradictionWindowConfig` 的速度曲线和时长交给每条矛盾 `BarrageView`；视图从现有区域起点移动，减速结束后保持当前位置。攻击释放仍由 5 系统读取当时的全局矩形，3 系统不改写快照或真假判定；演出初值仍待人工确认。
 
 DBG-01 提供只读 `get_current_barrage_counts()`，从当前真实 `BarrageView` 汇总普通、复读与矛盾弹幕；开发操作使用 `clear_current_barrages()` 保持当前生成开关、`spawn_normal_batch_now()` 单次生成、`stop_normal_generation()` 与 `resume_normal_generation()` 控制普通批次。Paradox 阶段继续由矛盾专属生成器接管。
 
@@ -285,7 +289,7 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 前景普通话语平缓加减速 | 待实施 |
 | [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 待实施 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 待实施 |
-| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 待实施 |
+| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 已实现，已更新 PR #186 |
 | [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 待实施 |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通前景话语的适度缩放 | 待实施 |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |

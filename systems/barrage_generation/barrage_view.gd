@@ -21,6 +21,10 @@ const OCCLUSION_Z_INDEX: int = RenderingServer.CANVAS_ITEM_Z_MAX
 var runtime_record: BarrageRuntimeRecord
 var _move_speed_pixels_per_second: float = 0.0
 var _stationary_position: bool = false
+var _contradiction_ease_out_curve: Curve
+var _contradiction_ease_out_duration_seconds: float = 0.0
+var _contradiction_ease_out_elapsed_seconds: float = 0.0
+var _contradiction_ease_out_active: bool = false
 var _requested_curve_amplitude_pixels: float = 0.0
 var _speed_change_cycle_seconds: float = 0.0
 var _speed_change_elapsed_seconds: float = 0.0
@@ -104,6 +108,20 @@ func configure_animated_size(min_scale: float, max_scale: float, cycle_seconds: 
 	return true
 
 
+# 为单条矛盾设置减速演出；释放快照仍读取该视图当下的可见矩形。
+func configure_contradiction_ease_out(duration_seconds: float, speed_curve: Curve) -> bool:
+	if (runtime_record == null or not runtime_record.is_contradiction or speed_curve == null
+			or speed_curve.get_point_count() < 2 or not is_finite(duration_seconds)
+			or duration_seconds <= 0.0 or speed_curve.sample(0.0) <= 0.0
+			or speed_curve.sample(1.0) > 0.001):
+		return false
+	_contradiction_ease_out_curve = speed_curve
+	_contradiction_ease_out_duration_seconds = duration_seconds
+	_contradiction_ease_out_elapsed_seconds = 0.0
+	_contradiction_ease_out_active = true
+	return true
+
+
 # 在进入场景树前配置单条视图；复读初始透明度恢复可见，移动参数由入口传入。
 func setup(
 	barrage_record: BarrageRuntimeRecord,
@@ -128,7 +146,7 @@ func setup(
 		modulate = initial_modulate
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# 保留普通前景层级供后续换层；遮挡使用引擎允许的最大 Z，始终压过前景和复读。
+	# 真复读固定在底层；遮挡固定在最前，其余前景从普通层级带随机抽取。
 	var has_occlusion: bool = (
 		barrage_record.trait_set != null and barrage_record.trait_set.has_trait(BarrageTraitSet.OCCLUSION)
 	)
@@ -137,7 +155,7 @@ func setup(
 	elif barrage_record.is_repeat:
 		z_index = REPEAT_Z_INDEX
 	else:
-		z_index = FOREGROUND_Z_INDEX
+		z_index = randi_range(FOREGROUND_Z_INDEX, OCCLUSION_Z_INDEX - 1)
 	autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -362,6 +380,14 @@ func _process(delta: float) -> void:
 		)
 		_animated_size_multiplier = _get_animated_size_multiplier()
 	_apply_presentation_scale()
+	if runtime_record.is_contradiction:
+		_advance_contradiction_ease_out(delta)
+		if not is_instance_valid(_active_area):
+			queue_free()
+			return
+		if not Rect2(Vector2.ZERO, _active_area.size).intersects(Rect2(position, size)):
+			queue_free()
+		return
 	if _stationary_position:
 		# 窗口缩放后继续完整留在当前区域；空间不足时销毁并沿用离树释放容量。
 		if not _constrain_stationary_position_to_area():
@@ -378,6 +404,29 @@ func _process(delta: float) -> void:
 	var active_rect: Rect2 = Rect2(Vector2.ZERO, _active_area.size)
 	if not active_rect.intersects(Rect2(position, size)):
 		queue_free()
+
+
+# 按归一化速度曲线移动到截止时刻，之后留在本次生成的最终位置。
+func _advance_contradiction_ease_out(delta: float) -> void:
+	if not _contradiction_ease_out_active or _contradiction_ease_out_curve == null:
+		return
+	var remaining_seconds: float = _contradiction_ease_out_duration_seconds - _contradiction_ease_out_elapsed_seconds
+	var step_seconds: float = minf(maxf(delta, 0.0), remaining_seconds)
+	if step_seconds <= 0.0:
+		_contradiction_ease_out_active = false
+		return
+	var sample_progress: float = clampf(
+		(_contradiction_ease_out_elapsed_seconds + step_seconds * 0.5)
+		/ _contradiction_ease_out_duration_seconds,
+		0.0,
+		1.0
+	)
+	var speed_multiplier: float = clampf(_contradiction_ease_out_curve.sample(sample_progress), 0.0, 1.0)
+	var move_distance: float = maxf(_move_speed_pixels_per_second, 0.0) * speed_multiplier * step_seconds
+	position.x = maxf(position.x - move_distance, 0.0)
+	_contradiction_ease_out_elapsed_seconds += step_seconds
+	if _contradiction_ease_out_elapsed_seconds >= _contradiction_ease_out_duration_seconds:
+		_contradiction_ease_out_active = false
 
 
 # 用余弦曲线在最小与最大倍率间平滑往返，周期首尾速度为零。
