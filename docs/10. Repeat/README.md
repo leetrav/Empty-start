@@ -12,7 +12,7 @@
 | [RP-14](tasks/RP-14_plain-text-repeat.md) | 复读与前景富文本覆盖保持纯文本 / 原句身份分离 | 已完成 · 2026-10-12 |
 | [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 现有复读独立容量实测 | 已完成 · 2026-10-12 |
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
-| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 待开发 |
+| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 已完成 · 2026-10-12 |
 | [RP-18](tasks/RP-18_repeat-infection-spread.md) | 同句普通复读延迟接续并静止散布 | 已完成 · 2026-10-12 |
 | [RP-19](tasks/RP-19_repeat-grey-text.md) | 灰色复读文字 | 已完成（2026-10-12） |
 | [RP-20](tasks/RP-20_repeat-zero-outline.md) | 零描边复读 | 已完成（2026-10-12） |
@@ -46,6 +46,13 @@
 **RP-19（2026-10-12）** `BarrageView.repeat_font_color` 是可调灰色来源，默认 `#b8bfcb`，同时设置普通 Label 与 RichTextLabel。终局特性着色只覆盖普通前景，复读继续保持低干扰灰色。
 
 **RP-20（2026-10-12）** `BarrageView` 依据运行时 `is_repeat` 将 Label 与 RichTextLabel 的 `outline_size` 设为 0。BG-37 已将真复读识别与假牌复读配色分开：真复读保持零描边，假牌作为前景话语继续保留前景描边。
+
+### RP-17 复读生命周期淡出（2026-10-12）
+
+- `BarrageRuntimeRecord.capture_lifetime_at_spawn()` 固定生成时总寿命与绝对到期时间。
+- `BarrageView` 对 `is_repeat` 实例按 `剩余寿命 / 捕获总寿命` 连续设置 `modulate.a`；普通前景透明度保持不变。该入口覆盖普通、矛盾和神降临历史复读。
+- 暂停时沿用 `BarrageView` 既有到期补偿，复读保持暂停前透明度；恢复后按剩余寿命继续淡出。
+- Godot 4.7.2 GUI smoke 验收出生、中段、暂停/恢复和寿命末端状态。运行截图依仓库 `.gitignore` 保存在本地 `.godot` 临时目录。
 
 ## 系统目标
 
@@ -153,7 +160,7 @@ RP-12 已复用 13 的本场读取链，并提供 19 已有候选入口可消费
 | [RP-14](tasks/RP-14_plain-text-repeat.md) | 复读使用普通纯文本 | 已完成 · 2026-10-12 |
 | [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 复读独立同屏上限与容量验收 | 待实施 |
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
-| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读按生命周期渐隐 | 待实施 |
+| [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读按生命周期渐隐 | 已完成 · 2026-10-12 |
 | [RP-18](tasks/RP-18_repeat-infection-spread.md) | 有效命中形成同向复读潮 | 待实施 |
 
 关联依赖及实施顺序以各卡的上游功能卡为准；共享场景与组件按实际 Owner 的任务流程依次集成。
