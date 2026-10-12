@@ -110,6 +110,7 @@ LevelSpeech.local_style_bbcode 可选保存普通前景话语的局部 BBCode �
 - INT-01 在普通战斗失败、完成与重开时调用场上清理和 `RepeatDelayQueue.clear_normal_queue()`，完成当前普通战斗阶段的清理接线。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - INT-01 已接入普通战斗的特性结果、攻击、结算、Tier与复读调度；矛盾阶段及其他尚缺真实接口的联调继续保留对应任务卡。
+- CB-14（2026-10-12）由 `BarrageArea.start_contradiction_generation()` 将 `ContradictionWindowConfig` 的速度曲线和时长交给每条矛盾 `BarrageView`；视图从现有区域起点移动，减速结束后保持当前位置。攻击释放仍由 5 系统读取当时的全局矩形，3 系统不改写快照或真假判定；演出初值仍待人工确认。
 
 DBG-01 提供只读 `get_current_barrage_counts()`，从当前真实 `BarrageView` 汇总普通、复读与矛盾弹幕；开发操作使用 `clear_current_barrages()` 保持当前生成开关、`spawn_normal_batch_now()` 单次生成、`stop_normal_generation()` 与 `resume_normal_generation()` 控制普通批次。Paradox 阶段继续由矛盾专属生成器接管。
 
