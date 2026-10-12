@@ -8,10 +8,24 @@
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
-| [BT-14](tasks/BT-14_occlusion-top-z.md) | 遮挡话语最高层 | 待开发 |
-| [BT-15](tasks/BT-15_occlusion-slow-velocity.md) | 遮挡在中央战斗区随机静止生成 | 待开发 |
+| [BT-14](tasks/BT-14_occlusion-top-z.md) | 遮挡话语最高层 | 已完成（2026-10-11） |
+| [BT-15](tasks/BT-15_occlusion-slow-velocity.md) | 遮挡在中央战斗区随机静止生成 | 已完成（2026-10-11） |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+### BT-15 实现状态（2026-10-11）
+
+- `BarrageArea.spawn_normal_barrage()` 装配特性后检查实例的 `TraitSet`；含 `occlusion` 时自动请求 BG-42 随机静止落点并使用零移动速度。
+- 兼容特性可与遮挡并存，定位仍保持静止。普通话语没有遮挡时沿原运动与排位路径生成；其他调用仍可显式请求 BG-42 静止落点。
+- 本卡沿用普通实例的原句、寿命、容量和命中规则。普通批次的特性随机选择仍待正式配置，当前只有实际装配 `occlusion` 的实例触发该行为。
+- 图形运行截图：[BT-15 遮挡随机静止验收](https://github.com/w7775p/Empty-start/blob/35e508613405b290903f8fd83237d9b835b7004f/docs/4.%20BarrageTraits/evidence/BT15_occlusion_static.png)。显示层级沿用下方 BT-14 固定层级契约。
+
+### BT-14 实现状态（2026-10-11）
+
+- `BarrageView.setup()` 按实例 `TraitSet` 选择固定层级；普通 `occlusion` 实例优先于普通前景和复读。
+- 层级常量为 `REPEAT_Z_INDEX=0`、`FOREGROUND_Z_INDEX=1`、`OCCLUSION_Z_INDEX=RenderingServer.CANVAS_ITEM_Z_MAX`（Godot 4.7.2 为 4096）。BG-25 / BG-26 的普通前景换层应保留 4096 作为遮挡专用最高层。
+- 遮挡层级在视图生成时设置，之后保持到该实例离场；随机静止位置沿用 BT-15。
+- 图形运行截图：[BT-14 遮挡最高层验收](https://github.com/w7775p/Empty-start/blob/35e508613405b290903f8fd83237d9b835b7004f/docs/4.%20BarrageTraits/evidence/BT14_occlusion_top_z.png)。
 
 
 ## 系统目标
@@ -133,7 +147,7 @@ BT-10 的目标可选过滤与到达结果读取已由 5. CombatAttack CA-08 完
 
 ## BT-12 矛盾阶段特性边界（已核实）
 
-- `BarrageArea.start_contradiction_generation()` 接收 12 提供的真 / 假列表，自动批次和 `spawn_contradiction_barrage()` 都创建新 `BarrageRuntimeRecord`；其构造函数组合独立空 `BarrageTraitSet`，不复制普通实例的特性或关卡特性列表。
+- `BarrageArea.start_contradiction_generation()` 接收 12 固定的一真五假列表，一次性创建六个新 `BarrageRuntimeRecord`；其构造函数组合独立空 `BarrageTraitSet`，不复制普通实例的特性或关卡特性列表。
 - 真矛盾和假矛盾都保留 `is_contradiction=true`、稳定 `original_sentence_id` 与原文。真假归属继续由 12 的当前关真 / 假列表拥有，假矛盾不等同于普通 `fake_card` 特性。
 - 真实释放快照 `AttackTargetSnapshot.get_contradiction_facts()` 冻结原句 ID / 文本；Sandbox 原有回调立即交给 CB `resolve_shot_hit_ids()`。`AttackChargeInput` 的矛盾模式跳过普通到达 / HitResolution 提交，因此不会混入普通 PK、倾向或普通命中历史。
 - Godot 4.7.2 一次 runtime smoke 使用现有一发上限，按当前关重开分别覆盖假 / 真矛盾：生成时两类均无假牌、反弹、分裂、不可选、遮挡或反击复制品特性，真假判定和选中事实保留。普通阶段六种特性组件规则及真实普通 / 遮挡输入继续工作。
@@ -164,11 +178,11 @@ BT-13 已接入【14. Assimilation】的真实继承输出，接口与验收范�
 
 ## 2026-10-09 新确认规则与单功能任务卡
 
-特殊弹幕属于带有 TraitSet 的普通话语实例。每条实例可携带多项兼容特性；遮挡特性实例始终最高层、缓慢移动。携带特性的实例数量由 2/3 系统配置和计数，特性优先级继续复用本系统既有能力。
+特殊弹幕属于带有 TraitSet 的普通话语实例。每条实例可携带多项兼容特性；遮挡实例在中央战斗区随机定位并保持静止，最高显示层级由 BT-14 单独处理。携带特性的实例数量由 2/3 系统配置和计数，特性优先级继续复用本系统既有能力。
 
 | 任务卡 | 唯一功能 | 状态 |
 | --- | --- | --- |
-| [BT-14](tasks/BT-14_occlusion-top-z.md) | 遮挡实例保持最高显示层级 | 待实施 |
-| [BT-15](tasks/BT-15_occlusion-slow-velocity.md) | 遮挡实例缓慢移动 | 待实施 |
+| [BT-14](tasks/BT-14_occlusion-top-z.md) | 遮挡实例保持最高显示层级 | 已完成（2026-10-11） |
+| [BT-15](tasks/BT-15_occlusion-slow-velocity.md) | 遮挡实例随机静止生成 | 已完成（2026-10-11） |
 
 本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。

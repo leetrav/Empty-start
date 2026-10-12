@@ -4,12 +4,12 @@
 
 ## 2026-10-09 现行实现核对与任务状态
 
-**数值来源：** `LevelProfile.normal_barrage_screen_cap` 目前是整关基础容量；普通战斗 T0～T5 的各档前景容量统一由 `CombatStageTierConfig` 承接（CS-24），LC-11 归档为口径索引。关卡本身继续提供原句池、倾向权重和可用特性；LC-12 负责本关同屏特殊实例上限配置。
+**数值来源：** `LevelProfile.normal_barrage_screen_cap` 目前是整关基础容量；普通战斗 T0～T5 的各档前景容量统一由 `CombatStageTierConfig` 承接（CS-24），LC-11 归档为口径索引。`LevelProfile.special_instance_screen_cap` 已由 BG-35 消费；-1 表示暂沿用普通前景容量。05/06 正式字段、全局特殊基础值与导表仍待 LC-10/LC-12 后续接入。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
 | [LC-11](tasks/LC-11_tier-foreground-count-config.md) | 前景同屏容量配置入口归档到 CS-24 | 归档 |
-| [LC-12](tasks/LC-12_special-trait-instance-cap.md) | 本关特殊实例同屏上限 | 待开发 |
+| [LC-12](tasks/LC-12_special-trait-instance-cap.md) | 本关特殊实例同屏上限 | Resource 字段已由 BG-35 消费；05/06 配置与导表待接 |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 
@@ -99,6 +99,8 @@ LevelProfile 保存静态关卡资料、普通话语池、倾向比例、特殊�
 
 前三项稳定 ID 沿用身份选项系统 ID-01 的字符串值：`orthodox`、`heretical`、`absurd`。普通话语额外允许 `neutral`，只表示内容类别，不作为开局身份或玩家三项倾向。`LevelSpeech.tendency_id` 保持字符串字段，不在关卡配置系统另建枚举。
 
+LevelSpeech.local_style_bbcode 是 BG-28 消费的可选普通前景表现 BBCode，空值不改变现有话语显示。当前正式源表和导表器不提供该字段；由 Resource / 调用方显式配置，导表映射留数据交付任务处理。
+
 ### LC-03 特殊玩法与矛盾内容
 
 `LevelProfile.special_trait_ids` 保存本关使用的特性稳定 ID 字符串，具体 ID 由现有 `BarrageTraitSet` 定义；本关启用列表和继承白名单分别配置。
@@ -183,7 +185,7 @@ LevelProfile 新增可选 normal_speech_pool_source: LevelSpeechPool，使用 ge
 
 ## 2026-10-10 新版主播粉丝团名称
 
-策划总表的 `02_主播关卡.fan_group_name` 用于该关对手直播间**主播名右侧**的 `❤粉丝团名❤` 文字，原字段名 `fan_badge_text` 已弃用。PA-20 将把此名称接入 `LevelProfile` 和正式 BattleHud，玩家侧仍直接读取 `SaveData.fan_group_name`。对手 `fan_badge_id / fan_badge_texture` 与玩家共享资源 `player_fan_badge` 继续用于 LD-15 直播评论内粉丝身份标记。参见 `docs/Shared/PresentationAssets/tasks/PA-20_header-fan-group-name.md`。
+策划总表的 `02_主播关卡.fan_group_name` 用于该关对手直播间**主播名右侧**的 `❤粉丝团名❤` 文字，原字段名 `fan_badge_text` 已弃用。`LevelProfile.fan_group_name` 可在 Godot Resource Inspector 中编辑，PA-20 接入 BattleHud；正式导表字段映射仍待数据工具确认，玩家侧读取 `SaveData.fan_group_name`。对手 `fan_badge_id / fan_badge_texture` 与玩家共享资源 `player_fan_badge` 继续用于 LD-15 直播评论内粉丝身份标记。参见 `docs/Shared/PresentationAssets/tasks/PA-20_header-fan-group-name.md`。
 
 ## 2026-10-10 LC-14 普通导表来源隔离
 

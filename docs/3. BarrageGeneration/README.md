@@ -3,31 +3,94 @@
 > **派工入口**：[2026-10-09 当前任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。本系统的已完成旧卡保留作功能实现依据；下方历史讨论章节的旧数值以现行派工入口覆盖。
 
 
-## 2026-10-09 现行实现核对与任务状态
+## 2026-10-12 现行实现核对与任务状态
 
-**现行生成规则：** 前景普通话语与挂特性的特殊话语共用 T0～T5 各档少量容量，当前确认 T1=10/T2=13/T3=16，T4=19/T5=22 为当前递增规划，T0 待填。批次计时、随机抽词、实例容量和命中移除已存在；CS-24 已提供当前 Tier 名额数据与 BarrageArea 读取接口，普通容量接线由 BG-16 完成。复读另占独立容量，在中央战斗区随机静止生成、按寿命渐隐并固定底层；遮挡特性话语在战斗区随机静止生成且固定最高层。普通前景采用可读的多运动方式。Paradox 阶段按 CB-13 读取一真五假六句。
+**现行生成规则：** 前景普通话语与挂特性的特殊话语共同占用 T0～T5 各档少量容量，T1=10、T2=13、T3=16、T4=19、T5=22。T0 的 0 表示未填，普通阶段沿用 `LevelProfile.normal_barrage_screen_cap`。BG-16 已接入 CS-24 的 Tier 名额；带特性实例另占 BG-35 特殊名额，同一实例携带多项兼容特性仍只计一个特殊名额，离树时与普通前景名额一并释放。未配置 LC-12 每关值时，当前暂以普通前景容量回退；06 全局特殊基础值和正式导表尚未接入。Paradox 继续采用关卡上限，复读保留独立容量。复读可由生成调用方显式请求中央战斗区随机静止落点；普通话语装配 `occlusion` 后由 BT-15 自动使用该能力。普通移动前景由 BG-18 每次从上、下、左、右均匀选边，在边缘可容纳完整视图的范围内随机出生，并以对应的内向向量交给 `BarrageView`；限速、曲线与周期加减速继续由既有运动配置处理。BG-20 随机方向直线和 BG-23 游荡仍待开发。BG-42 静止请求、遮挡、Repeat 与 Paradox 不使用 BG-18 边缘移动出生；尚未接入 BG-39 Tier 运动权重。Paradox 阶段按 CB-13 读取一真五假六句。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
-| [BG-16](tasks/BG-16_high-density-cap.md) | 按 Tier 读取前景容量 | 待实施（CS-24 数据与接口已就绪） |
+| [BG-16](tasks/BG-16_high-density-cap.md) | 按 Tier 读取前景容量 | 已合并 main；Tier 容量回归通过 |
 | [BG-17](tasks/BG-17_pc-android-performance.md) | 分层性能与可读性验收 | 待组合实测 |
-| [BG-42](tasks/BG-42_static-random-placement.md) | 复读和遮挡共用的中央区域随机静止落点 | 待开发 |
-| [BG-24](tasks/BG-24_overlap-pass-through.md) | 实例出生与运动允许重叠 | 待开发 |
-| [BG-27](tasks/BG-27_animated-size.md) | 连续缩放 | 已有脉冲入口 |
-| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景富文本 | 待开发 |
+| [BG-18](tasks/BG-18_four-edge-spawn.md) | 普通前景从四周边缘随机出生并朝内移动 | 已合并 main（#199） |
+| [BG-20](tasks/BG-20_random-straight-motion.md) | 普通前景直线模式围绕内向法线随机偏转 | 已完成（2026-10-12） |
+| [BG-42](tasks/BG-42_static-random-placement.md) | 复读和遮挡共用的中央区域随机静止落点 | 已合并 main |
+| [BG-21](tasks/BG-21_curved-motion.md) | 普通前景可选平滑曲线运动 | 已合并 main；聚焦回归和 GUI 运动证据通过 |
+| [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景可选周期加减速 | 已实现；BG-40 限速、BG-21 曲线组合及 GUI 运动验证通过 |
+| [BG-23](tasks/BG-23_wandering-motion.md) | 普通前景低速游荡 | 已实现；独立 PR #203 开放，demo 观察到多次转向 |
+| [BG-24](tasks/BG-24_overlap-pass-through.md) | 普通移动前景出生重叠与运动穿透 | 已实现；TEST_ONLY 两实例真实运行 smoke 通过 |
+| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景随机初始层级 | 已由独立 PR #196 合入 main |
+| [BG-26](tasks/BG-26_moving-layer-order.md) | 普通前景运动中随机改变层级 | 已合并 main（#197） |
+| [BG-27](tasks/BG-27_animated-size.md) | 普通移动前景话语缓和缩放 | Godot 4.7.2 GUI 实测通过（2026-10-12） |
+| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
-| [BG-30](tasks/BG-30_opinion-tide.md) | 复读潮的疏密起伏 | 待开发 |
+| [BG-30](tasks/BG-30_opinion-tide.md) | 复读潮的疏密起伏 | 已完成 · 2026-10-12 |
 | [BG-31](tasks/BG-31_spatial-clusters.md) | 同句复读成批涌现（复用 RP-18） | 归档重复能力 |
 | [BG-32](tasks/BG-32_linked-faux-depth.md) | 伪纵深观感 | 候选暂缓 |
 | [BG-33](tasks/BG-33_impact-motion-wave.md) | 命中后的短时局部运动扰动 | 可选试玩后实施 |
-| [BG-34](tasks/BG-34_frequency-based-refill.md) | 既有定时批次与 Tier 名额接线 | 已有基础 |
-| [BG-35](tasks/BG-35_special-instance-cap.md) | 特殊实例占用独立容量 | 待开发 |
-| [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档超额自然回落 | 待开发 |
-| [BG-37](tasks/BG-37_foreground-text-outline.md) | 非复读文字描边 | 待开发 |
-| [BG-38](tasks/BG-38_effective-area-clear.md) | 现有命中结束目标接线回归 | 已有链路 |
+| [BG-34](tasks/BG-34_frequency-based-refill.md) | 既有定时批次按 Tier 名额补位 | T2=13 组件级计时回归通过；Sandbox 布局待联调 |
+| [BG-35](tasks/BG-35_special-instance-cap.md) | 特殊实例占用独立容量 | 已实现，待 PR Review |
+| [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档超额自然回落 | T3→T2 自然回落与计时补位实测通过 |
+| [BG-37](tasks/BG-37_foreground-text-outline.md) | 非复读文字描边 | 已完成（2026-10-12） |
+| [BG-38](tasks/BG-38_effective-area-clear.md) | 现有命中结束目标接线回归 | Godot 4.7.2 场景回归 48 项通过 |
 | [BG-39](tasks/BG-39_tier-motion-proportions.md) | 四种运动类型随 Tier 权重变化 | 待开发 |
-| [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 前景话语最大速度 | 待开发 |
+| [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 前景话语最大速度 | BG-20 直线、BG-21 曲线和 BG-22 加减速均按统一上限验证；BG-23 待实现后补验 |
 | [BG-41](tasks/BG-41_random-trait-selection.md) | 按已解锁池随机分配特性 | 技能池待定 |
+
+## BG-35 带特性普通话语的独立同屏上限
+
+`LevelProfile.special_instance_screen_cap` 可为本关配置带特性普通前景的独立上限；未配置值 `-1` 当前回退到本场普通前景上限，待 06 全局特殊基础值接入后再替换该回退。每个 TraitSet 非空的普通视图同时登记普通和特殊账本；多项兼容特性按视图身份登记一次。特殊名额用尽只拒绝新的带特性请求，普通容量未满时普通话语仍可生成；视图离树时由现有普通容量释放入口同时归还两个名额。复读、矛盾候选和 BG-41 特性随机分配沿用各自任务边界。
+
+`tests/barrage_generation/test_bg35_special_instance_cap.gd` 使用实际 `BarrageArea` / `BarrageView` 验证上限为 1 时的双特性实例、普通容量共同占用、普通流量保留与离树后重新生成。Godot GUI 运行截图见 `evidence/BG35_special_instance_cap.png`；正式 05/06 表字段和特殊基础值仍待配置系统导表工作完成。
+
+## BG-30 复读潮疏密节奏验收（2026-10-12）
+
+- 正常命中继续由 `BattleAttemptFlow` 创建 `RepeatPlan`；`RepeatDelayQueue` 为请求抽取独立随机延迟并按普通战斗帧派发。
+- `BarrageArea` 使用独立复读同屏容量和 BG-42 随机静止落点；每条 `BarrageView` 按原寿命到期，容量离树后释放。多条计划叠加形成稀疏进入、密度峰值和寿命回落。
+- Godot 4.7.2 正式 Sandbox smoke 两次实际有效普通命中，采样到复读数量 `0→1→2→3→4→5→6→5→4→3→1→0`；峰值 6、复读上限 24。T0 普通前景最大数量 21，仍在关卡普通容量 24 内。
+- 该波次由现有 Repeat / BarrageGeneration 链路满足；本卡完成运行验收，没有新增弹幕管理器、定时器或运行代码。GUI 峰值截图按仓库 `.gitignore` 留在本地 `.godot` 临时目录。
+### BG-28 普通前景单句局部富文本
+
+LevelSpeech.local_style_bbcode 可选保存普通前景话语的局部 BBCode 样式。BarrageArea 在实例入树后调用 BarrageView.set_visual_bbcode()，富文本解析出的正文必须与 BarrageRuntimeRecord.text 完全一致，否则清除覆盖并回退原文。RichTextLabel 实际内容高度纳入视图尺寸，保证局部大字号文本完整显示。复读仍沿用纯文本记录与原句 ID。
+
+该字段默认为空；当前正式数据表和导表器没有此列。BG-28 提供由 Resource 或调用方设置的展示入口，正式台词尚未配置局部样式。
+
+**BT-14 固定层级契约：** `BarrageView.REPEAT_Z_INDEX=0`、`FOREGROUND_Z_INDEX=1`、`OCCLUSION_Z_INDEX=RenderingServer.CANVAS_ITEM_Z_MAX`（Godot 4.7.2 为 4096）。BG-25 / BG-26 的普通前景层级使用 1～4095，4096 专供遮挡实例保持最高层。
+
+**BG-37（2026-10-12）** 非复读前景按 `foreground_outline_size` 与 `outline_color` 显示描边；复读判断使用运行时记录的 `is_repeat`。假牌可以沿用复读的颜色、字号与玻璃配色，同时保留前景描边。反击复制品 CanvasItem 绘制的多处文字也读取同一描边配置。
+
+**BG-38（2026-10-11）** `test_bg38_battle_attempt_clear.tscn` 通过正式 Sandbox 组合、`AttackChargeInput`、`BattleAttemptFlow` 和 `BarrageArea` 执行两发真实流程。无遮挡发覆盖两条普通话语、假牌、水军复制品和复读：五个原目标均由 `end_barrage()` 结束；普通倾向只累计两条有效普通命中，两条普通命中各按 Tier 规则生成复读，已命中的复读目标不再复制。第二次重开后，释放快照含遮挡的整发按 CA-15 MISS 结算一次 `-0.01`，五个原目标继续留场，普通命中历史、倾向和复读队列均无新增。测试使用运行时 TEST_ONLY 特性与合成鼠标事件；物理鼠标和完整人工流程尚未覆盖。
+
+**BG-34（2026-10-10）** `CombatStage` 将 T2=13 发布给 `BarrageArea`。满槽后移除 4 条，现场数量回到 9；容量释放恢复现有 `SpawnTimer`，下一次批次经 `NormalSpeechSelector` 补到 13，额外普通生成由现有上限拦截。复读继续走独立账本。本卡确认现有 BG-16 接线已满足频率补位规则，并新增真实组件回归。
+
+`test_bg34_t2_timed_refill.gd` 使用当前 `BarrageArea` Scene、`CombatStage` 和 Tier Catalog。测试区为 1024×1200，为当前单列放置提供 13 个位置；1024×1008 实测可放 12 条。Sandbox 当前 BarrageArea 高 760px，完整同屏容量需在布局任务完成后实场复验。本卡未修改 Sandbox 或 PA 资产。
+
+**BG-36（2026-10-10）** `CombatStage` 从 T3 降到 T2 后，`BarrageArea` 发布 13 个新名额；已有 16 条 `BarrageView` 保持原实例、移动和生成时保存的寿命。共享账本仍满于新名额时暂停普通生成；数量降到 13 时继续停表，四条较早生成的测试视图自然到期至 12 后，现有 `SpawnTimer` 才恢复并按 T2 间隔补到 13。此行为复用 BG-16 / BG-34 的容量和 Timer 逻辑，无需改动生产脚本。
+
+`test_bg36_tier_downgrade_grace.gd` 使用真实 `CombatStage`、`BarrageArea`、`BarrageView` 与 `SpawnTimer`，逐项检查原实例 ID、绝对寿命截止值、运动、超额时停表、降到 12 后等待 timeout 再新增一条视图，以及补到 13 后停表。测试用 `LevelProfile` 和 `LevelSpeech` 均为脚本内构造的 TEST_ONLY 数据；这项组件级验证不代表 Sandbox 正式玩法验收。
+
+**BG-42（2026-10-11）** `spawn_normal_barrage(..., random_static_placement=false)` 与 `spawn_repeat_barrage(..., random_static_placement=false)` 为单次请求提供可选的随机静止定位。显式传 `true` 时，在视图完成排版后按 `BarrageArea.size - BarrageView.size` 均匀抽取位置，视图无法完整放入当前区域时拒绝生成并归还刚申请的容量。静止视图沿用原暂停补偿、绝对寿命、普通或复读容量账本；区域缩放后可容纳时夹回完整边界，容纳不了时自然移除。BT-15 让带 `occlusion` 的普通实例自动使用该能力；复读与其他普通实例仍可由调用方按需请求。Paradox 仍走 `_place_new_barrage()`，CB-13 一真五假候选逻辑没有变化。
+
+`test_bg42_static_random_placement.gd` 用实际 `BarrageArea` / `BarrageView` 覆盖默认移动、短长文本边界、随机位置分布、1024×760 当前尺寸、1024×1008 扩高、缩小区域时视图夹回 / 移除与容量恢复、过小区域拒绝、暂停和寿命。图形运行保存当前战斗区视觉截图到 `evidence/BG42_static_random_placement.png`；真实 Sandbox 场景文件未修改。
+
+**BG-40（2026-10-11）** `BarrageArea.maximum_foreground_move_speed_pixels_per_second` 是 Inspector 可调的普通移动前景速度上限，默认值为 100 px/s，与当前 `LevelProfile.base_move_speed_pixels_per_second` 基础值一致。`get_foreground_move_speed_pixels_per_second(level_profile)` 是普通前景唯一限速入口，按 `max(基础速度, 0) × max(当前 CS-07 Tier 倍率, 0)` 计算后裁切到上限；倍率更新继续只影响之后新建的普通前景实例。当前 `BarrageView._process()` 保留默认向左移动，支持 BG-21 曲线路径和 BG-22 周期加减速；曲线沿弧长按当帧加减速值推进，路径速度受同一上限约束。BG-22 默认关闭，Inspector 可将单次完整加速和减速周期设为 2～16 秒，默认 6 秒。BG-23 低速倍率施加在该限速之后；BG-20 随机方向直线仍待对应任务接入。
+
+该限速只接在普通移动前景生成路径。显式 BG-42 静止请求传入零速度；Repeat 沿用原基础速度与当前倍率计算；Paradox 六候选继续读取自身 `ContradictionWindowConfig`。`test_bg40_foreground_speed_ceiling.gd` 使用实际 Tier Catalog 与 `CombatStage` 检查 T1～T5、T1/T5 真实位移、降档后的新实例、Repeat / Paradox 隔离和静止请求。测试句为脚本内 TEST_ONLY 合成数据，不作为正式关卡或正式玩法可读性验收。GUI smoke 保存 TEST_ONLY 短句的 Godot 渲染截图到 `evidence/BG40_foreground_speed_ceiling_test.png`。
+
+**BG-20（2026-10-12）** `BarrageArea.random_straight_direction_spread_degrees` 可在 Inspector 设为 0～45°，默认 30°。普通前景直线模式围绕 BG-18 出生边的内向法线随机偏转；范围上限保留正向内分量，实际移动速度继续经过 BG-40 唯一限速入口。打开 BG-21 曲线或 BG-22 周期加减速时仍使用原边内向法线；静止请求、Repeat 与 Paradox 沿用各自原逻辑。Godot 4.7.2 的 TEST_ONLY 方向演示使用 8 个真实 `BarrageView`，覆盖四边出生、偏转轨迹、可见性和 120 px/s 上限；GUI 截图保存在本地 `evidence/BG20_random_straight_motion.png`，遵循仓库规则不提交 evidence PNG。
+
+**BG-21（2026-10-11）** `BarrageArea.curved_foreground_motion_enabled` 默认关闭；开启后仅后续普通移动前景实例使用平滑单弧，`curved_foreground_motion_amplitude_pixels` 调整最大弧高，实际幅度按落点可用上下空间收窄。`BarrageView` 使用 2 px 烘焙步长的 `Curve2D` 弧长，以线性采样推进并满足 BG-40 限速入口；视图高度保持在区域内。曲线沿用 BG-18 出生边的内向法线，BG-20 随机偏转只用于未开启曲线和加减速的直线模式；BG-42 静止请求优先保持静止，Repeat 与 Paradox 仍使用独立既有路径。没有接入 BG-39 Tier 权重。`test_bg21_curved_motion.gd` 覆盖开关、弧高调整、BG-40 逐帧速度上限、完整视图边界，以及静止、Repeat 和 Paradox 隔离。图形测试保存 TEST_ONLY 轨迹图到 `evidence/BG21_curved_motion_gui.png`；图中尾迹记录实际视图位置，正式词库可读性仍需完整游戏人工验收。
+
+**BG-22（2026-10-11）** `BarrageArea.speed_change_foreground_motion_enabled` 默认关闭；开启后仅后续普通移动前景实例加减速。`speed_change_foreground_motion_cycle_seconds` 可在 Inspector 设为 2～16 秒，默认 6 秒；每周期从零速平滑加速到 BG-40 返回的速度上限，再平滑减速到零，运动方向沿 BG-18 出生边内向法线。`BarrageView` 用 smoothstep 平滑周期接缝，并将当帧速度用于直线路径或 BG-21 曲线路径弧长，因此组合运行时的路径速度仍不超过 BG-40 上限。BG-20 随机偏转只用于直线模式；BG-42 静止请求优先保持静止，Repeat 和 Paradox 不读取该选项；没有接入 BG-39 Tier 权重。`test_bg22_speed_change_motion.gd` 使用实际 `BarrageArea` / `BarrageView`，覆盖默认匀速、4 秒可调周期、加速与减速速度样本、逐帧速度上限、曲线叠加及隔离规则。图形运行保存 TEST_ONLY 轨迹和样本速度到 `evidence/BG22_speed_change_motion_gui.png`；该组件级验证不代表正式词库或完整局内体验验收。
+
+**BG-27（2026-10-12）** `BarrageArea` 为普通移动前景提供 Inspector 可调缩放范围，默认 `0.96～1.04`、一次往返 6 秒。`BarrageView.configure_animated_size()` 只由普通生成路径启用，使用每实例独立初相位的余弦曲线平滑放大和缩小，并围绕视图中心缩放。静止请求、复读、矛盾与终局实例维持各自尺寸规则。现有 `pulse_presentation()` 与缓和缩放合成同一 `Control.scale`，短时命中和终局脉冲不会覆盖持续缩放。攻击查询继续读取 `BarrageView.get_global_rect()`，该矩形随当前缩放同步变化；当前 GUI smoke 的 28 项检查全部通过。默认值是可调起始值，不代表正式策划平衡数据；程序美术、正式导表及 Android 实机验收不在本卡范围。
+
+**BG-24（2026-10-12）** 普通移动前景使用原轮换行和出生位置，但不再因该位置与当前视图重叠而跳行或拒绝；各 `BarrageView` 继续独立沿已有移动、暂停、寿命和离场逻辑运行，矩形交叠时不追加避让或推开。该规则只传给移动的 `spawn_normal_barrage()` 路径；BG-42 静止请求、Repeat 与 Paradox 继续使用原定位 / 空位检查。临时真实运行 smoke 使用 TEST_ONLY 同关内容、两份内存关卡配置（速度 20 与 100）和 BarrageArea：固定 1280×150 区域产生同位置重叠，随后实例按各自速度通过交叠并自然离开交集，同时核对原句 ID 和各自实例身份。临时 scene / script 已删除。无需修改 Sandbox / Flow。
+
+**BG-25（2026-10-12）** `BarrageView.setup()` 将真实复读记录固定为 `REPEAT_Z_INDEX=0`，携带 `occlusion` 的非复读话语固定为 `OCCLUSION_Z_INDEX=4096`，其余前景在 `FOREGROUND_Z_INDEX=1` 到 `OCCLUSION_Z_INDEX - 1=4095` 间逐条均匀抽取初始层级。伪装成复读外观但 `is_repeat=false` 的普通实例仍走前景随机层级。初始层级由独立 PR #196 交付，现已合入 main。
+
+**BG-26（2026-10-12）** `BarrageArea.normal_foreground_layer_change_interval_seconds` 控制后续普通移动前景的换层间隔，默认 2 秒，设为 0 可关闭。每条视图拥有自己的间隔计时，到期后从 1～4095 中选一个不同于当前值的新 Z 层；暂停时计时冻结。静止请求、遮挡实例和 Repeat 保持原层级。该默认值为可调试玩起点，正式平衡仍可从 BarrageArea Inspector 调整。
+
+**BG-23（2026-10-12）** `BarrageArea.normal_foreground_wandering_enabled` 选择 BG-23 模式；`normal_foreground_wandering_speed_multiplier` 默认 0.35，`normal_foreground_wandering_direction_change_interval_seconds` 默认 2 秒，均可从 Inspector 调整。速度沿用当前关卡 / Tier 速度和 BG-40 上限，再乘低速倍率。`BarrageView.configure_wandering_motion()` 管理独立方向状态，按随机左右转角定时换向，并在完整视图触及区域边缘时反射；它保留 BG-20 使用的 `_move_direction`。终局、静止、复读、矛盾和遮挡实例不启用该路径。可复播的真实 BarrageArea 示例位于 [`bg23_wandering_motion_demo.tscn`](../../tests/barrage_generation/bg23_wandering_motion_demo.tscn)，R 键可重播。
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 
@@ -63,6 +126,7 @@
 - INT-01 在普通战斗失败、完成与重开时调用场上清理和 `RepeatDelayQueue.clear_normal_queue()`，完成当前普通战斗阶段的清理接线。
 - 2. LevelConfiguration 已拆出关卡资料、词库、倾向比例和基础生成参数任务。
 - INT-01 已接入普通战斗的特性结果、攻击、结算、Tier与复读调度；矛盾阶段及其他尚缺真实接口的联调继续保留对应任务卡。
+- CB-14（2026-10-12）由 `BarrageArea.start_contradiction_generation()` 将 `ContradictionWindowConfig` 的速度曲线和时长交给每条矛盾 `BarrageView`；视图从现有区域起点移动，减速结束后保持当前位置。攻击释放仍由 5 系统读取当时的全局矩形，3 系统不改写快照或真假判定；演出初值仍待人工确认。
 
 DBG-01 提供只读 `get_current_barrage_counts()`，从当前真实 `BarrageView` 汇总普通、复读与矛盾弹幕；开发操作使用 `clear_current_barrages()` 保持当前生成开关、`spawn_normal_batch_now()` 单次生成、`stop_normal_generation()` 与 `resume_normal_generation()` 控制普通批次。Paradox 阶段继续由矛盾专属生成器接管。
 
@@ -138,7 +202,7 @@ BG-12 使用 Sandbox 的满 PK 阶段入口与 `ContradictionBreakSystem` 当前
 
 ## BG-12 矛盾生成接口
 
-`BarrageArea.start_contradiction_generation(level_profile, true_lines, false_lines, config)` 停止普通生成，轮换两组矛盾原句，按 Paradox 配置使用每批数量 ×2、生成频率 ×3、移动速度 ×2.5，以及 10 秒实例寿命，不沿用当前普通 Tier 倍率。每个实例保留稳定 `original_sentence_id` 和 `is_contradiction` 标识；真伪由 12 系统按照关卡列表判断，不在弹幕系统结算。`stop_contradiction_generation()` 只停止新批次，`clear_barrages()` 清理场上内容并同时停止两种生成模式。
+`BarrageArea.start_contradiction_generation(level_profile, true_lines, false_lines, config)` 停止普通生成，并一次性显示调用方提供的一条真句与五条假句。矛盾容量按本组候选数量独立计算，不共用普通前景账本；初始化失败会撤销本次生成的部分视图。实例沿用 Paradox 配置的移动速度与 10 秒寿命，保留稳定 `original_sentence_id` 和 `is_contradiction` 标识；真假由 12 系统判定，不在弹幕系统结算。`stop_contradiction_generation()` 停止矛盾阶段，`clear_barrages()` 清理场上内容并同时停止两种生成模式。
 
 复读实例额外保存 `is_contradiction_repeat`，`has_visible_contradiction_repeats()` 只读取当前仍在场的矛盾复读视图；等待队列是否为空继续由 10 系统负责。
 
@@ -182,7 +246,11 @@ BarrageArea 暴露可编辑的 `base_lifetime_seconds` 临时基础值（默认 
 
 ### BG-07 普通弹幕共享同屏上限
 
-BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。普通话语创建时自动登记，节点离开场景树时自动释放；陷阱等普通容量占用者通过 `try_register_normal_capacity_occupant()` 和 `release_normal_capacity_occupant()` 复用同一账本。达到上限时普通批次 Timer 暂停，释放容量后恢复；Timer 已运行时保留当前剩余时间，普通命中或无位置撤销不会重设正在运行的周期。BG-07 不实现弹幕特性规则；到期和离屏移除仍由 BG-08 负责。
+BarrageArea 的普通容量在 Tier 名额大于 0 时采用当前 Tier 值；T0 的 0 沿用 `LevelProfile.normal_barrage_screen_cap`。普通话语与带特性话语由同一入口登记，陷阱等普通占用者通过 `try_register_normal_capacity_occupant()` 和 `release_normal_capacity_occupant()` 复用普通账本；带特性视图还登记 BG-35 特殊账本。实例离树自动归还其占用名额；普通容量满时普通批次 Timer 暂停，释放后恢复。Paradox 继续使用关卡上限，复读继续使用独立账本。BG-07 管理普通账本与生命周期；Tier 名额接线由 BG-16 完成。
+
+### BG-16 按当前 Tier 控制前景容量
+
+`CombatStageTierConfig.foreground_slot_count` 通过 `CombatStage.bind_barrage_area()` 发布给 `BarrageArea.set_foreground_slot_count()`。普通阶段 T1～T5 分别使用 10、13、16、19、22 个前景名额；T0 的 0 继续回退到 `LevelProfile.normal_barrage_screen_cap`。所有普通话语、带兼容特性的普通话语及外部普通容量占用者共享这些普通名额；带特性普通话语再受 `LevelProfile.special_instance_screen_cap` 限制。节点离树后释放其全部已登记名额。矛盾阶段保持原关卡容量，复读仍由独立容量账本控制。
 
 ### BG-08 到期与离开区域自然移除
 
@@ -208,7 +276,7 @@ BarrageArea 从 `LevelProfile.normal_barrage_screen_cap` 读取普通上限。�
 
 ### BT-12 矛盾记录的特性边界
 
-`start_contradiction_generation()` 的自动批次与 `spawn_contradiction_barrage()` 都通过新 `BarrageRuntimeRecord` 取得独立空 TraitSet；真 / 假实例保留矛盾标记、稳定原句 ID 和文本，生成入口不复制普通战斗特性。真假仍由 CB 根据当前关内容判断，普通 `fake_card` 等特性不承担真伪标记。BT-12 已通过真实 Sandbox 普通阶段到矛盾阶段输入 smoke 验证，没有改动生成行为或普通特性规则。
+`start_contradiction_generation()` 的初始固定集合与 `spawn_contradiction_barrage()` 都通过新 `BarrageRuntimeRecord` 取得独立空 TraitSet；真 / 假实例保留矛盾标记、稳定原句 ID 和文本，生成入口不复制普通战斗特性。真假仍由 CB 根据当前关内容判断，普通 `fake_card` 等特性不承担真伪标记。CB-13 后续不自动轮换或补位矛盾句，也不更改普通生成规则。
 
 ### BG-11 全局暂停生成与弹幕寿命
 
@@ -235,14 +303,14 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-20](tasks/BG-20_random-straight-motion.md) | 前景普通话语随机方向直线运动 | 待实施 |
 | [BG-21](tasks/BG-21_curved-motion.md) | 前景普通话语连续曲线运动 | 待实施 |
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 前景普通话语平缓加减速 | 待实施 |
-| [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 待实施 |
+| [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 已实现，PR #203 开放 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 待实施 |
-| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 待实施 |
-| [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 待实施 |
+| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 已实现，PR #196 已合 main |
+| [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 已实现，PR #197 开放；基于含 BG-25 #196 的 main |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通前景话语的适度缩放 | 待实施 |
-| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 单句话语内部富文本混合样式 | 待实施 |
+| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 普通话语随机局部文字动画 | 待实施 |
-| [BG-30](tasks/BG-30_opinion-tide.md) | 底层复读潮汐密度节奏 | 待实施 |
+| [BG-30](tasks/BG-30_opinion-tide.md) | 底层复读潮汐密度节奏 | 已完成 · 2026-10-12 |
 | [BG-31](tasks/BG-31_spatial-clusters.md) | 同一句复读成批出现 | 待实施 |
 | [BG-32](tasks/BG-32_linked-faux-depth.md) | 伪纵深视觉候选体验验证 | 候选暂缓 |
 | [BG-33](tasks/BG-33_impact-motion-wave.md) | 群体命中后的局部冲击波 | 待实施 |
@@ -251,17 +319,18 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 
 ## 2026-10-09 新确认规则与单功能任务卡
 
-前景包含普通话语及挂有特性的普通话语，二者共用当前 Tier 少量同屏名额，击中后按配置的正常生成频率补充。前景话语具备描边，运动方式与速度按可读性限制；复读在中央区随机静止生成并始终底层、按寿命渐隐；遮挡特性实例在随机位置静止显示并保持最高层。旧 BG-16、BG-17 需求已改为少量前景及背景复读的实际性能与可读性验收，BG-32 伪纵深保持候选暂缓状态。
+前景包含普通话语及挂有特性的普通话语，二者共用当前 Tier 少量同屏名额，击中后按配置的正常生成频率补充。当前实际移动只有向左平移，普通移动速度按 BG-40 上限裁切；四种计划中的运动模式留给 BG-20～BG-23。复读在中央区随机静止生成并始终底层、按寿命渐隐；遮挡特性实例在随机位置静止显示并保持最高层。旧 BG-16、BG-17 需求已改为少量前景及背景复读的实际性能与可读性验收，BG-32 伪纵深保持候选暂缓状态。
 
 | 任务卡 | 唯一功能 | 状态 |
 | --- | --- | --- |
 | [BG-34](tasks/BG-34_frequency-based-refill.md) | 按生成频率补足前景话语 | 待实施 |
-| [BG-35](tasks/BG-35_special-instance-cap.md) | 限制携带特性的前景实例数量 | 待实施 |
-| [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档后让超额前景实例自然回落 | 待实施 |
-| [BG-37](tasks/BG-37_foreground-text-outline.md) | 所有非复读话语文字描边 | 待实施 |
-| [BG-38](tasks/BG-38_effective-area-clear.md) | 有效攻击后清除命中区域全部话语 | 待实施 |
+| [BG-35](tasks/BG-35_special-instance-cap.md) | 限制携带特性的前景实例数量 | 已实现，待 PR Review |
+| [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档后让超额前景实例自然回落 | 已实施（2026-10-10） |
+| [BG-37](tasks/BG-37_foreground-text-outline.md) | 所有非复读话语文字描边 | 已完成（2026-10-12） |
+| [BG-38](tasks/BG-38_effective-area-clear.md) | 有效攻击后清除命中区域全部话语 | 已完成回归（2026-10-11） |
 | [BG-39](tasks/BG-39_tier-motion-proportions.md) | 按 Tier 改变前景运动类型权重 | 待实施 |
-| [BG-42](tasks/BG-42_static-random-placement.md) | 复读与遮挡共享静止随机落点 | 待实施 |
-| [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 普通前景话语速度上限 | 待实施 |
+| [BG-42](tasks/BG-42_static-random-placement.md) | 复读与遮挡共享静止随机落点 | 已合并 main |
+| [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 普通前景话语速度上限 | 已合并 main；直线、曲线和加减速均已按各自任务回归；BG-20/23 补验待后续实现 |
+| [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景话语平缓加减速 | 已实现（2026-10-11） |
 
 本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。

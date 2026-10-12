@@ -1,8 +1,8 @@
 # PA-17 真矛盾击破：对手三种专属击败演出与未击破离线
 
-> 状态：需求已确认，待实施
+> 状态：独立演出与完成信号已交付，待策划视觉验收；正式资源映射和 Sandbox 结果接线待办
 > 类型：程序美术 / PresentationAssets
-> 依赖：CB-07 `outcome_locked`、CB-09/CB-10 现有结果分流；PA-12 Paradox 结果提示；PA-15 阶段立绘映射
+> 依赖：CB-07 `outcome_locked`、CB-09/CB-10 现有结果分流；PA-15 阶段立绘映射。PA-12 PR #201 当前被策划搁置，不作为正式视觉依据；本卡独立演示使用简明未击破提示，正式结果提示样式待重新验收。
 
 ## 开始前先阅读以下文档
 - docs/Original/任务卡模板.md、known_traps.md
@@ -15,9 +15,12 @@
 - `docs/Shared/PresentationAssets/tasks/PA-15_opponent-tier-portrait-flip-and-sweat.md`
 
 ## 已经实现的功能
-- `Sandbox._on_contradiction_outcome_locked()` 接收现有 `ContradictionBreakSystem.outcome_locked`，进入已实现的成功神谕分支或未击破休息分支。
+- `ContradictionOracleFlow` 接收 `ContradictionBreakSystem.outcome_locked` 并公开 `outcome_resolved(outcome)`、`oracle_opened(session)`、`rest_ready(result)`；Sandbox 保持场景路由职责。
 - `scenes/sandbox/sandbox_battle_hud.gd` 已有 `OpponentPortraitArt`、`set_opponent_portrait_connected()`；PA-14 的 `opponent_portrait_motion` 为动效容器。
 - 外星人融化图、狐狸花瓣雨图、Kiwi 击败图及位置在本卡已有资源清单中；PA-12、PA-15 的过场和阶段贴图要求须按其实际开发状态接入。
+
+## INT-10 / S3 接口交接（2026-10-11）
+PA-17 继续由 PresentationAssets 持有角色演出；成功/未击破事实读取 `Sandbox.get_contradiction_oracle_flow().outcome_resolved`。演出完成后由 Sandbox 协调后续 FO 或 `rest_ready` 展示时序；当前尚无 PA 完成回调，需随动画实现定义并接入，不能假设现有 Flow 会等待视觉结束。
 
 ## 本次任务
 
@@ -51,7 +54,7 @@
 - 第一版用现有整图、Tween / Shader / 遮罩实现；**试玩后如果肢体动作不够明确，再由策划决定是否让美术只切 Kiwi 的必要肢体层**，美术切层目前为候选而非先决交付。
 
 #### 4. Paradox 未击破：维持 T5 图后离线
-- 在 `UNBROKEN` 结果出现后，保持现有 `tier_03`（T5）立绘，先显示 PA-12 的未击破漫画结果反馈，再让对手直播画面短暂信号波动、变暗 / 收拢至无信号状态，表现对手离线。
+- 在 `UNBROKEN` 结果出现后，保持现有 `tier_03`（T5）立绘，先显示本卡独立的简明未击破提示，再让对手直播画面短暂信号波动、变暗 / 收拢至无信号状态，表现对手离线。PA-12 PR #201 的未击破视觉需策划重新验收后再讨论复用。
 - 可复用 PA-11 的 CRT 视觉材料及现有右侧直播层；离线提示只属于对手画面局部。
 
 ### 接口与交接

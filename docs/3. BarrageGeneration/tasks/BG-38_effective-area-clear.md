@@ -1,6 +1,6 @@
 # BG-38 有效群体命中后的实例结束回归
 
-**状态：基本链路已实现 · 待 CA-15 联调回归**
+**状态：已完成；Godot 4.7.2 场景回归 48 项通过（2026-10-11）**
 
 ## 开始前先阅读以下文档
 - `docs/Original/任务卡模板.md` 与 `known_traps.md`（通用执行规范与已知风险）
@@ -9,7 +9,10 @@
 - 关联：现有 BG-09 / CA-14 / CA-15
 
 ## 已经实现的功能
-Sandbox 已逐目标调用 end_barrage；这张卡是回归与新遮挡规则接线验收。
+`BattleAttemptFlow` 当前按本发 `HitResolution` 的逐目标结果调用 `BarrageArea.end_barrage()`；这张卡负责在 CA-15 新规则下回归实际实例结束结果。
+
+## INT-10 / S3 接口交接（2026-10-11）
+普通尝试由 `BattleAttemptFlow` 消费 `AttackChargeInput.shot_hit_resolution_submitted`；逐目标处理完成后发出 `shot_resolved(snapshot, submission, current_tier, repeat_stats)`。Sandbox 只负责组合流程，不再提供旧的 `_on_shot_hit_resolution_submitted` 业务处理入口。
 
 ## 本次任务
 有效群体命中后的实例结束回归。
@@ -18,10 +21,16 @@ Sandbox 已逐目标调用 end_barrage；这张卡是回归与新遮挡规则接
 整发攻击最终结算结果是有效群体命中时
 
 ### 预期行为
-复用 Sandbox._on_shot_hit_resolution_submitted 与 BarrageArea.end_barrage，结束本发覆盖的有效目标实例，并将真实逐目标结算结果交给原有倾向与复读消费方。
+复用 `BattleAttemptFlow` 对逐目标结果的处理与 `BarrageArea.end_barrage()`，结束本发应移除的目标实例；沿 `shot_resolved` 核对真实逐目标结果、倾向与复读消费顺序。
 
 ### 验收条件
 含普通、假牌、水军、复读的混合区域有效命中后实例结束；CA-15 判为落空的区域维持原状。
+
+## 验收结果（2026-10-11）
+- `tests/barrage_generation/test_bg38_battle_attempt_clear.tscn` 使用正式 Sandbox 组合运行无遮挡多目标有效命中与 CA-15 遮挡整发 MISS。
+- 无遮挡命中结束五个实际目标实例；两条普通命中各自生成配置数量复读，复读命中不追加计划。
+- 遮挡发只扣一次 `-0.01`；遮挡、普通、假牌、水军与复读五个原实例仍在场，命中历史、倾向和复读队列无新增。
+- Godot 4.7.2 headless 实际场景运行退出码 0，48 项断言通过。输入由 `Input.parse_input_event()` 合成，物理鼠标未验证。
 
 ## Godot 开发环境
 - Godot 版本：4.7.2（开工核对 `project.godot`）

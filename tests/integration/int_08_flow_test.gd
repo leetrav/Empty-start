@@ -23,7 +23,7 @@ func _execute() -> void:
 	flow.commit_failed.connect(func(reason): _errors.append(reason))
 	var level: LevelProfile = _sandbox.level_catalog.profiles[0]
 	var run: SaveData = SaveManager.data
-	_sandbox._hit_resolution.record_normal_word_hit(level.get_normal_speech_pool()[0].original_sentence_id, "orthodox")
+	_sandbox.get_battle_attempt_flow().get_hit_resolution().record_normal_word_hit(level.get_normal_speech_pool()[0].original_sentence_id, "orthodox")
 	run.tendency_state.record_normal_speech_tendency("orthodox", 3)
 	_sandbox.debug_set_player_pk(1.0)
 	await _frames()
@@ -66,7 +66,7 @@ func _execute() -> void:
 	var original_assimilation: Dictionary = run.assimilation_data.get_current_content_snapshot()
 	_sandbox.restart_current_attempt()
 	# 复现 review：新 HitResolution 再命中一次，旧神谕复用时不得将新暂存入账。
-	_sandbox._hit_resolution.record_normal_word_hit(level.get_normal_speech_pool()[0].original_sentence_id, "orthodox")
+	_sandbox.get_battle_attempt_flow().get_hit_resolution().record_normal_word_hit(level.get_normal_speech_pool()[0].original_sentence_id, "orthodox")
 	run.tendency_state.record_normal_speech_tendency("orthodox", 3)
 	_sandbox.debug_set_player_pk(1.0)
 	await _frames()
@@ -90,14 +90,23 @@ func _execute() -> void:
 	_sandbox.debug_set_player_pk(1.0)
 	await _frames()
 	system = flow.get_contradiction_system()
-	await get_tree().create_timer(10.2).timeout
+	# 复用正式矛盾窗口 Timer 的超时回调，不为同一个 Rest 分支重复等待完整十秒。
+	var window_timer: Timer = null
+	for child: Node in system.get_children():
+		if child is Timer:
+			window_timer = child as Timer
+			break
+	_check(window_timer != null, "正式矛盾窗口存在计时器")
+	if window_timer != null:
+		window_timer.start(0.1)
+		await get_tree().create_timer(0.2).timeout
 	_check(system.get_outcome() == ContradictionBreakSystem.Outcome.NOT_BROKEN
 		and flow.get_result().get_result_snapshot()["result_kind"] == "pk_win_unbroken", "十秒窗口到期交付未击破 Rest")
 	_check(run.scripture_data.entries.size() == 1 and run.loser_card_data.acquired_streamer_ids.size() == 1, "超时未击破无新增奖励")
 	# 确认完成后同帧重开，旧帧尾 Rest 交接必须失效；已提交成果仍保留。
 	_sandbox.restart_current_attempt()
 	var second_level: LevelProfile = _sandbox.level_catalog.profiles[1]
-	_sandbox._hit_resolution.record_normal_word_hit(second_level.get_normal_speech_pool()[0].original_sentence_id, "orthodox")
+	_sandbox.get_battle_attempt_flow().get_hit_resolution().record_normal_word_hit(second_level.get_normal_speech_pool()[0].original_sentence_id, "orthodox")
 	_sandbox.debug_set_player_pk(1.0)
 	await _frames()
 	system = flow.get_contradiction_system()

@@ -9,7 +9,7 @@
 
 ## 当前制作与集成安排（2026-10-10）
 
-策划正在考虑调整 Sandbox 的场景组织方式。PA-04～PA-19 的**独立程序美术资源、视觉组件、可调参数和完成通知**可按任务推进；需要集中修改 Sandbox、BattleHud 和跨系统生命周期的接线，由后续确认的场景集成负责人依据新结构完成。当前的演出需求与分支结果以各任务卡为准。
+策划正在考虑调整 Sandbox 的场景组织方式。PA-04～PA-06、PA-08～PA-19 的**独立程序美术资源、视觉组件、可调参数和完成通知**可按任务推进；需要集中修改 Sandbox、BattleHud 和跨系统生命周期的接线，由后续确认的场景集成负责人依据新结构完成。当前的演出需求与分支结果以各任务卡为准。
 
 PK 条贴图按 PA-16 规则：**玩家 PK 低于 40% 显示负向素材，40% 及以上显示最新 Tier 素材**。角色动画先采用 PA-14 的整图通用待机首版、PA-17 的 Kiwi 整图变形首版。现有粉丝牌纹理继续用于 LD-15 直播评论粉丝标识；主播信息区按 PA-20 使用「主播名    ❤粉丝团名❤」文字布局，PA-10 负责最终整屏视觉验收。
 
@@ -48,6 +48,10 @@ Windows 验证入口为 `tests/presentation/pa14_portrait_motion_smoke.tscn`：�
 `systems/presentation/opponent_tier_portrait.gd` 附着在 PA-14 的对手待机层中，保留原 `OpponentPortraitArt`。`refresh_pk()` 读取运行 Tier：T1 idle，T2 idle 加循环下滑淡出的程序汗滴，T3～T5 对应变化图 01～03，T6 保留变化图 03。不同底图在横向收窄的中点换图并短促弹出漫画冲击线；T1↔T2 只抖动和增减汗滴。快速改档会取消旧翻转，落到最新 Tier。
 
 正式关卡集成方先调用原 `configure_streamer_assets()`，再调用 `configure_opponent_tier_textures(idle, tier_01, tier_02, tier_03)`；现有 CombatStage → Sandbox → `refresh_pk()` 的阶段通知继续驱动画面。四张图由关卡配置提供；当前 `LevelProfile` 尚未接入策划 02/23 表，因此示例关卡只有 idle 占位。三名角色的现成图片和映射见 `assets/README.md`。独立演示场景为 `scenes/demos/pa15_portrait_demo.tscn`，正式 HUD 冒烟为 `tests/presentation/pa15_hud_smoke.tscn`。详见 [PA-15 日志](表现资产_PA-15_2026-10-10_log.md)。
+
+## PA-07 取消记录（2026-10-11）
+
+**策划决策：PA-07 已取消。** 保留现有攻击流程及反馈；实体言弹外观、飞行特效与专用快照坐标接口从开发范围移除。历史试样留在未合并的 #142。
 
 ## 目标
 
@@ -111,10 +115,10 @@ assets/
 | PA-04 | 普通弹幕玻璃底板、倾向/强度外观与富文本文字表现 | 运行画面验证 |
 | PA-05 | 特殊弹幕外观：铁质、预裂玻璃、果冻、镂空字、假复读、水军反击 | 运行画面验证 |
 | PA-06 | 弹幕命中表现：曲线碎裂、漫画强调符号、硬碰、分裂、果冻回弹 | 运行画面验证 |
-| PA-07 | 漫画实体言弹：准星中心起飞，单发弹体配合多目标命中反馈 | 运行画面验证 |
+| PA-07 | **已取消**：漫画实体言弹、可视轨迹、速度线（#142 已关闭，未合并） | 无 |
 | PA-08 | 极简准星：小空心圆、外围环形蓄力进度与状态动效 | 运行画面验证 |
 | PA-09 | 战斗结果 UI：命中点反馈、本发净 PK 为负时主播受击、PK 浮字 | 运行画面验证 |
-| PA-10 | PA-04～PA-19 等正式程序美术集成后的全局 Style 统一验收 | 整屏视觉验收 |
+| PA-10 | PA-04～PA-06、PA-08～PA-19 等正式程序美术集成后的全局 Style 统一验收 | 整屏视觉验收 |
 | PA-11 | 战斗阶段切换：T0→T1 先上箭头再右侧直播画面 CRT、降档下箭头与震屏 | 运行画面验证 |
 | PA-12 | Paradox 程序美术：噤声、漫画双斜切、闪白冲击字、画面撕开及矛盾阶段表现 | 运行画面验证 |
 | PA-13 | PK 条仓鼠球指示器：随进度滚动、升降档蹦跳、降档惊慌表情 | 真实战斗画面验收 |
@@ -131,6 +135,18 @@ PA-02 负责把正式美术资产导入工程并接到对应 Resource；PA-03 �
 
 普通弹幕使用原有 `systems/barrage_generation/barrage_view.tscn` 与独立 `BarrageGlassSurface` 材质节点。**2026-10-10 正式定稿：01 GLASS NOIR**（正统 `#1658A2`、异端 `#B9502D`、荒谬 `#B7865B`、Neutral `#ADA4A3`），S1 轻薄玻璃、S2 明亮柔光、S3 更亮并缓慢呼吸；取消刻痕、左侧竖条及双层硬内框。底板倾向色、三级强度参数全部暴露在 `BarrageGlassSurface` Inspector；S3 文字加重在 `BarrageView` 配置，不增加色板 Resource。`BarrageView.setup()` 按运行记录决定外观，`set_visual_bbcode(bbcode)` 保留富文本接口。独立演示 `scenes/demos/pa04_glass_demo.tscn`，1920×1080 真实 GPU 截图（含同屏重叠）与最小冒烟见 `docs/Shared/PresentationAssets/previews/` 及 `表现资产_PA-04_2026-10-10_log.md`。正式 BG-28 富文本配表、RP 复读规则与 Sandbox 接线按对应系统后续集成，PA-05 可复用已定稿玻璃材质。
 
+## PA-06 弹幕命中短演出（2026-10-10）
+**2026-10-11 最新规则：**普通玻璃命中保留曲线双碎片，铁板保留硬质高光撞击，果冻保留回弹。常规命中不会再弹出独立漫画碎裂符号；`impact_symbol_texture` 默认为空；旧四套 PNG/SVG 只用于历史画廊手动预览。PA-09 的准星净值取代普通命中上的重复漫画与 HIT；主播旁常规受击漫画也取消。此前本节旧默认图方案与截图仅记录历史设计。
+
+
+**历史漫画符号资产（2026-10-11 常规命中已停用）**：四套独立透明 PNG / 可编辑 SVG 位于 `assets/ui/combat/impact_marks/`；①锐利剪纸、②粗笔触、③手绘 KRAK 拟声、④漫画破裂漫符。通过 `pa06_mark_variants_demo.tscn` 在 Godot 真实碎裂中并排对照，截图见 `previews/pa06_four_marks_impact.jpg` 和 [四方案说明](previews/PA06_four_impact_marks_study.md)。已移除旧的数学符号 Label，运行时只渲染独立 TextureRect；Inspector 可直接切换四个资源。目前暂以 01 作为演示默认，待美术选定。
+
+
+`BarrageImpactPresenter` 和 `BarrageImpactFx` 位于 `systems/presentation/`，复用 PA-04 / PA-05 真实弹幕 Scene 和 4 系统最终 `BarrageTraitResult`。呈现普通曲线双碎片 + 独立 PNG 漫画碎裂符号、铁板硬碰后留场、分裂母体沿左上→右下曲线分开、果冻受压→回弹→恢复、假复读椭圆碎裂、水军整块 Panel 带小字统一破碎。曲线碎片由一次性 SubViewport 镜像取样，`Polygon2D` 以曲线 UV 裁切并各自退场；实例归 3/5/6 系统照旧结束，演出独立存活约 0.28s。漫画符号已经采用独立透明 PNG 资产，使用 `impact_symbol_texture` 切换四个方案，尺寸、偏移可在 Inspector 设置。
+
+**正式接线 API：** 场景集成方将 Presenter 实例加在 BattleArea 同画布层，调用 `presenter.bind_attack(attack_charge_input)`，消费原 `shot_arrival_resolved(snapshot, target_results)` 信号；亦可直接调用 `play_target_result(view, view.runtime_record.trait_set.get_hit_result())`。本次将 CA-15 整发遮挡视为仅铁板硬碰，其余目标保持；正式整发落空事实由 5/6 负责。3/4 系统完成 BT-06 子话语真实生成时，以其实际 `Array[BarrageView]` 调用 `play_spawned_split_children(children)`，弹幕生成系统继续持有文本、倾向、强度和生命周期。重新开局或离开战斗时 `reset_effects()`，解绑旧来源调用 `bind_attack(null)`；切关接线将在 Sandbox 重构后完成。
+
+**独立演示：** `res://scenes/demos/pa06_impact_demo.tscn`，按 `R` 重播、`Space` 暂停；`pa06_capture_1920.tscn -- --capture-pa06` 生成四张 1920×1080 真实 Godot GPU 截图：`pa06_before.jpg`、`pa06_impact.jpg`、`pa06_followthrough.jpg`、`pa06_recovered.jpg`。演示中两条子话语是独立创建的真实 BarrageView，仅核实 Presenter 消费外部子视图的表现；正式 BT-06 子文本和生成接线另有任务。真实证据与未完成交接见 [PA-06 日志](表现资产_PA-06_2026-10-10_log.md)。本卡只负责独立程序美术及公开表现接口，PA-09 继续负责 PK 浮字和主播受击反馈。
 ## PA-05 六种特殊弹幕视觉组件（2026-10-10）
 
 继承 PA-04 的 `BarrageGlassSurface`，由 `BarrageSpecialSurface` 依据 `BarrageView.runtime_record.trait_set.get_trait_ids()` 选择唯一主材质：`reflect → occlusion → fake_card → retaliation_copy → split → glass`，`unselectable` 叠加空心字。正式入口沿用 `systems/barrage_generation/barrage_view.tscn`，`setup()` 自动接线，不新建战斗状态与可命中对象；通过 `get_special_material()` 查询表现类型。铁质、预裂玻璃、有厚度且持续微动的凝胶、放大增强轮廓的镂空字、与真复读同色同透明度的椭圆假复读与单实例多处小字水军板均在 Godot 4.7.2 实际绘制；果冻最多约 24Hz 重绘。普通复读继续使用灰色圆角玻璃与零描边；分裂子句进入普通无特性视图时自动使用小尺寸普通玻璃。可调颜色、裂痕、果冻幅度、刷屏字号集中在 `barrage_special_surface.gd` 的 Inspector。
@@ -144,3 +160,49 @@ PA-02 负责把正式美术资产导入工程并接到对应 Resource；PA-03 �
 ## 最新任务卡分工口径（2026-10-09）
 
 普通前景话语保留清晰文字及描边；真正复读以灰字、零文字描边和背景层级呈现。**假复读与真复读的底色、透明度、字号、字色及文字描边一致，只有外框分别为椭圆、圆角**；假复读继续是携带 `fake_card` 特性的可命中前景话语。PA-04 负责视觉材质与文字风格，BG-28/BG-37 负责普通前景文本能力，RP-19～RP-21 负责复读字色、描边与层级；PA-06 表现遮挡撞击时遵循 CA-15 的整发落空结算。
+
+## PA-09 简化局部战斗反馈（2026-10-11 策划确认）
+
+当前 PA-09 只负责 **必要异常结果词**（如 BLOCK、REFLECT、MISS）和 **准星旁整发 PK 净值浮字**。数字随净变化绝对值增大而增大字号、阴影浓度和偏移。一发多目标仅显示一个净值；普通命中无额外 HIT 标签；仓鼠立绘旁取消常规受击漫画提示；顶部 PK 条保持原样。PA-06 常规命中只播放材质碎裂、铁板硬碰或果冻回弹，已停止自动弹出独立漫画碎裂符号。旧四款漫画 PNG/SVG 仍作为历史艺术资产和专门的对比 Demo 保留，独立击破演出任务不受影响。
+
+三版仅比较**局部数值的排版与动态强度**：A Clean、B Ink、C Impact。Godot 入口 `res://scenes/demos/pa09_style_compare_demo.tscn`；`1/2/3` 切风格，`Q/W/E/R/T/Y` 切示例结果，`P` 重播，`Space` 暂停，`Tab` 自动轮换。原 Sandbox HUD、准星、主播和 PK 条未更改。截图在 `previews/pa09_v2_*.jpg`；仍属静态结算数据驱动的视觉试作，正式 `shot_hit_resolution_submitted` 接线与 Android 验收未完成。日志见 `表现资产_PA-09_2026-10-11_log.md`。PR #148 保持 Draft，等待人工验收。
+### PA-06 / PA-09 视觉返修补充（2026-10-11）
+已将普通玻璃的断裂线移至文字下缘，缩小分片错位；水军 Panel 改为整板收缩退场。PA-09 的异常提示在真实 `BarrageView` 上方用短线关联目标，Godot 预览场景同时运行 PA-06 玻璃碎裂、遮挡铁板与果冻回弹。按 `P` 重播当前整发反馈。原有 HUD 不变，结算数字仍为固定预览样例；正式战斗信号、Android 适配和策划美术选型尚未验收。更新截图见 `previews/pa06_*.jpg` 和 `previews/pa09_v2_*.jpg`，详细见两张 PA 系统日志。
+
+### PA-09 PC 正式战斗接线进展（2026-10-11）
+
+已复用 `systems/presentation/combat_hit_feedback.gd` 同时运行独立选型 Demo 与 Sandbox 正式命中反馈。现场信号来源：`shot_arrival_resolved` 提供结果词/目标位置，`shot_hit_resolution_submitted` 提供整发真实 PK 净值和准星冻结位置。正常 `+0.12%`、落空 `-1% / MISS` 已在 Godot 4.7.2 实际发射并 GPU 截图：`previews/pa09_real_battle_hit.jpg`、`previews/pa09_real_battle_miss.jpg`。旧的独立 `pa09_feedback_overlay.gd` 已合入正式组件，避免两份实现。必要异常的真实联动、Android 真机及美术最终选型继续待验收，PR #148 保持 Draft。
+
+**真实异常补充：** 通过 AttackChargeInput 正式结算，遮挡反馈对应 BLOCK 与 PK -1%，反弹对应 REFLECT 与 PK -1%；两张实际 GPU 截图在 previews/pa09_real_occlusion.jpg、previews/pa09_real_reflect.jpg。其余视觉审美与 Android 待人工验收。
+
+## PA-08 正式 Sandbox 视觉接线补齐（2026-10-11）
+
+`PA-08` 独立组件已于 PR #111 合并，但真实 Sandbox 的 HUD 原来只刷新蓄力条，缺少调用 `AimReticle.set_charge_visual_state()` 与 `play_shot_feedback()`。现由 `scenes/sandbox/sandbox_battle_hud.gd` 复用既有 `bind_portrait_attack` 所绑定的 AttackChargeInput：每帧把真实蓄力进度/按住/满蓄同步给准星，正式 `shot_snapshot_created` 时触发短闪，重开清理视觉状态。视觉设计 96×96、实际命中直径 144 与现有游戏 HUD 都未修改。Windows Godot 4.7.2 的真实 Sandbox 四态 GPU 截图在 `previews/pa08_sandbox_{idle,charging,full,firing}_1280.jpg`；验收与遗留见 `表现资产_PA-08_2026-10-11_log.md`。Android 真机仍需后续验收。
+
+## PA-20 主播信息区粉丝团名（2026-10-12）
+
+**当前状态：HUD 接线与可视预览已完成；正式 LevelProfile 导表映射待数据工具确认。**
+
+玩家主播行读取 `SaveManager.data.streamer_name / fan_group_name`，对手行读取当前 `LevelProfile.streamer_name / fan_group_name`；BattleHud 用固定宽度双 Label、测量文本并缩小字号，极长值以省略号收尾，空粉丝团名显示 `❤粉丝团❤`。`LevelProfile.fan_group_name` 已提供可编辑 Resource 字段，正式导表映射未改，待数据工具字段确认；当前空样例仍显示占位。`player_fan_badge` 与 `fan_badge_texture` 保留在原 Resource，顶部不再绘制图标，LD-15 仍是评论粉丝牌消费者。
+
+演示入口：[PA-20 Sandbox HUD 场景](../../../tests/presentation/pa20_fan_group_name_demo.tscn)，在 Godot Editor 打开后按 F6 可重播。该场景继承真实 Sandbox Scene，在内存 SaveData / LevelProfile 上按开播、切关、长名、重开顺序运行；不会保存玩家存档。D3D12 / Forward+ 真实 Godot 预览如下：
+
+- [1920×1080 开播](previews/pa20_fan_group_name_1920x1080_01_start.png)
+- [1920×1080 切关](previews/pa20_fan_group_name_1920x1080_02_level_switch.png)
+- [1920×1080 长名布局](previews/pa20_fan_group_name_1920x1080_03_long_names.png)
+- [1920×1080 重开](previews/pa20_fan_group_name_1920x1080_04_restart.png)
+- [1280×720 长名布局](previews/pa20_fan_group_name_1280x720_03_long_names.png)
+- [1280×720 重开](previews/pa20_fan_group_name_1280x720_04_restart.png)
+- [PA-20 5.6 秒 Godot 实际渲染视频（AVI）](previews/pa20_fan_group_name_1920x1080.avi)
+
+未修改 PA-11 / PA-15 演出逻辑。演示复用 PA-14 现有立绘待机；完整 Rest/LevelRunState 战斗切关路由、Android 真机与正式导表映射仍待各自接口 / 工具验证。详见 [PA-20 日志](表现资产_PA-20_2026-10-12_log.md)。
+
+## PA-17 对手击败演出独立交付（2026-10-12 · 待策划视觉验收）
+
+`systems/presentation/opponent_breakthrough_presentation.tscn` / `.gd` 消费调用方传入的现有 T5、击败图、外星人融化过渡图和狐狸四张玫瑰贴图；提供 `play_defeat(character_id)`、`play_unbroken_offline()`、`reset_to_tier_three()`，以及 `defeat_animation_finished(character_id)` / `unbroken_offline_finished` 完成通知。外星人用现有融化帧、Tween 和局部顶点形变；狐狸用现有玫瑰图生成飘落花瓣；Kiwi 用整图摇摆、扭曲和速度线。未击破分支保持 T5 纹理不变，先显示“未击破”再局部熄屏并显示离线。
+
+独立演示 `scenes/demos/pa17_opponent_defeat_demo.tscn` F6 可运行；`1/2/3` 播放 Alien/Fox/Kiwi 真击破，`U` 演示 T5 未击破离线，`R` 恢复 T5。真实 Godot 预览截图已用于策划验收，按资产管理约定仅保存在本机审查档案，不作为仓库资源提交。素材由演示显式引用项目已有 PNG；组件本身接收纹理和立绘节点，不持有 `portrait_set_id` / 23 表的映射规则。
+
+**连续演出录像补交（2026-10-12）：**Godot 4.7.2 实际录制 AVI（1280×720，30fps，23.8 秒；录像仅留在本机审查档案），共 714 帧、40,712,094 字节。录像片段：外星人融化 00:00.40–00:05.50；狐狸花瓣雨 00:05.87–00:12.23；Kiwi 挣扎 00:12.60–00:17.70；未击破 T5 展示 00:18.07、离线 00:18.53–00:23.77。Godot 原生 MovieWriter 连续渲染录制；本机没有可用的 ffmpeg / HandBrake 等转码器，因此录制为 MovieWriter AVI。可用 `--record-pa17` 自动复播录制；MovieWriter 分辨率取项目 viewport，复录 1280×720 时录制进程启动前临时设 `window/size/viewport_width=1280`、`window/size/viewport_height=720`，之后恢复项目原设置。
+
+**状态：策划视觉验收仅及格，允许先集成，演出节奏和质感后续需要调整；正式流程联调未完成。** 当前 main 仅有 `LevelProfile.streamer_portrait`，代码搜索未发现 `portrait_set_id` 到 23 立绘配置的运行时消费者。`ContradictionOracleFlow.outcome_resolved` 发出后，未击破会继续打开 Rest；成功分支也没有等待 PA 表现结束的接口。后续场景协调方需要在真实结果确认后调用本组件，并在收到完成信号后继续 Oracle / Rest；本卡未改 `sandbox.gd`、`sandbox.tscn` 或 `sandbox_battle_hud.gd`。PA-11、PA-15、PA-13、PA-18 文件与逻辑均未修改。详见 [PA-17 日志](表现资产_PA-17_2026-10-12_log.md)。

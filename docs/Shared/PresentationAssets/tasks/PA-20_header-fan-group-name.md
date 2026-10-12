@@ -1,6 +1,6 @@
 # PA-20 战斗主播信息区以粉丝团名替换静态粉丝牌
 
-**状态：待开发 · 最新 HUD 顶部规则**
+**状态：HUD 接线与可视预览已完成 · 正式导表映射待数据工具确认（2026-10-12）**
 
 ## 开始前先阅读以下文档
 - `AGENTS.md`、`project.godot`、`docs/Original/任务卡模板.md`
@@ -19,6 +19,11 @@
 
 ### 预期行为
 继续沿用 `PlayerStreamerArea/PlayerInfoArea`、`OpponentStreamerArea/OpponentInfoArea` 现有主播名显示入口，在原顶部粉丝牌槽位置使用右对齐文字标签显示 `❤粉丝团名❤`，与主播名称形成同一行的 `主播名    ❤粉丝团名❤` 排列。玩家侧从 `SaveManager.data.fan_group_name`（即 `SaveData`）读取真实自定义名称；对手侧从当前 `LevelProfile` 增加的可编辑 `fan_group_name` 字段读取，供 `02_主播关卡.fan_group_name` 导表接入。主播信息区的静态粉丝牌 TextureRect 按本版布局调整为文本显示位，复用现有 HUD 资源与事件入口。左右 448px 信息区应适应较长合法名称、窗口缩放与上下文替换；空值时提供短占位文字保证排版完整。
+
+### 当前接线结果
+- `LevelProfile.fan_group_name` 已新增为可编辑字段，`sandbox.gd` 每次收到 `attempt_started` 都从当前 `SaveManager.data` 和 `LevelProfile` 更新双方名称。
+- 两个顶部 TextureRect 已替换为同一行的右对齐文字 Label；长文本缩小字号，仍超出时以省略号收尾。
+- 正式导表字段映射未在本卡定稿，等待数据工具确认；当前空字段显示短占位。独立预览用真实 SaveData / LevelProfile Resource 类型填入展示值，不写入存档。
 
 原有玩家 `PresentationAssetConfig.player_fan_badge` 和对手 `LevelProfile.fan_badge_texture` 继续服务 LD-15 的直播评论粉丝徽章，不承担顶部名字展示。
 
