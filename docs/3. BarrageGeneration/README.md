@@ -25,7 +25,7 @@
 | [BG-34](tasks/BG-34_frequency-based-refill.md) | 既有定时批次按 Tier 名额补位 | T2=13 组件级计时回归通过；Sandbox 布局待联调 |
 | [BG-35](tasks/BG-35_special-instance-cap.md) | 特殊实例占用独立容量 | 待开发 |
 | [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档超额自然回落 | T3→T2 自然回落与计时补位实测通过 |
-| [BG-37](tasks/BG-37_foreground-text-outline.md) | 非复读文字描边 | 待开发 |
+| [BG-37](tasks/BG-37_foreground-text-outline.md) | 非复读文字描边 | 已完成（2026-10-12） |
 | [BG-38](tasks/BG-38_effective-area-clear.md) | 现有命中结束目标接线回归 | Godot 4.7.2 场景回归 48 项通过 |
 | [BG-39](tasks/BG-39_tier-motion-proportions.md) | 四种运动类型随 Tier 权重变化 | 待开发 |
 | [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 前景话语最大速度 | 普通直线、BG-21 曲线和 BG-22 加减速均按统一上限验证；BG-20/23 实现后补验 |
@@ -38,6 +38,8 @@
 - Godot 4.7.2 正式 Sandbox smoke 两次实际有效普通命中，采样到复读数量 `0→1→2→3→4→5→6→5→4→3→1→0`；峰值 6、复读上限 24。T0 普通前景最大数量 21，仍在关卡普通容量 24 内。
 - 该波次由现有 Repeat / BarrageGeneration 链路满足；本卡完成运行验收，没有新增弹幕管理器、定时器或运行代码。GUI 峰值截图按仓库 `.gitignore` 留在本地 `.godot` 临时目录。
 **BT-14 固定层级契约：** `BarrageView.REPEAT_Z_INDEX=0`、`FOREGROUND_Z_INDEX=1`、`OCCLUSION_Z_INDEX=RenderingServer.CANVAS_ITEM_Z_MAX`（Godot 4.7.2 为 4096）。BG-25 / BG-26 的普通前景层级使用 1～4095，4096 专供遮挡实例保持最高层。
+
+**BG-37（2026-10-12）** 非复读前景按 `foreground_outline_size` 与 `outline_color` 显示描边；复读判断使用运行时记录的 `is_repeat`。假牌可以沿用复读的颜色、字号与玻璃配色，同时保留前景描边。反击复制品 CanvasItem 绘制的多处文字也读取同一描边配置。
 
 **BG-38（2026-10-11）** `test_bg38_battle_attempt_clear.tscn` 通过正式 Sandbox 组合、`AttackChargeInput`、`BattleAttemptFlow` 和 `BarrageArea` 执行两发真实流程。无遮挡发覆盖两条普通话语、假牌、水军复制品和复读：五个原目标均由 `end_barrage()` 结束；普通倾向只累计两条有效普通命中，两条普通命中各按 Tier 规则生成复读，已命中的复读目标不再复制。第二次重开后，释放快照含遮挡的整发按 CA-15 MISS 结算一次 `-0.01`，五个原目标继续留场，普通命中历史、倾向和复读队列均无新增。测试使用运行时 TEST_ONLY 特性与合成鼠标事件；物理鼠标和完整人工流程尚未覆盖。
 
@@ -296,7 +298,7 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-34](tasks/BG-34_frequency-based-refill.md) | 按生成频率补足前景话语 | 待实施 |
 | [BG-35](tasks/BG-35_special-instance-cap.md) | 限制携带特性的前景实例数量 | 待实施 |
 | [BG-36](tasks/BG-36_downgrade-count-grace.md) | 降档后让超额前景实例自然回落 | 已实施（2026-10-10） |
-| [BG-37](tasks/BG-37_foreground-text-outline.md) | 所有非复读话语文字描边 | 待实施 |
+| [BG-37](tasks/BG-37_foreground-text-outline.md) | 所有非复读话语文字描边 | 已完成（2026-10-12） |
 | [BG-38](tasks/BG-38_effective-area-clear.md) | 有效攻击后清除命中区域全部话语 | 已完成回归（2026-10-11） |
 | [BG-39](tasks/BG-39_tier-motion-proportions.md) | 按 Tier 改变前景运动类型权重 | 待实施 |
 | [BG-42](tasks/BG-42_static-random-placement.md) | 复读与遮挡共享静止随机落点 | 已合并 main |
