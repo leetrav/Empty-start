@@ -74,7 +74,7 @@ func _run_test() -> void:
 	# T1 是低档未触顶的实际运动样本，确认现有线性路径使用统一速度入口。
 	stage.update_tier_for_pk(pk_for_tier[1])
 	var low_tier_view: BarrageView = area.spawn_normal_barrage(profile, short_speech)
-	var low_tier_speed: float = await _measure_horizontal_speed(low_tier_view, SPEED_SAMPLE_SECONDS)
+	var low_tier_speed: float = await _measure_path_speed(low_tier_view, SPEED_SAMPLE_SECONDS)
 	_expect_speed("T1 ordinary foreground", low_tier_speed, 120.0, failures)
 	if low_tier_view != null:
 		area.end_barrage(low_tier_view.get_instance_id())
@@ -86,11 +86,11 @@ func _run_test() -> void:
 	if high_tier_view == null:
 		failures.append("T5 ordinary foreground spawns")
 	else:
-		var high_start_x: float = high_tier_view.position.x
+		var high_start_position: Vector2 = high_tier_view.position
 		var sample_started_seconds: float = _frame_delta_recorder.elapsed_seconds
 		await create_timer(SPEED_SAMPLE_SECONDS).timeout
 		var elapsed_seconds: float = _frame_delta_recorder.elapsed_seconds - sample_started_seconds
-		var high_tier_speed: float = (high_start_x - high_tier_view.position.x) / elapsed_seconds
+		var high_tier_speed: float = high_start_position.distance_to(high_tier_view.position) / elapsed_seconds
 		_expect_speed("T5 capped ordinary foreground", high_tier_speed, 150.0, failures)
 
 	var downgraded_to_t1: bool = stage.update_tier_for_pk(pk_for_tier[1]) and stage.get_current_tier() == 1
@@ -98,13 +98,23 @@ func _run_test() -> void:
 	if not downgraded_to_t1 or dynamic_view == null or high_tier_view == null:
 		failures.append("the dynamic Tier downgrade creates a new ordinary foreground view")
 	else:
-		var high_start_x: float = high_tier_view.position.x
-		var dynamic_start_x: float = dynamic_view.position.x
+		var high_start_position: Vector2 = high_tier_view.position
+		var dynamic_start_position: Vector2 = dynamic_view.position
 		var sample_started_seconds: float = _frame_delta_recorder.elapsed_seconds
 		await create_timer(SPEED_SAMPLE_SECONDS).timeout
 		var elapsed_seconds: float = _frame_delta_recorder.elapsed_seconds - sample_started_seconds
-		_expect_speed("existing T5 view after downgrade", (high_start_x - high_tier_view.position.x) / elapsed_seconds, 150.0, failures)
-		_expect_speed("new T1 view after downgrade", (dynamic_start_x - dynamic_view.position.x) / elapsed_seconds, 120.0, failures)
+		_expect_speed(
+			"existing T5 view after downgrade",
+			high_start_position.distance_to(high_tier_view.position) / elapsed_seconds,
+			150.0,
+			failures
+		)
+		_expect_speed(
+			"new T1 view after downgrade",
+			dynamic_start_position.distance_to(dynamic_view.position) / elapsed_seconds,
+			120.0,
+			failures
+		)
 
 	# Repeat 保持既有公式；BG-42 静止请求直接保持零速度，不经过移动速度上限。
 	stage.update_tier_for_pk(pk_for_tier[5])
@@ -114,7 +124,7 @@ func _run_test() -> void:
 	repeat_plan.display_text = "TEST_ONLY：复读独立速度"
 	repeat_plan.lifetime_seconds = 60.0
 	var repeat_view: BarrageView = area.spawn_repeat_barrage(repeat_plan)
-	var repeat_speed: float = await _measure_horizontal_speed(repeat_view, SPEED_SAMPLE_SECONDS)
+	var repeat_speed: float = await _measure_path_speed(repeat_view, SPEED_SAMPLE_SECONDS)
 	_expect_speed("Repeat with independent speed semantics", repeat_speed, 220.0, failures)
 
 	var stationary_view: BarrageView = area.spawn_normal_barrage(profile, short_speech, [], true)
@@ -144,7 +154,7 @@ func _run_test() -> void:
 	if not paradox_started or paradox_views.size() != ContradictionWindowConfig.PARADOX_CANDIDATE_COUNT:
 		failures.append("Paradox keeps its one-true/five-false six-candidate set")
 	else:
-		var paradox_speed: float = await _measure_horizontal_speed(paradox_views[0], SPEED_SAMPLE_SECONDS)
+		var paradox_speed: float = await _measure_path_speed(paradox_views[0], SPEED_SAMPLE_SECONDS)
 		_expect_speed("Paradox config speed", paradox_speed, 250.0, failures)
 		if paradox_speed <= area.maximum_foreground_move_speed_pixels_per_second:
 			failures.append("Paradox candidate speed remains independent of the normal foreground ceiling")
@@ -159,16 +169,16 @@ func _run_test() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 
-func _measure_horizontal_speed(view: BarrageView, sample_seconds: float) -> float:
+func _measure_path_speed(view: BarrageView, sample_seconds: float) -> float:
 	if view == null or not is_instance_valid(view):
 		return -1.0
-	var initial_x: float = view.position.x
+	var initial_position: Vector2 = view.position
 	var started_seconds: float = _frame_delta_recorder.elapsed_seconds
 	await create_timer(sample_seconds).timeout
 	if not is_instance_valid(view):
 		return -1.0
 	var elapsed_seconds: float = _frame_delta_recorder.elapsed_seconds - started_seconds
-	return (initial_x - view.position.x) / elapsed_seconds
+	return initial_position.distance_to(view.position) / elapsed_seconds
 
 
 func _expect_speed(label: String, actual: float, expected: float, failures: Array[String]) -> void:
