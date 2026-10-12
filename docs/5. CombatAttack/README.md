@@ -67,7 +67,7 @@ Godot 4.7.2 headless 场景运行共 56 checks，三次真实攻击飞行提交�
 - CA-09 通过注入的 `HitResolution` 调用正常收益、整发落空 / 异常优先级、单次 `resolve_shot_results()` 和普通命中历史接口；HitResolution 持有唯一 PK。INT-01 Sandbox 从独立运行配置读取初始 PK（当前0.5），并把最终 PK 信号接给 CombatStage。
 - `shot_hit_resolution_submitted` 同发包含目标有效性、`ShotAnomaly`、逐目标 `BarrageTraitResult` / 奖励字典及 HitResolution 返回值。异常惩罚映射等待 HR-03；INT-01 由 Sandbox 据逐目标结果连接普通复读与本场倾向暂存。
 - FO-13 增加临时选择目标接口 `set_selection_targets(targets: Array[Control])` / `clear_selection_targets()`。目标模式仍复用同一准心、蓄力、发射和飞行流程；到达时按释放快照的准心中心裁决最近 Control，并发出 `selection_target_hit(target)`，绕过 HitResolution。
-- CA-10 Sandbox 补做（2026-10-09，#92 blocker）：最后一发假矛盾立即锁定未击破结果并禁止后续发射，Sandbox 保持矛盾队列调度，等本发有限复读全部生成且可见实例自然结束，再单次进入 Rest。空命中与超时没有复读时即时进入 Rest；真命中的复读、静音、神谕路径继续沿用原实现。复读数量、延迟、寿命与容量使用现有配置，未增加奖励或第二套管理器。
+- CA-10 矛盾阶段接线：`BattleAttemptFlow` 在 PK 满后调用 `ContradictionOracleFlow.start()`；流程订阅 `AttackChargeInput.shot_snapshot_created`，仅在满蓄释放后消耗 12 的发射机会。`ContradictionOracleFlow` 从冻结快照提取真假矛盾命中 ID、即时交给 `ContradictionBreakSystem.resolve_shot_hit_ids()`，并为实际命中的真/假矛盾创建现有 10 复读计划。未满蓄释放在快照发出前返回，保持发射机会。#94 修复的未击破复读展示继续由该流程推进；队列清空且可见矛盾复读结束后进入 Rest，空命中与超时即时进入 Rest。
 
 ### INT-01 战斗生命周期与结算事实
 
