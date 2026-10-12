@@ -22,6 +22,9 @@ signal barrage_generated(view: BarrageView)
 @export var speed_change_foreground_motion_enabled: bool = false
 ## 一次从低速加速到上限再减速回低速的总时长，周期只影响新生成的普通前景。
 @export_range(2.0, 16.0, 0.5) var speed_change_foreground_motion_cycle_seconds: float = 6.0
+@export_group("BG-26 普通前景运动中换层")
+## 每条普通移动前景随机换到另一层级的间隔；0 表示关闭，默认值是可调试玩起点。
+@export_range(0.0, 10.0, 0.25) var normal_foreground_layer_change_interval_seconds: float = 2.0
 @export_group("BG-27 普通前景缓和缩放")
 ## 普通移动前景缩小到的最小倍率，视图默认中心锚定。
 @export_range(0.90, 0.99, 0.01) var normal_foreground_min_scale: float = 0.96
@@ -378,7 +381,15 @@ func spawn_normal_barrage(
 		if speed_change_foreground_motion_enabled and not should_use_random_static_placement
 		else 0.0
 	)
-	view.setup(barrage_record, effective_move_speed, self, should_use_random_static_placement, curve_amplitude, speed_change_cycle)
+	var layer_change_interval: float = (
+		normal_foreground_layer_change_interval_seconds
+		if not should_use_random_static_placement
+		else 0.0
+	)
+	view.setup(
+		barrage_record, effective_move_speed, self, should_use_random_static_placement,
+		curve_amplitude, speed_change_cycle, layer_change_interval
+	)
 	if not _terminal_presentation_only and not should_use_random_static_placement:
 		# 只让普通移动前景缓和缩放；静止、复读、矛盾和终局实例沿用各自外观。
 		view.configure_animated_size(

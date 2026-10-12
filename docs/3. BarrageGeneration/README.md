@@ -15,7 +15,8 @@
 | [BG-21](tasks/BG-21_curved-motion.md) | 普通前景可选平滑曲线运动 | 已合并 main；聚焦回归和 GUI 运动证据通过 |
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景可选周期加减速 | 已实现；BG-40 限速、BG-21 曲线组合及 GUI 运动验证通过 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 普通移动前景出生重叠与运动穿透 | 已实现；TEST_ONLY 两实例真实运行 smoke 通过 |
-| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景随机初始层级 | 已实现，已更新 PR #186 |
+| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景随机初始层级 | 已实现，独立 PR #196 |
+| [BG-26](tasks/BG-26_moving-layer-order.md) | 普通前景运动中随机改变层级 | 已实现，PR 待创建；堆叠于 BG-25 #196 |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通移动前景话语缓和缩放 | Godot 4.7.2 GUI 实测通过（2026-10-12） |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
@@ -74,7 +75,9 @@ LevelSpeech.local_style_bbcode 可选保存普通前景话语的局部 BBCode �
 
 **BG-24（2026-10-12）** 普通移动前景使用原轮换行和出生位置，但不再因该位置与当前视图重叠而跳行或拒绝；各 `BarrageView` 继续独立沿已有移动、暂停、寿命和离场逻辑运行，矩形交叠时不追加避让或推开。该规则只传给移动的 `spawn_normal_barrage()` 路径；BG-42 静止请求、Repeat 与 Paradox 继续使用原定位 / 空位检查。临时真实运行 smoke 使用 TEST_ONLY 同关内容、两份内存关卡配置（速度 20 与 100）和 BarrageArea：固定 1280×150 区域产生同位置重叠，随后实例按各自速度通过交叠并自然离开交集，同时核对原句 ID 和各自实例身份。临时 scene / script 已删除。无需修改 Sandbox / Flow。
 
-**BG-25（2026-10-12）** `BarrageView.setup()` 将真实复读记录固定为 `REPEAT_Z_INDEX=0`，携带 `occlusion` 的非复读话语固定为 `OCCLUSION_Z_INDEX=4096`，其余前景在 `FOREGROUND_Z_INDEX=1` 到 `OCCLUSION_Z_INDEX - 1=4095` 间逐条均匀抽取初始层级。伪装成复读外观但 `is_repeat=false` 的普通实例仍走前景随机层级。该改动只影响生成时的 `z_index`，BG-26 的运动中换层仍未实现；通过 Godot 4.7.2 runtime smoke 检查真实 BarrageView 配置结果。
+**BG-25（2026-10-12）** `BarrageView.setup()` 将真实复读记录固定为 `REPEAT_Z_INDEX=0`，携带 `occlusion` 的非复读话语固定为 `OCCLUSION_Z_INDEX=4096`，其余前景在 `FOREGROUND_Z_INDEX=1` 到 `OCCLUSION_Z_INDEX - 1=4095` 间逐条均匀抽取初始层级。伪装成复读外观但 `is_repeat=false` 的普通实例仍走前景随机层级。初始层级由 BG-25 独立 PR #196 交付。
+
+**BG-26（2026-10-12）** `BarrageArea.normal_foreground_layer_change_interval_seconds` 控制后续普通移动前景的换层间隔，默认 2 秒，设为 0 可关闭。每条视图拥有自己的间隔计时，到期后从 1～4095 中选一个不同于当前值的新 Z 层；暂停时计时冻结。静止请求、遮挡实例和 Repeat 保持原层级。该默认值为可调试玩起点，正式平衡仍可从 BarrageArea Inspector 调整。
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 
@@ -289,8 +292,8 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 前景普通话语平缓加减速 | 待实施 |
 | [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 待实施 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 待实施 |
-| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 已实现，已更新 PR #186 |
-| [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 待实施 |
+| [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 已实现，独立 PR #196 |
+| [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 已实现，PR 待创建；堆叠于 BG-25 #196 |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通前景话语的适度缩放 | 待实施 |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 普通话语随机局部文字动画 | 待实施 |
