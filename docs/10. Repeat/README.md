@@ -14,7 +14,7 @@
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
 | [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 待开发 |
 | [RP-18](tasks/RP-18_repeat-infection-spread.md) | 同句普通复读延迟接续并静止散布 | 已完成 · 2026-10-12 |
-| [RP-19](tasks/RP-19_repeat-grey-text.md) | 灰色复读文字 | 待开发 |
+| [RP-19](tasks/RP-19_repeat-grey-text.md) | 灰色复读文字 | 已完成（2026-10-12） |
 | [RP-20](tasks/RP-20_repeat-zero-outline.md) | 零描边复读 | 待开发 |
 | [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读始终位于全部话语底层 | 已完成 · 2026-10-12 |
 
@@ -42,6 +42,8 @@
 - 到期计划通过 `BarrageArea.spawn_repeat_barrage(plan, true)` 进入中央区域随机静止落点。运行记录保留原句 ID 与原文，生成统计只累加实际成功实例，实例到期后由弹幕区域释放容量。
 - Godot 4.7.2 headless Sandbox smoke 使用真实攻击输入触发普通命中，并验证同句三条复读、原句 ID、静止位置、寿命清理及容量补位。GUI 组件 smoke 展示同句复读群，画面在本地临时目录检查。
 - 当前 main 已有上述运行链路；本卡完成联调验收，未修改运行脚本、Scene 或 Resource。
+
+**RP-19（2026-10-12）** `BarrageView.repeat_font_color` 是可调灰色来源，默认 `#b8bfcb`，同时设置普通 Label 与 RichTextLabel。终局特性着色只覆盖普通前景，复读继续保持低干扰灰色。
 
 ## 系统目标
 
