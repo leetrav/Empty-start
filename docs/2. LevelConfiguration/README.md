@@ -4,12 +4,12 @@
 
 ## 2026-10-09 现行实现核对与任务状态
 
-**数值来源：** `LevelProfile.normal_barrage_screen_cap` 目前是整关基础容量；普通战斗 T0～T5 的各档前景容量统一由 `CombatStageTierConfig` 承接（CS-24），LC-11 归档为口径索引。关卡本身继续提供原句池、倾向权重和可用特性；LC-12 负责本关同屏特殊实例上限配置。
+**数值来源：** `LevelProfile.normal_barrage_screen_cap` 目前是整关基础容量；普通战斗 T0～T5 的各档前景容量统一由 `CombatStageTierConfig` 承接（CS-24），LC-11 归档为口径索引。`LevelProfile.special_instance_screen_cap` 已由 BG-35 消费；-1 表示暂沿用普通前景容量。05/06 正式字段、全局特殊基础值与导表仍待 LC-10/LC-12 后续接入。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
 | [LC-11](tasks/LC-11_tier-foreground-count-config.md) | 前景同屏容量配置入口归档到 CS-24 | 归档 |
-| [LC-12](tasks/LC-12_special-trait-instance-cap.md) | 本关特殊实例同屏上限 | 待开发 |
+| [LC-12](tasks/LC-12_special-trait-instance-cap.md) | 本关特殊实例同屏上限 | Resource 字段已由 BG-35 消费；05/06 配置与导表待接 |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 

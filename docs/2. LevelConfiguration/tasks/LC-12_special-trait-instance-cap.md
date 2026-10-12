@@ -9,7 +9,7 @@
 - 关联：BG-35 / BT-01 / BT-09
 
 ## 已经实现的功能
-LevelProfile 已保存 special_trait_ids；当前缺少特殊实例数量上限字段。
+`LevelProfile.special_instance_screen_cap` 已由 BG-35 增加并接入运行时；当前 05/06 正式数据字段、06 全局基础值和导表映射仍未实现。
 
 ## 本次任务
 本关携带特性实例同屏上限配置。
