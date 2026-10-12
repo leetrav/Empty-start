@@ -15,7 +15,7 @@ CS-14 已实现：升档整发通知完成后清除可见弹幕，保留新 Tier
 | --- | --- | --- |
 | [CS-14](tasks/CS-14_tier-up-clear-all.md) | 本发结算完成后升档清屏 | 已完成 · Godot 4.7.2 GUI 运行通过（76 checks） |
 | [CS-15](tasks/CS-15_tier-up-breakthrough.md) | 清屏后短暂突破与本档战斗恢复 | 已完成 |
-| [CS-16](tasks/CS-16_tier-down-shake.md) | 降档统一震动（离线与嘲讽由 CS-26/27 叠加） | 待开发 |
+| [CS-16](tasks/CS-16_tier-down-shake.md) | 降档统一震动（离线与嘲讽由 CS-26/27 叠加） | 已完成 · 4 档与跨档 Headless 验收通过 |
 | [CS-17](tasks/CS-17_silence-and-burst.md) | 沉默爆发候选节点 | 待策划 |
 | [CS-18](tasks/CS-18_tier-up-clear-old-repeat-requests.md) | 现有队列清理升档接线 | 已完成 · Godot 4.7.2 聚焦运行通过 |
 | [CS-19](tasks/CS-19_tier0-zero-pullback.md) | T0 回拉倍率数值 0 | 配置完成；Sandbox T0/T1 现行回拉验证通过，对白后恢复已由 CS-15 接入，CS-23 联调验收通过 |
@@ -26,6 +26,8 @@ CS-14 已实现：升档整发通知完成后清除可见弹幕，保留新 Tier
 | [CS-24](tasks/CS-24_tier-foreground-slot-catalog.md) | Tier 唯一前景容量字段与 BarrageArea 读取接口 | 已完成 |
 | [CS-25](tasks/CS-25_paradox-tier6-stage-label.md) | T6/Paradox HUD 阶段标记 | 已完成 |
 | [CS-26](tasks/CS-26_tier1-to-tier0-disconnect.md) | 降至 T0 时对手离线 | 部分完成：离线与对白清理已验收；震屏待 CS-16 |
+
+CS-16 比较 HUD 已记录 Tier 与新最终 Tier；下降时通过 Tween 短时移动 BattleArea。HUD Inspector 可调整位移幅度和持续时间，当前默认初值为 6 设计像素、0.18 秒。该表现只移动显示父节点，BarrageArea 继续推进现存弹幕的运动与寿命。
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 
@@ -56,7 +58,7 @@ CS-21 复用 `SandboxBattleHud.set_opponent_portrait_connected()` 与 `refresh_p
 
 CS-22 复用 `StreamerBubbleCombatStatePresenter` 的 `combat_connected` 事件：Tier 更新先发 `pk_feedback_changed` 刷新对手立绘；真实攻击升档的开场事件由 CS-15 在清屏提示完成后通过 `tier_transition_completed` 交给 SD-06，调试 PK 验收仍由 `tier_changed` 即时驱动。Sandbox 通过 `dialogue_event_sequence_completed(event_id, sequence_id, side)` 转发 SD-03 的实际完播通知，T0→T1 完播后恢复生成和回拉。`tests/combat_stage/cs22_tier1_bubble_dialogue_smoke.tscn` 以正式 Sandbox 和深复制 TEST_ONLY 配置验证两句顺序、立绘先显示、末句结束后仅发送一次完成通知；GUI 截图保存在 `evidence/cs22_2026-10-11/`。正式 `bubble_dialogue_config.tres` 当前没有开场台词，正式关卡的 `streamer_portrait` 也待素材映射确认，因此本卡标记为部分完成。
 
-CS-26 复用同一 Tier 刷新入口：从 T1 或更高档降到 T0 时，HUD 显示配置的匹配提示、隐藏对手立绘，并通过 `set_opponent_portrait_connected(false)` 关闭 SD-03 对手侧、清空活动与待播对白及中断剧情序列。离线期间新对白会被拒绝；重新升到 T1 后，对手侧队列和立绘恢复。`tests/combat_stage/cs26_tier1_to_tier0_disconnect_smoke.tscn` 以正式 Sandbox 验收该完整路径、状态提示优先级及现存弹幕运动，GUI 证据保存在 `evidence/cs26_2026-10-11/`。CS-16 降档震屏仍待开发，震屏验收需在该卡完成后联测；`level_001.tres` 尚无正式 `streamer_portrait` 映射，截图测试仅经 HUD 接口临时使用仓库已有 `alien_idle.png`。
+CS-26 复用同一 Tier 刷新入口：从 T1 或更高档降到 T0 时，HUD 显示配置的匹配提示、隐藏对手立绘，并通过 `set_opponent_portrait_connected(false)` 关闭 SD-03 对手侧、清空活动与待播对白及中断剧情序列。离线期间新对白会被拒绝；重新升到 T1 后，对手侧队列和立绘恢复。`tests/combat_stage/cs26_tier1_to_tier0_disconnect_smoke.tscn` 以正式 Sandbox 验收该完整路径、状态提示优先级及现存弹幕运动，GUI 证据保存在 `evidence/cs26_2026-10-11/`。CS-16 降档震屏已接入，震屏验收需在该卡完成后联测；`level_001.tres` 尚无正式 `streamer_portrait` 映射，截图测试仅经 HUD 接口临时使用仓库已有 `alien_idle.png`。
 
 CS-24 增加 `CombatStageTierConfig.foreground_slot_count`。正式配置 T0=0（尚待策划填写）、T1～T5=10/13/16/19/22；各档 Resource 可独立调整。CombatStage 在绑定 BarrageArea、开局和档位切换时通过 `barrage_foreground_slot_count_changed` 发布当前值；BarrageArea 通过 `set_foreground_slot_count()` 接收并由 `get_foreground_slot_count()` 提供受控读取。0 保留为未配置标记，后续 BG-16 应沿用 `LevelProfile.normal_barrage_screen_cap` 的现有行为；CS-24 不改变容量准入或生成逻辑。
 
