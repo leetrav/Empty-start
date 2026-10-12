@@ -9,7 +9,7 @@
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
-| [RP-14](tasks/RP-14_plain-text-repeat.md) | 现有纯文本兼容回归 | 已有基础 |
+| [RP-14](tasks/RP-14_plain-text-repeat.md) | 复读与前景富文本覆盖保持纯文本 / 原句身份分离 | 已完成 · 2026-10-12 |
 | [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 现有复读独立容量实测 | 已有容量 |
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
 | [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 待开发 |
@@ -124,7 +124,7 @@ RP-12 已复用 13 的本场读取链，并提供 19 已有候选入口可消费
 
 | 卡号 | 本卡唯一功能 | 状态 |
 | --- | --- | --- |
-| [RP-14](tasks/RP-14_plain-text-repeat.md) | 复读使用普通纯文本 | 待实施 |
+| [RP-14](tasks/RP-14_plain-text-repeat.md) | 复读使用普通纯文本 | 已完成 · 2026-10-12 |
 | [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 复读独立同屏上限与容量验收 | 待实施 |
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
 | [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读按生命周期渐隐 | 待实施 |
