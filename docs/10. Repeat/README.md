@@ -10,7 +10,7 @@
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
 | [RP-14](tasks/RP-14_plain-text-repeat.md) | 复读与前景富文本覆盖保持纯文本 / 原句身份分离 | 已完成 · 2026-10-12 |
-| [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 现有复读独立容量实测 | 已有容量 |
+| [RP-15](tasks/RP-15_repeat-cap-calibration.md) | 现有复读独立容量实测 | 已完成 · 2026-10-12 |
 | [RP-16](tasks/RP-16_repeat-shrink-per-tier.md) | 复读随机位置静止生成 | 已完成 · 2026-10-11 |
 | [RP-17](tasks/RP-17_repeat-speed-per-tier.md) | 复读随寿命渐隐 | 待开发 |
 | [RP-18](tasks/RP-18_repeat-infection-spread.md) | 已有原句计划的复读潮表现 | 已有基础 |
@@ -27,6 +27,14 @@
 - RP-21 smoke 验证真实 Sandbox BattleAttemptFlow 队列生成复读、普通移动前景、已定义的遮挡实例与真实矛盾阶段视图：读取层级为 repeat 0、normal/contradiction 1、occlusion 4096；复读在完整配置寿命内维持底层且静止，普通前景仍移动。
 - 现有实现已符合要求，本卡没有改动运行代码或正式关卡 Resource。
 
+
+## RP-15 独立容量实测（2026-10-12）
+
+- 继续使用 `SandboxBattleConfig.repeat_screen_cap = 24` 与 `maximum_pending_repeat_count = 96`；屏幕占用由 `BarrageArea` 的独立 `BarrageCapacityLedger` 按实际在树实例计数，待生成普通请求由 `BattleAttemptFlow` 创建的 `RepeatDelayQueue` 独立限制。
+- `CombatStageTierConfig` 中 T0～T5 每击数量仍为 3 / 6 / 8 / 12 / 15 / 20；实际普通攻击流程经 `BattleAttemptFlow` 使用当前 Tier 的 `get_current_repeat_count_per_hit()` 创建计划，独立容量不改每击计划数量。
+- Godot 4.7.2 真实 Sandbox 流程 smoke 使用当前 T0 的 `get_current_repeat_count_per_hit()` 读取每个普通命中复读数，通过 BattleAttemptFlow 当前队列累计填入正式待生成上限；请求等待沿用 `RepeatDelayConfig` 的实际范围。
+- 24 条实例同时可见后，到期但无法生成的请求留在队列，`RepeatGenerationStats` 只记录成功生成的实例。结束一条真实复读实例后，等待请求补入空位，同屏回到 24，实际统计增加 1。
+- 本次容量验收通过，现有 24 / 96 配置保持不变；没有猜测新的策划数值，也没有修改 Sandbox、配置 Resource 或统计实现。Android / BG-17 跨平台合并验收不属于本卡范围。
 
 ## 系统目标
 
