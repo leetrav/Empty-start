@@ -16,7 +16,7 @@
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景可选周期加减速 | 已实现；BG-40 限速、BG-21 曲线组合及 GUI 运动验证通过 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 普通移动前景出生重叠与运动穿透 | 已实现；TEST_ONLY 两实例真实运行 smoke 通过 |
 | [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景随机初始层级 | 已由独立 PR #196 合入 main |
-| [BG-26](tasks/BG-26_moving-layer-order.md) | 普通前景运动中随机改变层级 | 已实现，PR 待创建；基于含 BG-25 #196 的 main |
+| [BG-26](tasks/BG-26_moving-layer-order.md) | 普通前景运动中随机改变层级 | 已实现，PR #197 开放；基于含 BG-25 #196 的 main |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通移动前景话语缓和缩放 | Godot 4.7.2 GUI 实测通过（2026-10-12） |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
@@ -293,7 +293,7 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-23](tasks/BG-23_wandering-motion.md) | 前景普通话语低速游荡 | 待实施 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 弹幕自由重叠与穿透 | 待实施 |
 | [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 已实现，PR #196 已合 main |
-| [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 已实现，PR 待创建；基于含 BG-25 #196 的 main |
+| [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 已实现，PR #197 开放；基于含 BG-25 #196 的 main |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通前景话语的适度缩放 | 待实施 |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 普通话语随机局部文字动画 | 待实施 |
