@@ -5,6 +5,7 @@ const WINDOW_CONFIG = preload("res://systems/contradiction_break/contradiction_w
 const FORMAL_LEVEL = preload("res://data/level_configuration/level_001.tres")
 const TEST_LEVEL = preload("res://tests/fixtures/contradiction_break/test_cb_13_six_candidates_level.tres")
 const BARRAGE_AREA_SCENE = preload("res://systems/barrage_generation/barrage_area.tscn")
+const AIM_RETICLE_SCENE = preload("res://systems/combat_attack/aim_reticle.tscn")
 
 var _failed: int = 0
 var _assertions: int = 0
@@ -25,7 +26,7 @@ func _run() -> void:
 		push_error("CB-13: %d assertions failed out of %d" % [_failed, _assertions])
 		quit(1)
 		return
-	print("CB-13: %d assertions passed" % _assertions)
+	print("CB-13/CB-14: %d assertions passed" % _assertions)
 	quit(0)
 
 
@@ -89,8 +90,19 @@ func _test_barrage_area_initial_set(candidates: Array[LevelContradiction]) -> vo
 	area.position = Vector2(64.0, 52.0)
 	area.size = Vector2(1024.0, 1008.0)
 	root.add_child(area)
+	var aim_reticle: AimReticle = AIM_RETICLE_SCENE.instantiate() as AimReticle
+	root.add_child(aim_reticle)
 	await process_frame
+	# 仅在运行时副本注入正速度，保留 TEST_ONLY 关卡资源原值。
+	var motion_level: LevelProfile = TEST_LEVEL.duplicate(true) as LevelProfile
+	motion_level.base_move_speed_pixels_per_second = 100.0
 	var config: ContradictionWindowConfig = WINDOW_CONFIG.duplicate(true) as ContradictionWindowConfig
+	config.ease_out_motion_duration_seconds = 0.5
+	# 速度倍率随归一化时间下降，避免演出退化成匀速移动。
+	_expect(config.ease_out_motion_speed_curve.sample(0.25)
+		> config.ease_out_motion_speed_curve.sample(0.5)
+		and config.ease_out_motion_speed_curve.sample(0.5)
+		> config.ease_out_motion_speed_curve.sample(0.75), "editable speed curve decreases during the motion")
 	var invalid_false_lines: Array[LevelContradiction] = []
 	for index: int in range(1, candidates.size()):
 		invalid_false_lines.append(candidates[index])
@@ -100,7 +112,7 @@ func _test_barrage_area_initial_set(candidates: Array[LevelContradiction]) -> vo
 	var false_lines: Array[LevelContradiction] = []
 	for index: int in range(1, candidates.size()):
 		false_lines.append(candidates[index])
-	_expect(area.start_contradiction_generation(TEST_LEVEL, true_lines, false_lines, config), "BarrageArea accepts the fixed candidate set")
+	_expect(area.start_contradiction_generation(motion_level, true_lines, false_lines, config), "BarrageArea accepts the fixed candidate set")
 	await process_frame
 	var counts: Dictionary = area.get_current_barrage_counts()
 	_expect(int(counts.get("contradiction", 0)) == 6, "six contradiction views appear in the initial set")
@@ -122,10 +134,56 @@ func _test_barrage_area_initial_set(candidates: Array[LevelContradiction]) -> vo
 		elif false_ids.has(sentence_id):
 			false_fact_count += 1
 	_expect(release_snapshot.get_target_instance_ids().size() == 6 and contradiction_facts.size() == 6 and true_fact_count == 1 and false_fact_count == 5, "one release snapshot freezes six shootable true/false facts")
-	await create_timer(0.08).timeout
+	var initial_target: BarrageView = shot_candidates[0] as BarrageView
+	aim_reticle.global_position = initial_target.get_global_rect().get_center() - aim_reticle.size * 0.5
+	_expect(aim_reticle.intersects_target_area(initial_target.get_global_rect()), "a newly appeared contradiction is immediately targetable")
+	var initial_positions: Dictionary = {}
+	for view_node: Node in shot_candidates:
+		var view: BarrageView = view_node as BarrageView
+		initial_positions[view.get_instance_id()] = view.position
+	await create_timer(0.12).timeout
+	var moving_candidates: Array[Node] = []
+	var moved_view_count: int = 0
+	for child: Node in area.get_children():
+		if not child is BarrageView or child.is_queued_for_deletion():
+			continue
+		var view: BarrageView = child as BarrageView
+		moving_candidates.append(view)
+		var spawn_position: Vector2 = initial_positions.get(view.get_instance_id(), view.position)
+		if not view.position.is_equal_approx(spawn_position):
+			moved_view_count += 1
+	var moving_snapshot: AttackTargetSnapshot = AttackTargetSnapshot.capture_at_release(moving_candidates)
+	var moving_target: BarrageView = moving_candidates[0] as BarrageView
+	aim_reticle.global_position = moving_target.get_global_rect().get_center() - aim_reticle.size * 0.5
+	_expect(moved_view_count == 6, "all six contradiction views move from spawn positions")
+	_expect(aim_reticle.intersects_target_area(moving_target.get_global_rect()), "a moving contradiction remains inside the existing reticle hit query")
+	_expect(moving_snapshot.get_contradiction_facts().size() == 6, "release snapshot captures all six while they move")
+	await create_timer(config.ease_out_motion_duration_seconds + 0.15).timeout
+	var stopped_positions: Dictionary = {}
+	var stopped_candidates: Array[Node] = []
+	for child: Node in area.get_children():
+		if child is BarrageView and not child.is_queued_for_deletion():
+			var view: BarrageView = child as BarrageView
+			stopped_positions[view.get_instance_id()] = view.position
+			stopped_candidates.append(view)
+	await create_timer(0.12).timeout
+	var stable_view_count: int = 0
+	for child: Node in area.get_children():
+		if not child is BarrageView or child.is_queued_for_deletion():
+			continue
+		var view: BarrageView = child as BarrageView
+		var stopped_position: Vector2 = stopped_positions.get(view.get_instance_id(), view.position)
+		if view.position.is_equal_approx(stopped_position):
+			stable_view_count += 1
+	var stopped_target: BarrageView = stopped_candidates[0] as BarrageView
+	aim_reticle.global_position = stopped_target.get_global_rect().get_center() - aim_reticle.size * 0.5
+	var stopped_snapshot: AttackTargetSnapshot = AttackTargetSnapshot.capture_at_release(stopped_candidates)
+	_expect(stable_view_count == 6, "all six contradiction views stay at their eased stop positions")
+	_expect(aim_reticle.intersects_target_area(stopped_target.get_global_rect()), "a stopped contradiction remains inside the existing reticle hit query")
+	_expect(stopped_snapshot.get_contradiction_facts().size() == 6, "release snapshot still captures all six after motion stops")
 	counts = area.get_current_barrage_counts()
 	_expect(int(counts.get("contradiction", 0)) == 6, "no recurring batches replace or add to the fixed set")
-	_expect(area.spawn_contradiction_barrage(TEST_LEVEL, candidates[1]) == null, "the completed fixed set cannot be topped up")
+	_expect(area.spawn_contradiction_barrage(motion_level, candidates[1]) == null, "the completed fixed set cannot be topped up")
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		var screenshot_path: String = ProjectSettings.globalize_path("res://docs/12. ContradictionBreak/evidence/CB-13/paradox-six.png")
@@ -134,6 +192,7 @@ func _test_barrage_area_initial_set(candidates: Array[LevelContradiction]) -> vo
 		print("CB-13 SCREENSHOT: docs/12. ContradictionBreak/evidence/CB-13/paradox-six.png")
 	area.clear_barrages()
 	area.queue_free()
+	aim_reticle.queue_free()
 
 
 func _make_loaded_system(level_profile: LevelProfile) -> ContradictionBreakSystem:

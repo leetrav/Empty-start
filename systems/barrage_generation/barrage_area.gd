@@ -93,7 +93,15 @@ func start_contradiction_generation(
 ) -> bool:
 	if level_profile == null or config == null:
 		return false
-	if config.duration_seconds <= 0.0 or config.movement_speed_multiplier <= 0.0:
+	if (not is_finite(config.duration_seconds) or config.duration_seconds <= 0.0
+			or not is_finite(config.movement_speed_multiplier) or config.movement_speed_multiplier <= 0.0
+			or not is_finite(config.ease_out_motion_duration_seconds)
+			or config.ease_out_motion_duration_seconds <= 0.0
+			or config.ease_out_motion_duration_seconds >= config.duration_seconds
+			or config.ease_out_motion_speed_curve == null
+			or config.ease_out_motion_speed_curve.get_point_count() < 2
+			or config.ease_out_motion_speed_curve.sample(0.0) <= 0.0
+			or config.ease_out_motion_speed_curve.sample(1.0) > 0.001):
 		return false
 	if true_lines.size() != ContradictionWindowConfig.PARADOX_TRUE_CANDIDATE_COUNT or false_lines.size() != ContradictionWindowConfig.PARADOX_FALSE_CANDIDATE_COUNT:
 		return false
@@ -417,6 +425,12 @@ func spawn_contradiction_barrage(level_profile: LevelProfile, line: LevelContrad
 	view.setup(barrage_record, level_profile.base_move_speed_pixels_per_second * _contradiction_config.movement_speed_multiplier, self)
 	add_child(view)
 	if not _place_new_barrage(view):
+		end_barrage(view.get_instance_id())
+		return null
+	if not view.configure_contradiction_ease_out(
+		_contradiction_config.ease_out_motion_duration_seconds,
+		_contradiction_config.ease_out_motion_speed_curve
+	):
 		end_barrage(view.get_instance_id())
 		return null
 	return view
