@@ -2,6 +2,7 @@ class_name PKHamsterBallIndicator
 extends Control
 
 signal display_progress_changed(player_share: float)
+signal failure_fall_finished()
 
 const SMILING_TEXTURE: Texture2D = preload("res://assets/ui/combat/pk_bar/pk_indicator_01.png")
 const PANIC_TEXTURE: Texture2D = preload("res://assets/ui/combat/pk_bar/pk_indicator_02.png")
@@ -18,6 +19,11 @@ const BURST_TEXTURE: Texture2D = preload("res://assets/ui/combat/pk_bar/pk_indic
 
 @onready var _ball: TextureRect = $Ball
 
+var _failure_active: bool = false
+var _fall_direction: float = 1.0
+var _fall_height: float = 260.0
+var _fall_rotations: float = 2.0
+var _fall_start_rotation: float = 0.0
 var _track: ProgressBar
 var _panic_round_texture: Texture2D
 var _burst_round_texture: Texture2D
@@ -64,6 +70,8 @@ func bind_track(track: ProgressBar) -> void:
 
 
 func set_player_pk(player_pk: float) -> void:
+	if _failure_active:
+		return
 	# 连续更新只改目标，不重启动计时，避免每帧回拉让动画一直拖尾。
 	var next_pk: float = clampf(player_pk, 0.0, 1.0)
 	if is_equal_approx(next_pk, _player_pk):
@@ -76,6 +84,9 @@ func set_player_pk(player_pk: float) -> void:
 
 
 func reset_for_attempt(current_tier: int, player_pk: float = 0.5) -> void:
+	_failure_active = false
+	z_index = 0
+	show()
 	# 新尝试取消残留动作并回到笑脸；保留当前 PK 映射，避免等待下一次数值刷新。
 	if _action_tween != null and _action_tween.is_running():
 		_action_tween.kill()
@@ -94,6 +105,8 @@ func reset_for_attempt(current_tier: int, player_pk: float = 0.5) -> void:
 
 
 func on_tier_changed(current_tier: int) -> void:
+	if _failure_active:
+		return
 	# 只在 CombatStage 明确通知 Tier 变化时表演；PK 回拉本身不会触发惊慌表情。
 	if current_tier == _last_tier:
 		return
@@ -119,6 +132,8 @@ func _process(delta: float) -> void:
 
 
 func _refresh_track_layout() -> void:
+	if _failure_active:
+		return
 	if not is_instance_valid(_track):
 		return
 	_refresh_target_position(true)
@@ -243,3 +258,35 @@ func _get_editable_texture_image(texture: Texture2D) -> Image:
 	if image.is_compressed() and image.decompress() != OK:
 		return null
 	return image
+
+
+# PA-18 复用轨道上的同一球，归零后取消所有常规动作，再惊跳并坠落。
+func play_failure_fall(direction: float, height: float, rotations: float, seconds: float) -> void:
+	if _failure_active:
+		return
+	reset_for_attempt(_last_tier, 0.0)
+	_failure_active = true
+	# 跨出顶部轨道时高于中央背景，重开恢复原有前景层级。
+	z_index = 30
+	_ball.texture = _panic_round_texture
+	_fall_direction = direction
+	_fall_height = height
+	_fall_rotations = rotations
+	_fall_start_rotation = _ball.rotation
+	_action_tween = create_tween()
+	_action_tween.tween_method(_set_shake_offset, 0.0, -0.25, 0.07)
+	_action_tween.tween_method(_set_shake_offset, -0.25, 0.20, 0.07)
+	_action_tween.tween_method(_set_failure_fall_progress, 0.0, 1.0, maxf(seconds, 0.05))
+	_action_tween.tween_callback(_finish_failure_fall)
+
+
+# 相对球尺寸形成先上抛后加速下落的弧线，避免线性滑出轨道。
+func _set_failure_fall_progress(t: float) -> void:
+	_ball.position = Vector2(_fall_direction * indicator_size * 2.5 * t, _fall_height * t * t - indicator_size * 2.2 * t)
+	_ball.rotation = _fall_start_rotation + _fall_direction * TAU * _fall_rotations * t
+	_ball.scale = Vector2.ONE * lerpf(1.0, 0.12, t * t)
+
+
+func _finish_failure_fall() -> void:
+	hide()
+	failure_fall_finished.emit()

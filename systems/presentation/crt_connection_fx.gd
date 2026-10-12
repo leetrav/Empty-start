@@ -2,6 +2,7 @@ class_name CrtConnectionFx
 extends Control
 
 signal connection_finished()
+signal shutdown_finished()
 
 const IMPACT_MARK: Texture2D = preload("res://assets/ui/combat/impact_marks/impact_01_razor.png")
 
@@ -19,7 +20,9 @@ const IMPACT_MARK: Texture2D = preload("res://assets/ui/combat/impact_marks/impa
 @export var impact_offset_ratio: Vector2 = Vector2(0.32, -0.32)
 @export_range(0.0, 12.0, 0.5) var horizontal_distortion_pixels: float = 3.0
 
-enum Mode { DISCONNECTED, CONNECTING, CONNECTED }
+@export_range(0.1, 2.0, 0.01) var shutdown_seconds: float = 0.55
+
+enum Mode { DISCONNECTED, CONNECTING, CONNECTED, DISCONNECTING }
 
 var _mode: Mode = Mode.CONNECTED
 var _elapsed: float = 0.0
@@ -103,6 +106,15 @@ func is_connecting() -> bool:
 
 func _process(delta: float) -> void:
 	_elapsed += delta
+	if _mode == Mode.DISCONNECTING:
+		if _signal_material != null:
+			_signal_material.set_shader_parameter("phase", _elapsed)
+			_signal_material.set_shader_parameter("displacement", horizontal_distortion_pixels / maxf(size.x, 1.0))
+		if _elapsed >= shutdown_seconds:
+			reset_disconnected()
+			shutdown_finished.emit()
+		queue_redraw()
+		return
 	if _signal_material != null:
 		var strength: float = 1.0 - clampf(_elapsed / maxf(line_seconds + unfold_seconds + flash_seconds + settle_seconds, 0.001), 0.0, 1.0)
 		_signal_material.set_shader_parameter("phase", _elapsed)
@@ -119,6 +131,9 @@ func _draw() -> void:
 		return
 	if _mode == Mode.DISCONNECTED:
 		draw_rect(Rect2(Vector2.ZERO, size), blackout_color)
+		return
+	if _mode == Mode.DISCONNECTING:
+		_draw_shutdown()
 		return
 	var unfold_start: float = line_seconds
 	var flash_start: float = unfold_start + unfold_seconds
@@ -189,3 +204,32 @@ func _draw_interference(top: float, bottom: float, strength: float) -> void:
 func _smooth(value: float) -> float:
 	var t: float = clampf(value, 0.0, 1.0)
 	return t * t * (3.0 - 2.0 * t)
+
+
+# PA-18 使用同一 CRT 材质反向收屏；独立实例只绑定我方直播层。
+func play_shutdown() -> void:
+	play_connection()
+	_mode = Mode.DISCONNECTING
+
+
+# 信号震颤后上下收成水平亮线，最后横向收为一点并留下断流暗屏。
+func _draw_shutdown() -> void:
+	var t: float = clampf(_elapsed / maxf(shutdown_seconds, 0.01), 0.0, 1.0)
+	if t < 0.25:
+		_draw_interference(0.0, size.y, 1.0)
+		return
+	var collapse: float = _smooth((t - 0.25) / 0.50)
+	var half_height: float = maxf(1.0, size.y * 0.5 * (1.0 - collapse))
+	var top: float = size.y * 0.5 - half_height
+	var bottom: float = size.y * 0.5 + half_height
+	draw_rect(Rect2(0.0, 0.0, size.x, top), blackout_color)
+	draw_rect(Rect2(0.0, bottom, size.x, size.y - bottom), blackout_color)
+	if t < 0.75:
+		_draw_interference(top, bottom, 1.0 - collapse * 0.4)
+		draw_line(Vector2(0.0, top), Vector2(size.x, top), beam_color, 2.0, true)
+		draw_line(Vector2(0.0, bottom), Vector2(size.x, bottom), beam_color, 2.0, true)
+	else:
+		draw_rect(Rect2(Vector2.ZERO, size), blackout_color)
+		var remaining: float = 1.0 - _smooth((t - 0.75) / 0.25)
+		var half_width: float = size.x * 0.5 * remaining
+		draw_line(Vector2(size.x * 0.5 - half_width, size.y * 0.5), Vector2(size.x * 0.5 + half_width, size.y * 0.5), beam_color * Color(1, 1, 1, remaining), 3.0, true)

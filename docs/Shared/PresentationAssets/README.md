@@ -125,7 +125,7 @@ assets/
 | PA-15 | 对手 T2 idle+漫画汗滴；T3～T5 卡牌翻图与受击漫画冲击 | 实际升降档画面 |
 | PA-16 | PK 条阶段 / 负向贴图短闪调色切换 | 独立底板与 Windows 预览完成；PA-13 共层验收待补 |
 | PA-17 | 真击破对手专属败北：外星人融化、狐狸花瓣雨、Kiwi 方案 A；未击破 T5 离线 | 成败分支实际演示 |
-| PA-18 | PK 归零战败：仓鼠球跌落、玩家直播 CRT 断流、对手持续直播、失败 UI | 战败画面与重开 |
+| PA-18 | PK 归零战败：仓鼠球跌落、玩家直播 CRT 断流、对手持续直播、失败 UI | 已接入正式失败通知，Windows 实机录制与重开检查完成；视觉验收、Android 待完成，见 [PA-18 日志](表现资产_PA-18_2026-10-13_log.md) |
 | PA-19 | Paradox 两种结果均 CRT 关机、上翻页回主角房间，再弹战后结算 | 双分支战后结算 |
 | [PA-20](tasks/PA-20_header-fan-group-name.md) | 双方主播右上角用 ❤粉丝团名❤ 文本替换固定粉丝牌槽；粉丝牌纹理保留给评论 | 双方 HUD 与切关实际画面 |
 
@@ -217,3 +217,10 @@ Godot 版本：`4.7.2.stable.steam.ed1daf0bf`，Windows D3D12 / Forward+。实�
 本机 18 张 PNG 预览保存在 `D:\tmp\gamejam-pa16-review-media-20261012`，总大小 2,695,824 字节。截图包含 1920×1080 的 Tier、过渡、负向四档、恢复及真实 Paradox 状态；另有 1280×720 Tier 2 / 负向状态。预览图与录像仅保存在本机，不随仓库提交。
 
 PA-16 交付时没有修改 PA-11 / PA-13 / PA-15 / PA-18，也没有复用旧 #202 中的球体组件或截图。后续 PA-13 独立分支已将仓鼠球接入 `%PlayerShare` 前景层，并与现有 PK 条底板同屏完成 Windows 运行录制；人工验收与 Android 实机检查仍待完成。实现和验证记录见 [PA-13 日志](表现资产_PA-13_2026-10-12_log.md) 与 [PA-16 日志](表现资产_PA-16_2026-10-12_log.md)。
+
+
+## PA-18 归零战败表现接口
+
+Sandbox 接收 `BattleAttemptFlow.attempt_failed` 后调用 HUD 的 `play_failure_presentation()`；HUD 在同一 PA-13 仓鼠球跌落、左侧 CRT 断流与 UI 延迟结束后发出 `failure_presentation_finished`，Sandbox 再调用原 `show_failure()`。战斗停止、数值和失败路由仍由原 Flow / Sandbox 负责。
+
+`PKHamsterBallIndicator.play_failure_fall(direction, height, rotations, seconds)` 只负责局部跌落并发出 `failure_fall_finished`。`CrtConnectionFx.play_shutdown()` 与 `shutdown_finished` 为 PA-18 复用入口；左侧独立实例，不改变 PA-11 右侧开机参数与回调。HUD Inspector 的「PA-18 战败」组可调整方向、距离、转数、掉落与关机时长及失败 UI 延迟。重开取消旧 Tween、恢复球和左侧原材质；正常降档不进入战败演出。
