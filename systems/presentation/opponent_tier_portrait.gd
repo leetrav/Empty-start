@@ -11,6 +11,7 @@ signal flip_finished(tier: int)
 @export var kiwi_flip_seconds: float = 0.42
 @export var kiwi_burst_scale: float = 1.09
 @export var kiwi_shake_pixels: float = 7.0
+@export_range(0.7, 1.0, 0.01) var alien_tier_scale: float = 0.90
 
 var current_tier: int = 0
 var fx: OpponentTierFx
@@ -25,6 +26,8 @@ var _impact_tween: Tween
 var _pending_texture: Texture2D
 var _character_id: String = ""
 var _impact_backdrop: Control
+var _display_scale: float = 1.0
+var _pending_display_scale: float = 1.0
 
 
 # 插入 PA-14 的 Idle 层内部，让汗滴、切图与现有呼吸动作共同移动。
@@ -68,11 +71,14 @@ func configure_textures(idle: Texture2D, tier_01: Texture2D, tier_02: Texture2D,
 func configure_character(character_id: String) -> void:
 	_character_id = character_id
 	fx.configure_character(character_id)
+	_display_scale = _scale_for_texture(_portrait.texture)
+	_portrait.scale = Vector2.ONE * _display_scale
 
 
 func show_tier(tier: int) -> void:
 	var target_tier: int = clampi(tier, 0, 6)
 	var target: Texture2D = _texture_for_tier(target_tier)
+	var target_display_scale: float = _scale_for_texture(target)
 	if target_tier == current_tier and _flip_tween == null:
 		return
 	current_tier = target_tier
@@ -88,13 +94,17 @@ func show_tier(tier: int) -> void:
 		_impact_tween.kill()
 		_impact_tween = null
 	position = Vector2.ZERO
-	_portrait.scale = Vector2.ONE
+	_display_scale = _scale_for_texture(_portrait.texture)
+	_portrait.scale = Vector2.ONE * _display_scale
 	if _portrait.texture == target or _portrait.texture == null or target == null:
 		_portrait.texture = target
+		_display_scale = target_display_scale
+		_portrait.scale = Vector2.ONE * _display_scale
 		if target_tier == 1 or target_tier == 2:
 			_play_shudder()
 		return
 	_pending_texture = target
+	_pending_display_scale = target_display_scale
 	if _character_id == "kiwi":
 		_play_kiwi_flip()
 		return
@@ -120,9 +130,11 @@ func reset_for_tier(tier: int = 0) -> void:
 		_impact_tween = null
 	position = Vector2.ZERO
 	current_tier = clampi(tier, 0, 6)
-	_portrait.scale = Vector2.ONE
 	_pending_texture = null
 	_portrait.texture = _texture_for_tier(current_tier)
+	_display_scale = _scale_for_texture(_portrait.texture)
+	_pending_display_scale = _display_scale
+	_portrait.scale = Vector2.ONE * _display_scale
 	fx.reset_fx()
 	fx.set_sweat(current_tier == 2)
 
@@ -140,7 +152,7 @@ func _texture_for_tier(tier: int) -> Texture2D:
 
 
 func _set_horizontal_scale(value: float) -> void:
-	_portrait.scale = Vector2(value, 1.0)
+	_portrait.scale = Vector2(value, 1.0) * _display_scale
 
 
 # Kiwi 在翻面后快速放大、定格、回弹；时长与幅度单独调参。
@@ -182,6 +194,7 @@ func _play_shudder() -> void:
 
 func _swap_at_edge() -> void:
 	_portrait.texture = _pending_texture
+	_display_scale = _pending_display_scale
 	fx.play_impact()
 	if _character_id == "kiwi":
 		_play_kiwi_shake()
@@ -190,10 +203,18 @@ func _swap_at_edge() -> void:
 func _finish_flip() -> void:
 	_flip_tween = null
 	_pending_texture = null
-	_portrait.scale = Vector2.ONE
+	_portrait.scale = Vector2.ONE * _display_scale
 	flip_finished.emit(current_tier)
 
 
 func _refresh_pivot() -> void:
 	if _portrait != null:
 		_portrait.pivot_offset = size * 0.5
+
+
+# ALIEN 的阶段图比 idle 横向扩张更明显，只缩小阶段图显示，不改原始 PNG 或卡片尺寸。
+func _scale_for_texture(texture: Texture2D) -> float:
+	if _character_id == "alien" and texture != null and texture != _idle:
+		if texture == _tier_01 or texture == _tier_02 or texture == _tier_03:
+			return alien_tier_scale
+	return 1.0
