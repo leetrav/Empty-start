@@ -21,6 +21,10 @@ const OCCLUSION_Z_INDEX: int = RenderingServer.CANVAS_ITEM_Z_MAX
 var runtime_record: BarrageRuntimeRecord
 var _move_speed_pixels_per_second: float = 0.0
 var _move_direction: Vector2 = Vector2.LEFT
+var _wandering_motion_active: bool = false
+var _wandering_direction: Vector2 = Vector2.LEFT
+var _wandering_direction_change_interval_seconds: float = 0.0
+var _wandering_direction_change_elapsed_seconds: float = 0.0
 var _stationary_position: bool = false
 var _contradiction_ease_out_curve: Curve
 var _contradiction_ease_out_duration_seconds: float = 0.0
@@ -141,6 +145,10 @@ func setup(
 	_stationary_position = stationary_position
 	_move_speed_pixels_per_second = 0.0 if stationary_position else move_speed_pixels_per_second
 	_move_direction = move_direction.normalized() if move_direction.length_squared() > 0.0001 else Vector2.LEFT
+	_wandering_motion_active = false
+	_wandering_direction = Vector2.LEFT
+	_wandering_direction_change_interval_seconds = 0.0
+	_wandering_direction_change_elapsed_seconds = 0.0
 	_requested_curve_amplitude_pixels = maxf(curve_amplitude_pixels, 0.0) if is_finite(curve_amplitude_pixels) else 0.0
 	_speed_change_cycle_seconds = maxf(speed_change_cycle_seconds, 0.0) if is_finite(speed_change_cycle_seconds) else 0.0
 	_speed_change_elapsed_seconds = 0.0
@@ -182,6 +190,31 @@ func setup(
 			foreground_outline_size, outline_color
 		)
 	_apply_special_text_layout()
+
+
+# 进入独立 BG-23 游荡状态，不改写 BG-20 使用的直线方向。
+func configure_wandering_motion(direction_change_interval_seconds: float) -> bool:
+	if (runtime_record == null or runtime_record.is_repeat or runtime_record.is_contradiction
+			or _stationary_position or not is_instance_valid(_active_area)
+			or _move_speed_pixels_per_second <= 0.0 or not is_finite(direction_change_interval_seconds)
+			or direction_change_interval_seconds <= 0.0):
+		return false
+
+	# BG-18 从边缘出生后先留在区域内，再朝区域中心游荡。
+	var max_position: Vector2 = Vector2(
+		maxf(_active_area.size.x - size.x, 0.0), maxf(_active_area.size.y - size.y, 0.0)
+	)
+	position.x = clampf(position.x, 0.0, max_position.x)
+	position.y = clampf(position.y, 0.0, max_position.y)
+	var center_offset: Vector2 = _active_area.size * 0.5 - (position + size * 0.5)
+	if center_offset.length_squared() <= 0.0001:
+		center_offset = Vector2.RIGHT.rotated(randf_range(0.0, TAU))
+
+	_wandering_motion_active = true
+	_wandering_direction = center_offset.normalized()
+	_wandering_direction_change_interval_seconds = direction_change_interval_seconds
+	_wandering_direction_change_elapsed_seconds = 0.0
+	return true
 
 
 # 普通前景应用局部 BBCode；显示正文必须和运行记录原文一致，复读始终保留纯文本。
@@ -429,6 +462,9 @@ func _process(delta: float) -> void:
 		if not _constrain_stationary_position_to_area():
 			queue_free()
 		return
+	if _wandering_motion_active:
+		_process_wandering_motion(delta)
+		return
 	var current_move_speed: float = _get_current_move_speed(delta)
 	if _requested_curve_amplitude_pixels > 0.0 and _ensure_curved_motion():
 		_move_along_curve(delta, current_move_speed)
@@ -440,6 +476,34 @@ func _process(delta: float) -> void:
 	var active_rect: Rect2 = Rect2(Vector2.ZERO, _active_area.size)
 	if not active_rect.intersects(Rect2(position, size)):
 		queue_free()
+
+
+# 游荡实例按间隔转向，并在区域边缘反射，原寿命仍由通用流程处理。
+func _process_wandering_motion(delta: float) -> void:
+	if not is_instance_valid(_active_area):
+		queue_free()
+		return
+
+	_wandering_direction_change_elapsed_seconds += maxf(delta, 0.0)
+	if _wandering_direction_change_elapsed_seconds >= _wandering_direction_change_interval_seconds:
+		_wandering_direction_change_elapsed_seconds = fposmod(
+			_wandering_direction_change_elapsed_seconds, _wandering_direction_change_interval_seconds
+		)
+		var turn_sign: float = -1.0 if randi_range(0, 1) == 0 else 1.0
+		var turn_angle: float = deg_to_rad(randf_range(55.0, 125.0))
+		_wandering_direction = _wandering_direction.rotated(turn_sign * turn_angle).normalized()
+
+	var move_distance: float = _get_current_move_speed(delta) * maxf(delta, 0.0)
+	var next_position: Vector2 = position + _wandering_direction * move_distance
+	var max_x: float = maxf(_active_area.size.x - size.x, 0.0)
+	var max_y: float = maxf(_active_area.size.y - size.y, 0.0)
+	if next_position.x < 0.0 or next_position.x > max_x:
+		_wandering_direction.x *= -1.0
+		next_position.x = clampf(next_position.x, 0.0, max_x)
+	if next_position.y < 0.0 or next_position.y > max_y:
+		_wandering_direction.y *= -1.0
+		next_position.y = clampf(next_position.y, 0.0, max_y)
+	position = next_position
 
 
 # 按归一化速度曲线移动到截止时刻，之后留在本次生成的最终位置。
