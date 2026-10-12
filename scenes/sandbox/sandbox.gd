@@ -185,6 +185,8 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 	_battle_hud.set_paradox_stage_active(false, stage.get_current_tier())
 	var player_name: String = SaveManager.data.streamer_name
 	_battle_hud.configure_streamers(player_name if not player_name.is_empty() else "玩家主播", current_level.streamer_name)
+	# 重开和切关都从当前 SaveData / LevelProfile 重新绑定粉丝团名。
+	_battle_hud.configure_fan_group_names(SaveManager.data.fan_group_name, current_level.fan_group_name)
 	# 每次启动尝试都按当前关的稳定主播 ID 切换立绘待机配置。
 	_battle_hud.configure_portrait_character(str(current_level.streamer_id))
 	_battle_hud.configure_streamer_assets(

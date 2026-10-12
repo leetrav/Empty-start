@@ -9,6 +9,8 @@ extends Resource
 ## 主播稳定 ID 用于关联系统数据，名称用于展示。
 @export var streamer_id: String = ""
 @export var streamer_name: String = ""
+## 对手主播的粉丝团显示名；正式导表映射待关卡数据工具确认后接入。
+@export var fan_group_name: String = ""
 @export var streamer_portrait: Texture2D
 @export var streamer_avatar: Texture2D
 @export var streamer_live_background: Texture2D
