@@ -259,6 +259,12 @@
 - **条件**：运动按 `Curve2D` 烘焙弧长前进，同时把 `cubic` 插值设为 `true`。
 - **处理**：细分烘焙点间改用 `sample_baked(offset, false)` 线性插值，并用同一 `_process(delta)` 帧时间累计实际路径距离验证速度。BG-21 的 2 px 烘焙步长和 96 px/s 上限回归通过。
 
+### KT-42：动画撕边多边形经过视口边缘时可能三角化失败
+
+- **现象**：PA-12 GPU 预览在移动撕幕跨越视口边缘时，`draw_colored_polygon()` 输出 `Invalid polygon data, triangulation failed`，即使场景仍以退出码 0 结束。
+- **条件**：由多点锯齿边构成的单个多边形在动画中伸出视口，边缘点相交、塌缩或变成自交轮廓。
+- **处理**：将幕布边缘按纵向分段为视口内凸三角形/四边形，完全离屏或退化的片段跳过；再次以 Godot GUI 渲染确认 Output 无绘制错误。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。
@@ -269,6 +275,7 @@
 - 新 worktree 首次 headless 启动出现全局类缺失：KT-27。
 - Godot MCP 连接 / 端口占用：KT-28。
 - headless 位移速度与计时验证：KT-40；Curve2D 速度上限：KT-41。
+- CanvasItem 动画多边形三角化：KT-42。
 
 ## 附录 A：Godot 生命周期提醒
 
