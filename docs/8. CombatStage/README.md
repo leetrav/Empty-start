@@ -25,7 +25,7 @@ CS-14 已实现：升档整发通知完成后清除可见弹幕，保留新 Tier
 | [CS-23](tasks/CS-23_tier1-resume-on-dialogue-end.md) | T1 对话后恢复战斗 | 已完成 · 真实升档对白完播恢复验收通过 |
 | [CS-24](tasks/CS-24_tier-foreground-slot-catalog.md) | Tier 唯一前景容量字段与 BarrageArea 读取接口 | 已完成 |
 | [CS-25](tasks/CS-25_paradox-tier6-stage-label.md) | T6/Paradox HUD 阶段标记 | 已完成 |
-| [CS-26](tasks/CS-26_tier1-to-tier0-disconnect.md) | 降至 T0 时对手离线 | 部分完成：离线与对白清理已验收；震屏待 CS-16 |
+| [CS-26](tasks/CS-26_tier1-to-tier0-disconnect.md) | 降至 T0 时对手离线 | 部分完成：离线、对白清理与 CS-16 震屏已联测；正式立绘映射待确认 |
 
 CS-16 比较 HUD 已记录 Tier 与新最终 Tier；下降时通过 Tween 短时移动 BattleArea。HUD Inspector 可调整位移幅度和持续时间，当前默认初值为 6 设计像素、0.18 秒。该表现只移动显示父节点，BarrageArea 继续推进现存弹幕的运动与寿命。
 
@@ -168,7 +168,7 @@ T0 为等待匹配对手阶段，对手回拉倍率为 0；进入 T1 后清屏�
 | 任务卡 | 单功能 | 状态 |
 | --- | --- | --- |
 | [CS-26](tasks/CS-26_tier1-to-tier0-disconnect.md) | 降至 T0 时对手离线 | 待开发 |
-| [CS-27](tasks/CS-27_tier2-to-tier1-taunt.md) | 降至 T1 时对手嘲讽表现 | 待开发 |
+| [CS-27](tasks/CS-27_tier2-to-tier1-taunt.md) | T2+ 降至 T1 时嘲讽，并继续 T1 普通战斗 | 已完成 · Godot 4.7.2 Sandbox Headless：37 checks，0 failures |
 | [CS-28](tasks/CS-28_first-entry-one-retaliation-per-tier.md) | 每个 Tier 本场首次到达抽取一次反击 | 待开发 |
 | [CS-29](tasks/CS-29_retaliation-effective-by-current-tier.md) | 已抽反击按当前 Tier 生效 | 待开发 |
 
