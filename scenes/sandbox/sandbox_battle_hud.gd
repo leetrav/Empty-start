@@ -33,6 +33,7 @@ var _opponent_connected: bool = false
 var _paradox_stage_active: bool = false
 var _last_status_tier: int = -1
 var _pk_bar_skin: PkBarSkin
+var _actual_player_pk: float = 0.5
 var _active_opponent_status_text: String = ""
 var _dialogue_queue: Node
 var _tier_breakthrough_tween: Tween
@@ -62,6 +63,7 @@ var attack_phase: int = AttackChargeInput.AttackPhase.READY
 @onready var _player_pk_label: Label = %PlayerPK
 @onready var _opponent_pk_label: Label = $BattleArea/TopBattleStatus/PKBar/OpponentPK
 @onready var _pk_progress: ProgressBar = %PlayerShare
+@onready var _pk_hamster_ball: PKHamsterBallIndicator = $BattleArea/TopBattleStatus/PKBar/HamsterBallIndicator
 @onready var _tier_label: Label = %Tier
 @onready var _battle_area: Control = $BattleArea
 @onready var _failure_overlay: Control = %FailureOverlay
@@ -90,6 +92,8 @@ func _ready() -> void:
 	)
 	_dialogue_queue.connect("sequence_completed", Callable(self, "_on_dialogue_sequence_completed"))
 	add_child(_dialogue_queue)
+	_pk_hamster_ball.display_progress_changed.connect(_refresh_pk_percentage)
+	_pk_hamster_ball.bind_track(_pk_progress)
 	var parent_control: Control = get_parent() as Control
 	parent_control.resized.connect(_fit_parent_size)
 	_fit_parent_size()
@@ -282,12 +286,24 @@ func refresh_pk(player_pk: float, current_tier: int) -> void:
 		# T0 对手离线并隐藏立绘；进入 T1 后显示本关配置的待机图，降档与回升复用同一入口。
 		set_opponent_portrait_connected(current_tier > 0)
 	var player_share: float = clampf(player_pk, 0.0, 1.0)
+	_actual_player_pk = player_share
 	if _pk_bar_skin != null:
 		_pk_bar_skin.set_display_state(player_share, current_tier, _paradox_stage_active)
-	_pk_progress.value = player_share
+	# PA-13 统一驱动填充、球心和百分比；底板选择继续读取真实 PK。
+	_pk_hamster_ball.set_player_pk(player_share)
+	_refresh_stage_label(current_tier)
+
+
+# 百分比只消费同一显示进度，不把动画插值回写战斗事实。
+func _refresh_pk_percentage(player_share: float) -> void:
 	_player_pk_label.text = "玩家 PK %.1f%%" % (player_share * 100.0)
 	_opponent_pk_label.text = "对手 %.1f%%" % ((1.0 - player_share) * 100.0)
-	_refresh_stage_label(current_tier)
+
+
+# 只消费 CombatStage 的实际档位变化通知；PK 百分比回落本身不会触发降档表情。
+func on_tier_changed(current_tier: int, player_pk: float) -> void:
+	_pk_hamster_ball.set_player_pk(player_pk)
+	_pk_hamster_ball.on_tier_changed(current_tier)
 
 
 # 只移动战斗区的显示父节点；弹幕逻辑、运动和寿命继续正常推进。
@@ -340,7 +356,7 @@ func _cancel_tier_down_shake() -> void:
 func set_paradox_stage_active(active: bool, current_tier: int) -> void:
 	_paradox_stage_active = active
 	if _pk_bar_skin != null:
-		_pk_bar_skin.set_display_state(_pk_progress.value, current_tier, active)
+		_pk_bar_skin.set_display_state(_actual_player_pk, current_tier, active)
 	_refresh_stage_label(current_tier)
 
 
@@ -432,7 +448,7 @@ func show_failure() -> void:
 
 
 # 重开复位本场 HUD 提示并读取当前 T0 等待文案，各系统状态仍由所属对象初始化。
-func reset_for_attempt() -> void:
+func reset_for_attempt(current_tier: int = 0) -> void:
 	cancel_tier_breakthrough()
 	_cancel_tier_down_shake()
 	# 重开/失败后的下一场从待机准星开始，避免保留上一发充能高亮。
@@ -444,8 +460,9 @@ func reset_for_attempt() -> void:
 	opponent_portrait_motion.set_idle_strength(1.0)
 	opponent_tier_portrait.reset_for_tier()
 	set_opponent_portrait_connected(false)
+	_pk_hamster_ball.reset_for_attempt(current_tier, _actual_player_pk)
 	if _pk_bar_skin != null:
-		_pk_bar_skin.reset_for_attempt(_pk_progress.value, 0, false)
+		_pk_bar_skin.reset_for_attempt(_actual_player_pk, 0, false)
 	set_paradox_stage_active(false, 0)
 	_last_status_tier = 0
 	_failure_overlay.hide()
