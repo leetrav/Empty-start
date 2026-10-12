@@ -384,6 +384,8 @@ func spawn_normal_barrage(
 		view.free()
 		return null
 	add_child(view)
+	if not speech.local_style_bbcode.is_empty():
+		view.set_visual_bbcode(speech.local_style_bbcode)
 	if not _place_barrage_for_spawn_request(
 		view, should_use_random_static_placement, not should_use_random_static_placement
 	):

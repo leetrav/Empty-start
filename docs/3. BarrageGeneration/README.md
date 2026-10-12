@@ -16,7 +16,7 @@
 | [BG-22](tasks/BG-22_speed-change-motion.md) | 普通前景可选周期加减速 | 已实现；BG-40 限速、BG-21 曲线组合及 GUI 运动验证通过 |
 | [BG-24](tasks/BG-24_overlap-pass-through.md) | 普通移动前景出生重叠与运动穿透 | 已实现；TEST_ONLY 两实例真实运行 smoke 通过 |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通移动前景话语缓和缩放 | Godot 4.7.2 GUI 实测通过（2026-10-12） |
-| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景富文本 | 待开发 |
+| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
 | [BG-30](tasks/BG-30_opinion-tide.md) | 复读潮的疏密起伏 | 已完成 · 2026-10-12 |
 | [BG-31](tasks/BG-31_spatial-clusters.md) | 同句复读成批涌现（复用 RP-18） | 归档重复能力 |
@@ -37,6 +37,12 @@
 - `BarrageArea` 使用独立复读同屏容量和 BG-42 随机静止落点；每条 `BarrageView` 按原寿命到期，容量离树后释放。多条计划叠加形成稀疏进入、密度峰值和寿命回落。
 - Godot 4.7.2 正式 Sandbox smoke 两次实际有效普通命中，采样到复读数量 `0→1→2→3→4→5→6→5→4→3→1→0`；峰值 6、复读上限 24。T0 普通前景最大数量 21，仍在关卡普通容量 24 内。
 - 该波次由现有 Repeat / BarrageGeneration 链路满足；本卡完成运行验收，没有新增弹幕管理器、定时器或运行代码。GUI 峰值截图按仓库 `.gitignore` 留在本地 `.godot` 临时目录。
+### BG-28 普通前景单句局部富文本
+
+LevelSpeech.local_style_bbcode 可选保存普通前景话语的局部 BBCode 样式。BarrageArea 在实例入树后调用 BarrageView.set_visual_bbcode()，富文本解析出的正文必须与 BarrageRuntimeRecord.text 完全一致，否则清除覆盖并回退原文。RichTextLabel 实际内容高度纳入视图尺寸，保证局部大字号文本完整显示。复读仍沿用纯文本记录与原句 ID。
+
+该字段默认为空；当前正式数据表和导表器没有此列。BG-28 提供由 Resource 或调用方设置的展示入口，正式台词尚未配置局部样式。
+
 **BT-14 固定层级契约：** `BarrageView.REPEAT_Z_INDEX=0`、`FOREGROUND_Z_INDEX=1`、`OCCLUSION_Z_INDEX=RenderingServer.CANVAS_ITEM_Z_MAX`（Godot 4.7.2 为 4096）。BG-25 / BG-26 的普通前景层级使用 1～4095，4096 专供遮挡实例保持最高层。
 
 **BG-37（2026-10-12）** 非复读前景按 `foreground_outline_size` 与 `outline_color` 显示描边；复读判断使用运行时记录的 `is_repeat`。假牌可以沿用复读的颜色、字号与玻璃配色，同时保留前景描边。反击复制品 CanvasItem 绘制的多处文字也读取同一描边配置。
@@ -282,7 +288,7 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-25](tasks/BG-25_random-start-layer.md) | 普通前景话语随机初始层级 | 待实施 |
 | [BG-26](tasks/BG-26_moving-layer-order.md) | 常规前景话语运动中随机改变层级 | 待实施 |
 | [BG-27](tasks/BG-27_animated-size.md) | 普通前景话语的适度缩放 | 待实施 |
-| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 单句话语内部富文本混合样式 | 待实施 |
+| [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景单句局部富文本 | 已完成 · 2026-10-12 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 普通话语随机局部文字动画 | 待实施 |
 | [BG-30](tasks/BG-30_opinion-tide.md) | 底层复读潮汐密度节奏 | 已完成 · 2026-10-12 |
 | [BG-31](tasks/BG-31_spatial-clusters.md) | 同一句复读成批出现 | 待实施 |
