@@ -14,14 +14,20 @@ T5 满 PK 后进入独立矛盾击破阶段，UI 表现名为 T6/Paradox。`Cont
 
 当前 `level_001.tres` 示例资源只有一条真矛盾和一条假矛盾，因此该示例运行时会显示一条真句实例与五条同 ID 的假句实例。项目尚无最终对手矛盾文本池，本实现不能证明最终正式文本具备五条不同假句；`tests/fixtures/contradiction_break/test_cb_13_six_candidates_level.tres` 用六个不同 `test_` ID 验证完整内容路径。没有修改关卡源表、导表器或正式关卡 Resource。
 
-现有 10 秒窗口、一发正式射击、释放快照冻结的原句事实、真/假结果与后续复读/神谕/休息流程保持原规则。CB-14 的减速运动仍待实施。
+现有 10 秒窗口、一发正式射击、释放快照冻结的原句事实、真/假结果与后续复读/神谕/休息流程保持原规则。CB-14 已接入六句减速运动；演出曲线和时长由 `ContradictionWindowConfig` 提供，均为可编辑初值，正式手感仍待策划验收。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
 | [CB-13](tasks/CB-13_six-fixed-contradictions.md) | T6 固定一真五假候选集；数据不足时复用有效假句 | 已实现；现行 LevelProfile 示例仅提供一个假句 ID |
-| [CB-14](tasks/CB-14_contradiction-ease-out-motion.md) | 六句减速停止，运动时可射击 | 待开发 |
+| [CB-14](tasks/CB-14_contradiction-ease-out-motion.md) | 六句减速停止，运动时可射击 | 已实现 · Godot 4.7.2 Headless 聚焦运行 46 项通过；正式演出初值待验收 |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+### CB-14 运动表现（2026-10-12）
+
+`ContradictionWindowConfig` 提供可编辑的运动时长和归一化速度 `Curve`；当前 2 秒时长与平滑减速曲线是运行初值，不属于正式表格定稿。六句起点沿用 `BarrageArea` 现有区域排布，终点由各自实际起点、矛盾速度倍率和曲线累计距离确定，并保持在区域左边界以内；运动结束后停留至原 10 秒寿命结束。
+
+`AttackChargeInput` 继续在释放时读取移动视图的当前 `get_global_rect()`，`AttackTargetSnapshot` 仍冻结该发的实例 ID 与矛盾原句事实。减速和停止不会修改目标筛选、十秒窗口、一发机会或结果流程。正式运动时长、曲线与完整关卡输入仍需人工验收。
 
 
 ## 系统目标
@@ -99,4 +105,4 @@ T6 / Paradox 保留 **1 真 + 5 假** 的六句构成。六句在出现后先移
 | 任务卡 | 单功能 | 状态 |
 | --- | --- | --- |
 | [CB-13](tasks/CB-13_six-fixed-contradictions.md) | 固定一真五假初始集合 | 已实现；缺少不同假句时复用现有有效条目 |
-| [CB-14](tasks/CB-14_contradiction-ease-out-motion.md) | 六句逐渐减速至停止，运动时可射击 | 待开发 |
+| [CB-14](tasks/CB-14_contradiction-ease-out-motion.md) | 六句逐渐减速至停止，运动时可射击 | 已实现；正式演出初值待验收 |
