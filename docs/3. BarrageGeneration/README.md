@@ -18,7 +18,7 @@
 | [BG-27](tasks/BG-27_animated-size.md) | 连续缩放 | 已有脉冲入口 |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 前景富文本 | 待开发 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 局部随机文字动画 | 待开发 |
-| [BG-30](tasks/BG-30_opinion-tide.md) | 复读潮的疏密起伏 | 待开发 |
+| [BG-30](tasks/BG-30_opinion-tide.md) | 复读潮的疏密起伏 | 已完成 · 2026-10-12 |
 | [BG-31](tasks/BG-31_spatial-clusters.md) | 同句复读成批涌现（复用 RP-18） | 归档重复能力 |
 | [BG-32](tasks/BG-32_linked-faux-depth.md) | 伪纵深观感 | 候选暂缓 |
 | [BG-33](tasks/BG-33_impact-motion-wave.md) | 命中后的短时局部运动扰动 | 可选试玩后实施 |
@@ -31,6 +31,12 @@
 | [BG-40](tasks/BG-40_foreground-speed-ceiling.md) | 前景话语最大速度 | 普通直线、BG-21 曲线和 BG-22 加减速均按统一上限验证；BG-20/23 实现后补验 |
 | [BG-41](tasks/BG-41_random-trait-selection.md) | 按已解锁池随机分配特性 | 技能池待定 |
 
+## BG-30 复读潮疏密节奏验收（2026-10-12）
+
+- 正常命中继续由 `BattleAttemptFlow` 创建 `RepeatPlan`；`RepeatDelayQueue` 为请求抽取独立随机延迟并按普通战斗帧派发。
+- `BarrageArea` 使用独立复读同屏容量和 BG-42 随机静止落点；每条 `BarrageView` 按原寿命到期，容量离树后释放。多条计划叠加形成稀疏进入、密度峰值和寿命回落。
+- Godot 4.7.2 正式 Sandbox smoke 两次实际有效普通命中，采样到复读数量 `0→1→2→3→4→5→6→5→4→3→1→0`；峰值 6、复读上限 24。T0 普通前景最大数量 21，仍在关卡普通容量 24 内。
+- 该波次由现有 Repeat / BarrageGeneration 链路满足；本卡完成运行验收，没有新增弹幕管理器、定时器或运行代码。GUI 峰值截图按仓库 `.gitignore` 留在本地 `.godot` 临时目录。
 **BT-14 固定层级契约：** `BarrageView.REPEAT_Z_INDEX=0`、`FOREGROUND_Z_INDEX=1`、`OCCLUSION_Z_INDEX=RenderingServer.CANVAS_ITEM_Z_MAX`（Godot 4.7.2 为 4096）。BG-25 / BG-26 的普通前景层级使用 1～4095，4096 专供遮挡实例保持最高层。
 
 **BG-38（2026-10-11）** `test_bg38_battle_attempt_clear.tscn` 通过正式 Sandbox 组合、`AttackChargeInput`、`BattleAttemptFlow` 和 `BarrageArea` 执行两发真实流程。无遮挡发覆盖两条普通话语、假牌、水军复制品和复读：五个原目标均由 `end_barrage()` 结束；普通倾向只累计两条有效普通命中，两条普通命中各按 Tier 规则生成复读，已命中的复读目标不再复制。第二次重开后，释放快照含遮挡的整发按 CA-15 MISS 结算一次 `-0.01`，五个原目标继续留场，普通命中历史、倾向和复读队列均无新增。测试使用运行时 TEST_ONLY 特性与合成鼠标事件；物理鼠标和完整人工流程尚未覆盖。
@@ -272,7 +278,7 @@ INT-02 采用静态 Scene 方案：`sandbox.tscn` 保存所有区域 Rect，编�
 | [BG-27](tasks/BG-27_animated-size.md) | 普通前景话语的适度缩放 | 待实施 |
 | [BG-28](tasks/BG-28_mixed-rich-text-style.md) | 单句话语内部富文本混合样式 | 待实施 |
 | [BG-29](tasks/BG-29_local-text-animation.md) | 普通话语随机局部文字动画 | 待实施 |
-| [BG-30](tasks/BG-30_opinion-tide.md) | 底层复读潮汐密度节奏 | 待实施 |
+| [BG-30](tasks/BG-30_opinion-tide.md) | 底层复读潮汐密度节奏 | 已完成 · 2026-10-12 |
 | [BG-31](tasks/BG-31_spatial-clusters.md) | 同一句复读成批出现 | 待实施 |
 | [BG-32](tasks/BG-32_linked-faux-depth.md) | 伪纵深视觉候选体验验证 | 候选暂缓 |
 | [BG-33](tasks/BG-33_impact-motion-wave.md) | 群体命中后的局部冲击波 | 待实施 |
