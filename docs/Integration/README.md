@@ -2,9 +2,9 @@
 
 ## INT-11 剧情漫画首次播放与主菜单回看（2026-10-13）
 
-[INT-11 任务卡](tasks/INT-11_opening-ending-comic-playback.md)已审核并进入实现。共用 `ui/comic/comic_player.tscn` 嵌入 ID-13 的动机分镜步骤，通过 `SceneRouter.goto_comic(kind, record_first_view=false)` 提供主菜单回看；开头/结尾配置位于 `data/comics/`，正式原图保留 `assets/manga/P1～P6/`。启动始终进入主菜单；开始游戏后依次取名、爪印演出、正式漫画、身份选择。观看记录由 SettingsManager 应用设置持有，不控制启动或新周目剧情；回看不创建周目或改变结局结果。
+[INT-11 任务卡](tasks/INT-11_opening-ending-comic-playback.md)已审核并进入实现。共用 `ui/comic/comic_player.tscn` 嵌入 ID-13 的动机分镜步骤，通过 `SceneRouter.goto_comic(kind, record_first_view=false)` 提供主菜单回看；开头/结尾配置位于 `data/comics/`，正式原图保留 `assets/manga/P1～P6/`。启动始终进入主菜单；开始游戏后依次取名、爪印演出、正式漫画、身份选择。观看记录由 SettingsManager 应用设置持有，不控制启动路由，已观看后新周目跳过动机漫画；回看不创建周目或改变结局结果。
 
-当前按参考视频暂分 P1～P4 为开头、P5～P6 为结尾；逐字能力已实现，正式台词未提供，书写音效暂用已有点击声。最终剧情分段、节奏、音效与 Android 仍待验收，详见[实施日志](剧情漫画_INT-11_2026-10-13_log.md)。
+P1～P6 均属同一段开场，首次连续播放六幕；菜单分别回看 P1～P4 前半与 P5～P6 后半。任意键跳过整段，已观看的新周目直接继续身份选择；逐字能力已实现，正式台词未提供，书写音效暂用已有点击声。节奏、音效与 Android 仍待验收，详见[实施日志](剧情漫画_INT-11_2026-10-13_log.md)。
 
 > **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。开发前核对该表、本卡现行版、main 实际实现及最新完成日志。
 

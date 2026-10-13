@@ -27,7 +27,13 @@ var _record_first_view: bool = false
 func _ready() -> void:
 	_kind = &"opening" if embedded else SceneRouter.comic_kind
 	_record_first_view = embedded or SceneRouter.comic_record_first_view
-	_sequence = ENDING if _kind == &"ending" else OPENING
+	# 身份流程连续播放六幕；菜单保留前后两部分的独立回看。
+	_sequence = ComicSequence.new()
+	if embedded:
+		_sequence.frames.append_array(OPENING.frames)
+		_sequence.frames.append_array(ENDING.frames)
+	else:
+		_sequence.frames.append_array(ENDING.frames if _kind == &"ending" else OPENING.frames)
 	var background := ColorRect.new()
 	background.color = Color(0.07, 0.07, 0.025)
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -136,7 +142,7 @@ func _process(delta: float) -> void:
 		if is_instance_valid(_sound):
 			_sound.play()
 
-# 忽略按键重复与松开；鼠标和触摸也提供同一推进入口。
+# 忽略按键重复与松开；任意键、左键或触摸直接跳过整段，Esc 返回菜单。
 func _input(event: InputEvent) -> void:
 	if _finished or _paused or not is_visible_in_tree():
 		return
@@ -156,17 +162,11 @@ func _input(event: InputEvent) -> void:
 	else:
 		return
 
-# 先补全当前文字，下次输入推进分镜；控制器保证末格通知一次。
+# 任意有效推进输入直接跳过整段，不再补字或逐格快进。
 func advance() -> void:
-	if _finished or _frame == null:
+	if _finished or _paused or _frame == null:
 		return
-	if _caption.visible_characters < _frame.text.length():
-		_caption.visible_characters = _frame.text.length()
-		_text_elapsed = _frame.text.length() / maxf(1.0, _frame.characters_per_second)
-		if is_instance_valid(_sound):
-			_sound.stop()
-		return
-	_control.advance_on_click()
+	_finish(&"skipped")
 
 # 观看记录与路由只在明确完成或退出时更新，离树不会产生观看事实。
 func _finish(reason: StringName) -> void:

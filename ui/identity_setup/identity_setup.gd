@@ -291,7 +291,15 @@ func complete_player_presentation() -> void:
 		return
 	_player_presentation_is_completed = true
 	player_name_pawprint_presentation_completed.emit(_streamer_name_input.text)
+	# 已观看时跳过整个动机步骤；菜单回看仍不受此记录限制。
+	if SettingsManager.opening_comic_seen:
+		_motive_comic_is_completed = true
+		_identity_back.hide()
+		motive_comic_completed.emit()
+		_show_step(Step.IDENTITY)
+		return
 	_motive_comic_is_completed = false
+	_identity_back.show()
 	_create_motive_comic_control()
 	_show_step(Step.MOTIVE_COMIC)
 	if not _motive_comic_player.start_playback():
@@ -313,7 +321,7 @@ func _create_motive_comic_control() -> void:
 
 # 正常结束留在身份场景继续选择，Esc 通过统一路由返回菜单。
 func _on_motive_playback_finished(reason: StringName) -> void:
-	if reason == &"completed":
+	if reason in [&"completed", &"skipped"]:
 		_on_motive_comic_completed()
 	else:
 		SceneRouter.goto_main_menu()
