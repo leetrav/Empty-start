@@ -3,6 +3,9 @@ extends Control
 
 signal playback_finished(reason: StringName)
 
+@export var embedded: bool = false
+var _paused: bool = false
+
 const OPENING: ComicSequence = preload("res://data/comics/opening.tres")
 const ENDING: ComicSequence = preload("res://data/comics/ending.tres")
 const CANVAS_SIZE := Vector2(1920, 1080)
@@ -22,8 +25,8 @@ var _record_first_view: bool = false
 
 # 路由只传播放目的；场景内建立独立演出节点并复用 ID-12 控制器。
 func _ready() -> void:
-	_kind = SceneRouter.comic_kind
-	_record_first_view = SceneRouter.comic_record_first_view
+	_kind = &"opening" if embedded else SceneRouter.comic_kind
+	_record_first_view = embedded or SceneRouter.comic_record_first_view
 	_sequence = ENDING if _kind == &"ending" else OPENING
 	var background := ColorRect.new()
 	background.color = Color(0.07, 0.07, 0.025)
@@ -54,9 +57,30 @@ func _ready() -> void:
 	_control.panel_display_requested.connect(_show_frame)
 	_control.playback_completed.connect(_finish.bind(&"completed"))
 	add_child(_control)
-	if not _control.start_playback():
+	if not embedded and not start_playback():
 		push_error("ComicPlayer: 播放配置为空或控制器未就绪。")
 		SceneRouter.goto_main_menu()
+
+# 嵌入身份流程时由宿主在页面显示后启动，复用同一个计时控制器。
+func start_playback() -> bool:
+	return _control.start_playback()
+
+func get_playback_control() -> ComicPanelPlaybackControl:
+	return _control
+
+# 隐藏页面时冻结计时、动画及逐字进度，回到页面后继续。
+func set_playback_paused(value: bool) -> void:
+	_paused = value
+	if value:
+		_control.pause_playback()
+		if _animation != null:
+			_animation.pause()
+		if is_instance_valid(_sound):
+			_sound.stop()
+	else:
+		_control.resume_playback()
+		if _animation != null:
+			_animation.play()
 
 # 固定原图坐标，以等比缩放及居中留边适配任意窗口。
 func _fit_canvas() -> void:
@@ -103,7 +127,7 @@ func _show_frame(number: int) -> void:
 
 # 空台词保持纯画面；正式台词配置后逐字推进，声音由场景独占。
 func _process(delta: float) -> void:
-	if _finished or _frame == null or _caption.visible_characters >= _frame.text.length():
+	if _paused or _finished or _frame == null or _caption.visible_characters >= _frame.text.length():
 		return
 	_text_elapsed += delta
 	var next_count := mini(_frame.text.length(), int(_text_elapsed * _frame.characters_per_second))
@@ -114,7 +138,7 @@ func _process(delta: float) -> void:
 
 # 忽略按键重复与松开；鼠标和触摸也提供同一推进入口。
 func _input(event: InputEvent) -> void:
-	if _finished:
+	if _finished or _paused or not is_visible_in_tree():
 		return
 	# 场景切换会立即使当前节点离树，先消费本次有效输入再执行路由。
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -154,6 +178,8 @@ func _finish(reason: StringName) -> void:
 	if _record_first_view and _kind == &"opening":
 		SettingsManager.mark_opening_comic_seen()
 	playback_finished.emit(reason)
+	if embedded:
+		return
 	var error := SceneRouter.goto_main_menu()
 	if error != OK:
 		push_error("ComicPlayer: 返回主菜单失败：%s" % error_string(error))

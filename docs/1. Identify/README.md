@@ -162,3 +162,10 @@ ID-12 提供独立漫画播放控制 Node，按配置发出 1-based 分镜编号
 - `identity_setup.gd` 提供 `player_name_pawprint_presentation_requested(streamer_name)`、`motive_panel_display_requested(panel_number)` 和 `room_computer_transition_requested(identity_id)` 请求信号；完成回调分别使用 `complete_player_presentation()`、ID-12 `playback_completed` 与 `complete_room_computer_transition()`。通知信号为 `player_name_pawprint_presentation_completed(streamer_name)`、`motive_comic_completed`、`room_computer_transition_completed`。
 - 名称仍暂存在页面输入控件，回退到上一阶段时沿用主播名、粉丝团输入、已翻开的牌及身份选择。三项正式字段只经 `SaveManager.confirm_opening_identity()` 提交一次，保存成功后仍经 `opening_saved` 进入 RS-12。
 - 运行验收使用 `TEST_ONLY` 三格和内建按钮模拟美术完成回调；正式美术、实际动画时长、人工键鼠及 Android 触控待后续验收。详见 [ID-13 日志](身份系统_ID-13_2026-10-11_log.md)。
+
+
+## INT-11 正式动机漫画接入（2026-10-13）
+
+启动先进入主菜单；Start → 主播取名 → 姓名与爪印演出 → 正式动机漫画 → 身份选择。`complete_player_presentation()` 在动机页实例化 `ComicPlayer`（embedded），替换原三格 TEST_ONLY 内容；当前开头暂按 P1～P4 配置 13 个播放节点，结尾分段仍待人工确认。分镜信号继续转发，自动完成或点击结束后发出 `motive_comic_completed` 并继续身份选择，保留当前名字和周目对象。Esc 通过 SceneRouter 返回菜单。
+
+动机页隐藏时暂停播放；从身份页返回保留最终画面，并可继续选择。控制器默认末格确认行为未改变，正式播放器显式开启末格自动完成。姓名与爪印、房间电脑转场仍保留原占位，正式台词和书写音效仍待交付。详情见 [INT-11 日志](../Integration/剧情漫画_INT-11_2026-10-13_log.md)。
