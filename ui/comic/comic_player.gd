@@ -3,8 +3,11 @@ extends Control
 
 signal playback_finished(reason: StringName)
 
-@export var embedded: bool = false
 var _paused: bool = false
+var _page_sound: AudioStreamPlayer
+var _act: String = ""
+var _writing_elapsed: float = 0.0
+var _writing_tick: float = 0.0
 
 const OPENING: ComicSequence = preload("res://data/comics/opening.tres")
 const ENDING: ComicSequence = preload("res://data/comics/ending.tres")
@@ -25,11 +28,11 @@ var _record_first_view: bool = false
 
 # 路由只传播放目的；场景内建立独立演出节点并复用 ID-12 控制器。
 func _ready() -> void:
-	_kind = &"opening" if embedded else SceneRouter.comic_kind
-	_record_first_view = embedded or SceneRouter.comic_record_first_view
-	# 身份流程连续播放六幕；菜单保留前后两部分的独立回看。
+	_kind = SceneRouter.comic_kind
+	_record_first_view = SceneRouter.comic_record_first_view
+	# 首次启动连续播放六幕；菜单保留前后两部分的独立回看。
 	_sequence = ComicSequence.new()
-	if embedded:
+	if _kind == &"intro":
 		_sequence.frames.append_array(OPENING.frames)
 		_sequence.frames.append_array(ENDING.frames)
 	else:
@@ -63,11 +66,11 @@ func _ready() -> void:
 	_control.panel_display_requested.connect(_show_frame)
 	_control.playback_completed.connect(_finish.bind(&"completed"))
 	add_child(_control)
-	if not embedded and not start_playback():
+	if not start_playback():
 		push_error("ComicPlayer: 播放配置为空或控制器未就绪。")
 		SceneRouter.goto_main_menu()
 
-# 嵌入身份流程时由宿主在页面显示后启动，复用同一个计时控制器。
+# 独立场景启动共用计时控制器。
 func start_playback() -> bool:
 	return _control.start_playback()
 
@@ -128,12 +131,33 @@ func _show_frame(number: int) -> void:
 	_caption.size = _frame.text_size
 	_caption.visible_characters = 0
 	_text_elapsed = 0.0
-	if not _frame.text.is_empty():
-		_sound = AudioManager.create_event_player(_frame.writing_event, self)
+	_sound = AudioManager.create_event_player(_frame.writing_event, self)
+	if is_instance_valid(_sound):
+		_sound.volume_db = -10.0
+	_writing_elapsed = 0.0
+	_writing_tick = 0.0
+	var next_act := _frame.textures[-1].resource_path.get_base_dir().get_file()
+	if not _act.is_empty() and next_act != _act:
+		_page_sound = AudioManager.create_event_player(&"comic_page", self)
+		if is_instance_valid(_page_sound):
+			_page_sound.volume_db = -6.0
+			_page_sound.play()
+	_act = next_act
 
 # 空台词保持纯画面；正式台词配置后逐字推进，声音由场景独占。
 func _process(delta: float) -> void:
-	if _paused or _finished or _frame == null or _caption.visible_characters >= _frame.text.length():
+	if _paused or _finished or _frame == null:
+		return
+	# 台词未交付时用显现期间的短打字声展示声音链路，不虚构剧情。
+	if _frame.text.is_empty():
+		_writing_elapsed += delta
+		_writing_tick += delta
+		if _writing_elapsed <= _frame.reveal_seconds and _writing_tick >= 0.12:
+			_writing_tick = 0.0
+			if is_instance_valid(_sound):
+				_sound.play()
+		return
+	if _caption.visible_characters >= _frame.text.length():
 		return
 	_text_elapsed += delta
 	var next_count := mini(_frame.text.length(), int(_text_elapsed * _frame.characters_per_second))
@@ -142,7 +166,7 @@ func _process(delta: float) -> void:
 		if is_instance_valid(_sound):
 			_sound.play()
 
-# 忽略按键重复与松开；任意键、左键或触摸直接跳过整段，Esc 返回菜单。
+# 任意非重复按键快进分镜；Esc 退出演出返回菜单。
 func _input(event: InputEvent) -> void:
 	if _finished or _paused or not is_visible_in_tree():
 		return
@@ -162,11 +186,16 @@ func _input(event: InputEvent) -> void:
 	else:
 		return
 
-# 任意有效推进输入直接跳过整段，不再补字或逐格快进。
+# 快进先补全当前文字，随后推进分镜；末格快进结束整段。
 func advance() -> void:
 	if _finished or _paused or _frame == null:
 		return
-	_finish(&"skipped")
+	if _caption.visible_characters < _frame.text.length():
+		_caption.visible_characters = _frame.text.length()
+		if is_instance_valid(_sound):
+			_sound.stop()
+		return
+	_control.advance_on_click()
 
 # 观看记录与路由只在明确完成或退出时更新，离树不会产生观看事实。
 func _finish(reason: StringName) -> void:
@@ -175,11 +204,9 @@ func _finish(reason: StringName) -> void:
 	_finished = true
 	_control.pause_playback()
 	_stop_animation_and_sound()
-	if _record_first_view and _kind == &"opening":
+	if _record_first_view and _kind == &"intro":
 		SettingsManager.mark_opening_comic_seen()
 	playback_finished.emit(reason)
-	if embedded:
-		return
 	var error := SceneRouter.goto_main_menu()
 	if error != OK:
 		push_error("ComicPlayer: 返回主菜单失败：%s" % error_string(error))
@@ -193,6 +220,10 @@ func _stop_animation_and_sound() -> void:
 		_sound.stop()
 		_sound.queue_free()
 		_sound = null
+	if is_instance_valid(_page_sound):
+		_page_sound.stop()
+		_page_sound.queue_free()
+		_page_sound = null
 	# 快进中断动画时使已显示层回到本格的最终位置。
 	if _frame != null:
 		for index in range(_layers.size()):

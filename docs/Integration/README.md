@@ -1,15 +1,12 @@
 # Integration
 
-## INT-11 剧情漫画首次播放与主菜单回看（2026-10-13）
+## INT-11 首次启动六幕漫画与主菜单回看（2026-10-13）
 
-[INT-11 任务卡](tasks/INT-11_opening-ending-comic-playback.md)已审核并进入实现。共用 `ui/comic/comic_player.tscn` 嵌入 ID-13 的动机分镜步骤，通过 `SceneRouter.goto_comic(kind, record_first_view=false)` 提供主菜单回看；开头/结尾配置位于 `data/comics/`，正式原图保留 `assets/manga/P1～P6/`。启动始终进入主菜单；开始游戏后依次取名、爪印演出、正式漫画、身份选择。观看记录由 SettingsManager 应用设置持有，不控制启动路由，已观看后新周目跳过动机漫画；回看不创建周目或改变结局结果。
+最新流程：首次 Boot → P1～P6 共19个播放节点 → 主菜单；后续 Boot → 主菜单。SceneRouter.goto_comic(&"intro", true) 播放完整开场；opening/ending 分别用于菜单回看前四幕/后两幕。原角色塑造流程不嵌入本播放器。
 
-P1～P6 均属同一段开场，首次连续播放六幕；菜单分别回看 P1～P4 前半与 P5～P6 后半。任意键跳过整段，已观看的新周目直接继续身份选择；逐字能力已实现，正式台词未提供，书写音效暂用已有点击声。节奏、音效与 Android 仍待验收，详见[实施日志](剧情漫画_INT-11_2026-10-13_log.md)。
+任意非重复按键快进分镜，Esc 返回菜单；观看记录使用 SettingsManager 的 story/opening_intro_v2_seen，旧试播记录不阻止新版首次演出。回看不创建或改变周目。免费 CC0 打字声和翻书声已接入 assets/audio/sfx/comic/，来源与许可在同目录 README；翻书发生于幕切换。正式台词未提供，空台词画面只在显现期间短暂播放打字声；文字、节奏、黑幕及 Android 验收仍待完成。
 
-> **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。开发前核对该表、本卡现行版、main 实际实现及最新完成日志。
-
-
-Lane A 持有 Sandbox 与顶层路由接线。系统规则、倾向、历史、奖励及结局显示继续归各系统所有者。
+详见 [任务卡](tasks/INT-11_opening-ending-comic-playback.md) 与 [最新日志](剧情漫画_INT-11_2026-10-13_log.md)。
 
 ## INT-09 → INT-10 → S3（状态更新 2026-10-11）
 
@@ -125,5 +122,3 @@ godot.windows.opt.tools.64.exe --path <隔离项目绝对路径> res://tests/int
 ## INT-06 中央战斗区全高与操作 ICON（2026-10-11 实现完成）
 
 [INT-06 单功能程序任务卡](tasks/INT-06_battle-area-full-height-and-input-icon-overlay.md)已完成全高布局与操作浮层实现。中央顶部保持 1024×72，`BarrageArea` 和 `OracleCandidateDisplay` 使用中央局部矩形 `(0,72,1024,1008)`；旧底部交互栏移除，鼠标左键与 ESC ICON 固定在中央区左下角，HUD 继续保存蓄力进度与阶段供后续正式反馈读取。Godot GUI smoke 已覆盖 1920×1080 请求、1280×720、960×540、底边普通目标与神谕目标、ICON 输入穿透、ESC 暂停恢复及全屏切换。Editor 场景预览独立检查、实体鼠标键盘手动验收和 Android 设备验收仍未完成；工具连接边界及运行证据见 [INT-06 任务日志](Sandbox布局_INT-06_2026-10-11_log.md)。该布局更新覆盖旧 INT-02 的中央 760px 弹幕区和 248px 底部区设计基线。
-
-主菜单回放入口仅在应用已有开场观看记录时显示；首次打开隐藏两项，完成或主动结束开场后返回菜单解锁。未观看时设置面板关闭也不显示回放，后续启动继续读取持久记录。

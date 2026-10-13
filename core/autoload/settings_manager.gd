@@ -37,7 +37,7 @@ func mark_opening_comic_seen() -> Error:
 	var error: Error = save_settings()
 	if error != OK:
 		opening_comic_seen = false
-		_config.set_value("story", "opening_comic_seen", false)
+		_config.set_value("story", "opening_intro_v2_seen", false)
 	return error
 
 var _config: ConfigFile = ConfigFile.new()
@@ -75,7 +75,7 @@ func load_settings() -> void:
 	sfx_volume = _read_volume_setting(SFX_VOLUME_KEY, DEFAULT_SFX_VOLUME)
 	ui_volume = _read_volume_setting(UI_VOLUME_KEY, DEFAULT_UI_VOLUME)
 	fullscreen = _read_fullscreen_setting()
-	var seen: Variant = _config.get_value("story", "opening_comic_seen", false)
+	var seen: Variant = _config.get_value("story", "opening_intro_v2_seen", false)
 	opening_comic_seen = seen if seen is bool else false
 
 
@@ -86,7 +86,7 @@ func save_settings() -> Error:
 	_config.set_value(AUDIO_SECTION, SFX_VOLUME_KEY, sfx_volume)
 	_config.set_value(AUDIO_SECTION, UI_VOLUME_KEY, ui_volume)
 	_config.set_value(DISPLAY_SECTION, FULLSCREEN_KEY, fullscreen)
-	_config.set_value("story", "opening_comic_seen", opening_comic_seen)
+	_config.set_value("story", "opening_intro_v2_seen", opening_comic_seen)
 
 	var save_error: Error = _config.save(SETTINGS_FILE_PATH)
 	if save_error != OK:

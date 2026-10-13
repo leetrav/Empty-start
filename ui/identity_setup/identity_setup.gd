@@ -13,7 +13,9 @@ signal opening_saved(run_data: SaveData)
 
 enum Step { STREAMER, PLAYER_PRESENTATION, MOTIVE_COMIC, IDENTITY, ROOM_TRANSITION, FAN_GROUP }
 
-const COMIC_PLAYER_SCENE := preload("res://ui/comic/comic_player.tscn")
+# 美术确定正式格数与节奏前，使用三个 TEST_ONLY 编号验证既有 ID-12 控制器。
+const PLACEHOLDER_PANEL_COUNT: int = 3
+const PLACEHOLDER_PANEL_INTERVAL_SECONDS: float = 0.8
 
 var _step: Step = Step.STREAMER
 var _run_data: SaveData
@@ -36,7 +38,7 @@ var _confirm_button: Button
 var _fan_back: Button
 var _identity_back: Button
 var _player_presentation_status: Label
-var _motive_comic_player: ComicPlayer
+var _motive_comic_status: Label
 var _motive_comic_action: Button
 var _room_transition_status: Label
 var _room_transition_action: Button
@@ -78,17 +80,17 @@ func _ready() -> void:
 	_player_presentation_page.get_node("Center/Panel/Content/Action").pressed.connect(complete_player_presentation)
 	_player_presentation_page.get_node("Center/Panel/Content/Back").pressed.connect(_back_to_streamer)
 
-	_motive_comic_page = Control.new()
-	_motive_comic_page.name = "MotiveComicPage"
-	_motive_comic_page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(_motive_comic_page)
-	_motive_comic_action = Button.new()
-	_motive_comic_action.text = "继续身份选择"
-	_motive_comic_action.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_motive_comic_action.position -= Vector2(140, 80)
-	_motive_comic_action.size = Vector2(280, 64)
+	_motive_comic_page = _build_placeholder_page(
+		"MotiveComicPage",
+		"仓鼠动机分镜",
+		"TEST_ONLY_PANEL_01",
+		"点击推进分镜",
+		"返回修改名字"
+	)
+	_motive_comic_status = _motive_comic_page.get_node("Center/Panel/Content/Status")
+	_motive_comic_action = _motive_comic_page.get_node("Center/Panel/Content/Action")
 	_motive_comic_action.pressed.connect(advance_motive_comic_on_click)
-	_motive_comic_page.add_child(_motive_comic_action)
+	_motive_comic_page.get_node("Center/Panel/Content/Back").pressed.connect(_back_to_streamer)
 
 	_room_transition_page = _build_placeholder_page(
 		"RoomComputerTransitionPage",
@@ -253,17 +255,14 @@ func _show_step(step: Step) -> void:
 	_selection.visible = step == Step.IDENTITY
 	_room_transition_page.visible = step == Step.ROOM_TRANSITION
 	_fan_page.visible = step == Step.FAN_GROUP
-	if is_instance_valid(_motive_comic_player):
-		_motive_comic_player.set_playback_paused(step != Step.MOTIVE_COMIC)
-	_motive_comic_action.visible = step == Step.MOTIVE_COMIC and _motive_comic_is_completed
 	match step:
 		Step.STREAMER:
 			_streamer_name_input.grab_focus()
 		Step.PLAYER_PRESENTATION:
 			_player_presentation_page.get_node("Center/Panel/Content/Action").grab_focus()
 		Step.MOTIVE_COMIC:
-			if _motive_comic_is_completed:
-				_motive_comic_action.grab_focus()
+			_motive_comic_action.text = "继续身份选择" if _motive_comic_is_completed else "点击推进分镜"
+			_motive_comic_action.grab_focus()
 		Step.IDENTITY:
 			_selection.restore_selection(_selected_option.identity_id if _selected_option != null else &"")
 			_selection.focus_selection()
@@ -291,50 +290,37 @@ func complete_player_presentation() -> void:
 		return
 	_player_presentation_is_completed = true
 	player_name_pawprint_presentation_completed.emit(_streamer_name_input.text)
-	# 已观看时跳过整个动机步骤；菜单回看仍不受此记录限制。
-	if SettingsManager.opening_comic_seen:
-		_motive_comic_is_completed = true
-		_identity_back.hide()
-		motive_comic_completed.emit()
-		_show_step(Step.IDENTITY)
-		return
 	_motive_comic_is_completed = false
-	_identity_back.show()
 	_create_motive_comic_control()
 	_show_step(Step.MOTIVE_COMIC)
-	if not _motive_comic_player.start_playback():
+	if not _comic_control.start_playback():
 		push_error("IdentitySetup: ID-12 comic playback could not start.")
 
 
 # 创建本次展示所需的 ID-12 控制器实例；重看名字后使用新实例从首格播放。
 func _create_motive_comic_control() -> void:
-	if is_instance_valid(_motive_comic_player):
-		_motive_comic_page.remove_child(_motive_comic_player)
-		_motive_comic_player.free()
-	_motive_comic_player = COMIC_PLAYER_SCENE.instantiate() as ComicPlayer
-	_motive_comic_player.embedded = true
-	_motive_comic_player.playback_finished.connect(_on_motive_playback_finished)
-	_motive_comic_page.add_child(_motive_comic_player)
-	_motive_comic_page.move_child(_motive_comic_action, -1)
-	_comic_control = _motive_comic_player.get_playback_control()
+	if _comic_control != null:
+		remove_child(_comic_control)
+		_comic_control.free()
+	_comic_control = ComicPanelPlaybackControl.new()
+	_comic_control.name = "MotiveComicPlaybackControl"
+	_comic_control.panel_count = PLACEHOLDER_PANEL_COUNT
+	_comic_control.panel_interval_seconds = PLACEHOLDER_PANEL_INTERVAL_SECONDS
 	_comic_control.panel_display_requested.connect(_on_motive_panel_display_requested)
-
-# 正常结束留在身份场景继续选择，Esc 通过统一路由返回菜单。
-func _on_motive_playback_finished(reason: StringName) -> void:
-	if reason in [&"completed", &"skipped"]:
-		_on_motive_comic_completed()
-	else:
-		SceneRouter.goto_main_menu()
+	_comic_control.playback_completed.connect(_on_motive_comic_completed)
+	add_child(_comic_control)
 
 
-# 转发正式漫画的格数请求，保留既有公开美术接口。
+# ID-12 的格数请求同时交给占位显示和公开美术接口。
 func _on_motive_panel_display_requested(panel_number: int) -> void:
+	_motive_comic_status.text = "TEST_ONLY_PANEL_%02d · 自动计时或点击均可推进" % panel_number
 	motive_panel_display_requested.emit(panel_number)
 
 
-# 正式漫画自动结束或快进完成后通知，身份页仅在收到该事实后打开。
+# ID-12 只在末格确认时通知完成；身份页仅在收到该事实后打开。
 func _on_motive_comic_completed() -> void:
 	_motive_comic_is_completed = true
+	_motive_comic_status.text = "TEST_ONLY：动机分镜播放完成。"
 	_motive_comic_action.text = "继续身份选择"
 	motive_comic_completed.emit()
 	if _step == Step.MOTIVE_COMIC:
@@ -347,8 +333,8 @@ func advance_motive_comic_on_click() -> void:
 		return
 	if _motive_comic_is_completed:
 		_show_step(Step.IDENTITY)
-	elif is_instance_valid(_motive_comic_player):
-		_motive_comic_player.advance()
+	elif _comic_control != null:
+		_comic_control.advance_on_click()
 
 
 # 身份页下一步表示玩家确认当前已翻开的选项，之后请求房间电脑转场。

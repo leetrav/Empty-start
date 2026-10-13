@@ -8,7 +8,7 @@ var comic_record_first_view: bool = false
 
 func goto_comic(kind: StringName, record_first_view: bool = false) -> Error:
 	# 仅接受已配置的两段漫画，不创建周目或伪造结局对象。
-	if kind != &"opening" and kind != &"ending":
+	if kind not in [&"intro", &"opening", &"ending"]:
 		return ERR_INVALID_PARAMETER
 	var scene: PackedScene = _load_scene(COMIC_SCENE_PATH)
 	if scene == null:

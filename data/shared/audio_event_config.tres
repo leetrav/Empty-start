@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="AudioEventConfig" load_steps=24 format=3]
+[gd_resource type="Resource" script_class="AudioEventConfig" load_steps=27 format=3]
 
 [ext_resource type="Script" path="res://core/audio/audio_event_config.gd" id="1_config"]
 [ext_resource type="Script" path="res://core/audio/audio_event.gd" id="2_event"]
@@ -13,11 +13,20 @@
 
 [ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg" id="11_comic_click"]
 
+[ext_resource type="AudioStreamWAV" path="res://assets/audio/sfx/comic/typewriter.wav" id="comic_typing"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/comic/book_flip.ogg" id="comic_book"]
+
 [sub_resource type="Resource" id="event_comic_write"]
 script = ExtResource("2_event")
 event_id = &"comic_write"
 audio_type = 2
-stream = ExtResource("11_comic_click")
+stream = ExtResource("comic_typing")
+
+[sub_resource type="Resource" id="event_comic_page"]
+script = ExtResource("2_event")
+event_id = &"comic_page"
+audio_type = 2
+stream = ExtResource("comic_book")
 
 [sub_resource type="Resource" id="event_attack_charge"]
 script = ExtResource("2_event")
@@ -94,4 +103,4 @@ music_duck_seconds = 0.2
 music_restore_seconds = 0.3
 music_silence_seconds = 0.25
 music_duck_volume = 0.25
-events = Array[ExtResource("2_event")]([SubResource("event_comic_write"), SubResource("event_attack_charge"), SubResource("event_attack_ready"), SubResource("event_attack_fire"), SubResource("event_hit_normal"), SubResource("event_hit_trap"), SubResource("event_tier_up"), SubResource("event_contradiction_start"), SubResource("event_contradiction_break"), SubResource("event_oracle_confirm"), SubResource("event_divine_descent_start"), SubResource("event_divine_descent_lock")])
+events = Array[ExtResource("2_event")]([SubResource("event_comic_write"), SubResource("event_comic_page"), SubResource("event_attack_charge"), SubResource("event_attack_ready"), SubResource("event_attack_fire"), SubResource("event_hit_normal"), SubResource("event_hit_trap"), SubResource("event_tier_up"), SubResource("event_contradiction_start"), SubResource("event_contradiction_break"), SubResource("event_oracle_confirm"), SubResource("event_divine_descent_start"), SubResource("event_divine_descent_lock")])
