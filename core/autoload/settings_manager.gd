@@ -28,6 +28,18 @@ var sfx_volume: float = DEFAULT_SFX_VOLUME
 var ui_volume: float = DEFAULT_UI_VOLUME
 var fullscreen: bool = DEFAULT_FULLSCREEN
 
+# 应用级观看事实独立于音量/显示默认值及周目存档。
+var opening_comic_seen: bool = false
+
+func mark_opening_comic_seen() -> Error:
+	# 写盘失败时保持未观看，下一次启动允许重试。
+	opening_comic_seen = true
+	var error: Error = save_settings()
+	if error != OK:
+		opening_comic_seen = false
+		_config.set_value("story", "opening_comic_seen", false)
+	return error
+
 var _config: ConfigFile = ConfigFile.new()
 var _settings_need_save: bool = false
 
@@ -45,6 +57,7 @@ func _ready() -> void:
 func load_settings() -> void:
 	# 读取五项设置；文件或字段异常时仅回退对应默认值。
 	_config = ConfigFile.new()
+	opening_comic_seen = false
 	_set_default_values()
 	_settings_need_save = false
 
@@ -62,6 +75,8 @@ func load_settings() -> void:
 	sfx_volume = _read_volume_setting(SFX_VOLUME_KEY, DEFAULT_SFX_VOLUME)
 	ui_volume = _read_volume_setting(UI_VOLUME_KEY, DEFAULT_UI_VOLUME)
 	fullscreen = _read_fullscreen_setting()
+	var seen: Variant = _config.get_value("story", "opening_comic_seen", false)
+	opening_comic_seen = seen if seen is bool else false
 
 
 func save_settings() -> Error:
@@ -71,6 +86,7 @@ func save_settings() -> Error:
 	_config.set_value(AUDIO_SECTION, SFX_VOLUME_KEY, sfx_volume)
 	_config.set_value(AUDIO_SECTION, UI_VOLUME_KEY, ui_volume)
 	_config.set_value(DISPLAY_SECTION, FULLSCREEN_KEY, fullscreen)
+	_config.set_value("story", "opening_comic_seen", opening_comic_seen)
 
 	var save_error: Error = _config.save(SETTINGS_FILE_PATH)
 	if save_error != OK:

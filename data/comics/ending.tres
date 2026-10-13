@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="ComicSequence" load_steps=17 format=3]
+[ext_resource type="Script" path="res://ui/comic/comic_sequence.gd" id="1"]
+[ext_resource type="Script" path="res://ui/comic/comic_frame.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/manga/P5/0.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/manga/P5/1.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/manga/P5/2.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/manga/P5/3.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/manga/P1/0.png" id="7"]
+[ext_resource type="Texture2D" path="res://assets/manga/P6/1.png" id="8"]
+[ext_resource type="Texture2D" path="res://assets/manga/P6/2.png" id="9"]
+[ext_resource type="Texture2D" path="res://assets/manga/P6/P6.png" id="10"]
+
+[sub_resource type="Resource" id="frame_1"]
+script = ExtResource("2")
+textures = Array[Texture2D]([ExtResource("3"), ExtResource("4")])
+positions = PackedVector2Array(0, 0, 38, 70)
+seconds = 2.4
+motion_offset = Vector2(0, 18)
+text = ""
+
+[sub_resource type="Resource" id="frame_2"]
+script = ExtResource("2")
+textures = Array[Texture2D]([ExtResource("3"), ExtResource("4"), ExtResource("5")])
+positions = PackedVector2Array(0, 0, 38, 70, 25, 334)
+seconds = 2.4
+motion_offset = Vector2(0, 18)
+text = ""
+
+[sub_resource type="Resource" id="frame_3"]
+script = ExtResource("2")
+textures = Array[Texture2D]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])
+positions = PackedVector2Array(0, 0, 38, 70, 25, 334, 720, 114)
+seconds = 2.4
+motion_offset = Vector2(0, 18)
+text = ""
+
+[sub_resource type="Resource" id="frame_4"]
+script = ExtResource("2")
+textures = Array[Texture2D]([ExtResource("7"), ExtResource("8")])
+positions = PackedVector2Array(0, 0, 0, 0)
+seconds = 2.8
+motion_offset = Vector2(0, 18)
+text = ""
+
+[sub_resource type="Resource" id="frame_5"]
+script = ExtResource("2")
+textures = Array[Texture2D]([ExtResource("7"), ExtResource("8"), ExtResource("9")])
+positions = PackedVector2Array(0, 0, 0, 0, 1331, 0)
+seconds = 2.4
+motion_offset = Vector2(0, 18)
+text = ""
+
+[sub_resource type="Resource" id="frame_6"]
+script = ExtResource("2")
+textures = Array[Texture2D]([ExtResource("10")])
+positions = PackedVector2Array(0, 0)
+seconds = 3.5
+motion_offset = Vector2(0, 18)
+text = ""
+
+[resource]
+script = ExtResource("1")
+frames = Array[ExtResource("2")]([SubResource("frame_1"), SubResource("frame_2"), SubResource("frame_3"), SubResource("frame_4"), SubResource("frame_5"), SubResource("frame_6")])

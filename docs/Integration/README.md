@@ -1,5 +1,11 @@
 # Integration
 
+## INT-11 剧情漫画首次播放与主菜单回看（2026-10-13）
+
+[INT-11 任务卡](tasks/INT-11_opening-ending-comic-playback.md)已审核并进入实现。共用 `ui/comic/comic_player.tscn` 通过 `SceneRouter.goto_comic(kind, record_first_view=false)` 接入 Boot 和主菜单；开头/结尾配置位于 `data/comics/`，正式原图保留 `assets/manga/P1～P6/`。观看记录由 SettingsManager 应用设置持有，回看不创建周目或改变结局结果。
+
+当前按参考视频暂分 P1～P4 为开头、P5～P6 为结尾；逐字能力已实现，正式台词未提供，书写音效暂用已有点击声。最终剧情分段、节奏、音效与 Android 仍待验收，详见[实施日志](剧情漫画_INT-11_2026-10-13_log.md)。
+
 > **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。开发前核对该表、本卡现行版、main 实际实现及最新完成日志。
 
 

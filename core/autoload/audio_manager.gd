@@ -294,3 +294,19 @@ func _ensure_audio_bus(bus_name: StringName) -> bool:
 
 	push_error("AudioManager: required Audio Bus '%s' was not found." % str(bus_name))
 	return false
+
+# 短剧情声音由调用场景独占，退出时可停止，避免干扰全局音效池。
+func create_event_player(event_id: StringName, owner_node: Node) -> AudioStreamPlayer:
+	var event: AudioEvent = _audio_config.find_event(event_id)
+	if event == null or event.stream == null or event.audio_type == AudioEvent.AudioType.MUSIC:
+		push_warning("AudioManager: 剧情音效事件不可用：%s" % event_id)
+		return null
+	var bus: StringName = UI_BUS_NAME if event.audio_type == AudioEvent.AudioType.UI else SFX_BUS_NAME
+	if not _ensure_audio_bus(bus):
+		return null
+	var player := AudioStreamPlayer.new()
+	player.name = "ComicWritingPlayer"
+	player.bus = bus
+	player.stream = event.stream
+	owner_node.add_child(player)
+	return player

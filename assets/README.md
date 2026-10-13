@@ -2,6 +2,12 @@
 
 本目录按**运行用途**整理素材，保留美术交付的独立图片。角色所属直播间的背景统一归 `environment/live/`，主角休息房间归 `environment/player_room/`。
 
+## 剧情漫画（INT-11，2026-10-13）
+
+`manga/P1/`～`manga/P6/` 保留美术交付的 27 张 PNG 及原文件名，完整构图为 1920×1080，另有不同尺寸的拆分图。文件清单见 [INT-11](../docs/Integration/tasks/INT-11_opening-ending-comic-playback.md)。播放配置位于 `data/comics/opening.tres`、`ending.tres`；按四段参考视频暂分 P1～P4 / P5～P6，最终分段仍待人工确认。
+
+完整效果图与拆图不作为连续独立页面机械播放。原图片不修改，配置保存拆图坐标、显现顺序和时长。参考视频、临时观察脚本和录屏保存在工程外。正式台词与书写音效待提供；`comic_write` 暂复用现有 Kenney `click_002.ogg` 验证声音链路。
+
 ## 当前结构
 
 ```text
