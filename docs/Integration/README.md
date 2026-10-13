@@ -125,3 +125,5 @@ godot.windows.opt.tools.64.exe --path <隔离项目绝对路径> res://tests/int
 ## INT-06 中央战斗区全高与操作 ICON（2026-10-11 实现完成）
 
 [INT-06 单功能程序任务卡](tasks/INT-06_battle-area-full-height-and-input-icon-overlay.md)已完成全高布局与操作浮层实现。中央顶部保持 1024×72，`BarrageArea` 和 `OracleCandidateDisplay` 使用中央局部矩形 `(0,72,1024,1008)`；旧底部交互栏移除，鼠标左键与 ESC ICON 固定在中央区左下角，HUD 继续保存蓄力进度与阶段供后续正式反馈读取。Godot GUI smoke 已覆盖 1920×1080 请求、1280×720、960×540、底边普通目标与神谕目标、ICON 输入穿透、ESC 暂停恢复及全屏切换。Editor 场景预览独立检查、实体鼠标键盘手动验收和 Android 设备验收仍未完成；工具连接边界及运行证据见 [INT-06 任务日志](Sandbox布局_INT-06_2026-10-11_log.md)。该布局更新覆盖旧 INT-02 的中央 760px 弹幕区和 248px 底部区设计基线。
+
+主菜单回放入口仅在应用已有开场观看记录时显示；首次打开隐藏两项，完成或主动结束开场后返回菜单解锁。未观看时设置面板关闭也不显示回放，后续启动继续读取持久记录。

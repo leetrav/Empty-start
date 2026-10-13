@@ -6,6 +6,9 @@ extends Control
 
 
 func _ready() -> void:
+	# 未观看时不提供回放；返回菜单及下次启动均读取持久观看记录。
+	%ReplayOpeningButton.visible = SettingsManager.opening_comic_seen
+	%ReplayEndingButton.visible = SettingsManager.opening_comic_seen
 	# 连接主菜单按钮与可复用设置面板。
 	%StartButton.pressed.connect(_on_start_button_pressed)
 	%ReplayOpeningButton.pressed.connect(_replay_comic.bind(&"opening"))

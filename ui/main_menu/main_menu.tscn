@@ -66,6 +66,7 @@ text = "开始游戏"
 
 [node name="ReplayOpeningButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MenuActions"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 theme_type_variation = &"SecondaryButton"
@@ -73,6 +74,7 @@ text = "再次播放开头"
 
 [node name="ReplayEndingButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MenuActions"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 theme_type_variation = &"SecondaryButton"
