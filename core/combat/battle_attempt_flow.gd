@@ -132,7 +132,9 @@ func _start_attempt(is_restart: bool) -> bool:
 	_hit_resolution = HitResolution.new(
 		_battle_config.initial_player_pk,
 		_battle_config.minimum_player_pk,
-		_battle_config.maximum_player_pk
+		_battle_config.maximum_player_pk,
+		_battle_config.max_positive_pk_delta_per_shot,
+		_battle_config.max_negative_pk_delta_per_shot
 	)
 	_repeat_queue = RepeatDelayQueue.new(_battle_config.maximum_pending_repeat_count)
 	_combat_stage = CombatStage.new(_tier_catalog)
