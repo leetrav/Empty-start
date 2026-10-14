@@ -118,17 +118,14 @@ func on_tier_changed(current_tier: int) -> void:
 func _process(delta: float) -> void:
 	if not _moving or not is_instance_valid(_track):
 		return
-	var previous_x: float = position.x
 	_move_elapsed += delta
 	var progress: float = clampf(_move_elapsed / maxf(progress_move_seconds, 0.001), 0.0, 1.0)
 	_display_pk = lerpf(_move_start_pk, _player_pk, sin(progress * PI * 0.5))
 	if progress >= 1.0:
 		_display_pk = _player_pk
 		_moving = false
-	_refresh_target_position(true)
-	var movement_x: float = position.x - previous_x
-	_roll_rotation += movement_x * roll_radians_per_pixel
-	_apply_ball_transform()
+	# 每个移动帧统一应用填充、球心和滚动角，完成后才通知百分比显示。
+	_refresh_target_position(true, true)
 
 
 func _refresh_track_layout() -> void:
@@ -139,9 +136,10 @@ func _refresh_track_layout() -> void:
 	_refresh_target_position(true)
 
 
-func _refresh_target_position(snap: bool = false) -> void:
+func _refresh_target_position(snap: bool = false, update_roll: bool = false) -> void:
 	if not is_instance_valid(_track):
 		return
+	var previous_x: float = position.x
 	# 填充与球共用显示值；读取 Range 实际值，消除 step 量化造成的微小错位。
 	_track.value = _display_pk
 	_target_center_x = _track.position.x + _track.size.x * _track.value
@@ -149,6 +147,10 @@ func _refresh_target_position(snap: bool = false) -> void:
 	position.y = _track_center_y - size.y * 0.5
 	if snap:
 		position.x = _target_center_x - size.x * 0.5
+	# 布局重算和重开只定位；正常移动才按本帧实际位移累加滚动。
+	if update_roll:
+		_roll_rotation += (position.x - previous_x) * roll_radians_per_pixel
+		_apply_ball_transform()
 	display_progress_changed.emit(_track.value)
 
 
