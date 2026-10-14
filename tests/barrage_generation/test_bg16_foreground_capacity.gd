@@ -37,8 +37,8 @@ func _run_test() -> void:
 	var trait_ids: Array[StringName] = [BarrageTraitSet.OCCLUSION]
 	var failures: Array[String] = []
 
-	if area.get_foreground_slot_count() != 0:
-		failures.append("CombatStage T0 publishes the unfilled zero value")
+	if area.get_foreground_slot_count() != 8:
+		failures.append("CombatStage T0 publishes eight V0 slots")
 	if not area.start_normal_generation(profile):
 		failures.append("normal generation starts for the test profile")
 
@@ -80,12 +80,13 @@ func _run_test() -> void:
 	if not timer_started or not timer_filled_slot or not tier_increase_resumed or not timer_slot_released or not timer_resumed:
 		failures.append("Tier increase and capacity release resume the ordinary generation Timer")
 
-	# 清理并让 CombatStage 重开到 T0；0 应继续采用 LevelProfile 的两格 fallback。
+	# 重开恢复 T0=8，再显式设为0验证旧版未配置回退逻辑。
 	area.clear_barrages()
 	profile.base_batch_count = 0
 	stage.begin_combat()
-	if area.get_foreground_slot_count() != 0 or not area.start_normal_generation(profile):
-		failures.append("reopen resets the published Tier count to T0")
+	if area.get_foreground_slot_count() != 8 or not area.start_normal_generation(profile):
+		failures.append("reopen restores the V0 T0 eight-slot count")
+	area.set_foreground_slot_count(0)
 	var fallback_first: BarrageView = area.spawn_normal_barrage(profile, speech)
 	var fallback_second: BarrageView = area.spawn_normal_barrage(profile, speech)
 	var fallback_overflow: BarrageView = area.spawn_normal_barrage(profile, speech)
