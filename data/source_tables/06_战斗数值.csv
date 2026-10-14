@@ -2,15 +2,15 @@ param_id,display_name,value,unit,scope,notes
 pk_initial,PK初始值,50,PK,global,系统案：开局50%；程序内部对应0.5
 pk_min,PK最小值,0,PK,global,系统案：归零失败
 pk_max,PK最大值,100,PK,global,系统案：满值进入Paradox
-pullback_base_pk_per_s,基础回拉速度,0.5,PK/s,global,系统案：Default每秒回拉0.5个百分点；Tier再乘倍率
+pullback_base_pk_per_s,基础回拉速度,0.08,PK/s,global,V0试玩：基础回拉0.08个百分点/秒；逐档乘Tier倍率
 aim_radius_pc_px,PC准心判定半径,72,px,PC,系统案实际可击中区域144×144；按半径折算72
 aim_radius_touch_px,触摸准心判定半径,90,px,Android,系统案手机实际可击中区域180×180；按半径折算90
 charge_time_s,蓄满时间,0.8,s,global,系统案
 projectile_flight_s,言弹飞行时间,0.2,s,global,系统案范围0.15–0.25s；当前表取中值0.2，仍需原型实测
 recovery_time_s,攻击硬直时间,0.15,s,global,系统案：飞行与结算结束后开始
-word_strength_1_pk,强度1 PK收益,0.12,PK,normal_hit,系统案：+0.12个百分点；程序内部对应+0.0012
-word_strength_2_pk,强度2 PK收益,0.2,PK,normal_hit,系统案：+0.2个百分点；程序内部对应+0.002
-word_strength_3_pk,强度3 PK收益,0.5,PK,normal_hit,系统案：+0.5个百分点；程序内部对应+0.005
+word_strength_1_pk,强度1 PK收益,0.4,PK,normal_hit,V0试玩：+0.4个百分点；内部+0.004
+word_strength_2_pk,强度2 PK收益,0.7,PK,normal_hit,V0试玩：+0.7个百分点；内部+0.007
+word_strength_3_pk,强度3 PK收益,1.2,PK,normal_hit,V0试玩：+1.2个百分点；内部+0.012
 word_strength_1_tendency,强度1 倾向增量,1,point,normal_hit,系统案
 word_strength_2_tendency,强度2 倾向增量,5,point,normal_hit,系统案
 word_strength_3_tendency,强度3 倾向增量,10,point,normal_hit,系统案
