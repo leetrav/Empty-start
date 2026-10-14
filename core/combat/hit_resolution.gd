@@ -11,9 +11,9 @@ enum ShotAnomaly {
 }
 
 const _NORMAL_WORD_REWARDS_BY_STRENGTH: Dictionary = {
-	1: {"pk_delta": 0.0012, "tendency_delta": 1},
-	2: {"pk_delta": 0.002, "tendency_delta": 5},
-	3: {"pk_delta": 0.005, "tendency_delta": 10},
+	1: {"pk_delta": 0.004, "tendency_delta": 1},
+	2: {"pk_delta": 0.007, "tendency_delta": 5},
+	3: {"pk_delta": 0.012, "tendency_delta": 10},
 }
 
 var _player_pk: float = 0.0
