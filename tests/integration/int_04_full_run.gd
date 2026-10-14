@@ -50,13 +50,22 @@ func _execute() -> void:
 			var phase_flow: ContradictionOracleFlow = sandbox.get_contradiction_oracle_flow()
 			var profile: LevelProfile = attempt_flow.get_current_level_profile()
 			var line: LevelContradiction = profile.true_contradictions[0] if success else profile.false_contradictions[0]
-			# 弹幕由实际区域生成，真假结果必须经过真正满蓄释放。
-			attempt_flow.get_barrage_area().clear_current_barrages()
-			var view: BarrageView = attempt_flow.get_barrage_area().spawn_contradiction_barrage(profile, line)
-			_check(view != null, "矛盾弹幕未生成")
-			# 本发只测指定真假句：清场会保留生成 Timer，蓄力期间新真句会混入假句快照。
-			# 停止后续批次保留已生成目标和正式十秒窗口，复读仍由流程实际推进。
-			attempt_flow.get_barrage_area().stop_contradiction_generation()
+			# CB-13已固定生成一真五假；选取真实候选，并在TEST_ONLY局部隔离准心覆盖区。
+			var view: BarrageView = null
+			for child in attempt_flow.get_barrage_area().get_children():
+				if child is BarrageView and not child.is_queued_for_deletion():
+					var candidate := child as BarrageView
+					if candidate.runtime_record.is_contradiction and candidate.runtime_record.original_sentence_id == line.original_sentence_id:
+						view = candidate
+						break
+			_check(view != null, "固定矛盾候选集缺少指定原句")
+			if view == null:
+				return
+			# 保留固定六句和正式结算；其余五句移开本发准心，消除随机重叠。
+			for child in attempt_flow.get_barrage_area().get_children():
+				if child is BarrageView and child != view and not child.is_queued_for_deletion():
+					(child as BarrageView).position = Vector2(-2000, -2000)
+			view.position = Vector2(200, 200)
 			await _shoot(sandbox, view)
 			var system: ContradictionBreakSystem = sandbox.get_contradiction_oracle_flow().get_contradiction_system()
 			_check(system.get_outcome() == (ContradictionBreakSystem.Outcome.BREAKTHROUGH if success else ContradictionBreakSystem.Outcome.NOT_BROKEN),
@@ -155,7 +164,7 @@ func _execute() -> void:
 	print("FAIL" if failed else "PASS", " INT-04 full run checks=", checks, " top_level_routes=", route_count, " DD_completed=", dd_completed)
 	get_tree().quit(1 if failed else 0)
 
-# 三步页面分别操作正式控件，保留十二张批准身份资源。
+# 依次操作当前开场演出、身份及取名控件，保留十二张批准身份资源。
 func _opening() -> void:
 	_check(SceneRouter.goto_main_menu() == OK, "主菜单路由失败")
 	await _frames()
@@ -164,11 +173,16 @@ func _opening() -> void:
 	var setup = get_tree().current_scene
 	setup._streamer_name_input.text = "Jackie INT04 TEST_ONLY"
 	setup._streamer_continue.pressed.emit()
+	# 当前开局流程先完成爪印演出与三格动机漫画，再进入身份选项。
+	setup._player_presentation_page.get_node("Center/Panel/Content/Action").pressed.emit()
+	for panel_index in range(3):
+		setup._motive_comic_action.pressed.emit()
 	_check(setup._selection._buttons.size() == 12, "批准身份数量变化")
 	setup._selection._buttons[0].pressed.emit()
 	# ID-10 首次点击翻开，再次点击才沿用正式单选与下一页入口。
 	setup._selection._buttons[0].pressed.emit()
 	setup._selection.get_node("%NextButton").pressed.emit()
+	setup._room_transition_action.pressed.emit()
 	setup._fan_group_name_input.text = "INT04 TEST_ONLY fans"
 	setup._confirm_button.pressed.emit()
 	await _frames()
