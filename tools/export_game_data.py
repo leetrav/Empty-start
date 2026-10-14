@@ -250,6 +250,9 @@ def validate(tables: dict, report: Report) -> None:
                     report.add("警告", child, line, field, f"{parent} 目前没有正式记录，关联 ID 暂无法核验")
             continue
         for line, row in tables[child][1]:
+            # 停用的吞并奖励占位记录保留在 CSV，正式关联仅核验启用项。
+            if child == "13_吞并奖励" and row.get("enabled", "").lower() == "false":
+                continue
             ref = row.get(field, "").strip()
             if ref and ref not in source:
                 report.add("错误", child, line, field, f"关联 ID {ref!r} 未出现在 {parent}.{target}")
@@ -273,7 +276,14 @@ def validate(tables: dict, report: Report) -> None:
         if down and numeric(down, "float") and not (0 <= float(down) < upper):
             report.add("错误", "08_Tier档位", line, "pk_down_threshold", "降档阈值须低于本档升档阈值")
         for f in ("spawn_batch_mult", "spawn_frequency_mult", "move_speed_mult", "lifetime_mult", "pullback_mult"):
-            if numeric(r.get(f, ""), "float") and float(r[f]) <= 0:
+            if not numeric(r.get(f, ""), "float"):
+                continue
+            value = float(r[f])
+            # T0 普通战斗无回拉；从 T1 起回拉倍率必须为正。
+            if f == "pullback_mult" and r["tier"] == "0":
+                if value < 0:
+                    report.add("错误", "08_Tier档位", line, f, "T0 回拉倍率不得小于 0")
+            elif value <= 0:
                 report.add("错误", "08_Tier档位", line, f, "倍率必须大于 0")
         if numeric(r["repeat_count"], "int") and int(float(r["repeat_count"])) < 0:
             report.add("错误", "08_Tier档位", line, "repeat_count", "复读数量不可为负")
