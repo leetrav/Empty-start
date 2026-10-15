@@ -48,3 +48,17 @@ GUI 实际截图保存在 `D:\tmp\int13-pa12-preview-20261015\transition.png` �
 下一步由总控检查本分支差异和 Godot 证据；确认后推送并开 PR 等待 Review。不得把本地 D3D12 的单项弹幕暂停寿命断言失败表述为 PA-12 测试通过。
 
 系统文档及 `known_traps.md`：更新 Integration README；未发现需新增长期陷阱。
+
+## PR #228 评审返工：暂停寿命补偿计时（2026-10-15）
+
+`expires_at_msec - expiry_before` 测量暂停后绝对到期时间的延长量。`BarrageView` 以 `PROCESS_MODE_ALWAYS` 在暂停时记录单调时钟起点，恢复后将经过毫秒数补到到期时间；到期差值应覆盖实际暂停区间，弹幕移动和蓄力仍由原断言验证暂停冻结。原测试以固定 `180ms` 对照名义 `220ms` 等待，未记录 pause/resume 实际时钟，无法区分计时器和图形帧调度造成的时间差。
+
+本次测试记录 pause 请求、resume 请求、测量时点、到期前后值和补偿差，并以 `max(180ms, 实测暂停时长 - 50ms)` 核对补偿，保留原下限及 50ms 单帧调度容差。直接测量表明运行时补偿符合暂停寿命规则，没有发现 `BarrageView` 生命周期缺陷；历史两次失败没有保存当时计时数据，因此无法追溯其单次实际误差。当前验证记录：
+
+| 验证 | 到期前 → 到期后 | 实际暂停 / 补偿 | 结果 |
+| --- | --- | --- | --- |
+| Godot 4.7.2 D3D12 GUI INT-01 | `18634 → 18867` | `229ms / 233ms`（差 `+4ms`） | exit 0；96/96 PASS |
+| Godot 4.7.2 headless INT-01 | `16936 → 17173` | `235ms / 237ms`（差 `+2ms`） | exit 0；93/93 PASS |
+| Godot 4.7.2 headless INT-04 | — | — | exit 0；100 checks、10 个顶层路由、1 次神降临完成 |
+
+复验日志位于 `D:\tmp\int13-int01-gui-final2.log`、`D:\tmp\int13-int01-headless-final2.log`、`D:\tmp\int13-int04-headless-final.log`。使用隔离 APPDATA `D:\tmp\int13-pa12-review-userdata`，没有触碰项目存档；GUI 预览仍只保存在仓库外。改动仅限 INT-01 暂停计时断言和本日志；没有修改运行时代码或系统文档。

@@ -225,19 +225,31 @@ func _verify_pause_in_each_attack_phase() -> void:
 	_mouse_button(true)
 	await _wait(0.06)
 	var pause_menu: Node = _sandbox.get_node("%PauseMenu")
+	var pause_requested_msec: int = Time.get_ticks_msec()
 	pause_menu.pause_game()
 	await get_tree().process_frame
 	var charge_before: float = _attack.get_charge_progress()
 	var position_before: Vector2 = target.position
 	var expiry_before: int = target.runtime_record.expires_at_msec
+	var pause_measure_started_msec: int = Time.get_ticks_msec()
 	var pk_before: float = _hit().get_player_pk()
 	await _wait(0.22)
+	var resume_requested_msec: int = Time.get_ticks_msec()
 	_check(is_equal_approx(_attack.get_charge_progress(), charge_before), "暂停冻结蓄力")
 	_check(target.position == position_before and is_equal_approx(_hit().get_player_pk(), pk_before), "暂停冻结弹幕移动和回拉")
 	pause_menu.resume_game()
 	await _wait(0.23)
+	var expiry_after: int = target.runtime_record.expires_at_msec
+	var compensation_msec: int = expiry_after - expiry_before
+	var observed_pause_msec: int = resume_requested_msec - pause_requested_msec
+	var minimum_compensation_msec: int = maxi(180, observed_pause_msec - 50)
+	print("INT-01 PAUSE TIMING: expiry_before=%d expiry_after=%d compensation_msec=%d pause_request_to_measure_start_msec=%d measured_pause_msec=%d resume_observation_delay_msec=%d compensation_minus_measured_pause_msec=%d required_minimum_msec=%d" % [
+		expiry_before, expiry_after, compensation_msec, pause_measure_started_msec - pause_requested_msec,
+		observed_pause_msec, Time.get_ticks_msec() - resume_requested_msec,
+		compensation_msec - observed_pause_msec, minimum_compensation_msec,
+	])
 	_check(_attack.is_fully_charged() and _hit().get_player_pk() < pk_before, "恢复继续蓄力与回拉")
-	_check(target.runtime_record.expires_at_msec - expiry_before >= 180, "恢复补偿弹幕暂停寿命")
+	_check(compensation_msec >= minimum_compensation_msec, "恢复补偿弹幕暂停寿命")
 	_aim_at(target)
 	var submissions_before: int = _submissions.size()
 	_mouse_button(false)
