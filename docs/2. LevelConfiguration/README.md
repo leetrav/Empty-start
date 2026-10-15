@@ -45,7 +45,7 @@
 | LC-07 | 接入吞并后的继承内容 | 无新增自动化测试 |
 | LC-08 | 接通当前关重开 | 无新增自动化测试 |
 | LC-09 | 接通休息时刻后的下一关 / 终局入口 | 无新增自动化测试 |
-| LC-10 | 正式导表与后续新增需求联调（未完成，暂缓） | 待策划确认后再定 |
+| LC-10 | 正式导表与四关生产资源集成 | 已完成（2026-10-15；字段缺项与消费边界见任务日志） |
 
 ## 测试预算
 
@@ -179,9 +179,9 @@ LevelProfile 新增可选 normal_speech_pool_source: LevelSpeechPool，使用 ge
 - **24_新手教学配置：**通过 `tutorial_config_id` 关联首关，提供步骤ID、顺序、触发事件、提示文本、完成事件与启用标记。当前三步为未启用草案；新增 [LC-13](tasks/LC-13_first-level-tutorial-steps.md) 负责读取真实输入事实并按事件推进。
 - **05_关卡生成：**新增可选 `special_instance_screen_cap`，留空沿用06.`special_foreground_instance_cap`。对战前景总容量仍归08 Tier配置（CS-24）。
 - **20/21/19表：**02.`story_config_id` 关联20表同名剧情配置ID，按本场主播校验归属；20的 `trigger_type/trigger_key`、指定原句、时间节点驱动SD-05～07，新增 `line_order` 保证同事件多句剧情对白按顺序显示（SD-08/SD-03）。反击候选按 `streamer_id + tier`（CS-28），直播评论按 `side_scope + 可选streamer_id`（LD-12）。
-- 05与11的首关ID已统一为 `level_001`；现有正式 `.tres` 与导表器还需 [LC-10](tasks/LC-10_pending-data-import-and-integration.md) 对接四关及新表字段。
+- 05与11的关卡ID已统一为 `level_001` 至 `level_004`；LC-10 已从 27 张正式 CSV 生成四关 `LevelProfile`、共享 `pool_streamer_a` 和 `LevelCatalog`。各关目前按配置共享同一 163 句玩家来源词池。字段缺项、纹理空值与验证边界见 [LC-10 完成日志](关卡配置_LC-10_2026-10-15_log.md)。
 
-现有 Godot `LevelProfile` 类型和两关示例资源持续作为程序实现基础，正式资源随LC-10导表集成。
+Godot `LevelProfile`、正式四关资源和目录共同作为当前生产实现；23/24/20 等下游表仍由其系统任务接入。
 
 ## 2026-10-10 新版主播粉丝团名称
 

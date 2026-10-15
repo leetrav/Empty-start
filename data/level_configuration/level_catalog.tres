@@ -1,9 +1,11 @@
-[gd_resource type="Resource" script_class="LevelCatalog" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="LevelCatalog" format=3]
 
 [ext_resource type="Script" path="res://data/level_configuration/level_catalog.gd" id="1_catalog"]
-[ext_resource type="Resource" path="res://data/level_configuration/level_001.tres" id="2_level_001"]
-[ext_resource type="Resource" path="res://data/level_configuration/level_002.tres" id="3_level_002"]
+[ext_resource type="Resource" path="res://data/level_configuration/level_001.tres" id="2_level"]
+[ext_resource type="Resource" path="res://data/level_configuration/level_002.tres" id="3_level"]
+[ext_resource type="Resource" path="res://data/level_configuration/level_003.tres" id="4_level"]
+[ext_resource type="Resource" path="res://data/level_configuration/level_004.tres" id="5_level"]
 
 [resource]
 script = ExtResource("1_catalog")
-profiles = Array[ExtResource("2_level_001")]([ExtResource("2_level_001"), ExtResource("3_level_002")])
+profiles = Array[ExtResource("2_level")]( [ExtResource("2_level"), ExtResource("3_level"), ExtResource("4_level"), ExtResource("5_level")])

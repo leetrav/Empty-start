@@ -1,56 +1,79 @@
-[gd_resource type="Resource" script_class="LevelProfile" load_steps=9 format=3]
-
+[gd_resource type="Resource" script_class="LevelProfile" format=3]
 [ext_resource type="Script" path="res://data/level_configuration/level_profile.gd" id="1_profile"]
-[ext_resource type="Script" path="res://data/level_configuration/level_speech.gd" id="2_speech"]
-[ext_resource type="Script" path="res://data/level_configuration/level_contradiction.gd" id="3_contradiction"]
-
-[sub_resource type="Resource" script_class="LevelSpeech" id="LevelSpeech_orthodox_sample"]
-script = ExtResource("2_speech")
-original_sentence_id = "sample_sentence_001"
-text = "示例正统话语，策划后续替换。"
-tendency_id = "orthodox"
-appearance_weight = 1.0
-
-[sub_resource type="Resource" script_class="LevelSpeech" id="LevelSpeech_heretical_sample"]
-script = ExtResource("2_speech")
-original_sentence_id = "sample_sentence_heretical_001"
-text = "示例异端话语，策划后续替换。"
-tendency_id = "heretical"
-appearance_weight = 1.0
-
-[sub_resource type="Resource" script_class="LevelSpeech" id="LevelSpeech_absurd_sample"]
-script = ExtResource("2_speech")
-original_sentence_id = "sample_sentence_absurd_001"
-text = "示例荒谬话语，策划后续替换。"
-tendency_id = "absurd"
-appearance_weight = 1.0
-
-[sub_resource type="Resource" script_class="LevelContradiction" id="LevelContradiction_true_sample"]
-script = ExtResource("3_contradiction")
-original_sentence_id = "sample_contradiction_true_001"
-text = "示例真矛盾，后续由策划替换。"
-
-[sub_resource type="Resource" script_class="LevelContradiction" id="LevelContradiction_false_sample"]
-script = ExtResource("3_contradiction")
-original_sentence_id = "sample_contradiction_false_001"
-text = "示例假矛盾，后续由策划替换。"
-
+[ext_resource type="Script" path="res://data/level_configuration/level_contradiction.gd" id="2_contradiction"]
+[ext_resource type="Resource" path="res://data/level_configuration/pools/pool_streamer_a.tres" id="3_pool"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/alien/alien_idle.png" id="4_portrait"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/alien/alien_tier_01.png" id="5_portrait_t1"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/alien/alien_tier_02.png" id="6_portrait_t2"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/alien/alien_tier_03.png" id="7_portrait_t3"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/alien/alien_defeat.png" id="8_portrait_defeat"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/alien/alien_defeat_transition.png" id="9_portrait_transition"]
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_1"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_alien_true"
+text = "你根本就不是猫！"
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_2"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_alien_false_1"
+text = "你根本就不是喵！"
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_3"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_alien_false_2"
+text = "你根本就不是鼠！"
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_4"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_alien_false_3"
+text = "你根本就是猫！"
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_5"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_alien_false_4"
+text = "你根本就是狗！"
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_6"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_alien_false_5"
+text = "你根本就是鼠！"
 [resource]
 script = ExtResource("1_profile")
 level_id = "level_001"
 level_order = 1
-streamer_id = "streamer_sample"
-streamer_name = "示例主播"
-stream_topic = "示例直播主题，可在 Inspector 中编辑。"
-fan_badge_id = "fan_badge_sample"
-normal_speech_pool = Array[ExtResource("2_speech")]([SubResource("LevelSpeech_orthodox_sample"), SubResource("LevelSpeech_heretical_sample"), SubResource("LevelSpeech_absurd_sample")])
-orthodox_ratio = 1.0
-heretical_ratio = 1.0
-absurd_ratio = 1.0
-true_contradictions = Array[ExtResource("3_contradiction")]([SubResource("LevelContradiction_true_sample")])
-false_contradictions = Array[ExtResource("3_contradiction")]([SubResource("LevelContradiction_false_sample")])
-contradiction_context_clues = Array[String](["示例前文线索，后续由策划替换。"])
+streamer_id = "alien"
+streamer_name = "Fermi | 费米"
+fan_group_name = "科学家"
+stream_topic = "旅游直播"
+portrait_set_id = "portrait_alien"
+tutorial_config_id = "tutorial_level_001"
+story_config_id = "story_level_001"
+contradiction_set_id = "contradiction_alien"
+background_asset_id = ""
+fan_badge_asset_id = ""
+normal_speech_pool_source = ExtResource("3_pool")
+streamer_portrait = ExtResource("4_portrait")
+opponent_tier_01_portrait = ExtResource("5_portrait_t1")
+opponent_tier_02_portrait = ExtResource("6_portrait_t2")
+opponent_tier_03_portrait = ExtResource("7_portrait_t3")
+opponent_defeat_portrait = ExtResource("8_portrait_defeat")
+opponent_defeat_transition_portrait = ExtResource("9_portrait_transition")
+orthodox_ratio = 36
+heretical_ratio = 41
+absurd_ratio = 46
+neutral_ratio = 40
+true_contradictions = Array[ExtResource("2_contradiction")]([SubResource("Contradiction_1")])
+false_contradictions = Array[ExtResource("2_contradiction")]([SubResource("Contradiction_2"), SubResource("Contradiction_3"), SubResource("Contradiction_4"), SubResource("Contradiction_5"), SubResource("Contradiction_6")])
+contradiction_context_clues = Array[String]([])
 base_batch_count = 3
-base_spawn_interval_seconds = 1.0
-base_move_speed_pixels_per_second = 100.0
-normal_barrage_screen_cap = 24
+base_spawn_interval_seconds = 1.6
+base_move_speed_pixels_per_second = 45
+word_weight_multiplier = 1
+valid_area_key = "center_valid_area"
+layout_key = "battle_layout_01"
+special_instance_screen_cap = 3
+paradox_window_seconds = 10
+paradox_shot_limit = 1
+paradox_silence_transition_seconds = 1
+paradox_candidate_count = 6
+paradox_true_count = 1
+paradox_fake_count = 5
+paradox_motion_duration_seconds = 2
+paradox_motion_mode = "ease_out_to_stop"
+paradox_motion_speed_curve_id = "smoothstep_to_zero_v0"
+paradox_shootable_during_motion = true

@@ -13,7 +13,6 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parents[1]
 SHEET_NAMES = (
@@ -585,19 +584,238 @@ def make_test_only_levels(tables: dict, report: Report) -> dict[str, str]:
     output[f"{root}/test_only_level_catalog.tres"] = "\n".join(catalog)
     return output
 
+
+def read_approved_csv_tables(source_root: Path, report: Report) -> dict:
+    """读取已批准的正式 CSV；按原始表头和行序进入现有校验链。"""
+    tables = {}
+    for sheet in SHEET_NAMES:
+        path = source_root / f"{sheet}.csv"
+        if not path.is_file():
+            report.add("错误", sheet, 1, "CSV", f"缺少正式来源文件：{path}")
+            continue
+        with path.open("r", encoding="utf-8-sig", newline="") as stream:
+            reader = csv.DictReader(stream)
+            header = reader.fieldnames or []
+            required = RULES[sheet][1]
+            if not is_header(header, required):
+                report.add("错误", sheet, 1, "表头", "CSV 缺少正式字段或表头无效")
+                continue
+            records = [(line, dict(row)) for line, row in enumerate(reader, 2)]
+        tables[sheet] = (header, records)
+        report.stats.append((sheet, len(records), 0, 0))
+    validate(tables, report)
+    return tables
+
+
+def make_formal_levels(tables: dict, report: Report) -> dict[str, str]:
+    """把正式 02/03/04/05/11 表记录组合为生产关卡 Resource 与目录。"""
+    root = "data/level_configuration"
+    levels = [(line, row) for line, row in tables[SHEET_NAMES[1]][1]
+              if row.get("enabled", "true").lower() == "true"]
+    generation = {row["level_id"]: row for _, row in tables[SHEET_NAMES[4]][1]}
+    paradox = {row["level_id"]: row for _, row in tables[SHEET_NAMES[12]][1]}
+    global_combat_params = {row["param_id"]: row.get("value", "") for _, row in tables[SHEET_NAMES[5]][1]}
+    speeches = [row for _, row in tables[SHEET_NAMES[2]][1]
+                if row.get("enabled", "").lower() == "true"]
+    contradictions = [row for _, row in tables[SHEET_NAMES[3]][1]
+                      if row.get("enabled", "").lower() == "true"]
+    portraits = {row["portrait_set_id"]: row for _, row in tables[SHEET_NAMES[24]][1]
+                 if row.get("enabled", "").lower() == "true"}
+    output: dict[str, str] = {}
+    order_list = []
+    for line, row in levels:
+        level_id, streamer_id = row["level_id"], row["streamer_id"]
+        pool_id, set_id = row.get("word_pool_id", ""), row.get("contradiction_set_id", "")
+        gen, paradox_row = generation.get(level_id), paradox.get(level_id)
+        if gen is None or paradox_row is None:
+            report.add("错误", "02_主播关卡", line, "level_id", "缺少同 ID 的 05/11 关卡参数")
+            continue
+        pool_rows = [speech for speech in speeches if speech.get("pool_id") == pool_id]
+        related = [c for c in contradictions if c.get("set_id") == set_id and c.get("streamer_id") == streamer_id]
+        if not pool_rows:
+            report.add("错误", "02_主播关卡", line, "word_pool_id", f"词库 {pool_id!r} 没有启用句子")
+            continue
+        if {c.get("type") for c in related} != {"true", "false"}:
+            report.add("错误", "04_矛盾内容", line, "set_id", f"{set_id} 缺少真假矛盾配对")
+            continue
+        if not numeric(row.get("level_order", ""), "int"):
+            report.add("错误", "02_主播关卡", line, "level_order", "关卡顺序必须为整数")
+            continue
+        script = [
+            '[gd_resource type="Resource" script_class="LevelProfile" format=3]', "",
+            '[ext_resource type="Script" path="res://data/level_configuration/level_profile.gd" id="1_profile"]',
+            '[ext_resource type="Script" path="res://data/level_configuration/level_contradiction.gd" id="2_contradiction"]',
+            f'[ext_resource type="Resource" path="res://{root}/pools/{pool_id}.tres" id="3_pool"]',
+        ]
+        portrait = portraits.get(row.get("portrait_set_id", ""))
+        portrait_resources = {}
+        for source_field, profile_field, resource_id in (
+            ("idle_asset_path", "streamer_portrait", "4_portrait"),
+            ("tier_01_asset_path", "opponent_tier_01_portrait", "5_portrait_t1"),
+            ("tier_02_asset_path", "opponent_tier_02_portrait", "6_portrait_t2"),
+            ("tier_03_asset_path", "opponent_tier_03_portrait", "7_portrait_t3"),
+            ("defeat_asset_path", "opponent_defeat_portrait", "8_portrait_defeat"),
+            ("defeat_transition_asset_path", "opponent_defeat_transition_portrait", "9_portrait_transition"),
+        ):
+            asset_path = portrait.get(source_field, "") if portrait else ""
+            if asset_path and (ROOT / asset_path).is_file():
+                script.append(f'[ext_resource type="Texture2D" path="res://{asset_path}" id="{resource_id}"]')
+                portrait_resources[profile_field] = resource_id
+        script.append("")
+        true_refs, false_refs, clues = [], [], []
+        for i, contradiction in enumerate(related, 1):
+            rid = f"Contradiction_{i}"
+            script.extend([
+                f'[sub_resource type="Resource" script_class="LevelContradiction" id="{rid}"]',
+                'script = ExtResource("2_contradiction")',
+                f'original_sentence_id = {gd_string(contradiction["contradiction_id"])}',
+                f'text = {gd_string(contradiction["text"])}', "",
+            ])
+            (true_refs if contradiction["type"] == "true" else false_refs).append(f'SubResource("{rid}")')
+            clue = contradiction.get("clue_text", "").strip()
+            if clue:
+                clues.append(clue)
+        script.extend([
+            "[resource]", 'script = ExtResource("1_profile")',
+            f'level_id = {gd_string(level_id)}',
+            f'level_order = {int(float(row["level_order"]))}',
+            f'streamer_id = {gd_string(streamer_id)}',
+            f'streamer_name = {gd_string(row.get("streamer_name", ""))}',
+            f'fan_group_name = {gd_string(row.get("fan_group_name", ""))}',
+            f'stream_topic = {gd_string(row.get("live_theme", ""))}',
+            f'portrait_set_id = {gd_string(row.get("portrait_set_id", ""))}',
+            f'tutorial_config_id = {gd_string(row.get("tutorial_config_id", ""))}',
+            f'story_config_id = {gd_string(row.get("story_config_id", ""))}',
+            f'contradiction_set_id = {gd_string(set_id)}',
+            f'background_asset_id = {gd_string(row.get("background_asset_id", ""))}',
+            f'fan_badge_asset_id = {gd_string(row.get("fan_badge_asset_id", ""))}',
+            'normal_speech_pool_source = ExtResource("3_pool")',
+        ])
+        for profile_field, resource_id in portrait_resources.items():
+            script.append(f'{profile_field} = ExtResource("{resource_id}")')
+        # 表中未配置类别比例；用该关卡实际词池的分类权重总和作为类别抽取权重。
+        category_weights = defaultdict(float)
+        for speech in pool_rows:
+            tendency = "heretical" if speech["tendency"] == "heresy" else speech["tendency"]
+            category_weights[tendency] += float(speech["weight"])
+        for tendency in ("orthodox", "heretical", "absurd", "neutral"):
+            script.append(f'{tendency}_ratio = {format(category_weights[tendency], ".15g")}')
+        script.extend([
+            f'true_contradictions = Array[ExtResource("2_contradiction")]([{", ".join(true_refs)}])',
+            f'false_contradictions = Array[ExtResource("2_contradiction")]([{", ".join(false_refs)}])',
+            f'contradiction_context_clues = Array[String]([{", ".join(gd_string(x) for x in clues)}])',
+        ])
+        for source_field, target_field, kind in (
+            ("base_batch_count", "base_batch_count", "int"),
+            ("spawn_interval_s", "base_spawn_interval_seconds", "float"),
+            ("move_speed_px_s", "base_move_speed_pixels_per_second", "float"),
+            ("word_weight_multiplier", "word_weight_multiplier", "float"),
+        ):
+            raw = gen.get(source_field, "")
+            if not numeric(raw, kind):
+                report.add("错误", "05_关卡生成", line, source_field, "必须有有效的正式数值")
+                continue
+            value = str(int(float(raw))) if kind == "int" else format(float(raw), ".15g")
+            script.append(f"{target_field} = {value}")
+        for source_field in ("valid_area_key", "layout_key"):
+            if gen.get(source_field, "").strip():
+                script.append(f"{source_field} = {gd_string(gen[source_field])}")
+        # 05 可覆盖单关特殊实例上限；留空时使用 06 的正式全局值。
+        cap = gen.get("special_instance_screen_cap", "").strip()
+        if not cap:
+            cap = global_combat_params.get("special_foreground_instance_cap", "").strip()
+        if cap and numeric(cap, "int"):
+            script.append(f"special_instance_screen_cap = {int(float(cap))}")
+        else:
+            report.add("警告", "05_关卡生成", line, "special_instance_screen_cap",
+                       "单关覆盖和 06 全局默认值均为空；保留 LevelProfile 默认值 -1")
+        for source_field, target_field, kind in (
+            ("time_limit_s", "paradox_window_seconds", "float"),
+            ("shot_limit", "paradox_shot_limit", "int"),
+            ("silence_transition_s", "paradox_silence_transition_seconds", "float"),
+            ("candidate_count", "paradox_candidate_count", "int"),
+            ("true_count", "paradox_true_count", "int"),
+            ("fake_count", "paradox_fake_count", "int"),
+            ("motion_duration_s", "paradox_motion_duration_seconds", "float"),
+        ):
+            raw = paradox_row.get(source_field, "").strip()
+            if raw and numeric(raw, kind):
+                value = str(int(float(raw))) if kind == "int" else format(float(raw), ".15g")
+                script.append(f"{target_field} = {value}")
+        for source_field, target_field in (
+            ("motion_mode", "paradox_motion_mode"),
+            ("motion_speed_curve_id", "paradox_motion_speed_curve_id"),
+        ):
+            if paradox_row.get(source_field, "").strip():
+                script.append(f"{target_field} = {gd_string(paradox_row[source_field])}")
+        shootable = paradox_row.get("shootable_during_motion", "").strip()
+        if shootable:
+            script.append(f"paradox_shootable_during_motion = {shootable.lower()}")
+        output[f"{root}/{level_id}.tres"] = "\n".join(x for x in script if x) + "\n"
+        order_list.append((int(float(row["level_order"])), level_id))
+    if len(order_list) != len(levels) or len({order for order, _ in order_list}) != len(order_list):
+        report.add("错误", "02_主播关卡", 1, "level_order", "四关资源未完整生成或顺序重复")
+    ordered = [level_id for _, level_id in sorted(order_list)]
+    catalog = [
+        '[gd_resource type="Resource" script_class="LevelCatalog" format=3]', "",
+        '[ext_resource type="Script" path="res://data/level_configuration/level_catalog.gd" id="1_catalog"]',
+    ]
+    for index, level_id in enumerate(ordered, 2):
+        catalog.append(f'[ext_resource type="Resource" path="res://{root}/{level_id}.tres" id="{index}_level"]')
+    catalog.extend(["", "[resource]", 'script = ExtResource("1_catalog")',
+        'profiles = Array[ExtResource("2_level")]( [' + ", ".join(
+            f'ExtResource("{index}_level")' for index in range(2, len(ordered) + 2)) + "])", ""])
+    output[f"{root}/level_catalog.tres"] = "\n".join(catalog)
+    return output
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="一次性导出全部策划 Sheet 至分系统 CSV + 已接入的 Godot Resource")
-    parser.add_argument("--input", type=Path, required=True, help="Google Sheets 下载的 .xlsx")
+    parser.add_argument("--input", type=Path, help="Google Sheets 下载的 .xlsx")
+    parser.add_argument("--approved-csv", action="store_true", help="Generate production Resources from approved data/source_tables CSVs")
+    parser.add_argument("--csv-dir", type=Path, help="CSV source directory for --approved-csv")
     parser.add_argument("--output-root", type=Path, help="导出根目录；省略时写入当前项目根目录")
     parser.add_argument("--csv-only", action="store_true", help="仅导出 CSV，不更新已接入的 Resource")
     parser.add_argument("--test-only", action="store_true", help="输入测试工作簿；仅输出 TEST_ONLY CSV/词库，保留正式数据")
     args = parser.parse_args()
-    source = args.input.expanduser().resolve()
     output_root = args.output_root.expanduser().resolve() if args.output_root else ROOT
+    report = Report()
+    if args.approved_csv:
+        if args.test_only:
+            print("--approved-csv cannot be combined with --test-only", file=sys.stderr)
+            return 2
+        source_root = args.csv_dir.expanduser().resolve() if args.csv_dir else ROOT / "data/source_tables"
+        tables = read_approved_csv_tables(source_root, report)
+        outputs: dict[str, str] = {}
+        if not report.errors:
+            outputs.update(make_speech_pools(tables[SHEET_NAMES[2]][1], report, "data/level_configuration/pools"))
+            outputs.update(make_formal_levels(tables, report))
+            outputs["data/combat_stage/tier_catalog.tres"] = make_tier_resource(tables[SHEET_NAMES[9]][1], report)
+        for sheet, n, blanks, examples in report.stats:
+            print(f"[table] {sheet}: {n} rows")
+        for warning in report.warnings:
+            print("[warning]", warning)
+        for error in report.errors:
+            print("[error]", error, file=sys.stderr)
+        if report.errors:
+            print(f"Formal CSV import failed: {len(report.errors)} errors; no generated files written.", file=sys.stderr)
+            return 1
+        for relative, content in outputs.items():
+            dest = output_root / relative
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if dest.exists() and dest.read_text(encoding="utf-8") == content:
+                print("[unchanged]", relative)
+            else:
+                dest.write_text(content, encoding="utf-8", newline="\n")
+                print("[wrote]", relative)
+        print(f"Formal CSV import complete: {len(tables)} tables, {len(outputs)} outputs, {len(report.warnings)} warnings, 0 errors.")
+        return 0
+    if args.input is None:
+        parser.error("XLSX mode requires --input; use --approved-csv for approved CSV data")
+    source = args.input.expanduser().resolve()
     if not source.is_file():
         print(f"错误：找不到输入 XLSX：{source}", file=sys.stderr)
         return 2
-    report = Report()
+    from openpyxl import load_workbook
     workbook = load_workbook(source, read_only=True, data_only=True)
     # 两种模式共享 A1 来源标记判定，防止测试源和正式来源互相串写。
     has_test_only_marker = (
@@ -664,11 +882,11 @@ def main() -> int:
         else:
             # 普通词库现阶段尚未批准，原表预览不能进入正式 Resource 目录。
             speech_root = "data/test_only/sheet_preview/level_configuration"
-        outputs.update(make_speech_pools(tables["03_普通词库"][1], report, speech_root))
+        outputs.update(make_speech_pools(tables[SHEET_NAMES[2]][1], report, speech_root))
         if args.test_only:
             outputs.update(make_test_only_levels(tables, report))
         if not args.test_only and "08_Tier档位" in tables:
-            outputs["data/test_only/sheet_preview/combat_stage/tier_catalog.tres"] = make_tier_resource(tables["08_Tier档位"][1], report)
+            outputs["data/test_only/sheet_preview/combat_stage/tier_catalog.tres"] = make_tier_resource(tables[SHEET_NAMES[9]][1], report)
     for sheet, n, blanks, examples in report.stats:
         print(f"[表] {sheet}：{n} 条，空行 {blanks}，跳过说明/示例 {examples}")
     for warning in report.warnings:

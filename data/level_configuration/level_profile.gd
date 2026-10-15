@@ -9,9 +9,21 @@ extends Resource
 ## 主播稳定 ID 用于关联系统数据，名称用于展示。
 @export var streamer_id: String = ""
 @export var streamer_name: String = ""
+## 关卡表中可供立绘、教学与剧情系统稳定关联的配置 ID。
+@export var portrait_set_id: String = ""
+@export var tutorial_config_id: String = ""
+@export var story_config_id: String = ""
+@export var contradiction_set_id: String = ""
+@export var background_asset_id: String = ""
+@export var fan_badge_asset_id: String = ""
 ## 对手主播的粉丝团显示名；正式导表映射待关卡数据工具确认后接入。
 @export var fan_group_name: String = ""
 @export var streamer_portrait: Texture2D
+@export var opponent_tier_01_portrait: Texture2D
+@export var opponent_tier_02_portrait: Texture2D
+@export var opponent_tier_03_portrait: Texture2D
+@export var opponent_defeat_portrait: Texture2D
+@export var opponent_defeat_transition_portrait: Texture2D
 @export var streamer_avatar: Texture2D
 @export var streamer_live_background: Texture2D
 @export_multiline var stream_topic: String = ""
@@ -62,3 +74,18 @@ func get_normal_speech_pool() -> Array[LevelSpeech]:
 @export var base_spawn_interval_seconds: float = 1.0
 @export var base_move_speed_pixels_per_second: float = 100.0
 @export var normal_barrage_screen_cap: int = 24
+@export var word_weight_multiplier: float = 1.0
+@export var valid_area_key: String = ""
+@export var layout_key: String = ""
+
+## 当前关卡的 Paradox 设计参数；消费逻辑仍由矛盾系统负责。
+@export var paradox_window_seconds: float = 10.0
+@export var paradox_shot_limit: int = 1
+@export var paradox_silence_transition_seconds: float = 1.0
+@export var paradox_candidate_count: int = 6
+@export var paradox_true_count: int = 1
+@export var paradox_fake_count: int = 5
+@export var paradox_motion_duration_seconds: float = 2.0
+@export var paradox_motion_mode: String = ""
+@export var paradox_shootable_during_motion: bool = true
+@export var paradox_motion_speed_curve_id: String = ""
