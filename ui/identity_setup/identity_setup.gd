@@ -1,21 +1,17 @@
 extends Control
 
-# 开场演出通过公开请求信号交给美术组件；完成后调用对应公开完成入口。
+# 已交付的演出组件通过公开信号接入；缺少正式素材的环节由玩家正常继续。
 signal player_name_pawprint_presentation_requested(streamer_name: String)
 signal player_name_pawprint_presentation_completed(streamer_name: String)
-signal motive_panel_display_requested(panel_number: int)
-signal motive_comic_completed
 signal room_computer_transition_requested(identity_id: StringName)
 signal room_computer_transition_completed
 
 # 保存成功的事实通知；RS-12 接收后通过 SceneRouter 打开真正的开局房间。
 signal opening_saved(run_data: SaveData)
 
-enum Step { STREAMER, PLAYER_PRESENTATION, MOTIVE_COMIC, IDENTITY, ROOM_TRANSITION, FAN_GROUP }
+enum Step { STREAMER, PLAYER_PRESENTATION, IDENTITY, ROOM_TRANSITION, FAN_GROUP }
 
-# 美术确定正式格数与节奏前，使用三个 TEST_ONLY 编号验证既有 ID-12 控制器。
-const PLACEHOLDER_PANEL_COUNT: int = 3
-const PLACEHOLDER_PANEL_INTERVAL_SECONDS: float = 0.8
+const ROOM_ENVIRONMENT: PackedScene = preload("res://ui/rest/rest_room_environment.tscn")
 
 var _step: Step = Step.STREAMER
 var _run_data: SaveData
@@ -24,12 +20,11 @@ var _selected_option: IdentityOption
 var _busy := false
 var _completed := false
 var _player_presentation_is_completed := false
-var _motive_comic_is_completed := false
 var _room_transition_is_completed := false
 var _streamer_page: Control
 var _player_presentation_page: Control
-var _motive_comic_page: Control
 var _room_transition_page: Control
+var _room_environment: Control
 var _fan_page: Control
 var _streamer_name_input: LineEdit
 var _fan_group_name_input: LineEdit
@@ -38,26 +33,23 @@ var _confirm_button: Button
 var _fan_back: Button
 var _identity_back: Button
 var _player_presentation_status: Label
-var _motive_comic_status: Label
-var _motive_comic_action: Button
 var _room_transition_status: Label
 var _room_transition_action: Button
 var _status_label: Label
-var _comic_control: ComicPanelPlaybackControl
 
 @onready var _selection: Control = $IdentitySelection
 
 
-# 所有步骤由同一场景持有，回退仅切换可见页面并保留当前临时输入。
+# 所有步骤由同一场景持有，回退仅切换页面并保留名称、卡片与身份选择。
 func _ready() -> void:
 	opening_saved.connect(_on_opening_saved)
 	_run_data = SaveManager.data
 	_identity_back = $IdentitySelection.get_node("%BackButton")
 	_identity_back.show()
-	_identity_back.text = "返回动机分镜"
-	$IdentitySelection.get_node("Margins/Content/Title").text = "④ 选择你的身份"
+	_identity_back.text = "返回主播介绍"
+	$IdentitySelection.get_node("Margins/Content/Title").text = "选择你的身份"
 	$IdentitySelection.get_node("%NextButton").text = "确认身份"
-	_identity_back.pressed.connect(_back_to_motive_comic)
+	_identity_back.pressed.connect(_back_to_player_presentation)
 	_selection.next_requested.connect(_advance_identity)
 	_selection.selection_changed.connect(func(option: IdentityOption): _selected_option = option)
 
@@ -68,11 +60,11 @@ func _ready() -> void:
 	_streamer_continue.pressed.connect(_advance_streamer)
 	_streamer_name_input.text_submitted.connect(func(_value: String): _advance_streamer())
 
-	_player_presentation_page = _build_placeholder_page(
+	_player_presentation_page = _build_message_page(
 		"PlayerPresentationPage",
-		"姓名与仓鼠爪印",
-		"TEST_ONLY：此处等待美术展示玩家姓名与仓鼠爪印。",
-		"演出完成（占位）",
+		"认识新主播",
+		"",
+		"继续选择身份",
 		"返回修改名字"
 	)
 	_player_presentation_status = _player_presentation_page.get_node("Center/Panel/Content/Status")
@@ -80,25 +72,18 @@ func _ready() -> void:
 	_player_presentation_page.get_node("Center/Panel/Content/Action").pressed.connect(complete_player_presentation)
 	_player_presentation_page.get_node("Center/Panel/Content/Back").pressed.connect(_back_to_streamer)
 
-	_motive_comic_page = _build_placeholder_page(
-		"MotiveComicPage",
-		"仓鼠动机分镜",
-		"TEST_ONLY_PANEL_01",
-		"点击推进分镜",
-		"返回修改名字"
-	)
-	_motive_comic_status = _motive_comic_page.get_node("Center/Panel/Content/Status")
-	_motive_comic_action = _motive_comic_page.get_node("Center/Panel/Content/Action")
-	_motive_comic_action.pressed.connect(advance_motive_comic_on_click)
-	_motive_comic_page.get_node("Center/Panel/Content/Back").pressed.connect(_back_to_streamer)
-
-	_room_transition_page = _build_placeholder_page(
+	_room_transition_page = _build_message_page(
 		"RoomComputerTransitionPage",
-		"仓鼠进入房间并打开电脑",
-		"TEST_ONLY：此处等待美术提供房间与电脑转场。",
-		"转场完成（占位）",
+		"回到房间",
+		"",
+		"继续粉丝团命名",
 		"返回身份选择"
 	)
+	# 身份确认后复用正式房间背景与桌面，衔接粉丝团命名步骤。
+	_room_environment = ROOM_ENVIRONMENT.instantiate()
+	_room_transition_page.add_child(_room_environment)
+	_room_transition_page.move_child(_room_environment, 0)
+	_room_transition_page.get_child(1).queue_free()
 	_room_transition_status = _room_transition_page.get_node("Center/Panel/Content/Status")
 	_room_transition_action = _room_transition_page.get_node("Center/Panel/Content/Action")
 	_room_transition_action.pressed.connect(complete_room_computer_transition)
@@ -129,7 +114,7 @@ func _ready() -> void:
 
 
 # 构建仅由现有主题与控件组成的演出占位页，未来美术可替换显示层。
-func _build_placeholder_page(node_name: String, title_text: String, status_text: String, action_text: String, back_text: String) -> Control:
+func _build_message_page(node_name: String, title_text: String, status_text: String, action_text: String, back_text: String) -> Control:
 	var page := Control.new()
 	page.name = node_name
 	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -246,12 +231,11 @@ func _build_name_page(node_name: String, title_text: String) -> Control:
 	return page
 
 
-# 每个步骤切换只隐藏其他视图，保留名称、身份翻开状态及漫画播放进度。
+# 每个步骤切换只隐藏其他视图，保留名称、身份卡翻开状态和当前选择。
 func _show_step(step: Step) -> void:
 	_step = step
 	_streamer_page.visible = step == Step.STREAMER
 	_player_presentation_page.visible = step == Step.PLAYER_PRESENTATION
-	_motive_comic_page.visible = step == Step.MOTIVE_COMIC
 	_selection.visible = step == Step.IDENTITY
 	_room_transition_page.visible = step == Step.ROOM_TRANSITION
 	_fan_page.visible = step == Step.FAN_GROUP
@@ -260,96 +244,53 @@ func _show_step(step: Step) -> void:
 			_streamer_name_input.grab_focus()
 		Step.PLAYER_PRESENTATION:
 			_player_presentation_page.get_node("Center/Panel/Content/Action").grab_focus()
-		Step.MOTIVE_COMIC:
-			_motive_comic_action.text = "继续身份选择" if _motive_comic_is_completed else "点击推进分镜"
-			_motive_comic_action.grab_focus()
 		Step.IDENTITY:
 			_selection.restore_selection(_selected_option.identity_id if _selected_option != null else &"")
 			_selection.focus_selection()
 		Step.ROOM_TRANSITION:
-			_room_transition_action.text = "继续粉丝团取名" if _room_transition_is_completed else "转场完成（占位）"
+			_room_transition_action.text = "继续粉丝团命名"
 			_room_transition_action.grab_focus()
+			# 复用房间已有背景做淡入，作为身份确认后的自然过渡。
+			_room_environment.modulate.a = 0.0
+			create_tween().tween_property(_room_environment, "modulate:a", 1.0, 0.45)
 		Step.FAN_GROUP:
 			_fan_group_name_input.grab_focus()
 
 
-# 主播名只暂存于输入控件，确认后请求爪印展示并等待公开完成入口。
+# 主播名只暂存于输入控件；确认后请求姓名展示，再由玩家继续。
 func _advance_streamer() -> void:
 	if _step != Step.STREAMER or _busy or _run_data == null:
 		return
 	_streamer_name_input.text = IdentityNameRules.confirm_streamer_name(_streamer_name_input.text)
 	_player_presentation_is_completed = false
-	_player_presentation_status.text = "TEST_ONLY：我的名字是「%s」。等待仓鼠爪印展示完成。" % _streamer_name_input.text
+	_player_presentation_status.text = "欢迎，%s。" % _streamer_name_input.text
 	_show_step(Step.PLAYER_PRESENTATION)
 	player_name_pawprint_presentation_requested.emit(_streamer_name_input.text)
 
 
-# 美术表现完成后发出完成事实，再启动已有的 ID-12 分镜控制器。
+# 玩家继续后发出姓名展示完成事实，并进入身份卡选择。
 func complete_player_presentation() -> void:
 	if _step != Step.PLAYER_PRESENTATION or _busy or _player_presentation_is_completed:
 		return
 	_player_presentation_is_completed = true
 	player_name_pawprint_presentation_completed.emit(_streamer_name_input.text)
-	_motive_comic_is_completed = false
-	_create_motive_comic_control()
-	_show_step(Step.MOTIVE_COMIC)
-	if not _comic_control.start_playback():
-		push_error("IdentitySetup: ID-12 comic playback could not start.")
+	# 正式动机漫画尚未交付时直接进入正式身份卡选择，不展示虚构分镜。
+	_show_step(Step.IDENTITY)
 
 
-# 创建本次展示所需的 ID-12 控制器实例；重看名字后使用新实例从首格播放。
-func _create_motive_comic_control() -> void:
-	if _comic_control != null:
-		remove_child(_comic_control)
-		_comic_control.free()
-	_comic_control = ComicPanelPlaybackControl.new()
-	_comic_control.name = "MotiveComicPlaybackControl"
-	_comic_control.panel_count = PLACEHOLDER_PANEL_COUNT
-	_comic_control.panel_interval_seconds = PLACEHOLDER_PANEL_INTERVAL_SECONDS
-	_comic_control.panel_display_requested.connect(_on_motive_panel_display_requested)
-	_comic_control.playback_completed.connect(_on_motive_comic_completed)
-	add_child(_comic_control)
-
-
-# ID-12 的格数请求同时交给占位显示和公开美术接口。
-func _on_motive_panel_display_requested(panel_number: int) -> void:
-	_motive_comic_status.text = "TEST_ONLY_PANEL_%02d · 自动计时或点击均可推进" % panel_number
-	motive_panel_display_requested.emit(panel_number)
-
-
-# ID-12 只在末格确认时通知完成；身份页仅在收到该事实后打开。
-func _on_motive_comic_completed() -> void:
-	_motive_comic_is_completed = true
-	_motive_comic_status.text = "TEST_ONLY：动机分镜播放完成。"
-	_motive_comic_action.text = "继续身份选择"
-	motive_comic_completed.emit()
-	if _step == Step.MOTIVE_COMIC:
-		_show_step(Step.IDENTITY)
-
-
-# 公开点击入口供漫画表现层复用；完成后再次点击可返回身份选择。
-func advance_motive_comic_on_click() -> void:
-	if _step != Step.MOTIVE_COMIC:
-		return
-	if _motive_comic_is_completed:
-		_show_step(Step.IDENTITY)
-	elif _comic_control != null:
-		_comic_control.advance_on_click()
-
-
-# 身份页下一步表示玩家确认当前已翻开的选项，之后请求房间电脑转场。
+# 身份页下一步确认当前选项，随后展示真实房间环境。
 func _advance_identity(option: IdentityOption) -> void:
 	if _step != Step.IDENTITY or _busy or not IdentityOptions.CARDS.has(option):
 		return
 	_selected_option = option
 	_room_transition_is_completed = false
-	_room_transition_status.text = "TEST_ONLY：进入房间并打开电脑 · 身份 %s" % option.identity_id
-	_room_transition_action.text = "转场完成（占位）"
+	_room_transition_status.text = "身份已选定：%s" % option.display_name
+	_room_transition_action.text = "继续粉丝团命名"
 	_show_step(Step.ROOM_TRANSITION)
 	room_computer_transition_requested.emit(option.identity_id)
 
 
-# 美术转场完成后才打开已有的粉丝团取名页。
+# 玩家继续后发出房间转场完成事实并打开粉丝团命名页。
 func complete_room_computer_transition() -> void:
 	if _step != Step.ROOM_TRANSITION or _busy:
 		return
@@ -361,16 +302,18 @@ func complete_room_computer_transition() -> void:
 	_show_step(Step.FAN_GROUP)
 
 
-# 从动机漫画返回主播名后，名称确认会重新请求展示并重启漫画播放。
+# 从主播介绍返回姓名输入后，再次确认会显示更新后的名称。
 func _back_to_streamer() -> void:
-	if _step in [Step.PLAYER_PRESENTATION, Step.MOTIVE_COMIC] and not _busy:
+	if _step == Step.PLAYER_PRESENTATION and not _busy:
 		_show_step(Step.STREAMER)
 
 
-# 身份页返回只重开当前已完成的漫画画面，保留卡片翻开及选择状态。
-func _back_to_motive_comic() -> void:
+# 身份页返回主播介绍；身份卡翻开状态由同一页面实例保留。
+func _back_to_player_presentation() -> void:
 	if _step == Step.IDENTITY and not _busy:
-		_show_step(Step.MOTIVE_COMIC)
+		_player_presentation_is_completed = false
+		_player_presentation_status.text = "欢迎，%s。" % _streamer_name_input.text
+		_show_step(Step.PLAYER_PRESENTATION)
 
 
 # 房间转场未完成时返回身份页；重新确认后会再次发送转场请求。
@@ -379,7 +322,7 @@ func _back_to_identity() -> void:
 		_show_step(Step.IDENTITY)
 
 
-# 从粉丝团名返回只重开已完成的转场占位页，不重复触发美术请求。
+# 从粉丝团名返回已展示的房间环境，不重复触发演出请求。
 func _back_to_room_transition() -> void:
 	if _step == Step.FAN_GROUP and not _busy and not _confirmation_state.has_confirmed_identity():
 		_show_step(Step.ROOM_TRANSITION)
