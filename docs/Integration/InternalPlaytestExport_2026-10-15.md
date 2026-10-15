@@ -14,6 +14,8 @@
 
 ## 一键打包
 
+打包前会先运行 `tests/integration/int_15_production_catalog_preflight.gd`，直接加载正式 `LevelCatalog`，核对四关 ID/顺序、每关普通词句与真假矛盾数据。检查失败时停止导出并在 `D:\tmp\INT-15_Preflight_<时间戳>\` 日志中给出缺项；不会生成该次包目录。该检查仅作为内容预检，菜单到生产 Sandbox 的自然 GUI 路径、完整实玩与 Android 真机操作仍须人工验收。
+
 在仓库根目录执行：
 
 ```powershell
@@ -34,6 +36,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_internal_playt
 5. 内测包未做公开商店发行验收；正式导出前再核对产品图标、安装包名称、Android SDK、签名、真实设备性能及正式配表。
 
 ### 2026-10-15 首份内测实测
+
+> INT-15 复核说明：下方既有 ZIP/APK 来自 `ab3ba169`，当时使用两关示例 Resource；导出和启动记录只证明构建/启动成功，不能作为当前正式内容或生产游玩 PASS。正式包须在 A/B/C 合入后从当时 `main` 重新运行预检并重打包。
 
 - 源代码：`ab3ba169`（PR #228 已合并）。
 - Windows x64：Godot 4.7.2 `--export-release` exit 0，导出 EXE 与 PCK；独立 EXE headless 启动 exit 0，D3D12 GUI 启动 exit 0（这两项是启动冒烟，并不替代完整试玩）。

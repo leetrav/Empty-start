@@ -15,17 +15,6 @@ if (!(Test-Path -LiteralPath $GodotEditor)) { throw "Godot editor not found: $Go
 if (!(Test-Path -LiteralPath (Join-Path $project 'export_presets.cfg'))) { throw 'Missing export_presets.cfg' }
 if (!(Test-Path -LiteralPath $DestinationRoot)) { New-Item -Path $DestinationRoot -ItemType Directory -Force | Out-Null }
 
-$buildDir = Join-Path $DestinationRoot ('GameJam_InternalPlaytest_' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
-New-Item -Path $buildDir -ItemType Directory -ErrorAction Stop | Out-Null
-$commit = (& git -C $project rev-parse HEAD).Trim()
-$report = [ordered]@{
-    kind = 'internal-playtest'
-    build_time = (Get-Date).ToString('o')
-    git_commit = $commit
-    engine = 'Godot 4.7.2'
-    artifacts = @{}
-}
-
 # Godot writes non-fatal resource-cleanup notices to stderr even with export exit 0.
 # Capture stderr to a diagnostic file and decide success by the actual process exit code.
 function Invoke-BuildProcess([string] $label, [string] $program, [string[]] $arguments, [string] $transcript) {
@@ -53,6 +42,35 @@ function Get-ArtifactRecord([string] $path) {
         bytes = $item.Length
         sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash
     }
+}
+
+# 导出成功只说明 Godot 能生成文件；正式内容不齐时必须在创建包目录前终止。
+$preflightDirectory = Join-Path $DestinationRoot ('INT-15_Preflight_' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+New-Item -Path $preflightDirectory -ItemType Directory -ErrorAction Stop | Out-Null
+$preflightLog = Join-Path $preflightDirectory 'production_catalog.log'
+Invoke-BuildProcess 'Godot project import for production preflight' $GodotEditor @(
+    '--headless', '--editor', '--path', $project, '--import',
+    '--log-file', (Join-Path $preflightDirectory 'godot_import.log')
+) (Join-Path $preflightDirectory 'godot_import_cli.log')
+Invoke-BuildProcess 'production catalog preflight' $GodotEditor @(
+    '--headless', '--path', $project, '--quit-after', '2',
+    '--script', 'res://tests/integration/int_15_production_catalog_preflight.gd',
+    '--log-file', $preflightLog
+) (Join-Path $preflightDirectory 'production_catalog_cli.log')
+if (!(Select-String -LiteralPath (Join-Path $preflightDirectory 'production_catalog_cli.log.stdout') -SimpleMatch 'PASS INT-15 production catalog' -Quiet)) {
+    throw 'Production catalog preflight exited successfully without its PASS record'
+}
+
+$buildDir = Join-Path $DestinationRoot ('GameJam_InternalPlaytest_' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+New-Item -Path $buildDir -ItemType Directory -ErrorAction Stop | Out-Null
+$commit = (& git -C $project rev-parse HEAD).Trim()
+$report = [ordered]@{
+    kind = 'internal-playtest'
+    build_time = (Get-Date).ToString('o')
+    git_commit = $commit
+    engine = 'Godot 4.7.2'
+    production_catalog_preflight = 'passed'
+    artifacts = @{}
 }
 
 if ($Platform -in @('Windows', 'Both')) {
