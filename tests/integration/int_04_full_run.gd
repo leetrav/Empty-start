@@ -45,9 +45,9 @@ func _execute() -> void:
 			if not empty_history:
 				await _normal_hit(sandbox)
 			sandbox.debug_set_player_pk(1.0)
-			await _frames()
-			var success: bool = not empty_history and level == 0
 			var phase_flow: ContradictionOracleFlow = sandbox.get_contradiction_oracle_flow()
+			await _wait(func(): return phase_flow.is_contradiction_active(), "PA-12 转场完成后未开放矛盾阶段")
+			var success: bool = not empty_history and level == 0
 			var profile: LevelProfile = attempt_flow.get_current_level_profile()
 			var line: LevelContradiction = profile.true_contradictions[0] if success else profile.false_contradictions[0]
 			# CB-13已固定生成一真五假；选取真实候选，并在TEST_ONLY局部隔离准心覆盖区。
@@ -67,6 +67,9 @@ func _execute() -> void:
 					(child as BarrageView).position = Vector2(-2000, -2000)
 			view.position = Vector2(200, 200)
 			await _shoot(sandbox, view)
+			var result_comic: ParadoxComicTransition = sandbox.get_node("ParadoxComicTransition")
+			_check(result_comic.visible and not sandbox.get_rest_result_view()._overlay.visible,
+				"结果漫画播放期间保留击破反馈并暂缓 Rest 页面")
 			var system: ContradictionBreakSystem = sandbox.get_contradiction_oracle_flow().get_contradiction_system()
 			_check(system.get_outcome() == (ContradictionBreakSystem.Outcome.BREAKTHROUGH if success else ContradictionBreakSystem.Outcome.NOT_BROKEN),
 				"真假结果错误 empty=%s level=%d outcome=%d remaining_shots=%d seconds=%.3f" % [empty_history, level, system.get_outcome(), system.get_remaining_shots(), system.get_remaining_seconds()])
