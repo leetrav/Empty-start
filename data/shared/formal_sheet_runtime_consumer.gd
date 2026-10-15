@@ -77,8 +77,10 @@ func create_dialogue_config(story_config_id: String) -> BubbleDialogueConfig:
 		entry.original_sentence_id = str(row.get("source_word_id", ""))
 		entry.event_id = event_id
 		entry.is_random_idle = str(row.get("trigger_type", "")) == "random_idle"
-		entry.priority = BubbleEntry.Priority.PLOT
+		# 闲聊使用低优先级定时气泡；CSV 定时字段即使当前为空也保留为 0。
+		entry.priority = BubbleEntry.Priority.TIMED_IDLE if entry.is_random_idle else BubbleEntry.Priority.PLOT
 		entry.display_duration_seconds = maxf(0.1, float(row.get("display_duration_s", "3")))
+		entry.trigger_time_seconds = _float_or(str(row.get("trigger_time_s", "")), 0.0)
 		entry.random_weight = maxf(0.0, float(row.get("random_weight", "1")))
 		config.entries.append(entry)
 	return config
