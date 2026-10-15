@@ -30,14 +30,14 @@
 - `IdentityConfirmationState` 锁定后的身份 ID 可通过 `SaveManager.set_identity_data()` 写入 SaveData，供本周目场景重建后继续读取。
 - `SaveData.streamer_name`、`SaveData.fan_group_name` 与 `SaveData.identity_id` 保存本周目确认结果；新周目初始化为空值，确认后由 `SaveManager.set_identity_data()` 一次写入。
 - 新增字段有明确空值默认，并兼容旧版 SaveData，因此 `SaveData.CURRENT_VERSION` 保持 `1`。
-- `ui/identity_setup/identity_setup.gd` 统一调度主播名、姓名与爪印展示、ID-12 动机分镜、十二卡选择、房间电脑转场和粉丝团名六个步骤。三个确认字段在最后一步调用 `SaveManager.confirm_opening_identity()` 后一次写入并保存；`opening_saved(run_data: SaveData)` 仍由 RS-12 接收并通过 SceneRouter 打开独立开局房间。
+- `ui/identity_setup/identity_setup.gd` 统一调度主播名、姓名介绍、十二卡选择、房间展示和粉丝团名。三个确认字段在最后一步调用 `SaveManager.confirm_opening_identity()` 后一次写入并保存；`opening_saved(run_data: SaveData)` 仍由 RS-12 接收并通过 SceneRouter 打开独立开局房间。
 - 十二张身份卡初始显示占位卡背，首次点击翻开该卡，再次点击正面选择；玩家也可使用【一键翻开】。正面沿用 ID-08 正式标题与描述，图标字段保留。
-- 姓名与爪印、漫画分镜和房间电脑转场以公开请求 / 完成接口接入；美术资源交付前，程序使用标有 `TEST_ONLY` 的文本占位页。
+- 正式爪印、身份动机漫画、进房动画尚未提供；生产流程直接从姓名介绍进入正式身份卡，并以现有房间场景淡入承接粉丝团命名，不显示测试占位内容。
 
 ## 当前仓库状态
 
-- 主菜单 Start 新建 SaveData 后进入「主播取名 → 姓名与爪印演出 → 动机漫画 → 十二卡身份选择 → 房间电脑转场 → 粉丝团取名」。最终提交、保存后经 RS-12 进入房间，玩家点击“开始直播”才进入 Game。
-- 身份选项数据类型、12 份正式资源、三份旧兼容资源、独立身份步骤、名称确认、身份锁定、周目存档字段和六阶段开场流程已建立。
+- 主菜单 Start 新建 SaveData 后进入「主播取名 → 姓名介绍 → 十二卡身份选择 → 房间展示 → 粉丝团命名」。最终提交、保存后经 RS-12 进入房间，玩家点击“开始直播”才进入 Game。
+- 身份选项数据类型、12 份正式资源、三份旧兼容资源、独立身份步骤、名称确认、身份锁定和周目存档字段已建立。
 - `SaveManager` 已存在，并持有 `SaveData`。
 - `SaveData` 包含版本、游玩时间、当前场景、checkpoint、主播名、粉丝团名和身份 ID 字段。
 - 当前 `SceneRouter.goto_game()` 仍指向 Sandbox 技术测试场景，后续替换真实游戏入口时更新。
@@ -78,8 +78,8 @@
 - 12 个独立 identity_id 分别保存具体选中身份，对应的运行时 tendency_id 仍只有 orthodox、heretical、absurd（每类 4 个）。表格中的 heresy 在 Godot 运行时映射为 heretical。
 - 现有 SaveData、IdentityConfirmationState、TendencyState 的存档与开局比较职责沿用；主播名、身份选择、粉丝团名仍由原有流程持有，姓名与爪印、动机漫画和房间转场增加在它们之间。
 - 当前顺序为「我的名字是……」→ 玩家姓名与仓鼠爪印展示 → ID-12 动机分镜 → 十二身份牌选择 → 房间电脑转场 →「我想让支持我的人们叫……」。最终确认后统一保存三项身份数据及开局倾向，然后经 RS-12 入口进入**休息时刻的主角房间**。第一场普通战斗须从房间主动开始。
-- ID-13 将主播名暂存于输入控件，在姓名确认后发出 `player_name_pawprint_presentation_requested(streamer_name)`；美术演出结束后调用 `complete_player_presentation()`，流程发出完成信号并启动 ID-12。`motive_panel_display_requested(panel_number)` 转发 ID-12 的 1-based 分镜请求，末格确认后由 `motive_comic_completed` 打开身份牌。
-- 身份确认后发出 `room_computer_transition_requested(identity_id)`；转场结束时调用 `complete_room_computer_transition()`，随后打开粉丝团取名页。返回时复用当前页面和 ID-10/11 的翻开状态，不重新创建选项视图。
+- ID-13 曾将主播名暂存并提供爪印展示与 ID-12 分镜请求接口；ID-14 已移除未有正式资源支撑的动机漫画流程。主播介绍按钮仍调用 `complete_player_presentation()`，其完成通知后直接打开身份卡。
+- 身份确认后仍发出 `room_computer_transition_requested(identity_id)`；房间场景淡入后，玩家继续按钮调用 `complete_room_computer_transition()` 并打开粉丝团取名页。返回时复用当前页面和 ID-10/11 的翻开状态。
 - 美术素材、正式分镜数量与节奏尚未交付；当前三格和两个展示页均为 `TEST_ONLY` 占位。正式资源接入时由美术表现组件接收公开请求信号并调用公开完成方法。
 - ID-09 三页、正式提交、保存、房间展示及主动进入第一普通关已完成真实 Godot 4.7.2 GUI 验收；详见 Rest 的 RS-12 日期日志。
 
@@ -158,12 +158,17 @@ ID-12 提供独立漫画播放控制 Node，按配置发出 1-based 分镜编号
 
 ## ID-13 开场身份流程重排（2026-10-11）
 
-- 开场顺序为主播名 → 姓名与仓鼠爪印演出 → ID-12 动机漫画 → 十二张身份背面 → 房间电脑转场 → 粉丝团名 → 一次 SaveManager 确认 / 保存 → RS-12 开局房间。
-- `identity_setup.gd` 提供 `player_name_pawprint_presentation_requested(streamer_name)`、`motive_panel_display_requested(panel_number)` 和 `room_computer_transition_requested(identity_id)` 请求信号；完成回调分别使用 `complete_player_presentation()`、ID-12 `playback_completed` 与 `complete_room_computer_transition()`。通知信号为 `player_name_pawprint_presentation_completed(streamer_name)`、`motive_comic_completed`、`room_computer_transition_completed`。
-- 名称仍暂存在页面输入控件，回退到上一阶段时沿用主播名、粉丝团输入、已翻开的牌及身份选择。三项正式字段只经 `SaveManager.confirm_opening_identity()` 提交一次，保存成功后仍经 `opening_saved` 进入 RS-12。
-- 运行验收使用 `TEST_ONLY` 三格和内建按钮模拟美术完成回调；正式美术、实际动画时长、人工键鼠及 Android 触控待后续验收。详见 [ID-13 日志](身份系统_ID-13_2026-10-11_log.md)。
+- ID-13 原先规划主播名 → 爪印展示 → 动机漫画 → 十二张身份背面 → 房间转场 → 粉丝团名。正式资源未交付前的生产简化由 ID-14 说明。
+- ID-13 公开信号保留为表现层接入口；当前生产入口不依赖测试按钮模拟演出完成。
+
+## ID-14 试玩生产流程（2026-10-15）
+
+- 实际开局顺序为主播名 → 姓名介绍 → 十二张正式身份卡 → 正式房间环境展示 → 粉丝团命名 → 一次性保存 → RS-12 开局房间 → 玩家主动开播。
+- 身份介绍确认会按原顺序发出姓名展示请求与完成通知；现无演出监听者时，由页面的正常“继续选择身份”操作推进。身份确认依旧发出房间转场请求；使用现有 `RestRoomEnvironment` 的真实房间背景/桌面淡入，之后由玩家继续粉丝团命名。
+- 正式爪印图片、动机漫画分镜及仓鼠进房/开电脑动画没有交付；对应内容不在生产流程中伪造。正式漫画资源到位后再接 ID-12 播放控制器。
+- 名称、身份翻开状态、回退、存档重试和房间路由继续复用现有实现；12 份身份资源与 source table 未改。
 
 
 ## INT-11 当前边界（2026-10-13）
 
-首次 Boot 六幕漫画是角色塑造之前的独立演出，结束到主菜单。已撤销把正式 ComicPlayer 嵌入 ID-13 动机分镜的修改；ID-13 恢复原流程及占位页，姓名、身份及存档职责不变。
+首次 Boot 六幕漫画是角色塑造之前的独立演出，结束到主菜单。它不会代替身份动机漫画；ID-14 在正式动机分镜交付前跳过该素材步骤。
