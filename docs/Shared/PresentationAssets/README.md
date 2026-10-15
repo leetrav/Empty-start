@@ -53,6 +53,16 @@ Windows 验证入口为 `tests/presentation/pa14_portrait_motion_smoke.tscn`：�
 
 **策划决策：PA-07 已取消。** 保留现有攻击流程及反馈；实体言弹外观、飞行特效与专用快照坐标接口从开发范围移除。历史试样留在未合并的 #142。
 
+## PA-12 漫画转场独立组件交付（2026-10-12）
+
+`systems/presentation/paradox_comic_transition.tscn` / `.gd` 提供独立 Paradox 漫画层：压暗噤声、双道不规则斜切、交叉闪白和放射冲击线、描边硬影标题过冲回弹、左右锯齿撕幕，以及“击破！”/“未击破”结果字。`transition_finished` 通知揭幕完成，`result_feedback_finished(success)` 通知结果反馈完成；不保存阶段或结算状态。所有分镜时长、颜色、切角、带宽、闪白、冲击线、标题字体/字号/描边与幕布边缘都可在 Inspector 调整；默认时间合计约 3.6s。
+
+独立预览为 `scenes/demos/pa12_paradox_comic_demo.tscn`：F6 运行，`R` 重播漫画转场，`1` / `2` 重播两种结果字。画面复用 Sandbox HUD、左右真实立绘、准心、`BarrageArea` 与 `BarrageView`；普通弹幕读取样例 LevelProfile，六句矛盾候选读取 `tests/fixtures/contradiction_break/test_cb_13_six_candidates_level.tres`，揭幕后调用 `BarrageArea.start_contradiction_generation()`，完成信号后调用真实 `ContradictionBreakSystem.start_window()`。普通流程时间与结果字由演示脚本编排，不代表已接入完整战斗结果。
+
+原分支 Windows Godot 4.7.2 AMD Radeon OpenGL 兼容渲染的真实截图曾用于人工验收；预览媒体不随本次合并入库，正式截图保存于仓库外 `D:\tmp\pa12-rework-preview-20261015`（之后由 Demo 默认写入 Godot `user://pa12_previews/`）：1920×1080 七帧覆盖普通战斗、噤声、交叉闪白、撕幕、揭幕和成败结果；1280×720 两帧核对揭幕与结果字的缩放。演示运行与画面见 [PA-12 日志](表现资产_PA-12_2026-10-12_log.md)。
+
+**正式流程联调待办：** 当前 `ContradictionOracleFlow.entered` 在矛盾生成与 10 秒窗口启动之后才发出；`outcome_resolved` 发出后流程会继续打开神谕或 Rest。现有接口无法在演出前暂缓生成/计时/输入，也没有等结果漫画结束再继续的回调。正式接线需要阶段流程在转场完成后启动候选与窗口，并在结果反馈完成后恢复后续流程；PA-12 本卡未修改 `sandbox.gd`、`sandbox.tscn`、ContradictionBreak、PA-11 或 PA-15。
+
 ## 目标
 
 让程序可以稳定接入美术正式资源，同时保持占位素材和正式素材可以直接替换。
