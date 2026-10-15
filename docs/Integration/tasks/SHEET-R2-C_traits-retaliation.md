@@ -11,7 +11,7 @@
 - `docs/Integration/评论气泡音频表接线_SHEET-C_2026-10-15_log.md`
 - `data/source_tables/07_特性参数.csv`
 - `data/source_tables/21_反击技能池.csv`
-- `docs/4. BarrageTraitModule/README.md`
+- `systems/barrage_traits/`（检查已有脚本与关联正式文档）
 - 与本任务范围直接相关的系统正式文档、最近完成日志、当前生产 Scene/Resource/脚本
 
 ## 已经实现的功能
