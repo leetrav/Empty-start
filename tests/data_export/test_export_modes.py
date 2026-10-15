@@ -132,6 +132,57 @@ def main() -> None:
         assert authoritative == files_snapshot(authoritative_paths)
         print("PASS validated unmarked workbook uses ordinary source path: exit=0; 20 CSV; repository source unchanged")
 
+        # 真实 V0 规则：T0 无回拉可设为零，停用的旧吞并奖励示例可保留旧主播 ID。
+        wb = load_workbook(official_input)
+        tier_ws = wb["08_Tier档位"]
+        tier_header = {cell.value: cell.column for cell in tier_ws[1]}
+        tier_col = tier_header["tier"]
+        pullback_col = tier_header["pullback_mult"]
+        tier_rows = {}
+        for row in range(2, tier_ws.max_row + 1):
+            tier_value = tier_ws.cell(row, tier_col).value
+            if tier_value is not None:
+                tier_rows[str(tier_value).strip()] = row
+        assert "0" in tier_rows and "1" in tier_rows
+        tier_ws.cell(tier_rows["0"], pullback_col, 0)
+        reward_ws = wb["13_吞并奖励"]
+        reward_header = [cell.value for cell in reward_ws[1]]
+        placeholder_values = {
+            "reward_id": "formal_disabled_legacy_reward",
+            "streamer_id": "former_streamer_removed",
+            "reward_type": "word_pool", "content_id": "formal_legacy_pool",
+            "inherited_weight": "1", "enabled": "FALSE", "notes": "停用旧记录回归",
+        }
+        reward_ws.append([placeholder_values.get(name, "") for name in reward_header])
+        reward_enabled_col = reward_header.index("enabled") + 1
+        reward_row = reward_ws.max_row
+        v0_input = temp_root / "official_v0.xlsx"
+        wb.save(v0_input)
+        wb.close()
+        v0_root = temp_root / "official_v0-output"
+        v0_result = execute(v0_input, output_root=v0_root)
+        assert v0_result.returncode == 0, (v0_result.stdout, v0_result.stderr)
+        assert (v0_root / "data/source_tables/08_Tier档位.csv").exists()
+        print("PASS T0 zero pullback and disabled legacy reward accepted")
+
+        wb = load_workbook(v0_input)
+        wb["13_吞并奖励"].cell(reward_row, reward_enabled_col, "TRUE")
+        enabled_bad = temp_root / "enabled_bad_reward.xlsx"
+        wb.save(enabled_bad)
+        wb.close()
+        enabled_result = execute(enabled_bad, output_root=temp_root / "enabled-bad-output")
+        assert enabled_result.returncode == 1 and "关联 ID" in enabled_result.stderr, (enabled_result.stdout, enabled_result.stderr)
+        print("PASS enabled dangling reward rejected")
+
+        wb = load_workbook(v0_input)
+        wb["08_Tier档位"].cell(tier_rows["1"], pullback_col, 0)
+        bad_tier = temp_root / "tier1_zero_pullback.xlsx"
+        wb.save(bad_tier)
+        wb.close()
+        tier_result = execute(bad_tier, output_root=temp_root / "tier-bad-output")
+        assert tier_result.returncode == 1 and "pullback_mult" in tier_result.stderr, (tier_result.stdout, tier_result.stderr)
+        print("PASS Tier1 zero pullback rejected")
+
 
 if __name__ == "__main__":
     main()

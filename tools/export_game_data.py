@@ -18,7 +18,7 @@ from openpyxl import load_workbook
 ROOT = Path(__file__).resolve().parents[1]
 SHEET_NAMES = (
     "01_身份配置", "02_主播关卡", "03_普通词库", "04_矛盾内容", "05_关卡生成",
-    "06_战斗数值", "07_特性参数", "08_Tier档位", "09_直播数据", "10_复读配置",
+    "06_战斗数值", "06_生命周期", "06_基础参数", "07_特性参数", "08_Tier档位", "09_直播数据", "10_复读配置",
     "11_矛盾参数", "12_神谕参数", "13_吞并奖励", "14_败者卡", "15_神降临",
     "16_结局配置", "17_音频事件", "18_表现资产",
 )
@@ -49,7 +49,7 @@ RULES = {
 NUMERIC = {
     "02_主播关卡": {"level_order": "int"},
     "03_普通词库": {"strength": "int", "weight": "float"},
-    "05_关卡生成": {"base_batch_count": "int", "spawn_interval_s": "float", "move_speed_px_s": "float", "normal_screen_cap": "int", "word_weight_multiplier": "float"},
+    "05_关卡生成": {"base_batch_count": "int", "spawn_interval_s": "float", "move_speed_px_s": "float", "word_weight_multiplier": "float"},
     "06_生命周期": {"base_lifetime_s": "float"},
     "07_特性参数": {"lifetime_override_s": "float", "split_child_count": "int"},
     "08_Tier档位": {"tier": "int", "pk_up_threshold": "float", "pk_down_threshold": "float", "spawn_batch_mult": "float", "spawn_frequency_mult": "float", "move_speed_mult": "float", "lifetime_mult": "float", "pullback_mult": "float", "repeat_count": "int", "repeat_lifetime_s": "float"},
@@ -58,7 +58,7 @@ NUMERIC = {
     "13_吞并奖励": {"inherited_weight": "float"},
     "17_音频事件": {"volume_db": "float", "pitch_min": "float", "pitch_max": "float"},
 }
-BOOL_FIELDS = {"default_selected", "enabled", "inheritable", "loop", "affected_by_tier_lifetime_mult"}
+BOOL_FIELDS = {"enabled", "inheritable", "loop", "affected_by_tier_lifetime_mult"}
 ENUMS = {
     ("01_身份配置", "tendency"): {"orthodox", "heretical", "heresy", "absurd"},
     ("03_普通词库", "tendency"): {"orthodox", "heretical", "heresy", "absurd", "neutral"},
@@ -250,6 +250,9 @@ def validate(tables: dict, report: Report) -> None:
                     report.add("警告", child, line, field, f"{parent} 目前没有正式记录，关联 ID 暂无法核验")
             continue
         for line, row in tables[child][1]:
+            # 停用的吞并奖励占位记录保留在 CSV，正式关联仅核验启用项。
+            if child == "13_吞并奖励" and row.get("enabled", "").lower() == "false":
+                continue
             ref = row.get(field, "").strip()
             if ref and ref not in source:
                 report.add("错误", child, line, field, f"关联 ID {ref!r} 未出现在 {parent}.{target}")
@@ -273,7 +276,14 @@ def validate(tables: dict, report: Report) -> None:
         if down and numeric(down, "float") and not (0 <= float(down) < upper):
             report.add("错误", "08_Tier档位", line, "pk_down_threshold", "降档阈值须低于本档升档阈值")
         for f in ("spawn_batch_mult", "spawn_frequency_mult", "move_speed_mult", "lifetime_mult", "pullback_mult"):
-            if numeric(r.get(f, ""), "float") and float(r[f]) <= 0:
+            if not numeric(r.get(f, ""), "float"):
+                continue
+            value = float(r[f])
+            # T0 普通战斗无回拉；从 T1 起回拉倍率必须为正。
+            if f == "pullback_mult" and r["tier"] == "0":
+                if value < 0:
+                    report.add("错误", "08_Tier档位", line, f, "T0 回拉倍率不得小于 0")
+            elif value <= 0:
                 report.add("错误", "08_Tier档位", line, f, "倍率必须大于 0")
         if numeric(r["repeat_count"], "int") and int(float(r["repeat_count"])) < 0:
             report.add("错误", "08_Tier档位", line, "repeat_count", "复读数量不可为负")
@@ -513,12 +523,21 @@ def main() -> int:
         workbook.close()
         return 2
     tables: dict[str, tuple[list[str], list]] = {}
+    # 新版 Google Sheet 将原单页 06 的三种不同结构拆成独立工作表。
+    # 旧 TEST_ONLY 夹具仍使用单页区块格式，保留兼容读取。
+    split06_parts = ("06_生命周期", "06_基础参数")
+    has_any_split06 = any(name in workbook.sheetnames for name in split06_parts)
+    split06 = all(name in workbook.sheetnames for name in split06_parts)
+    if has_any_split06 and not split06:
+        report.add("错误", "06_战斗数值", 1, "Sheet", "拆分 06 工作表不完整：须同时包含生命周期和基础参数")
     for sheet in SHEET_NAMES:
+        if sheet in split06_parts and not split06:
+            continue
         if sheet not in workbook.sheetnames:
             report.add("错误", sheet, 1, "Sheet", "缺少工作表")
             continue
         rows = xlsx_rows(workbook[sheet])
-        if sheet == "06_战斗数值":
+        if sheet == "06_战斗数值" and not split06:
             # 三个独立字段区块，标题与第二/第三个表头均不能作为数据输出。
             cut1 = next((i for i, (_, r) in enumerate(rows) if r and r[0].strip() == "【生命周期】"), -1)
             cut2 = next((i for i, (_, r) in enumerate(rows) if r and r[0].strip() == "【系统案补充基础参数】"), -1)
