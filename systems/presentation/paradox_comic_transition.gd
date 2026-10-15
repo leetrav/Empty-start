@@ -263,32 +263,13 @@ func _draw_curtain_panel(side: int, opening: float, panel_color: Color) -> void:
 func _draw_result_feedback() -> void:
 	var fade: float = 1.0 - clampf(_elapsed / maxf(result_feedback_seconds, 0.001), 0.0, 1.0)
 	var shade: Color = dim_color
-	shade.a = 0.84 * fade
+	shade.a = 0.58 * fade
 	draw_rect(Rect2(Vector2.ZERO, size), shade)
-	var center: Vector2 = size * 0.5
-	_draw_result_burst(center, fade)
 	var flash_progress: float = clampf(_elapsed / maxf(flash_seconds, 0.001), 0.0, 1.0)
 	if _elapsed < flash_seconds:
 		var flash: Color = paper_color
 		flash.a = flash_alpha * (1.0 - flash_progress)
 		draw_rect(Rect2(Vector2.ZERO, size), flash)
-
-
-# 按成败使用不同颜色绘制硬边漫画爆点。
-func _draw_result_burst(center: Vector2, strength: float) -> void:
-	var burst_points := PackedVector2Array()
-	var inner_radius: float = minf(size.x, size.y) * 0.12
-	var outer_radius: float = minf(size.x, size.y) * 0.32
-	const POINTS: int = 36
-	for index: int in range(POINTS):
-		var alternating: float = outer_radius if index % 2 == 0 else inner_radius
-		var angle: float = TAU * float(index) / float(POINTS) - PI * 0.5
-		burst_points.append(center + Vector2.RIGHT.rotated(angle) * alternating)
-	burst_points.append(burst_points[0])
-	var burst_color: Color = accent_color if not _result_success else Color("#B47A28")
-	burst_color.a = 0.94 * strength
-	draw_colored_polygon(burst_points, burst_color)
-	draw_polyline(burst_points, ink_color, 8.0, true)
 
 
 # 按分镜时间驱动标题过冲、回弹、上移与淡出。
@@ -325,7 +306,8 @@ func _update_title_pose() -> void:
 		alpha = 1.0 - clampf((_elapsed - result_feedback_seconds * 0.62) / maxf(result_feedback_seconds * 0.38, 0.001), 0.0, 1.0)
 
 	_title.visible = show_title
-	_title_shadow.visible = show_title
+	# 结果字只保留描边，避免偏移投影与主字重叠形成双重标题。
+	_title_shadow.visible = show_title and _mode != PlaybackMode.RESULT
 	if not show_title:
 		return
 	var title_position: Vector2 = Vector2(36.0, (size.y - 200.0) * 0.5 + lift)
