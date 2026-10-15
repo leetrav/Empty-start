@@ -1,1 +1,5 @@
-level_id,level_order,streamer_id,streamer_name,portrait_asset_id,avatar_asset_id,live_theme,fan_badge_text,background_asset_id,special_play_id,word_pool_id,contradiction_set_id,loser_card_id,enabled,notes
+level_id,level_order,streamer_id,streamer_name,portrait_set_id,tutorial_config_id,story_config_id,live_theme,fan_group_name,background_asset_id,word_pool_id,contradiction_set_id,enabled,notes,fan_badge_asset_id
+level_001,1,alien,Fermi | 费米,portrait_alien,tutorial_level_001,story_level_001,旅游直播,科学家,,pool_streamer_a,contradiction_alien,true,费米：正式剧情与共用玩家词库已关联；04手写矛盾6句已通过并关联。阶段立绘关联23表，首关教学草案关联24表。直播背景与评论粉丝牌资源待确认。,
+level_002,2,kiwi,Augur | 奥格尔,portrait_kiwi,,story_level_002,情感直播,元老会,,pool_streamer_a,contradiction_kiwi,true,奥格尔：正式剧情与共用玩家词库已关联；04手写矛盾6句已通过并关联。阶段立绘关联23表；现有kiwi_room.png房间图是否用于直播背景待确认，评论粉丝牌资源待定。,
+level_003,3,frog,Gula | 咕拉,portrait_frog,,story_level_003,美食直播,煲煲,,pool_streamer_a,contradiction_frog,true,咕拉：正式剧情/04矛盾已关联；23表portrait_frog已登记#174入库的5张立绘；已有直播背景assets/environment/live/frog/background.png及可选前景foreground_cutout.png。败北专属演出等待切图；正式纹理接线由LC-10/PA-15/17完成，评论粉丝牌继续待定。,
+level_004,4,fox,Khleb | 列巴,portrait_fox,,story_level_004,擦边直播,科洛博克,,pool_streamer_a,contradiction_fox,true,列巴：正式剧情与共用玩家词库已关联；04手写矛盾6句已通过并关联。阶段立绘与玫瑰/花瓣部件已登记；直播背景与评论粉丝牌资源待确认。,
