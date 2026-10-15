@@ -4,6 +4,13 @@
 
 ## 2026-10-09 现行实现核对与任务状态
 
+### R26-D 表驱动后端（2026-10-16）
+
+- `BarrageTraitCatalog` 读取正式 `07_特性参数.csv` 与 `21_反击技能池.csv`；技能按 `streamer_id + tier + enabled` 筛选，并使用 `weight` 加权抽选。`BarrageArea.configure_trait_catalog()` 注入目录，`spawn_counter_skill_barrage(level_profile, speech, tier)` 把特性技能送入现有普通弹幕装配和特殊容量流程。
+- `07.lifetime_override_s` 可覆盖类别寿命；空值沿用 06 生命周期配置。其他列可通过 `get_trait_definition()` 查询。运行时目录尚需 Sandbox 所有者注入，特性技能仍需战斗流程决定何时触发。
+- `TutorialStepRunner` 读取正式 `24_新手教学配置.csv`，按 `step_order` 推进启用步骤，并以稳定事件 ID 发布提示和完成事实。`TutorialHintLabel.show_tutorial_hint()` 可连接 `hint_requested`。Sandbox 的输入/命中事实接线和周目完成记录归 INT-16 所有者。
+- 当前 07 表的 `split_child_count` 尚无真实分裂生成消费者；`visual_asset_id` 尚未关联 18 表资源或现有特性绘制组件。具体覆盖与阻塞见 [R26-D 日志](../Integration/R26-D_07-21-24_traits_skills_tutorial.md_2026-10-16_log.md)。
+
 **现有组件：** `BarrageTraitSet` 已支持一条普通话语挂多个兼容特性，且可查询本关/已继承可用特性。真实普通批次当前尚未随机装配特性，BG-41 负责按后续明确的反击池选择；BG-35 负责特殊实例同屏容量。遮挡特性展示的最高层与随机位置静止生成分别由 BT-14、BT-15 处理；共享随机静止落点能力由 BG-42 提供。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
