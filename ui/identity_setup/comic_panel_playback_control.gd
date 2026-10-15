@@ -6,6 +6,8 @@ signal playback_completed
 
 @export_range(1, 99, 1) var panel_count: int = 1
 @export_range(0.05, 30.0, 0.05) var panel_interval_seconds: float = 1.0
+@export var panel_intervals_seconds: Array[float] = []
+@export var auto_complete_last_panel: bool = false
 
 var current_panel_number: int:
 	get:
@@ -63,7 +65,12 @@ func resume_playback() -> void:
 
 # 计时到期只请求普通下一格；到达末格后停止计时并保留当前画面。
 func _on_interval_timeout() -> void:
-	if _is_paused or _has_completed or _current_panel_number >= panel_count:
+	if _is_paused or _has_completed:
+		return
+	# 独立剧情允许末格自动结束；原身份漫画默认仍等待点击。
+	if _current_panel_number >= panel_count:
+		if auto_complete_last_panel:
+			_complete_playback()
 		return
 	_request_next_panel()
 
@@ -75,10 +82,13 @@ func _request_next_panel() -> void:
 
 # 最后一格没有后续计时；非末格才启动下一段展示间隔。
 func _start_interval_if_needed() -> void:
-	if _current_panel_number >= panel_count:
+	if _current_panel_number >= panel_count and not auto_complete_last_panel:
 		_timer.stop()
 		return
 	_timer.wait_time = _active_interval_seconds
+	# 可选逐格时长只影响显式配置的新播放场景。
+	if _current_panel_number <= panel_intervals_seconds.size():
+		_timer.wait_time = maxf(0.05, panel_intervals_seconds[_current_panel_number - 1])
 	_timer.start()
 
 # 结束事件由末格确认点击触发，并由状态位保证只发一次。

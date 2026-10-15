@@ -1,6 +1,8 @@
 ## 普通战斗界面只读取组合方的状态；设计矩形保存于 Scene，运行时只整体缩放。
 extends Control
 
+signal failure_presentation_finished()
+
 signal dialogue_sequence_completed(sequence_id: StringName, side: int)
 signal tier_breakthrough_finished(previous_tier: int, current_tier: int, completed: bool)
 
@@ -8,10 +10,10 @@ const PortraitMotion = preload("res://systems/presentation/streamer_portrait_mot
 const TierPortrait = preload("res://systems/presentation/opponent_tier_portrait.gd")
 const PK_BAR_SKIN_SCENE: PackedScene = preload("res://systems/presentation/pk_bar_skin.tscn")
 const DialogueQueueScript = preload("res://ui/streamer_bubble_dialogue/streamer_bubble_dialogue_queue.gd")
+const StageArrow = preload("res://systems/presentation/stage_arrow_fx.gd")
+const CrtConnection = preload("res://systems/presentation/crt_connection_fx.gd")
 const HAMSTER_LIVE_BACKGROUND: Texture2D = preload("res://assets/environment/live/hamster/background.png")
 const HAMSTER_LIVE_FOREGROUND: Texture2D = preload("res://assets/environment/live/hamster/foreground_desk.png")
-const TIER_BREAKTHROUGH_SCALE: float = 1.28
-const TIER_BREAKTHROUGH_SECONDS: float = 0.32
 const STREAMER_NAME_BASE_FONT_SIZE: int = 32
 const STREAMER_NAME_MIN_FONT_SIZE: int = 20
 const FAN_GROUP_NAME_BASE_FONT_SIZE: int = 22
@@ -25,6 +27,40 @@ const FAN_GROUP_NAME_PLACEHOLDER: String = "粉丝团"
 @export_range(0.0, 32.0, 0.5) var tier_down_shake_amplitude: float = 6.0
 @export_range(0.0, 1.0, 0.01) var tier_down_shake_duration_seconds: float = 0.18
 
+# 在 HUD 检查器集中保存视觉参数，创建运行时子节点时传入，不影响阶段规则。
+@export_group("PA-11 箭头")
+@export var pa11_arrow_color: Color = Color(1.0, 0.94, 0.76, 0.78)
+@export var pa11_arrow_outline_color: Color = Color(0.09, 0.10, 0.17, 0.78)
+@export_range(0.08, 0.55, 0.01) var pa11_arrow_size_ratio: float = 0.28
+@export_range(0.002, 0.04, 0.001) var pa11_arrow_outline_ratio: float = 0.012
+@export_range(0.01, 0.5, 0.01) var pa11_arrow_pop_seconds: float = 0.12
+@export_range(0.01, 0.5, 0.01) var pa11_arrow_thrust_seconds: float = 0.08
+@export_range(0.0, 0.15, 0.005) var pa11_arrow_thrust_ratio: float = 0.025
+@export_range(0.0, 0.5, 0.01) var pa11_arrow_hold_seconds: float = 0.08
+@export_range(0.01, 0.6, 0.01) var pa11_arrow_fade_seconds: float = 0.20
+@export_range(0.0, 0.3, 0.01) var pa11_arrow_travel_ratio: float = 0.09
+@export_group("PA-11 CRT")
+@export var pa11_crt_blackout_color: Color = Color(0.018, 0.024, 0.045, 1.0)
+@export var pa11_crt_beam_color: Color = Color(0.91, 0.98, 1.0, 1.0)
+@export_range(0.02, 0.3, 0.01) var pa11_crt_line_seconds: float = 0.10
+@export_range(0.05, 0.6, 0.01) var pa11_crt_unfold_seconds: float = 0.30
+@export_range(0.02, 0.3, 0.01) var pa11_crt_flash_seconds: float = 0.11
+@export_range(0.02, 0.4, 0.01) var pa11_crt_settle_seconds: float = 0.17
+@export_range(0.0, 1.0, 0.01) var pa11_crt_scanline_opacity: float = 0.34
+@export_range(0.0, 1.0, 0.01) var pa11_crt_noise_opacity: float = 0.28
+@export_range(0.0, 1.0, 0.01) var pa11_crt_flash_opacity: float = 0.50
+@export_range(0.05, 0.5, 0.01) var pa11_crt_impact_size_ratio: float = 0.28
+@export var pa11_crt_impact_offset_ratio: Vector2 = Vector2(0.32, -0.32)
+@export_range(0.0, 12.0, 0.5) var pa11_crt_horizontal_distortion_pixels: float = 3.0
+@export_group("PA-18 战败")
+@export var pa18_drop_direction: float = 1.0
+@export_range(60.0, 600.0, 10.0) var pa18_drop_distance: float = 280.0
+@export_range(0.0, 5.0, 0.1) var pa18_drop_rotations: float = 1.5
+@export_range(0.1, 2.0, 0.01) var pa18_drop_seconds: float = 0.55
+@export_range(0.1, 2.0, 0.01) var pa18_shutdown_seconds: float = 0.55
+@export_range(0.0, 1.0, 0.01) var pa18_failure_ui_delay: float = 0.15
+@export_group("")
+
 var player_portrait_motion: StreamerPortraitMotion
 var opponent_portrait_motion: StreamerPortraitMotion
 var opponent_tier_portrait: OpponentTierPortrait
@@ -33,9 +69,15 @@ var _opponent_connected: bool = false
 var _paradox_stage_active: bool = false
 var _last_status_tier: int = -1
 var _pk_bar_skin: PkBarSkin
+var _actual_player_pk: float = 0.5
 var _active_opponent_status_text: String = ""
 var _dialogue_queue: Node
-var _tier_breakthrough_tween: Tween
+var _tier_breakthrough_active: bool = false
+var _stage_arrow: StageArrowFx
+var _player_crt: CrtConnectionFx
+var _failure_presentation_active: bool = false
+var _failure_delay_tween: Tween
+var _crt_connection: CrtConnectionFx
 var _tier_breakthrough_previous_tier: int = -1
 var _tier_breakthrough_current_tier: int = -1
 var _tier_down_shake_tween: Tween
@@ -62,6 +104,7 @@ var attack_phase: int = AttackChargeInput.AttackPhase.READY
 @onready var _player_pk_label: Label = %PlayerPK
 @onready var _opponent_pk_label: Label = $BattleArea/TopBattleStatus/PKBar/OpponentPK
 @onready var _pk_progress: ProgressBar = %PlayerShare
+@onready var _pk_hamster_ball: PKHamsterBallIndicator = $BattleArea/TopBattleStatus/PKBar/HamsterBallIndicator
 @onready var _tier_label: Label = %Tier
 @onready var _battle_area: Control = $BattleArea
 @onready var _failure_overlay: Control = %FailureOverlay
@@ -90,6 +133,56 @@ func _ready() -> void:
 	)
 	_dialogue_queue.connect("sequence_completed", Callable(self, "_on_dialogue_sequence_completed"))
 	add_child(_dialogue_queue)
+	_pk_hamster_ball.display_progress_changed.connect(_refresh_pk_percentage)
+	_pk_hamster_ball.bind_track(_pk_progress)
+	# PA-11 只创建局部视觉层，清屏、暂停与对白恢复继续由现有 Flow 负责。
+	_stage_arrow = StageArrow.new() as StageArrowFx
+	_stage_arrow.arrow_color = pa11_arrow_color
+	_stage_arrow.outline_color = pa11_arrow_outline_color
+	_stage_arrow.arrow_size_ratio = pa11_arrow_size_ratio
+	_stage_arrow.outline_ratio = pa11_arrow_outline_ratio
+	_stage_arrow.pop_seconds = pa11_arrow_pop_seconds
+	_stage_arrow.thrust_seconds = pa11_arrow_thrust_seconds
+	_stage_arrow.thrust_ratio = pa11_arrow_thrust_ratio
+	_stage_arrow.hold_seconds = pa11_arrow_hold_seconds
+	_stage_arrow.fade_seconds = pa11_arrow_fade_seconds
+	_stage_arrow.travel_ratio = pa11_arrow_travel_ratio
+	_stage_arrow.name = "StageArrowFx"
+	_stage_arrow.z_index = 20
+	var barrage_area: Control = %BarrageArea
+	barrage_area.add_child(_stage_arrow)
+	_stage_arrow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_stage_arrow.animation_finished.connect(_on_stage_arrow_finished)
+	_crt_connection = CrtConnection.new() as CrtConnectionFx
+	_crt_connection.blackout_color = pa11_crt_blackout_color
+	_crt_connection.beam_color = pa11_crt_beam_color
+	_crt_connection.line_seconds = pa11_crt_line_seconds
+	_crt_connection.unfold_seconds = pa11_crt_unfold_seconds
+	_crt_connection.flash_seconds = pa11_crt_flash_seconds
+	_crt_connection.settle_seconds = pa11_crt_settle_seconds
+	_crt_connection.scanline_opacity = pa11_crt_scanline_opacity
+	_crt_connection.noise_opacity = pa11_crt_noise_opacity
+	_crt_connection.flash_opacity = pa11_crt_flash_opacity
+	_crt_connection.impact_size_ratio = pa11_crt_impact_size_ratio
+	_crt_connection.impact_offset_ratio = pa11_crt_impact_offset_ratio
+	_crt_connection.horizontal_distortion_pixels = pa11_crt_horizontal_distortion_pixels
+	_crt_connection.name = "CrtConnectionFx"
+	_crt_connection.z_index = 20
+	_opponent_live_background.get_parent().add_child(_crt_connection)
+	_crt_connection.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_crt_connection.bind_video_layers([_opponent_live_background, _opponent_portrait])
+	_crt_connection.connection_finished.connect(_finish_tier_breakthrough)
+	# 左侧实例与右侧开机实例独立，收屏范围读取直播容器实际尺寸。
+	_player_crt = CrtConnection.new() as CrtConnectionFx
+	_player_crt.name = "PlayerCrtShutdownFx"
+	_player_crt.blackout_color = pa11_crt_blackout_color
+	_player_crt.beam_color = pa11_crt_beam_color
+	_player_crt.z_index = 20
+	_player_live_background.get_parent().add_child(_player_crt)
+	_player_crt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_player_crt.bind_video_layers([_player_live_background, _player_portrait, _player_live_foreground])
+	_pk_hamster_ball.failure_fall_finished.connect(_on_failure_ball_finished)
+	_player_crt.shutdown_finished.connect(_on_player_shutdown_finished)
 	var parent_control: Control = get_parent() as Control
 	parent_control.resized.connect(_fit_parent_size)
 	_fit_parent_size()
@@ -201,12 +294,20 @@ func play_player_shot(snapshot: AttackTargetSnapshot) -> void:
 
 # T0 隐藏立绘，阶段换图仍复用当前待机容器；背景与其他演出由集成方管理。
 func set_opponent_portrait_connected(connected: bool) -> void:
+	# 连线演出期间先关闭对白侧；CRT 展开时仅显露画面，稳定后由现有完成入口启用对白。
+	if _tier_breakthrough_active and _tier_breakthrough_previous_tier == 0:
+		connected = false
 	_opponent_connected = connected
 	if _dialogue_queue != null:
 		_dialogue_queue.call("set_side_enabled", BubbleDialogueEntry.SpeakerSide.OPPONENT, connected)
 	_opponent_portrait.visible = connected and _opponent_portrait.texture != null
 	opponent_tier_portrait.visible = connected and _opponent_portrait.texture != null
 	_opponent_portrait_placeholder.visible = connected and _opponent_portrait.texture == null
+	if _crt_connection != null and not _tier_breakthrough_active:
+		if connected:
+			_crt_connection.reset_connected()
+		else:
+			_crt_connection.reset_disconnected()
 
 
 # 当前关角色 ID 由集成方传入；后续换阶段 PNG 无需重建动画层。
@@ -273,6 +374,8 @@ func refresh_pk(player_pk: float, current_tier: int) -> void:
 		_last_status_tier = current_tier
 		opponent_tier_portrait.show_tier(current_tier)
 		if previous_tier >= 0 and current_tier < previous_tier:
+			cancel_tier_breakthrough()
+			_stage_arrow.play(-1)
 			_play_tier_down_shake()
 		if opponent_was_connected and current_tier == 0:
 			# 对手刚离线时优先显示重新匹配状态，避免旧战斗提示遮住离线事实。
@@ -282,12 +385,24 @@ func refresh_pk(player_pk: float, current_tier: int) -> void:
 		# T0 对手离线并隐藏立绘；进入 T1 后显示本关配置的待机图，降档与回升复用同一入口。
 		set_opponent_portrait_connected(current_tier > 0)
 	var player_share: float = clampf(player_pk, 0.0, 1.0)
+	_actual_player_pk = player_share
 	if _pk_bar_skin != null:
 		_pk_bar_skin.set_display_state(player_share, current_tier, _paradox_stage_active)
-	_pk_progress.value = player_share
+	# PA-13 统一驱动填充、球心和百分比；底板选择继续读取真实 PK。
+	_pk_hamster_ball.set_player_pk(player_share)
+	_refresh_stage_label(current_tier)
+
+
+# 百分比只消费同一显示进度，不把动画插值回写战斗事实。
+func _refresh_pk_percentage(player_share: float) -> void:
 	_player_pk_label.text = "玩家 PK %.1f%%" % (player_share * 100.0)
 	_opponent_pk_label.text = "对手 %.1f%%" % ((1.0 - player_share) * 100.0)
-	_refresh_stage_label(current_tier)
+
+
+# 只消费 CombatStage 的实际档位变化通知；PK 百分比回落本身不会触发降档表情。
+func on_tier_changed(current_tier: int, player_pk: float) -> void:
+	_pk_hamster_ball.set_player_pk(player_pk)
+	_pk_hamster_ball.on_tier_changed(current_tier)
 
 
 # 只移动战斗区的显示父节点；弹幕逻辑、运动和寿命继续正常推进。
@@ -340,7 +455,7 @@ func _cancel_tier_down_shake() -> void:
 func set_paradox_stage_active(active: bool, current_tier: int) -> void:
 	_paradox_stage_active = active
 	if _pk_bar_skin != null:
-		_pk_bar_skin.set_display_state(_pk_progress.value, current_tier, active)
+		_pk_bar_skin.set_display_state(_actual_player_pk, current_tier, active)
 	_refresh_stage_label(current_tier)
 
 
@@ -349,50 +464,60 @@ func _refresh_stage_label(current_tier: int) -> void:
 	_tier_label.text = "T6 / Paradox" if _paradox_stage_active else "Tier %d" % current_tier
 
 
-# 复用当前 Tier 标签做一次短暂弹出；演出参数留在代码，不新增视觉资源配置。
+# 已有 CS-14 清屏完成入口调用本方法；这里只负责箭头和首次连线 CRT 的顺序。
 func play_tier_breakthrough(previous_tier: int, current_tier: int) -> bool:
 	if previous_tier < 0 or current_tier <= previous_tier or not is_node_ready():
 		return false
 	cancel_tier_breakthrough()
 	_tier_breakthrough_previous_tier = previous_tier
 	_tier_breakthrough_current_tier = current_tier
-	_tier_label.pivot_offset = _tier_label.size * 0.5
-	_tier_label.scale = Vector2.ONE * TIER_BREAKTHROUGH_SCALE
-	_tier_breakthrough_tween = create_tween()
-	_tier_breakthrough_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_tier_breakthrough_tween.tween_property(_tier_label, "scale", Vector2.ONE, TIER_BREAKTHROUGH_SECONDS)
-	_tier_breakthrough_tween.finished.connect(
-		_on_tier_breakthrough_tween_finished.bind(_tier_breakthrough_tween)
-	)
+	_tier_breakthrough_active = true
+	if previous_tier == 0:
+		_crt_connection.reset_disconnected()
+	_stage_arrow.play(1)
 	return true
 
 
-# 重开打断过渡时恢复标签并通知协调方取消本次恢复请求。
+# 重开或降档打断演出时清理视觉层；不恢复输入、回拉或生成。
+func is_stage_transition_playing() -> bool:
+	return _tier_breakthrough_active or (_stage_arrow != null and _stage_arrow.is_playing()) or (_crt_connection != null and _crt_connection.is_connecting())
+
+
+# 战斗生命周期已停止时，由组合方撤销尚未结束的表现。
 func cancel_tier_breakthrough() -> void:
-	if _tier_breakthrough_tween == null:
+	if _stage_arrow != null:
+		_stage_arrow.reset_effect()
+	if _crt_connection != null and _crt_connection.is_connecting():
+		_crt_connection.reset_disconnected()
+	if not _tier_breakthrough_active:
 		return
 	var previous_tier: int = _tier_breakthrough_previous_tier
 	var current_tier: int = _tier_breakthrough_current_tier
-	var tween: Tween = _tier_breakthrough_tween
-	_tier_breakthrough_tween = null
-	tween.kill()
-	_reset_tier_breakthrough_label()
+	_tier_breakthrough_active = false
 	tier_breakthrough_finished.emit(previous_tier, current_tier, false)
 
 
-# Tween 实际结束后才交回恢复 / 对白接线。
-func _on_tier_breakthrough_tween_finished(tween: Tween) -> void:
-	if tween != _tier_breakthrough_tween:
+# 上箭头结束后，首次连线继续 CRT；普通升档直接交回现有流程。
+func _on_stage_arrow_finished(direction: int) -> void:
+	if direction < 0 or not _tier_breakthrough_active:
+		return
+	if _tier_breakthrough_previous_tier == 0:
+		_opponent_portrait.visible = _opponent_portrait.texture != null
+		opponent_tier_portrait.visible = _opponent_portrait.texture != null
+		_opponent_portrait_placeholder.visible = _opponent_portrait.texture == null
+		_crt_connection.play_connection()
+	else:
+		_finish_tier_breakthrough()
+
+
+# 视觉结束只发布既有完成信号，由 Sandbox / Flow 决定对白与战斗恢复。
+func _finish_tier_breakthrough() -> void:
+	if not _tier_breakthrough_active:
 		return
 	var previous_tier: int = _tier_breakthrough_previous_tier
 	var current_tier: int = _tier_breakthrough_current_tier
-	_tier_breakthrough_tween = null
-	_reset_tier_breakthrough_label()
+	_tier_breakthrough_active = false
 	tier_breakthrough_finished.emit(previous_tier, current_tier, true)
-
-
-func _reset_tier_breakthrough_label() -> void:
-	_tier_label.scale = Vector2.ONE
 
 
 # 蓄力与阶段归 CombatAttack；HUD 保留最新数值，供后续获批的美术反馈接入。
@@ -427,12 +552,20 @@ func _show_opponent_status(message: String) -> void:
 
 # 失败只切换可见界面；停止输入、回拉和生成继续由各状态拥有者处理。
 func show_failure() -> void:
+	cancel_tier_breakthrough()
+	# 先清理旧开场对白；失败事件的新对白随后由既有消费者提交。
+	clear_dialogue_bubbles()
 	_failure_overlay.show()
 	_restart_button.grab_focus()
 
 
 # 重开复位本场 HUD 提示并读取当前 T0 等待文案，各系统状态仍由所属对象初始化。
-func reset_for_attempt() -> void:
+func reset_for_attempt(current_tier: int = 0) -> void:
+	_failure_presentation_active = false
+	if _failure_delay_tween != null:
+		_failure_delay_tween.kill()
+	if _player_crt != null:
+		_player_crt.reset_connected()
 	cancel_tier_breakthrough()
 	_cancel_tier_down_shake()
 	# 重开/失败后的下一场从待机准星开始，避免保留上一发充能高亮。
@@ -444,10 +577,49 @@ func reset_for_attempt() -> void:
 	opponent_portrait_motion.set_idle_strength(1.0)
 	opponent_tier_portrait.reset_for_tier()
 	set_opponent_portrait_connected(false)
+	_pk_hamster_ball.reset_for_attempt(current_tier, _actual_player_pk)
 	if _pk_bar_skin != null:
-		_pk_bar_skin.reset_for_attempt(_pk_progress.value, 0, false)
+		_pk_bar_skin.reset_for_attempt(_actual_player_pk, 0, false)
 	set_paradox_stage_active(false, 0)
 	_last_status_tier = 0
 	_failure_overlay.hide()
 	_show_opponent_status(t0_matching_status_text)
 	refresh_attack(0.0, AttackChargeInput.AttackPhase.READY)
+
+
+# 正式失败事实由 Sandbox 转入；只延后画面，不重新控制战斗数值或输入。
+func play_failure_presentation() -> void:
+	if _failure_presentation_active or _failure_overlay.visible:
+		return
+	if _actual_player_pk > 0.0:
+		failure_presentation_finished.emit()
+		return
+	_failure_presentation_active = true
+	cancel_tier_breakthrough()
+	_cancel_tier_down_shake()
+	clear_dialogue_bubbles()
+	player_portrait_motion.reset_shot()
+	player_portrait_motion.set_idle_strength(0.0)
+	# 失败归零会刷新到 T0，断流演出中仍保留最后已配置的对手直播。
+	set_opponent_portrait_connected(true)
+	_pk_hamster_ball.play_failure_fall(pa18_drop_direction, pa18_drop_distance, pa18_drop_rotations, pa18_drop_seconds)
+
+
+func _on_failure_ball_finished() -> void:
+	if not _failure_presentation_active:
+		return
+	_player_crt.shutdown_seconds = pa18_shutdown_seconds
+	_player_crt.play_shutdown()
+
+
+func _on_player_shutdown_finished() -> void:
+	if not _failure_presentation_active:
+		return
+	_failure_delay_tween = create_tween()
+	_failure_delay_tween.tween_interval(pa18_failure_ui_delay)
+	_failure_delay_tween.tween_callback(_finish_failure_presentation)
+
+
+func _finish_failure_presentation() -> void:
+	if _failure_presentation_active:
+		failure_presentation_finished.emit()

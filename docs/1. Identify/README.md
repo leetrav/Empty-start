@@ -162,3 +162,8 @@ ID-12 提供独立漫画播放控制 Node，按配置发出 1-based 分镜编号
 - `identity_setup.gd` 提供 `player_name_pawprint_presentation_requested(streamer_name)`、`motive_panel_display_requested(panel_number)` 和 `room_computer_transition_requested(identity_id)` 请求信号；完成回调分别使用 `complete_player_presentation()`、ID-12 `playback_completed` 与 `complete_room_computer_transition()`。通知信号为 `player_name_pawprint_presentation_completed(streamer_name)`、`motive_comic_completed`、`room_computer_transition_completed`。
 - 名称仍暂存在页面输入控件，回退到上一阶段时沿用主播名、粉丝团输入、已翻开的牌及身份选择。三项正式字段只经 `SaveManager.confirm_opening_identity()` 提交一次，保存成功后仍经 `opening_saved` 进入 RS-12。
 - 运行验收使用 `TEST_ONLY` 三格和内建按钮模拟美术完成回调；正式美术、实际动画时长、人工键鼠及 Android 触控待后续验收。详见 [ID-13 日志](身份系统_ID-13_2026-10-11_log.md)。
+
+
+## INT-11 当前边界（2026-10-13）
+
+首次 Boot 六幕漫画是角色塑造之前的独立演出，结束到主菜单。已撤销把正式 ComicPlayer 嵌入 ID-13 动机分镜的修改；ID-13 恢复原流程及占位页，姓名、身份及存档职责不变。

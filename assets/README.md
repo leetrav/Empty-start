@@ -2,6 +2,12 @@
 
 本目录按**运行用途**整理素材，保留美术交付的独立图片。角色所属直播间的背景统一归 `environment/live/`，主角休息房间归 `environment/player_room/`。
 
+## 剧情漫画（INT-11，2026-10-13）
+
+`manga/P1/`～`manga/P6/` 保留美术交付的 27 张 PNG 及原文件名，完整构图为 1920×1080，另有不同尺寸的拆分图。文件清单见 [INT-11](../docs/Integration/tasks/INT-11_opening-ending-comic-playback.md)。播放配置位于 `data/comics/opening.tres`、`ending.tres`；两份配置分别持有开场动画的前半 P1～P4 和后半 P5～P6。首次 Boot 连续播放两份配置组成完整六幕，菜单分别回看前后部分；后半不代表通关结局。
+
+完整效果图与拆图不作为连续独立页面机械播放。原图片不修改，配置保存拆图坐标、显现顺序和时长。参考视频、临时观察脚本和录屏保存在工程外。正式台词与书写音效待提供；`comic_write` 暂复用现有 Kenney `click_002.ogg` 验证声音链路。
+
 ## 当前结构
 
 ```text
@@ -114,3 +120,5 @@ assets/
 - 狐狸主播直播间背景；其他主播如需独立前景切图，按 `environment/live/<主播>/foreground_*.png` 补充。
 - 正式字体及许可证；其他主菜单、身份卡、败者卡、圣典、开场漫画资源。
 - 新增的背景、桌子、青蛙立绘需要由直播场景和关卡配置接入，验证真实 Layer 0/1/2 遮挡关系。
+
+漫画打字与翻书音效位于 `audio/sfx/comic/`，CC0 来源与原许可见该目录 README.md；已替换初版点击声占位。
