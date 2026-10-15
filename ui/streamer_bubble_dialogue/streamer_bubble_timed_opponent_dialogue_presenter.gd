@@ -8,6 +8,9 @@ var _enqueue_dialogue_bubble: Callable
 var _is_configured: bool = false
 var _attempt_active: bool = false
 var _elapsed_seconds: float = 0.0
+var _next_entry_index: int = 0
+var _scheduled_entries: Array[Dictionary] = []
+var _due_entries: Array[BubbleDialogueEntry] = []
 var _idle_remaining: Dictionary = {}
 var _idle_ranges: Dictionary = {
 	BubbleDialogueEntry.SpeakerSide.PLAYER: Vector2(6.0, 10.0),
@@ -49,16 +52,72 @@ func _on_attempt_started(
 ) -> void:
 	_attempt_active = true
 	_elapsed_seconds = 0.0
+	_next_entry_index = 0
+	_due_entries.clear()
+	_scheduled_entries.clear()
 	_idle_remaining.clear()
 	for side: int in [BubbleDialogueEntry.SpeakerSide.PLAYER, BubbleDialogueEntry.SpeakerSide.OPPONENT]:
 		_idle_remaining[side] = _roll_idle_interval(side)
+	var timed_entries: Array[BubbleDialogueEntry] = _bubble_dialogue_config.find_by_event(
+		TIMED_DIALOGUE_EVENT_ID, BubbleDialogueEntry.SpeakerSide.OPPONENT
+	)
+	for config_order: int in range(timed_entries.size()):
+		var source_entry: BubbleDialogueEntry = timed_entries[config_order]
+		if source_entry == null or source_entry.text.strip_edges().is_empty():
+			continue
+		if source_entry.is_random_idle:
+			continue
+		if source_entry.trigger_time_seconds < 0.0:
+			push_warning("SD-07: 定时对白触发时间不能小于 0 秒。")
+			continue
+		var timed_entry: BubbleDialogueEntry = source_entry.duplicate(true) as BubbleDialogueEntry
+		timed_entry.priority = BubbleDialogueEntry.Priority.TIMED_IDLE
+		_scheduled_entries.append({
+			"trigger_time_seconds": source_entry.trigger_time_seconds,
+			"config_order": config_order,
+			"entry": timed_entry,
+		})
+	_scheduled_entries.sort_custom(_scheduled_entry_precedes)
 
 
-# 两侧按06表已有独立范围调度；评论对白使用 random_weight 加权抽取。
+# 按触发秒数排序；相同时间沿用配置数组顺序，和 SD-08 的 line_order 映射一致。
+func _scheduled_entry_precedes(left: Dictionary, right: Dictionary) -> bool:
+	var left_time: float = float(left["trigger_time_seconds"])
+	var right_time: float = float(right["trigger_time_seconds"])
+	if left_time != right_time:
+		return left_time < right_time
+	return int(left["config_order"]) < int(right["config_order"])
+
+
+# 普通尝试中累计秒数；T0 离线期间先缓存到点条目，待对手连线后再交给 HUD。
 func _process(delta: float) -> void:
 	if not _attempt_active:
 		return
 	_elapsed_seconds += delta
+	while _next_entry_index < _scheduled_entries.size():
+		var scheduled_entry: Dictionary = _scheduled_entries[_next_entry_index]
+		if float(scheduled_entry["trigger_time_seconds"]) > _elapsed_seconds:
+			break
+		_due_entries.append(scheduled_entry["entry"] as BubbleDialogueEntry)
+		_next_entry_index += 1
+	_flush_due_entries()
+	_advance_random_idle(delta)
+
+
+# T0 时 HUD 会拒绝对手侧请求；保留尚未提交的到期句子并在下一次连线后继续提交。
+func _flush_due_entries() -> void:
+	if _due_entries.is_empty() or _battle_attempt_flow.get_current_tier() <= CombatStage.INITIAL_TIER:
+		return
+	while not _due_entries.is_empty():
+		var entry: BubbleDialogueEntry = _due_entries[0]
+		if not bool(_enqueue_dialogue_bubble.call(entry)):
+			return
+		_due_entries.pop_front()
+
+
+# 普通胜负结束计时，避免本场定时对白延续到 Paradox 或失败界面。
+
+func _advance_random_idle(delta: float) -> void:
 	for side: int in _idle_remaining.keys():
 		_idle_remaining[side] = float(_idle_remaining[side]) - delta
 		if float(_idle_remaining[side]) > 0.0:
@@ -77,11 +136,15 @@ func _pick_idle_entry(side: int) -> BubbleDialogueEntry:
 	var candidates := _bubble_dialogue_config.find_by_event(TIMED_DIALOGUE_EVENT_ID, side)
 	var total := 0.0
 	for entry: BubbleDialogueEntry in candidates:
+		if not entry.is_random_idle:
+			continue
 		total += maxf(0.0, entry.random_weight)
 	if total <= 0.0:
 		return null
 	var target := randf() * total
 	for entry: BubbleDialogueEntry in candidates:
+		if not entry.is_random_idle:
+			continue
 		target -= maxf(0.0, entry.random_weight)
 		if target <= 0.0:
 			var chosen := entry.duplicate(true) as BubbleDialogueEntry
@@ -136,6 +199,7 @@ func _on_attempt_failed(
 
 func _stop_attempt_clock() -> void:
 	_attempt_active = false
+	_due_entries.clear()
 	_idle_remaining.clear()
 
 

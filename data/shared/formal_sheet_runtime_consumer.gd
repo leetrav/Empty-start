@@ -76,6 +76,7 @@ func create_dialogue_config(story_config_id: String) -> BubbleDialogueConfig:
 		entry.text = str(row.get("text", ""))
 		entry.original_sentence_id = str(row.get("source_word_id", ""))
 		entry.event_id = event_id
+		entry.is_random_idle = str(row.get("trigger_type", "")) == "random_idle"
 		entry.priority = BubbleEntry.Priority.PLOT
 		entry.display_duration_seconds = maxf(0.1, float(row.get("display_duration_s", "3")))
 		entry.random_weight = maxf(0.0, float(row.get("random_weight", "1")))

@@ -16,3 +16,5 @@ enum Priority { TIMED_IDLE = 0, HIT = 1, PLOT = 2 }
 @export_range(0.1, 60.0, 0.1, "or_greater") var display_duration_seconds: float = 3.0
 @export var priority: Priority = Priority.HIT
 @export_range(0.0, 1000.0, 0.1) var random_weight: float = 1.0
+
+@export var is_random_idle: bool = false
