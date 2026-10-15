@@ -233,6 +233,19 @@ func play_event(event_id: StringName) -> void:
 			push_error("AudioManager: audio event '%s' has an unsupported audio type." % str(event_id))
 
 
+## 正式数据表加载后按稳定 ID 覆盖单个事件，保留其他系统的现有音频入口。
+func register_event(event: AudioEvent) -> bool:
+	if event == null or event.event_id == &"" or event.stream == null:
+		return false
+	for index: int in range(_audio_config.events.size()):
+		var current: AudioEvent = _audio_config.events[index]
+		if current != null and current.event_id == event.event_id:
+			_audio_config.events[index] = event
+			return true
+	_audio_config.events.append(event)
+	return true
+
+
 func _create_player(player_name: String, bus_name: StringName, bus_available: bool) -> AudioStreamPlayer:
 	# 创建单个播放器；Bus 缺失时保留空播放器，避免静默回落到 Master。
 	var player: AudioStreamPlayer = AudioStreamPlayer.new()

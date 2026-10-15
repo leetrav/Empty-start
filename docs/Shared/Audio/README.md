@@ -88,3 +88,7 @@ assets/audio/
 | AU-02 | 音乐状态切换 | 无 |
 
 玩法系统完成自己的核心逻辑以后，在对应表现联调卡里调用这里已经存在的公开接口。
+
+## INT-14 正式事件音频表运行时接入（2026-10-15）
+
+`FormalSheetRuntimeConsumer` 在 Sandbox 建场时读取 `data/source_tables/17_音频事件.csv`。对有可加载资源路径的行，按原 `event_id` / `audio_type` / `AudioStream` 调用 `AudioManager.register_event(event) -> bool` 覆盖现有同 ID 事件或追加新事件；空路径继续沿用现有兼容配置。玩法继续通过 `AudioManager.play_event(event_id)` 播放。当前正式表有 73 行，其中 23 行提供已匹配资源，50 行没有资源路径；后者不会生成静音占位。

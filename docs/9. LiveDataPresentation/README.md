@@ -121,3 +121,9 @@ LD-10 等 18. Rest。
 策划 `19_直播评论词库` 在原 `comment_id / username / text / audience_type / side_scope / weight / enabled` 后新增可选 `streamer_id`。LD-12导表按 `side_scope` 与当前 `LevelProfile.streamer_id` 共同过滤；`streamer_id` 空表示通用评论，指定值表示该对手专属评论。LD-16在直播开场、重开与关卡切换时按新对手重取候选，并复用当前侧粉丝牌。四项直播统计继续由现有LiveSessionData更新，随机聊天属于展示。
 
 当前仓库中 `PresentationAssetConfig.player_fan_badge` 与 `LevelProfile.fan_badge_texture` 已可提供评论专属粉丝牌纹理；顶部粉丝团名归 PA-20。`19_直播评论词库` 与 `25_直播观众账号` 是两张相互引用的普通评论数据表，均与 `09_直播数据` 真实业务计数分离。
+
+## INT-14 正式评论展示接线（2026-10-15）
+
+Sandbox 的 `FormalSheetRuntimeConsumer` 按 `viewer_id` 关联 19_直播评论词库与25_直播观众账号，并按 `side_scope`、主播 ID 和启用状态生成评论项。两侧 `LiveDataHud.configure_formal_comments(rows, parameters)` 只负责显示；配置 22 表的随机间隔、同屏上限、滚速、行距、粉丝展示概率、暂停行为和字号。展示评论不会增加 `LiveSessionData.comment_count`；该计数继续只接收实际成功生成的弹幕实例。
+
+目前 02 表四行的 `background_asset_id` 和 `fan_badge_asset_id` 均为空；消费者只按主播稳定 ID 查找仓库中已存在的 `assets/environment/live/<streamer_id>/background.png`，未找到时保留空背景。四名主播中只有 Alien、Kiwi、Frog 有该路径，Fox 缺图。粉丝牌无对手资源映射时不显示。

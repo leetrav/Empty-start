@@ -8,6 +8,7 @@ signal dialogue_event_sequence_completed(event_id: StringName, sequence_id: Stri
 
 const SAMPLE_TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
 const PRESENTATION_ASSETS: PresentationAssetConfig = preload("res://data/shared/presentation_asset_config.tres")
+const FORMAL_SHEET_CONSUMER_SCRIPT: Script = preload("res://data/shared/formal_sheet_runtime_consumer.gd")
 const CONTRADICTION_WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
 const HIT_ECHO_PRESENTER_SCRIPT: Script = preload("res://ui/streamer_bubble_dialogue/streamer_bubble_hit_echo_presenter.gd")
 const SPECIFIC_SENTENCE_REPLY_PRESENTER_SCRIPT: Script = preload("res://ui/streamer_bubble_dialogue/streamer_bubble_specific_sentence_reply_presenter.gd")
@@ -60,10 +61,16 @@ var _paradox_entry_repeat_stats: RepeatGenerationStats
 var _pending_oracle_session: FinalOracleSession
 var _pending_rest_session: RestSession
 var _result_feedback_active: bool = false
+var _formal_sheet_consumer
+var _active_dialogue_config: BubbleDialogueConfig
 
 
 # 场景只创建生命周期对象并接线；PK、Tier、倾向等状态留在各自所有者。
 func _ready() -> void:
+	_formal_sheet_consumer = FORMAL_SHEET_CONSUMER_SCRIPT.new()
+	_formal_sheet_consumer.register_audio_events(AudioManager)
+	_active_dialogue_config = BubbleDialogueConfig.new()
+	_active_dialogue_config.entries = bubble_dialogue_config.entries.duplicate(true) if bubble_dialogue_config != null else []
 	# 直接运行场景时等待 Autoload 完成初始化，再创建周目并显式绑定已就绪的子 HUD。
 	if SaveManager.data == null:
 		SaveManager.new_game()
@@ -137,7 +144,7 @@ func _ready() -> void:
 	if not bool(_hit_echo_presenter.call(
 			"configure",
 			_battle_attempt_flow,
-			bubble_dialogue_config,
+			_active_dialogue_config,
 			Callable(_battle_hud, "enqueue_dialogue_bubble"))):
 		push_error("Sandbox: 无法接入实际命中气泡消费者。")
 		return
@@ -148,7 +155,7 @@ func _ready() -> void:
 	if not bool(sentence_reply_presenter.call(
 			"configure",
 			_battle_attempt_flow,
-			bubble_dialogue_config,
+			_active_dialogue_config,
 			Callable(_battle_hud, "enqueue_dialogue_bubble"))):
 		push_error("Sandbox: 无法接入特定原句对手回复消费者。")
 		return
@@ -160,7 +167,7 @@ func _ready() -> void:
 			"configure",
 			_battle_attempt_flow,
 			_contradiction_oracle_flow,
-			bubble_dialogue_config,
+			_active_dialogue_config,
 			Callable(_battle_hud, "enqueue_dialogue_sequence"),
 			_battle_hud)):
 		push_error("Sandbox: 无法接入战斗状态对白消费者。")
@@ -175,7 +182,7 @@ func _ready() -> void:
 	if not bool(_timed_opponent_dialogue_presenter.call(
 			"configure",
 			_battle_attempt_flow,
-			bubble_dialogue_config,
+			_active_dialogue_config,
 			Callable(_battle_hud, "enqueue_dialogue_bubble"))):
 		push_error("Sandbox: 无法接入战斗定时对手对白消费者。")
 		return
@@ -210,20 +217,38 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 	_pa09_feedback.call("clear_feedback")
 	_battle_hud.reset_for_attempt(stage.get_current_tier())
 	_battle_hud.set_paradox_stage_active(false, stage.get_current_tier())
+	# 表现表按稳定 level_id 解析，并在同一尝试入口刷新主播、立绘、对白与评论。
+	var presentation: Dictionary = _formal_sheet_consumer.get_level_presentation(current_level.level_id)
+	var streamer_id: String = str(presentation.get("streamer_id", current_level.streamer_id))
+	var opponent_name: String = str(presentation.get("streamer_name", current_level.streamer_name))
+	var fan_group_name: String = str(presentation.get("fan_group_name", current_level.fan_group_name))
 	var player_name: String = SaveManager.data.streamer_name
-	_battle_hud.configure_streamers(player_name if not player_name.is_empty() else "玩家主播", current_level.streamer_name)
-	# 重开和切关都从当前 SaveData / LevelProfile 重新绑定粉丝团名。
-	_battle_hud.configure_fan_group_names(SaveManager.data.fan_group_name, current_level.fan_group_name)
-	# 每次启动尝试都按当前关的稳定主播 ID 切换立绘待机配置。
-	_battle_hud.configure_portrait_character(str(current_level.streamer_id))
+	_battle_hud.configure_streamers(player_name if not player_name.is_empty() else "玩家主播", opponent_name)
+	_battle_hud.configure_fan_group_names(SaveManager.data.fan_group_name, fan_group_name)
+	_battle_hud.configure_portrait_character(streamer_id)
 	_battle_hud.configure_streamer_assets(
 		PRESENTATION_ASSETS.player_streamer_portrait,
 		PRESENTATION_ASSETS.player_live_background,
 		PRESENTATION_ASSETS.player_fan_badge,
-		current_level.streamer_portrait,
-		current_level.streamer_live_background,
-		current_level.fan_badge_texture
+		presentation.get("portrait_idle", current_level.streamer_portrait) as Texture2D,
+		presentation.get("background", current_level.streamer_live_background) as Texture2D,
+		presentation.get("fan_badge", current_level.fan_badge_texture) as Texture2D
 	)
+	var portraits: Array = presentation.get("portrait_tiers", [])
+	if portraits.size() == 4:
+		_battle_hud.configure_opponent_tier_textures(
+			portraits[0] as Texture2D, portraits[1] as Texture2D,
+			portraits[2] as Texture2D, portraits[3] as Texture2D)
+	var story_id: String = str(presentation.get("story_config_id", ""))
+	if not story_id.is_empty():
+		_active_dialogue_config.entries = _formal_sheet_consumer.create_dialogue_config(story_id).entries
+	%OpponentLiveDataHud.configure_formal_comments(
+		_formal_sheet_consumer.get_comments("opponent", streamer_id),
+		_formal_sheet_consumer.comment_parameters)
+	%LiveDataHud.configure_formal_comments(
+		_formal_sheet_consumer.get_comments("player", ""),
+		_formal_sheet_consumer.comment_parameters)
+
 
 # 正式失败先播放 PA-18 局部演出，完成通知后再显示既有失败界面。
 func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: HitResolution, _repeat_stats: RepeatGenerationStats) -> void:
