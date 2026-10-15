@@ -23,7 +23,13 @@ func _init() -> void:
 	for table_name: String in TABLES:
 		_tables[table_name] = _read_csv(TABLES[table_name])
 	for row: Dictionary in _read_csv("res://data/source_tables/22_直播评论表现参数.csv"):
-		comment_parameters[str(row.get("param_id", ""))] = row.get("value", "")
+		var key := str(row.get("param_id", ""))
+		var value: String = str(row.get("value", ""))
+		# 两个布尔开关按表定义转成原生 bool，避免字符串 "false" 在调用方被判真。
+		if key in ["comment_pause_with_game", "comment_updates_business_counter"]:
+			comment_parameters[key] = value.to_lower() == "true"
+		elif not value.is_empty() and value.is_valid_float():
+			comment_parameters[key] = float(value)
 
 
 ## 按稳定 level_id 取正式关卡表现，不依赖旧示例 Resource 的 streamer_id。
@@ -61,6 +67,8 @@ func create_dialogue_config(story_config_id: String) -> BubbleDialogueConfig:
 			continue
 		var event_id := _dialogue_event_id(
 			str(row.get("trigger_type", "")), str(row.get("trigger_key", "")))
+		if str(row.get("trigger_type", "")) == "random_idle":
+			event_id = &"timed"
 		if event_id == &"":
 			continue
 		var entry: BubbleDialogueEntry = BubbleEntry.new()
@@ -69,6 +77,8 @@ func create_dialogue_config(story_config_id: String) -> BubbleDialogueConfig:
 		entry.original_sentence_id = str(row.get("source_word_id", ""))
 		entry.event_id = event_id
 		entry.priority = BubbleEntry.Priority.PLOT
+		entry.display_duration_seconds = maxf(0.1, float(row.get("display_duration_s", "3")))
+		entry.random_weight = maxf(0.0, float(row.get("random_weight", "1")))
 		config.entries.append(entry)
 	return config
 
@@ -88,6 +98,11 @@ func register_audio_events(audio_manager: Node) -> int:
 		event.event_id = StringName(event_id)
 		event.audio_type = _audio_type(str(row.get("audio_type", "sfx")))
 		event.stream = stream
+		event.volume_db = float(row.get("volume_db", "0"))
+		event.pitch_min = maxf(0.01, float(row.get("pitch_min", "1")))
+		event.pitch_max = maxf(event.pitch_min, float(row.get("pitch_max", str(event.pitch_min))))
+		event.loop = str(row.get("loop", "false")).to_lower() == "true"
+		event.transition_group = str(row.get("transition_group", ""))
 		if audio_manager.has_method("register_event") and audio_manager.call("register_event", event):
 			registered += 1
 	return registered
@@ -177,6 +192,11 @@ func _audio_type(value: String) -> int:
 		"music": return AudioEvent.AudioType.MUSIC
 		"ui": return AudioEvent.AudioType.UI
 		_: return AudioEvent.AudioType.SFX
+
+
+## CSV 空值按既有默认值处理，避免一个空选填单元格中止整张表加载。
+func _float_or(value: String, fallback: float) -> float:
+	return float(value) if value.is_valid_float() else fallback
 
 
 func _side_matches(account_scope: String, side_scope: String) -> bool:

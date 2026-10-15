@@ -35,6 +35,7 @@ var _ui_players: Array[AudioStreamPlayer] = []
 var _sfx_play_order: Array[int] = []
 var _ui_play_order: Array[int] = []
 var _play_sequence: int = 0
+var _loop_events: Dictionary = {}
 
 
 func _ready() -> void:
@@ -224,11 +225,13 @@ func play_event(event_id: StringName) -> void:
 
 	match event.audio_type:
 		AudioEvent.AudioType.MUSIC:
+			_music_player.volume_db = event.volume_db
+			_music_player.pitch_scale = randf_range(event.pitch_min, event.pitch_max)
 			change_music(event_id)
 		AudioEvent.AudioType.SFX:
-			play_sfx(event.stream)
+			_play_configured_event(event, _sfx_players, _sfx_play_order, SFX_BUS_NAME)
 		AudioEvent.AudioType.UI:
-			play_ui(event.stream)
+			_play_configured_event(event, _ui_players, _ui_play_order, UI_BUS_NAME)
 		_:
 			push_error("AudioManager: audio event '%s' has an unsupported audio type." % str(event_id))
 
@@ -282,6 +285,39 @@ func _play_from_pool(
 	player.play()
 	play_order[player_index] = _play_sequence
 	_play_sequence += 1
+
+
+## 正式事件在实际播放器上应用表内音量、音高和循环字段。
+func _play_configured_event(
+		event: AudioEvent, players: Array[AudioStreamPlayer], play_order: Array[int], bus_name: StringName
+	) -> void:
+	if event == null or event.stream == null or not _ensure_audio_bus(bus_name):
+		return
+	var player_index := _find_pool_player_index(players, play_order)
+	if player_index < 0:
+		return
+	var player: AudioStreamPlayer = players[player_index]
+	player.stop()
+	_loop_events.erase(player.get_instance_id())
+	player.bus = bus_name
+	player.stream = event.stream
+	player.volume_db = event.volume_db
+	player.pitch_scale = randf_range(minf(event.pitch_min, event.pitch_max), maxf(event.pitch_min, event.pitch_max))
+	player.play()
+	play_order[player_index] = _play_sequence
+	_play_sequence += 1
+	if event.loop:
+		_loop_events[player.get_instance_id()] = event
+		if not player.finished.is_connected(_on_configured_event_finished):
+			player.finished.connect(_on_configured_event_finished)
+
+
+func _on_configured_event_finished() -> void:
+	# finished 不带发送者；按播放器池检查循环事件，事件替换后旧循环自动失效。
+	for player: AudioStreamPlayer in _sfx_players + _ui_players:
+		var event: AudioEvent = _loop_events.get(player.get_instance_id())
+		if event != null and player.stream == event.stream and not player.is_playing():
+			player.play()
 
 
 func _find_pool_player_index(players: Array[AudioStreamPlayer], play_order: Array[int]) -> int:

@@ -92,3 +92,7 @@ assets/audio/
 ## INT-14 正式事件音频表运行时接入（2026-10-15）
 
 `FormalSheetRuntimeConsumer` 在 Sandbox 建场时读取 `data/source_tables/17_音频事件.csv`。对有可加载资源路径的行，按原 `event_id` / `audio_type` / `AudioStream` 调用 `AudioManager.register_event(event) -> bool` 覆盖现有同 ID 事件或追加新事件；空路径继续沿用现有兼容配置。玩法继续通过 `AudioManager.play_event(event_id)` 播放。当前正式表有 73 行，其中 23 行提供已匹配资源，50 行没有资源路径；后者不会生成静音占位。
+
+## SHEET-C 正式音频字段消费（2026-10-15）
+
+`AudioEvent` 同时保存 `volume_db`、`pitch_min`、`pitch_max`、`loop` 和 `transition_group`。正式事件注册时由 CSV 映射这些字段；SFX/UI 播放器应用配置音量与随机音高，`loop=true` 的事件在当前播放完成后重播。`transition_group` 保留在事件数据上供同组事件识别；当前没有按组切换/淡出的运行规则。Music 事件沿用现有音乐状态入口。`tests/integration/sheet_c_runtime_consumer_test.gd` 实际加载了 23 个有资源的事件；50 个缺资源事件见 SHEET-C 日志。
