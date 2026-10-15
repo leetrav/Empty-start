@@ -1,6 +1,8 @@
 ## 普通战斗界面只读取组合方的状态；设计矩形保存于 Scene，运行时只整体缩放。
 extends Control
 
+signal failure_presentation_finished()
+
 signal dialogue_sequence_completed(sequence_id: StringName, side: int)
 signal tier_breakthrough_finished(previous_tier: int, current_tier: int, completed: bool)
 
@@ -50,6 +52,13 @@ const FAN_GROUP_NAME_PLACEHOLDER: String = "粉丝团"
 @export_range(0.05, 0.5, 0.01) var pa11_crt_impact_size_ratio: float = 0.28
 @export var pa11_crt_impact_offset_ratio: Vector2 = Vector2(0.32, -0.32)
 @export_range(0.0, 12.0, 0.5) var pa11_crt_horizontal_distortion_pixels: float = 3.0
+@export_group("PA-18 战败")
+@export var pa18_drop_direction: float = 1.0
+@export_range(60.0, 600.0, 10.0) var pa18_drop_distance: float = 280.0
+@export_range(0.0, 5.0, 0.1) var pa18_drop_rotations: float = 1.5
+@export_range(0.1, 2.0, 0.01) var pa18_drop_seconds: float = 0.55
+@export_range(0.1, 2.0, 0.01) var pa18_shutdown_seconds: float = 0.55
+@export_range(0.0, 1.0, 0.01) var pa18_failure_ui_delay: float = 0.15
 @export_group("")
 
 var player_portrait_motion: StreamerPortraitMotion
@@ -65,6 +74,9 @@ var _active_opponent_status_text: String = ""
 var _dialogue_queue: Node
 var _tier_breakthrough_active: bool = false
 var _stage_arrow: StageArrowFx
+var _player_crt: CrtConnectionFx
+var _failure_presentation_active: bool = false
+var _failure_delay_tween: Tween
 var _crt_connection: CrtConnectionFx
 var _tier_breakthrough_previous_tier: int = -1
 var _tier_breakthrough_current_tier: int = -1
@@ -160,6 +172,17 @@ func _ready() -> void:
 	_crt_connection.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_crt_connection.bind_video_layers([_opponent_live_background, _opponent_portrait])
 	_crt_connection.connection_finished.connect(_finish_tier_breakthrough)
+	# 左侧实例与右侧开机实例独立，收屏范围读取直播容器实际尺寸。
+	_player_crt = CrtConnection.new() as CrtConnectionFx
+	_player_crt.name = "PlayerCrtShutdownFx"
+	_player_crt.blackout_color = pa11_crt_blackout_color
+	_player_crt.beam_color = pa11_crt_beam_color
+	_player_crt.z_index = 20
+	_player_live_background.get_parent().add_child(_player_crt)
+	_player_crt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_player_crt.bind_video_layers([_player_live_background, _player_portrait, _player_live_foreground])
+	_pk_hamster_ball.failure_fall_finished.connect(_on_failure_ball_finished)
+	_player_crt.shutdown_finished.connect(_on_player_shutdown_finished)
 	var parent_control: Control = get_parent() as Control
 	parent_control.resized.connect(_fit_parent_size)
 	_fit_parent_size()
@@ -538,6 +561,11 @@ func show_failure() -> void:
 
 # 重开复位本场 HUD 提示并读取当前 T0 等待文案，各系统状态仍由所属对象初始化。
 func reset_for_attempt(current_tier: int = 0) -> void:
+	_failure_presentation_active = false
+	if _failure_delay_tween != null:
+		_failure_delay_tween.kill()
+	if _player_crt != null:
+		_player_crt.reset_connected()
 	cancel_tier_breakthrough()
 	_cancel_tier_down_shake()
 	# 重开/失败后的下一场从待机准星开始，避免保留上一发充能高亮。
@@ -557,3 +585,41 @@ func reset_for_attempt(current_tier: int = 0) -> void:
 	_failure_overlay.hide()
 	_show_opponent_status(t0_matching_status_text)
 	refresh_attack(0.0, AttackChargeInput.AttackPhase.READY)
+
+
+# 正式失败事实由 Sandbox 转入；只延后画面，不重新控制战斗数值或输入。
+func play_failure_presentation() -> void:
+	if _failure_presentation_active or _failure_overlay.visible:
+		return
+	if _actual_player_pk > 0.0:
+		failure_presentation_finished.emit()
+		return
+	_failure_presentation_active = true
+	cancel_tier_breakthrough()
+	_cancel_tier_down_shake()
+	clear_dialogue_bubbles()
+	player_portrait_motion.reset_shot()
+	player_portrait_motion.set_idle_strength(0.0)
+	# 失败归零会刷新到 T0，断流演出中仍保留最后已配置的对手直播。
+	set_opponent_portrait_connected(true)
+	_pk_hamster_ball.play_failure_fall(pa18_drop_direction, pa18_drop_distance, pa18_drop_rotations, pa18_drop_seconds)
+
+
+func _on_failure_ball_finished() -> void:
+	if not _failure_presentation_active:
+		return
+	_player_crt.shutdown_seconds = pa18_shutdown_seconds
+	_player_crt.play_shutdown()
+
+
+func _on_player_shutdown_finished() -> void:
+	if not _failure_presentation_active:
+		return
+	_failure_delay_tween = create_tween()
+	_failure_delay_tween.tween_interval(pa18_failure_ui_delay)
+	_failure_delay_tween.tween_callback(_finish_failure_presentation)
+
+
+func _finish_failure_presentation() -> void:
+	if _failure_presentation_active:
+		failure_presentation_finished.emit()

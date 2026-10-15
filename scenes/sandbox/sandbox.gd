@@ -101,6 +101,7 @@ func _ready() -> void:
 	_battle_attempt_flow.pk_feedback_changed.connect(_battle_hud.refresh_pk)
 	_battle_attempt_flow.tier_changed.connect(_queue_pk_tier_visual)
 	_battle_attempt_flow.attempt_failed.connect(_on_attempt_failed)
+	_battle_hud.failure_presentation_finished.connect(_on_failure_presentation_finished)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
 	_debug_panel.call("bind_sandbox", self)
@@ -207,13 +208,13 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 		current_level.fan_badge_texture
 	)
 
-# 普通战斗失败后，HUD 恢复当前普通阶段文案并显示失败界面。
+# 正式失败先播放 PA-18 局部演出，完成通知后再显示既有失败界面。
 func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: HitResolution, _repeat_stats: RepeatGenerationStats) -> void:
 	_pa11_connection_dialogue_active = false
 	_barrage_impact_presenter.reset_effects()
 	_pa09_feedback.call("clear_feedback")
 	_battle_hud.set_paradox_stage_active(false, _battle_attempt_flow.get_current_tier())
-	_battle_hud.show_failure()
+	_battle_hud.play_failure_presentation()
 
 
 # T1 连线对白完整结束后恢复本档战斗，再向外转发已完成事实。
@@ -487,3 +488,8 @@ func _exit_tree() -> void:
 		_battle_attempt_flow.stop()
 	if SaveManager.data != null:
 		SaveManager.data.tendency_state.rollback_attempt_tendency()
+
+
+# PA-18 完成只放行既有失败 UI，失败路由仍由 Sandbox / Flow 拥有。
+func _on_failure_presentation_finished() -> void:
+	_battle_hud.show_failure()
