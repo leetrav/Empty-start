@@ -4,3 +4,13 @@
 
 [resource]
 script = ExtResource("1")
+foreground_local_animation_intensity = 0.2
+foreground_outline_width_px = 2
+foreground_outline_color = Color(0.1882353, 0.15294118, 0.18431373, 1)
+repeat_text_color = Color(0.53333336, 0.53333336, 0.53333336, 1)
+contradiction_break_viewer_gain = 80
+contradiction_break_like_gain = 40
+contradiction_break_boost_duration_seconds = 2.0
+oracle_confirmation_viewer_gain = 40
+oracle_confirmation_like_gain = 20
+oracle_confirmation_boost_duration_seconds = 2.0

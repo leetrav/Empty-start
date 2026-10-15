@@ -30,10 +30,13 @@ extends Resource
 @export var foreground_scale_max_ratio: float = 1.08
 @export var foreground_layer_change_interval_seconds: float = 3.0
 @export var foreground_local_animation_probability: float = 0.15
+@export var foreground_local_animation_intensity: float = 0.2
+@export var foreground_outline_width_px: int = 2
+@export var foreground_outline_color: Color = Color("#30272F")
+@export var repeat_text_color: Color = Color("#888888")
 @export var foreground_curve_amplitude_px: float = 72.0
 @export var foreground_straight_spread_degrees: float = 30.0
 @export var foreground_wander_speed_multiplier: float = 0.35
-@export var repeat_text_color: Color = Color("#888888")
 @export var lifetimes_by_type_seconds: Dictionary = {
 	"word_strength_1": 8.0, "word_strength_2": 7.0, "word_strength_3": 6.0,
 	"thunder": 7.0, "fake": 7.0, "retaliation": 5.0, "repeat": 3.0,
@@ -53,6 +56,12 @@ extends Resource
 @export var tier_up_viewer_delta: int = 15
 @export var high_tier_like_multiplier: float = 1.05
 @export var pk_win_fan_gain: int = 120
+@export var contradiction_break_viewer_gain: int = 80
+@export var contradiction_break_like_gain: int = 40
+@export var contradiction_break_boost_duration_seconds: float = 2.0
+@export var oracle_confirmation_viewer_gain: int = 40
+@export var oracle_confirmation_like_gain: int = 20
+@export var oracle_confirmation_boost_duration_seconds: float = 2.0
 
 
 ## 按“PK 百分点”转换为运行时 0–1 比例；源 CSV 数值保留原单位。

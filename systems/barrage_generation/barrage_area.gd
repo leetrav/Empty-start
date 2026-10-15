@@ -515,6 +515,10 @@ func spawn_normal_barrage(
 		barrage_record, effective_move_speed, self, should_use_random_static_placement,
 		curve_amplitude, speed_change_cycle, inward_move_direction, layer_change_interval, motion_mode
 	)
+	if _combat_numerics != null:
+		view.foreground_outline_size = _combat_numerics.foreground_outline_width_px
+		view.outline_color = _combat_numerics.foreground_outline_color
+		view.repeat_font_color = _combat_numerics.repeat_text_color
 	if not _terminal_presentation_only and not should_use_random_static_placement:
 		# 只让普通移动前景缓和缩放；静止、复读、矛盾和终局实例沿用各自外观。
 		view.configure_animated_size(
@@ -536,7 +540,10 @@ func spawn_normal_barrage(
 	if not speech.local_style_bbcode.is_empty():
 		view.set_visual_bbcode(speech.local_style_bbcode)
 	if not _terminal_presentation_only:
-		view.apply_random_local_text_animation(normal_foreground_local_text_animation_probability)
+		view.apply_random_local_text_animation(
+			normal_foreground_local_text_animation_probability,
+			_combat_numerics.foreground_local_animation_intensity if _combat_numerics != null else 1.0
+		)
 	var placement_succeeded: bool = false
 	if should_use_random_static_placement:
 		placement_succeeded = _place_barrage_for_spawn_request(view, true)
