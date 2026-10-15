@@ -84,10 +84,11 @@ func _verify_layout_and_generation() -> void:
 	_check(opening_views.size() == _level().base_batch_count, "开局真实普通批次生成")
 	_check(SaveManager.data.live_session.comment_count == opening_views.size(), "普通生成成功数同步评论")
 	var first_view: BarrageView = opening_views[0]
-	var opening_x: float = first_view.position.x
+	var opening_position: Vector2 = first_view.position
 	var opening_pk: float = _hit().get_player_pk()
 	await _wait(1.50)
-	_check(is_instance_valid(first_view) and first_view.position.x < opening_x, "普通弹幕持续移动")
+	# BG-39 运动方向按 Tier 权重抽取，验收位移而不是预设向左。
+	_check(is_instance_valid(first_view) and first_view.position.distance_to(opening_position) > 1.0, "普通弹幕持续移动")
 	_check(_views(false).size() > opening_views.size(), "普通弹幕持续生成")
 	_check(is_equal_approx(_hit().get_player_pk(), opening_pk), "T0 等待对手连线时 PK 保持稳定")
 	_check(_live_comment_label().get_parsed_text() == "🔊" + str(SaveManager.data.live_session.comment_count), "Comment HUD 自动刷新")
@@ -270,7 +271,12 @@ func _verify_failure_restart_and_full_pk() -> void:
 	_opponent().resume_pullback()
 	await _wait(0.12)
 	_check(_opponent().has_attempt_failed() and not _flow().is_normal_combat_active(), "PK 归零进入真实失败状态")
-	_check(_sandbox.get_node("%FailureOverlay").visible, "失败遮罩可见")
+	# PA-18 先落球、关闭左侧 CRT，完成后才展示旧失败遮罩；等真实完成而非固定判定同帧可见。
+	var failure_overlay: Control = _sandbox.get_node("%FailureOverlay") as Control
+	var overlay_deadline: int = Time.get_ticks_msec() + 5000
+	while not failure_overlay.visible and Time.get_ticks_msec() < overlay_deadline:
+		await get_tree().process_frame
+	_check(failure_overlay.visible, "失败演出完成后失败遮罩可见")
 	_check(_attempt_tendency_total() == 0, "失败回滚本场倾向")
 	_check(_attempt_failed_events == failures_before + 1
 		and _last_attempt_failure.get("level") == level_before
