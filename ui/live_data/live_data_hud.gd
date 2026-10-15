@@ -131,7 +131,9 @@ func _add_next_comment() -> void:
 	label.text = "%s[color=#b8c0ce]%s[/color]  %s" % [badge, safe_name, safe_text]
 	_comment_list.add_child(label)
 	while _comment_list.get_child_count() > _comment_row_cap:
-		_comment_list.get_child(0).queue_free()
+		var oldest: Node = _comment_list.get_child(0)
+		_comment_list.remove_child(oldest)
+		oldest.queue_free()
 
 
 func _pick_weighted_comment() -> Dictionary:
@@ -154,6 +156,7 @@ func _next_comment_interval() -> float:
 
 func _clear_comment_rows() -> void:
 	for child: Node in _comment_list.get_children():
+		_comment_list.remove_child(child)
 		child.queue_free()
 
 
