@@ -2,10 +2,22 @@ param_id,value,unit,notes
 base_resolution,1920x1080,px,系统案：PC先行；美术交付尺寸应大于基础尺寸2倍
 aim_visual_size,96x96,px,系统案：只负责表现
 theoretical_attack_cycle,1.1–1.2,s,系统案：0.8s蓄力 + 0.15–0.25s飞行 + 0.15s硬直
-single_shot_hit_cap,unlimited,,系统案：暂不限制；同一发同一弹幕只结算一次
+single_shot_hit_cap,unlimited,,同一发可命中多条且每实例只结算一次；不限制命中条数。单发正负PK限幅分别见06_战斗数值新参数。
 paradox_shot_limit,1,count,系统案：仅1次正式发射机会；未蓄满松开不消耗
 paradox_window_s,10,s,系统案：超时按PK胜利但未击破处理
-paradox_spawn_batch_mult,2,ratio,系统案：真假矛盾每批数量倍率
-paradox_spawn_frequency_mult,3,ratio,系统案：真假矛盾生成频率倍率
-paradox_move_speed_mult,2.5,ratio,系统案：真假矛盾移动速度倍率
 paradox_pullback_mult,0,ratio,系统案：进入Paradox后停止普通回拉
+streamer_bubble_simultaneous_cap_per_side,3,count,SD-03已确认：双主播每侧默认最多3条普通气泡同屏；关键剧情对白完整展示。
+opening_comic_auto_advance_interval_s,,s,ID-12：不点击时自动出现下一格；时长由策划/美术确定，可配。程序只负责计时和点击推进。
+opening_comic_final_panel_wait_click,true,bool,ID-12：最后一格拿起身份牌后等玩家再点击才进入身份选择。
+streamer_idle_player_interval_min_s,6,s,SD-07：主角随机闲聊气泡最短间隔；与敌方独立计时；20表random_weight决定文本选择。
+streamer_idle_player_interval_max_s,10,s,SD-07：主角随机闲聊气泡最长间隔；需不小于最短间隔。
+streamer_idle_opponent_interval_min_s,7,s,SD-07：对手随机闲聊气泡最短间隔；T0离线期间不触发。
+streamer_idle_opponent_interval_max_s,12,s,SD-07：对手随机闲聊气泡最长间隔；需不小于最短间隔。
+pk_tier0_matching_text,正在搜索PK对手……,text,CS-20：T0正在搜索PK对手时HUD显示的策划文本，供首次进入/重开读取；T1接线状态不再使用。
+combat_feedback_hit_text,命中,text,PA-09：普通有效命中时，弹幕附近短促结果提示文本。
+combat_feedback_miss_text,MISS,text,PA-09：落空时准星附近的短促结果提示文本；如MISS。
+combat_feedback_block_text,BLOCK,text,PA-09：遇到遮挡时命中位置附近的结果提示文本；如BLOCK。
+combat_feedback_reflect_text,REFLECT,text,PA-09：反弹异常的局部结果提示文本；如REFLECT。
+combat_feedback_fake_card_text,FAKE,text,PA-09：假复读/假牌异常的局部结果提示文本。
+combat_feedback_retaliation_text,COUNTER,text,PA-09：水军反击异常的局部结果提示文本。
+combat_feedback_penalty_text,,text,PA-09：本发总PK变化为负时，我方主播立绘旁可选漫画提示文案；可留空仅图形表现。

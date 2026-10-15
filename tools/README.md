@@ -76,3 +76,28 @@ godot --headless --path . res://tests/fixtures/data_export/test_only_live_smoke.
 已知环境问题：独立 Windows worktree 在首次运行前可能需要 Godot --headless --editor --import，才能生成音频 .ogg 的导入缓存；不能仅根据缓存缺失报错判定游戏代码失败。真实战斗 Smoke 使用场景启动方式，从而初始化完整的 Autoload。
 
 注意：当前 TEST_ONLY Live Smoke 只验证实际 Sandbox 生成、未击破 Rest 信号与第二关数据消费；蓄力攻击、真假矛盾、PK 命中、存档、重复继续及最终 Ending 交由 tests/integration/int_04_full_run.tscn 进行完整路线验收。自动输入不代表实体鼠标操作。Godot 资源导入准备阶段的 ObjectDB / Resource 清理提示应与正式测试结果分开记录。
+
+
+## 2026-10-15 新表与 Motion 更新
+
+Google 策划总表最新版支持 01～25 业务表（06拆为三表），共 27 张 CSV。新增 19～25 表按原字段名保留启用/禁用记录；旧正式工作簿和旧 TEST_ONLY 夹具缺失这些新表时继续兼容。
+
+追加校验包括：02↔23立绘关联、02↔24教学关联、02↔20剧情关联、19↔25账号关联、20/21/23启用主播与02匹配。22表的 value 类型由 param_id 严格决定：comment_pause_with_game、comment_updates_business_counter 必须是原生布尔值，其余参数必须是有限数值。Tier四种 Motion 权重须非负整数且合计100，并逐档写入 TEST_ONLY Tier 预览。
+
+本工具生成的 Tier 资源仍然只放在 data/test_only/sheet_preview，不改正式运行的 data/combat_stage/tier_catalog.tres。17音频 CSV 的文件路径还需未来由音频配置消费，不能把配表当作Godot音频已接通。
+
+回归命令（需要 Python + openpyxl）：
+
+    python tests/data_export/test_export_modes.py
+    python tests/data_export/test_new_sheets_motion.py
+
+具体本轮导表数目、来源与待办见 docs/2. LevelConfiguration/关卡配置系统_LC-10B_2026-10-15_log.md。
+
+
+### 2026-10-15 布尔字段迁移修复
+
+新版正式 Google 策划表的 enabled、loop、inheritable、affected_by_tier_lifetime_mult 列必须保存为原生布尔单元格（TRUE/FALSE 复选框），而不能写入字符串 `"true"` 或 `"false"`。导表器会读取原始 XLSX 单元格类型；发现字符串布尔值即报告具体工作表、行和字段，且在写盘前拒绝导出。
+
+22_直播评论表现参数表虽然使用同一列 value，但类型由 param_id 决定：comment_pause_with_game 与 comment_updates_business_counter 是原生布尔开关，其余配置项是有限数值。不能将「一列兼容两种类型」理解为每个参数都可任选类型。
+
+旧版 TEST_ONLY 测试工作簿及不含22表的历史正式工作簿继续使用原有兼容路径；源类型审计仅对包含22表的新版正式工作簿启用。

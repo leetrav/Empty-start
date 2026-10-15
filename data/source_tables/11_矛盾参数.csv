@@ -1,2 +1,5 @@
-level_id,time_limit_s,shot_limit,silence_transition_s,notes
-level_01,10,1,1,系统案：Paradox窗口10s；仅1次正式发射机会；成功击破后与终结神谕共用1s静音过渡
+level_id,time_limit_s,shot_limit,silence_transition_s,notes,candidate_count,true_count,fake_count,motion_mode,motion_duration_s,shootable_during_motion,配置状态,motion_speed_curve_id
+level_001,10,1,1,系统案：Paradox窗口10s；仅1次正式发射机会；成功击破后与终结神谕共用1s静音过渡,6,1,5,ease_out_to_stop,2,true,"V0试玩初值：六句Paradox候选在前2秒按Godot默认Curve（两端切线0，smoothstep反向）由1减速到0，之后保持静止直到10秒窗口结束；减速中允许攻击。u=clamp(t/2,0,1)，v倍率=1−3u²+2u³；正式导表/实机手感待验收。",smoothstep_to_zero_v0
+level_002,10,1,1,CB-13：一真五假共六句，10秒1发；减速时长待演出验收。,6,1,5,ease_out_to_stop,2,true,"V0试玩初值：六句Paradox候选在前2秒按Godot默认Curve（两端切线0，smoothstep反向）由1减速到0，之后保持静止直到10秒窗口结束；减速中允许攻击。u=clamp(t/2,0,1)，v倍率=1−3u²+2u³；正式导表/实机手感待验收。",smoothstep_to_zero_v0
+level_003,10,1,1,CB-13：一真五假共六句，10秒1发；减速时长待演出验收。,6,1,5,ease_out_to_stop,2,true,"V0试玩初值：六句Paradox候选在前2秒按Godot默认Curve（两端切线0，smoothstep反向）由1减速到0，之后保持静止直到10秒窗口结束；减速中允许攻击。u=clamp(t/2,0,1)，v倍率=1−3u²+2u³；正式导表/实机手感待验收。",smoothstep_to_zero_v0
+level_004,10,1,1,CB-13：一真五假共六句，10秒1发；减速时长待演出验收。,6,1,5,ease_out_to_stop,2,true,"V0试玩初值：六句Paradox候选在前2秒按Godot默认Curve（两端切线0，smoothstep反向）由1减速到0，之后保持静止直到10秒窗口结束；减速中允许攻击。u=clamp(t/2,0,1)，v倍率=1−3u²+2u³；正式导表/实机手感待验收。",smoothstep_to_zero_v0
