@@ -1,5 +1,13 @@
 # Integration
 
+## INT-13 PA-12 矛盾漫画接入 Sandbox（2026-10-15）
+
+普通 PK 满值后，`BattleAttemptFlow` 先停止普通战斗、提交粉丝与普通复读历史，再发出 `normal_combat_completed(level, hit_resolution, repeat_stats)`。Sandbox 播放 `ParadoxComicTransition.play_transition()`；真实 `transition_finished` 到达后，Sandbox 调用 `BattleAttemptFlow.begin_contradiction_after_transition(...)`，流程才同步创建固定六句、启动原十秒窗口并开放矛盾攻击。动画期间普通与矛盾攻击关闭；全局暂停冻结动画和所有既有流程计时。
+
+结果锁定沿用 `ContradictionOracleFlow.outcome_resolved(outcome)`。Sandbox 按 `ContradictionBreakSystem.Outcome.BREAKTHROUGH` 播放成功或未击破结果漫画。它调用 `hold_oracle_for_result_feedback()` 阻止成功分支在结果漫画结束前打开神谕并启动十秒选择计时；`result_feedback_finished` 后调用 `release_oracle_after_result_feedback()`，继续原复读、静音条件及神谕流程。`rest_ready(result)` 仍由原流程提交结果，Sandbox 仅在漫画结束后把同一 RestSession 交给 Rest 页面。
+
+重开、失败和离树会调用组件 `reset_for_attempt()` 并清除未完成交接；尝试内单次结果锁定由原 Flow 保证，过期攻击对象不匹配时拒绝进入矛盾阶段。漫画为 Sandbox 子节点，无新增 Autoload、存档规则或生产数据依赖。Windows Godot 4.7.2 验证、D3D12 GUI 截图与未覆盖边界见 [INT-13 日志](Sandbox联调_INT-13_2026-10-15_log.md)。
+
 ## INT-11 首次启动六幕漫画与主菜单回看（2026-10-13）
 
 最新流程：首次 Boot → P1～P6 共19个播放节点 → 主菜单；后续 Boot → 主菜单。SceneRouter.goto_comic(&"intro", true) 播放完整开场；opening/ending 分别用于菜单回看前四幕/后两幕。原角色塑造流程不嵌入本播放器。
@@ -50,7 +58,7 @@ INT-09/10 使用现有接口和独立测试配置，不等待正式四关导表�
 - `attempt_failed(level, loss_streak_count, hit_resolution, repeat_stats)`：失败回滚已完成后发出。
 - `pk_maximum_reached(level, hit_resolution, repeat_stats)`、`normal_combat_completed(level, hit_resolution, repeat_stats)`、`contradiction_entered(level, hit_resolution, repeat_stats)`：顺序标记普通 PK 满值、普通阶段结算完成及矛盾流程成功启动。
 
-整发顺序为：`AttackChargeInput → HitResolution → CombatStage 同步更新 Tier → BattleAttemptFlow 移除命中目标 / 暂存倾向 / 登记复读 → shot_resolved → 正常阶段结束 → ContradictionOracleFlow.start`。PK 满值时立即冻结普通结算、回拉和普通生成；延迟完成回调确保最后一发的复读计划先登记。矛盾流程收到同一 `HitResolution`、`CombatStage` 与 `RepeatDelayQueue`。失败沿用原倾向、普通历史和复读历史回滚；已提交周目成果由各自原所有者保存。
+整发顺序为：`AttackChargeInput → HitResolution → CombatStage 同步更新 Tier → BattleAttemptFlow 移除命中目标 / 暂存倾向 / 登记复读 → shot_resolved → 普通阶段结算与粉丝/复读历史提交 → normal_combat_completed → PA-12 transition_finished → begin_contradiction_after_transition → ContradictionOracleFlow.start`。PK 满值时立即冻结普通结算、回拉、普通生成及攻击；延迟完成回调确保最后一发的复读计划先登记。矛盾流程收到同一 `HitResolution`、`CombatStage` 与 `RepeatDelayQueue`。失败沿用原倾向、普通历史和复读历史回滚；已提交周目成果由各自原所有者保存。
 
 阶段接线可读取 `get_current_level_profile()`、`get_hit_resolution()`、`get_combat_stage()`、`get_repeat_queue()`、`get_repeat_generation_stats()`、`get_current_tier()` 与 `is_normal_combat_active()`；`clear_pending_normal_repeats()`、`clear_barrages_for_stage_transition()`、`complete_current_level()` 提供清屏、清旧复读和下一关收尾入口。CS-18 可先清旧复读请求，再由 CS-14 调用清屏入口。
 
@@ -67,6 +75,7 @@ INT-10 直接从 `get_battle_attempt_flow()` 订阅上述事实并使用公开�
 - `entered(system)`、`outcome_resolved(outcome)`、`oracle_opened(session)` 是阶段事实；`state_text_changed(text)` 驱动既有 HUD。Sandbox 继续转发原 `final_oracle_opened(session)`。
 - `get_contradiction_system()`、`get_oracle_session()`、`get_selection_timer()`、`get_confirmation_state()` 提供同一业务对象；`is_contradiction_active()` 和 `get_result()` 用于阶段及结果读取。Rest 后保留本次神谕 Session 供核对，停止尝试时清空。
 - `rest_ready(result: RestSession)` 交付已打开的同一结果对象，一次尝试通知一次。真击破结果为 `breakthrough_oracle_complete`，未击破为 `pk_win_unbroken`。Sandbox 仅调用 `RestResultView.show_result()`、转发 `rest_opened` 并保留 Continue / 下一关 / 末关神降临路由。Rest 继续从各数据所有者读取成果，查看历史和返回不发奖。
+- INT-13 接入 PA-12 后，`hold_oracle_for_result_feedback()` / `release_oracle_after_result_feedback()` 将成功结果漫画纳入神谕开页前置；静音 Timer 可先完成，但神谕页面和 10 秒选择计时等到表现完成后才启动。未击破 RestSession 仍由原流程创建，Sandbox 延迟展示页面至相同漫画完成通知。
 
 确认仍复用 `FinalOracleConfirmationState` 与 `ScriptureData.bind_confirmation_state()`：圣典先同步接收，流程核对实际经文，再依次提交普通历史、倾向、败者卡、真正击败、可继承普通池及特性白名单。返回 false 时查询接收方保存的去重事实；正式空卡目录仍沿用无新卡规则，禁止继承和矛盾池继续跳过。`HitResolution.has_committed_normal_hit_history()` 只读原提交标记。
 
