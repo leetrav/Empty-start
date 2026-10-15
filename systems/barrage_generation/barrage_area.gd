@@ -70,6 +70,7 @@ var _terminal_presentation_only: bool = false
 var _terminal_trait_ids: Array[StringName] = []
 var _terminal_trait_colors: Dictionary = {}
 var _combat_numerics: CombatNumericsConfig
+var _trait_catalog: BarrageTraitCatalog
 
 ## 终局只保存表现 ID 和显式配色；不装配普通特性，不改动已在场实例。
 func enter_terminal_presentation(trait_ids: Array[StringName] = [], trait_colors: Dictionary = {}) -> void:
@@ -105,6 +106,30 @@ func configure_combat_numerics(config: CombatNumericsConfig) -> void:
 	normal_foreground_max_scale = config.foreground_scale_max_ratio
 	normal_foreground_local_text_animation_probability = config.foreground_local_animation_probability
 	random_straight_direction_spread_degrees = config.foreground_straight_spread_degrees
+
+
+## 由 Sandbox 协调方注入正式 07/21 表读取器；保留场景接线归属。
+func configure_trait_catalog(catalog: BarrageTraitCatalog) -> void:
+	_trait_catalog = catalog
+
+
+## 按关卡主播与本次 Tier 从 21 表加权抽选，并复用普通实例创建及容量账本。
+func spawn_counter_skill_barrage(
+	level_profile: LevelProfile, speech: LevelSpeech, tier: int,
+	rng: RandomNumberGenerator = null
+) -> BarrageView:
+	if _trait_catalog == null or level_profile == null:
+		return null
+	var skill: Dictionary = _trait_catalog.choose_skill(level_profile.streamer_id, tier, rng)
+	var selected_trait_ids: Array[StringName] = _trait_catalog.get_skill_trait_ids(skill)
+	if selected_trait_ids.is_empty():
+		return null
+	return spawn_normal_barrage(level_profile, speech, selected_trait_ids)
+
+
+## 命中系统可按稳定特性 ID 读取 07 表里的异常参数与寿命字段。
+func get_trait_definition(trait_id: StringName) -> Dictionary:
+	return _trait_catalog.get_trait_definition(trait_id) if _trait_catalog != null else {}
 
 ## 打开普通生成并立即生成第一批，之后按当前关卡间隔与频率倍率循环。
 func start_normal_generation(level_profile: LevelProfile) -> bool:
@@ -456,6 +481,14 @@ func spawn_normal_barrage(
 		_combat_numerics.get_lifetime_seconds(strength_type, _lifetime_multiplier)
 		if _combat_numerics != null else base_lifetime_seconds * _lifetime_multiplier
 	)
+	# 表 07 明示的寿命覆盖优先于通用类别寿命，空字段继续使用既有生命周期配置。
+	if _trait_catalog != null:
+		for trait_id: StringName in barrage_record.trait_set.get_trait_ids():
+			var trait_definition: Dictionary = _trait_catalog.get_trait_definition(trait_id)
+			var override_text: String = str(trait_definition.get("lifetime_override_s", ""))
+			if not override_text.is_empty():
+				spawn_lifetime = float(override_text)
+				break
 	barrage_record.capture_lifetime_at_spawn(Time.get_ticks_msec(), spawn_lifetime, 1.0)
 
 	var view: BarrageView = barrage_view_scene.instantiate() as BarrageView
