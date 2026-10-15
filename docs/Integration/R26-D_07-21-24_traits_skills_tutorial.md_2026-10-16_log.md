@@ -53,7 +53,8 @@
 ## 4. 验证
 
 - Godot 4.7.2 headless 定向脚本：退出码 0；断言通过，正式表读取 6 个特性和 32 个启用技能，alien T2/kiwi T3 得到预期技能，三步事件顺序完成。
-- 全项目 `--import`/定向运行输出既有缺资源错误：`assets/fonts/NotoSansSC-VF.ttf`、`ZCOOLKuaiLe-Regular.ttf` 与若干音频文件缺失；项目主题和 AudioManager 资源无法加载。定向脚本仍退出 0，但这不构成生产场景启动验证。
+- 正式 `project.godot` 默认 Boot 场景 headless 启动退出码 0；此项只验证应用启动，不覆盖战斗内技能触发或教学输入。
+- 全项目 `--import`/定向运行输出既有缺资源错误：`assets/fonts/NotoSansSC-VF.ttf`、`ZCOOLKuaiLe-Regular.ttf` 与若干音频文件缺失；项目主题和 AudioManager 资源无法加载。定向逻辑脚本及默认 Boot 分别退出 0，但缺资源的生产内容和新功能实战仍待验证。
 - Sandbox 实际 runtime、UI 截图、Android 输入及两主播 Tier 全流程未验证。Godot MCP 工具未在当前工具列表提供。
 
 ## 5. 接手与状态
