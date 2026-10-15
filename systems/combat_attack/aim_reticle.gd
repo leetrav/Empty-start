@@ -51,6 +51,17 @@ func _ready() -> void:
 	queue_redraw()
 
 
+## 统一设置 PC 与触屏判定圆直径；96×96视觉准心保持原设计大小。
+func configure_hit_diameters(pc_diameter: float, touch_diameter: float) -> bool:
+	if pc_diameter <= 0.0 or touch_diameter <= 0.0:
+		return false
+	reticle_diameter = pc_diameter
+	_mouse_reticle_diameter = pc_diameter
+	if not _touch_aim_active:
+		_set_reticle_diameter(pc_diameter)
+	return true
+
+
 # 只推进表现计时；蓄力真实进度由 CombatAttack 的外部调用提供。
 func _process(delta: float) -> void:
 	if _visual_paused:

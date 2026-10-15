@@ -69,6 +69,7 @@ var _next_spawn_row: int = 0
 var _terminal_presentation_only: bool = false
 var _terminal_trait_ids: Array[StringName] = []
 var _terminal_trait_colors: Dictionary = {}
+var _combat_numerics: CombatNumericsConfig
 
 ## 终局只保存表现 ID 和显式配色；不装配普通特性，不改动已在场实例。
 func enter_terminal_presentation(trait_ids: Array[StringName] = [], trait_colors: Dictionary = {}) -> void:
@@ -86,6 +87,24 @@ func allows_trap_generation() -> bool:
 ## 连接批次 Timer；区域直接使用父场景保存的 Rect，本组件负责生成和裁剪。
 func _ready() -> void:
 	_spawn_timer.timeout.connect(_on_spawn_timer_timeout)
+
+
+## 由战斗流程注入正式表配置；仅影响后续新建的弹幕。
+func configure_combat_numerics(config: CombatNumericsConfig) -> void:
+	if config == null:
+		return
+	_combat_numerics = config
+	maximum_foreground_move_speed_pixels_per_second = config.foreground_speed_cap_px_per_second
+	interior_foreground_spawn_ratio = config.foreground_interior_spawn_ratio
+	curved_foreground_motion_amplitude_pixels = config.foreground_curve_amplitude_px
+	speed_change_foreground_motion_cycle_seconds = config.foreground_speed_change_period_seconds
+	normal_foreground_wandering_speed_multiplier = config.foreground_wander_speed_multiplier
+	normal_foreground_wandering_direction_change_interval_seconds = config.foreground_wander_turn_interval_seconds
+	normal_foreground_layer_change_interval_seconds = config.foreground_layer_change_interval_seconds
+	normal_foreground_min_scale = config.foreground_scale_min_ratio
+	normal_foreground_max_scale = config.foreground_scale_max_ratio
+	normal_foreground_local_text_animation_probability = config.foreground_local_animation_probability
+	random_straight_direction_spread_degrees = config.foreground_straight_spread_degrees
 
 ## 打开普通生成并立即生成第一批，之后按当前关卡间隔与频率倍率循环。
 func start_normal_generation(level_profile: LevelProfile) -> bool:
@@ -413,6 +432,8 @@ func spawn_normal_barrage(
 		return null
 	var has_selected_traits: bool = not barrage_record.trait_set.get_trait_ids().is_empty()
 	var special_capacity_limit: int = _get_special_foreground_capacity_limit(level_profile, capacity_limit)
+	if _combat_numerics != null:
+		special_capacity_limit = _combat_numerics.special_foreground_instance_cap
 	if has_selected_traits and not _special_capacity_ledger.has_capacity(special_capacity_limit):
 		# 特殊名额用尽只拒绝当前带特性请求，不暂停未满的普通前景生成。
 		return null
@@ -422,7 +443,20 @@ func spawn_normal_barrage(
 	barrage_record.tendency_id = speech.tendency_id
 	barrage_record.strength = float(speech.strength)
 	barrage_record.original_sentence_id = speech.original_sentence_id
-	barrage_record.capture_lifetime_at_spawn(Time.get_ticks_msec(), base_lifetime_seconds, _lifetime_multiplier)
+	var strength_type: String = "word_strength_%d" % clampi(int(speech.strength), 1, 3)
+	if barrage_record.trait_set.has_trait(BarrageTraitSet.FAKE_CARD):
+		strength_type = "fake"
+	elif barrage_record.trait_set.has_trait(BarrageTraitSet.RETALIATION_COPY):
+		strength_type = "retaliation"
+	elif barrage_record.trait_set.has_trait(BarrageTraitSet.UNSELECTABLE):
+		strength_type = "unselectable"
+	elif barrage_record.trait_set.has_trait(BarrageTraitSet.SPLIT):
+		strength_type = "split"
+	var spawn_lifetime: float = (
+		_combat_numerics.get_lifetime_seconds(strength_type, _lifetime_multiplier)
+		if _combat_numerics != null else base_lifetime_seconds * _lifetime_multiplier
+	)
+	barrage_record.capture_lifetime_at_spawn(Time.get_ticks_msec(), spawn_lifetime, 1.0)
 
 	var view: BarrageView = barrage_view_scene.instantiate() as BarrageView
 	if view == null:

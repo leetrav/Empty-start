@@ -86,6 +86,17 @@ func configure_mobile_input(config: MobileAttackInputConfig) -> bool:
 	return true
 
 
+## 正式 06 判定半径按半径字段换算成准心使用的直径，外观尺寸继续由独立配置负责。
+func configure_combat_aim_radii(config: CombatNumericsConfig) -> bool:
+	if config == null or _aim_reticle == null or config.pc_aim_radius_px <= 0.0 or config.touch_aim_radius_px <= 0.0:
+		return false
+	_aim_reticle.configure_hit_diameters(config.pc_aim_radius_px * 2.0, config.touch_aim_radius_px * 2.0)
+	if _mobile_input_config == null:
+		_mobile_input_config = MobileAttackInputConfig.new()
+	_mobile_input_config.touch_reticle_diameter = config.touch_aim_radius_px * 2.0
+	return true
+
+
 # 注入临时可选目标；命中只发选择事实，不进入 HitResolution。
 func set_selection_targets(targets: Array[Control]) -> bool:
 	_selection_targets.clear()

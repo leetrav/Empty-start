@@ -41,6 +41,42 @@ enum BoostEvent { CONTRADICTION_BREAK, ORACLE_CONFIRMATION }
 # 短时表现只属于本次开播，不随周目存档保存计时或触发记录。
 var _triggered_boost_events: Array[int] = []
 var _active_boosts: Array[Dictionary] = []
+var _formal_combat_numerics: CombatNumericsConfig
+
+
+## 每次战斗尝试由流程注入经审核的 09 直播参数。
+func configure_formal_rules(config: CombatNumericsConfig) -> void:
+	_formal_combat_numerics = config
+
+
+## 应用 09 正常命中规则；观看与点赞由 LiveSessionData 唯一持有。
+func record_normal_hit_live_rule() -> void:
+	if _formal_combat_numerics == null:
+		return
+	viewer_count = maxi(0, viewer_count + _formal_combat_numerics.normal_hit_viewer_delta)
+	like_count = maxi(0, roundi(float(like_count + _formal_combat_numerics.normal_hit_like_delta)))
+
+
+## 应用 09 陷阱命中规则，点赞倍率按原表的 0.98 乘算后取整。
+func record_trap_hit_live_rule() -> void:
+	if _formal_combat_numerics == null:
+		return
+	viewer_count = maxi(0, viewer_count + _formal_combat_numerics.trap_hit_viewer_delta)
+	like_count = maxi(0, roundi(float(like_count) * _formal_combat_numerics.trap_hit_like_multiplier))
+
+
+## 应用 09 升档观看增量。
+func record_tier_up_live_rule() -> void:
+	if _formal_combat_numerics == null:
+		return
+	viewer_count = maxi(0, viewer_count + _formal_combat_numerics.tier_up_viewer_delta)
+
+
+## 应用 09 高档点赞倍率；触发时点由关卡阶段消费者决定。
+func apply_high_tier_like_rule() -> void:
+	if _formal_combat_numerics == null:
+		return
+	like_count = maxi(0, roundi(float(like_count) * _formal_combat_numerics.high_tier_like_multiplier))
 
 
 # 由正式 PK 胜利入口提交配置增量，矛盾成败不影响本次结算。
