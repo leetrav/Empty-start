@@ -13,6 +13,30 @@ var _area: BarrageArea
 var _attack_input: AttackChargeInput
 var _presentation: Dictionary
 var _stopped: bool = false
+var _auto_repeat_min_seconds: float = 0.0
+var _auto_repeat_max_seconds: float = 0.0
+var _converge_ratio: float = 0.0
+var _final_emphasis_duration_seconds: float = 0.0
+
+
+# INT-16 根场景在 start 前传入 15 表扩散和收束参数。
+func configure_formal_parameters(
+		auto_repeat_min_seconds: float, auto_repeat_max_seconds: float,
+		converge_ratio: float, final_emphasis_duration_seconds: float
+) -> bool:
+	if _session != null or auto_repeat_min_seconds <= 0.0 or auto_repeat_max_seconds < auto_repeat_min_seconds:
+		return false
+	if not is_finite(auto_repeat_min_seconds) or not is_finite(auto_repeat_max_seconds):
+		return false
+	if not is_finite(converge_ratio) or not is_finite(final_emphasis_duration_seconds):
+		return false
+	if converge_ratio <= 0.0 or converge_ratio > 1.0 or final_emphasis_duration_seconds <= 0.0:
+		return false
+	_auto_repeat_min_seconds = auto_repeat_min_seconds
+	_auto_repeat_max_seconds = auto_repeat_max_seconds
+	_converge_ratio = converge_ratio
+	_final_emphasis_duration_seconds = final_emphasis_duration_seconds
+	return true
 
 
 # 一次终局使用同一冻结会话和战斗组件；entered 让根场景先收起普通阶段。
@@ -48,7 +72,13 @@ func start(
 	if session.should_enter_empty_ending():
 		_complete.call_deferred(session)
 		return true
-	if float(_presentation.get("repeat_interval_seconds", 0.0)) <= 0.0 or float(_presentation.get("fade_seconds", 0.0)) <= 0.0 or float(_presentation.get("hold_seconds", 0.0)) <= 0.0:
+	var has_repeat_interval := _auto_repeat_min_seconds > 0.0 and _auto_repeat_max_seconds >= _auto_repeat_min_seconds
+	if not has_repeat_interval:
+		has_repeat_interval = float(_presentation.get("repeat_interval_seconds", 0.0)) > 0.0
+	var has_emphasis_duration := _final_emphasis_duration_seconds > 0.0
+	if not has_emphasis_duration:
+		has_emphasis_duration = float(_presentation.get("fade_seconds", 0.0)) > 0.0 and float(_presentation.get("hold_seconds", 0.0)) > 0.0
+	if not has_repeat_interval or not has_emphasis_duration:
 		push_warning("DivineDescentFlow: 终局演出参数待交付，请显式注入配置。")
 		return true
 	_spread = DivineDescentSpread.new()
@@ -56,9 +86,12 @@ func start(
 	_spread.completed.connect(_complete)
 	_spread.convergence_started.connect(_on_convergence)
 	_spread.bind_new_word_decay(mode)
-	if not _spread.start(session, area, catalog, float(_presentation["repeat_interval_seconds"]),
+	var repeat_min := _auto_repeat_min_seconds if _auto_repeat_min_seconds > 0.0 else float(_presentation["repeat_interval_seconds"])
+	var repeat_max := _auto_repeat_max_seconds if _auto_repeat_max_seconds > 0.0 else repeat_min
+	if not _spread.start(session, area, catalog, repeat_min,
 			battle_config.repeat_lifetime_seconds, battle_config.repeat_display_template,
-			null, _presentation.get("trait_colors", {})):
+			null, _presentation.get("trait_colors", {}), repeat_min, repeat_max,
+			_converge_ratio if _converge_ratio > 0.0 else 0.9):
 		push_error("DivineDescentFlow: 神降临扩散无法读取冻结历史候选。")
 		return true
 	if not area.start_normal_generation(current_level) or not mode.start_new_word_decay(decay_config):
@@ -86,8 +119,12 @@ func handle_input(event: InputEvent) -> bool:
 
 # 真实可见占比收束后沿用 DD-17 时长，完成仍由 Tween 通知。
 func _on_convergence(_candidate: Dictionary) -> void:
-	if not _stopped and not _spread.begin_full_screen_emphasis(
-			float(_presentation["fade_seconds"]), float(_presentation["hold_seconds"])):
+	if _stopped:
+		return
+	if _final_emphasis_duration_seconds > 0.0:
+		if not _spread.begin_full_screen_emphasis_total(_final_emphasis_duration_seconds):
+			push_error("DivineDescentFlow: 神降临全屏强调启动失败。")
+	elif not _spread.begin_full_screen_emphasis(float(_presentation["fade_seconds"]), float(_presentation["hold_seconds"])):
 		push_error("DivineDescentFlow: 神降临全屏强调启动失败。")
 
 

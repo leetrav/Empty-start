@@ -197,6 +197,8 @@ DD-17 等 20. Ending。
 
 ## DD-17 全屏强调完成事实（2026-10-09）
 
+R26-B 增加 `DivineDescentFlow.configure_formal_parameters(auto_repeat_min_seconds, auto_repeat_max_seconds, converge_ratio, final_emphasis_duration_seconds) -> bool`，须在 `start()` 前调用，以消费 15 表扩散区间、收束比例和强调总时长；新话衰减继续通过 `DivineDescentDecayConfig` 消费 12 秒正式 Resource。Sandbox 组合由 INT-16 负责，接入值见 R26-B 完成日志。
+
 - **工程核对**：任务卡写有“全屏强调演出已经完成”，基线 `e9dc2d2` 实际只有 DD-13 收束通知及 DD-14 单条锁句缩放；源码 / 场景没有终局全屏演出，DD-13～16 日志也记录该缺口。本卡按授权补最小 DD 本地演出，正式动画、美术和节奏继续待交付。
 - `DivineDescentSpread.begin_full_screen_emphasis(fade_seconds, hold_seconds) -> bool`：真实收束后启动一次。入树、未暂停且尚未启动才能接受；两项时长须为有限正数，由组合方显式提供。收束前、非法参数及重复调用返回 false。该方法保留 Session、首次锁句、权重、旧弹幕寿命与继承表现规则，沿用 DD-13 已停止生成的状态。
 - `DivineDescentEmphasis` 为本组件拥有的 CanvasLayer 子节点，layer=20；运行时组合全视口黑色遮罩及居中换行原句，沿用 base_theme。原生 Tween 依次淡入、停留、淡出，全局暂停会停动画，离树取消动画。遮罩属于 UI 装饰，不加入 BarrageArea 或可见比例统计；没有新生产素材、音频事件、Autoload、正式时长配置或持久测试。
