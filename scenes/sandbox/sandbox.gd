@@ -97,6 +97,7 @@ func _ready() -> void:
 	_battle_attempt_flow.attempt_started.connect(_on_attempt_started)
 	_battle_attempt_flow.battle_state_changed.connect(_battle_hud.show_battle_state)
 	_battle_attempt_flow.pk_feedback_changed.connect(_battle_hud.refresh_pk)
+	_battle_attempt_flow.tier_changed.connect(_queue_pk_tier_visual)
 	_battle_attempt_flow.attempt_failed.connect(_on_attempt_failed)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
@@ -163,6 +164,11 @@ func _ready() -> void:
 		push_error("Sandbox: 无法启动首场普通战斗。")
 
 
+# CombatStage 的起始 Tier 通知早于 attempt_started；延后一帧避免新场误播升降档动作。
+func _queue_pk_tier_visual(current_tier: int, player_pk: float) -> void:
+	_battle_hud.call_deferred("on_tier_changed", current_tier, player_pk)
+
+
 # 按当前关重建尝试；重开与切到下一关共用清理，保留此前周目成果。
 func restart_current_attempt() -> void:
 	# 已进入终局后不能通过普通重开入口恢复 PK、档位与矛盾规则。
@@ -181,7 +187,7 @@ func restart_current_attempt() -> void:
 func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage: CombatStage, _queue: RepeatDelayQueue) -> void:
 	_barrage_impact_presenter.reset_effects()
 	_pa09_feedback.call("clear_feedback")
-	_battle_hud.reset_for_attempt()
+	_battle_hud.reset_for_attempt(stage.get_current_tier())
 	_battle_hud.set_paradox_stage_active(false, stage.get_current_tier())
 	var player_name: String = SaveManager.data.streamer_name
 	_battle_hud.configure_streamers(player_name if not player_name.is_empty() else "玩家主播", current_level.streamer_name)
