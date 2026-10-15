@@ -4,4 +4,4 @@
 
 [resource]
 script = ExtResource("1_config")
-new_word_decay_duration_seconds = 60.0
+new_word_decay_duration_seconds = 12.0
