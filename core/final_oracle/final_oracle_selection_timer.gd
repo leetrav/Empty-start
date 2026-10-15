@@ -4,17 +4,18 @@ extends RefCounted
 signal remaining_time_changed(seconds_remaining: float)
 signal expired
 
-const CHOICE_DURATION_SECONDS: float = 10.0
-
 var _remaining_seconds: float = 0.0
 var _is_running: bool = false
 
 
 # 候选开放时由流程方启动完整的十秒选择窗口。
-func start() -> void:
-	_remaining_seconds = CHOICE_DURATION_SECONDS
+func start(duration_seconds: float = 10.0) -> bool:
+	if not is_finite(duration_seconds) or duration_seconds <= 0.0:
+		return false
+	_remaining_seconds = duration_seconds
 	_is_running = true
 	remaining_time_changed.emit(_remaining_seconds)
+	return true
 
 
 # 全局暂停时不推进时间；到期只发出一次事实信号。

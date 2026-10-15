@@ -15,6 +15,7 @@ const PARADOX_CANDIDATE_COUNT: int = PARADOX_TRUE_CANDIDATE_COUNT + PARADOX_FALS
 @export_range(0.1, 8.0, 0.1) var ease_out_motion_duration_seconds: float = 2.0
 ## 归一化速度曲线：X 为运动进度，Y 为当前速度倍率。
 @export var ease_out_motion_speed_curve: Curve
+@export var shootable_during_motion: bool = true
 
 
 # 为尚未接入正式演出表的配置提供平滑减速初值，仍可在资源 Inspector 调整。

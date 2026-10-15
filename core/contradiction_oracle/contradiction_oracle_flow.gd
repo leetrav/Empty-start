@@ -37,6 +37,20 @@ var _commit_error: String = ""
 var _rest_handoff_pending: bool = false
 var _result_feedback_complete: bool = true
 var _oracle_silence_finished_pending: bool = false
+var _oracle_selection_duration_seconds: float = 10.0
+var _oracle_maximum_candidates: int = 3
+var _oracle_silence_transition_seconds: float = 1.0
+var _motion_elapsed_seconds: float = 0.0
+var _motion_attack_unlocked: bool = true
+
+
+# INT-16 根场景在 start 前传入 12 表正式神谕计时和候选上限。
+func configure_oracle_parameters(selection_time_seconds: float, maximum_candidates: int) -> bool:
+	if not _stopped or not is_finite(selection_time_seconds) or selection_time_seconds <= 0.0 or maximum_candidates <= 0:
+		return false
+	_oracle_selection_duration_seconds = selection_time_seconds
+	_oracle_maximum_candidates = maximum_candidates
+	return true
 
 
 # 查询流程当前持有的唯一业务对象；Rest 后仍可核对首次神谕结果。
@@ -257,24 +271,50 @@ func start(run_data: SaveData, catalog: LevelCatalog, current_level: LevelProfil
 	add_child(_oracle_transition_timer)
 	_attack_charge_input.shot_snapshot_created.connect(_on_contradiction_shot_created)
 	_attack_charge_input.selection_target_hit.connect(_on_oracle_selection_target_hit)
+	# 关卡配置是本场阶段数据；复制基础演出配置，避免改写共享 Resource。
+	var runtime_window_config := window_config.duplicate(true) as ContradictionWindowConfig
+	runtime_window_config.duration_seconds = current_level.paradox_window_seconds
+	runtime_window_config.max_shots = current_level.paradox_shot_limit
+	runtime_window_config.ease_out_motion_duration_seconds = current_level.paradox_motion_duration_seconds
+	runtime_window_config.shootable_during_motion = current_level.paradox_shootable_during_motion
+	_oracle_silence_transition_seconds = current_level.paradox_silence_transition_seconds
+	_motion_elapsed_seconds = 0.0
+	_motion_attack_unlocked = current_level.paradox_shootable_during_motion
+	if current_level.paradox_motion_mode != "ease_out_to_stop":
+		push_error("ContradictionOracleFlow: 未支持的 Paradox 运动模式：%s" % current_level.paradox_motion_mode)
+		stop()
+		return false
+	if current_level.paradox_motion_speed_curve_id == "smoothstep_to_zero_v0":
+		var speed_curve := Curve.new()
+		# CSV 指定的 v=1-3u²+2u³ 由两端零切线的 Bezier 曲线精确表达。
+		speed_curve.add_point(Vector2(0.0, 1.0), 0.0, 0.0, Curve.TANGENT_FREE, Curve.TANGENT_FREE)
+		speed_curve.add_point(Vector2(1.0, 0.0), 0.0, 0.0, Curve.TANGENT_FREE, Curve.TANGENT_FREE)
+		runtime_window_config.ease_out_motion_speed_curve = speed_curve
+	elif not current_level.paradox_motion_speed_curve_id.is_empty():
+		push_error("ContradictionOracleFlow: 未识别 Paradox 速度曲线 ID：%s" % current_level.paradox_motion_speed_curve_id)
+		stop()
+		return false
 	var contradiction_stage_ready: bool = _contradiction_break.load_level_content(current_level)
 	if contradiction_stage_ready:
-		# 候选数量和真假构成由 12 系统决定；弹幕区只负责显示本场固定集合。
-		var paradox_candidates: Array[LevelContradiction] = _contradiction_break.get_fixed_paradox_candidates()
-		if paradox_candidates.size() != ContradictionWindowConfig.PARADOX_CANDIDATE_COUNT:
+		# 仅使用关卡真实候选；配置数量与候选总数不符时拒绝启动。
+		var paradox_candidates: Array[LevelContradiction] = _contradiction_break.get_fixed_paradox_candidates(
+			current_level.paradox_true_count, current_level.paradox_fake_count)
+		if paradox_candidates.size() != current_level.paradox_candidate_count:
 			contradiction_stage_ready = false
 		else:
-			var true_lines: Array[LevelContradiction] = [paradox_candidates[0]]
+			var true_lines: Array[LevelContradiction] = []
 			var false_lines: Array[LevelContradiction] = []
-			for index: int in range(1, paradox_candidates.size()):
+			for index: int in range(current_level.paradox_true_count):
+				true_lines.append(paradox_candidates[index])
+			for index: int in range(current_level.paradox_true_count, paradox_candidates.size()):
 				false_lines.append(paradox_candidates[index])
-			contradiction_stage_ready = area.start_contradiction_generation(current_level, true_lines, false_lines, window_config)
-	if not contradiction_stage_ready or not _contradiction_break.start_window(window_config):
+			contradiction_stage_ready = area.start_contradiction_generation(current_level, true_lines, false_lines, runtime_window_config)
+	if not contradiction_stage_ready or not _contradiction_break.start_window(runtime_window_config):
 		stop()
 		return false
 	_contradiction_stage_active = true
 	attack_input.set_contradiction_mode(true)
-	attack_input.set_combat_active(true)
+	attack_input.set_combat_active(runtime_window_config.shootable_during_motion)
 	state_text_changed.emit("矛盾阶段：寻找真正的矛盾")
 	entered.emit(_contradiction_break)
 	return true
@@ -285,6 +325,11 @@ func advance(delta: float) -> void:
 	if _stopped or not is_inside_tree() or get_tree().paused or _rest_session != null:
 		return
 	if _contradiction_stage_active:
+		_motion_elapsed_seconds = minf(
+			_motion_elapsed_seconds + maxf(delta, 0.0), _current_level.paradox_motion_duration_seconds)
+		if not _motion_attack_unlocked and _motion_elapsed_seconds >= _current_level.paradox_motion_duration_seconds:
+			_attack_charge_input.set_combat_active(true)
+			_motion_attack_unlocked = true
 		_repeat_queue.advance_and_dispatch(delta, _barrage_area)
 	if _oracle_selection_timer != null:
 		_oracle_selection_timer.advance(delta, false)
@@ -307,7 +352,7 @@ func _try_start_oracle_transition() -> void:
 	_oracle_transition_started = true
 	_audio_manager.stop_music()
 	state_text_changed.emit("矛盾击破 · 静音过渡")
-	_oracle_transition_timer.start(0.5)
+	_oracle_transition_timer.start(_oracle_silence_transition_seconds)
 
 
 # 静音过渡结束才把本场普通历史与复读统计交给 13 系统的真实入口。
@@ -325,7 +370,8 @@ func _on_oracle_silence_finished() -> void:
 		current_level.level_id,
 		_get_oracle_history_with_sentence_text(current_level),
 		_repeat_queue.get_generation_stats(),
-		_oracle_confirmation_state
+		_oracle_confirmation_state,
+		_oracle_maximum_candidates
 	):
 		push_error("ContradictionOracleFlow: 终结神谕入口拒绝本场击破结果。")
 		return
@@ -358,8 +404,10 @@ func _on_oracle_silence_finished() -> void:
 	_oracle_selection_timer = FinalOracleSelectionTimer.new()
 	_oracle_selection_timer.remaining_time_changed.connect(_on_oracle_selection_time_changed)
 	_oracle_selection_timer.expired.connect(_on_oracle_selection_expired)
-	state_text_changed.emit("神谕选择 · 10.0 秒")
-	_oracle_selection_timer.start()
+	state_text_changed.emit("神谕选择 · %.1f 秒" % _oracle_selection_duration_seconds)
+	if not _oracle_selection_timer.start(_oracle_selection_duration_seconds):
+		push_error("ContradictionOracleFlow: 神谕选择时长无效。")
+		return
 	oracle_opened.emit(_final_oracle_session)
 
 

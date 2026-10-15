@@ -117,6 +117,8 @@ FO-12 已接入 `RestSession.open_result()` 与 `RestResultView.show_result()`�
 
 ## FO-13 主游戏区攻击选择
 
+R26-B 增加 `ContradictionOracleFlow.configure_oracle_parameters(selection_time_seconds, maximum_candidates) -> bool`，须在 `start()` 前调用。该入口把 12 表计时和候选上限交给本场 Session / Timer；未调用时保留 10 秒、3 候选默认值。经文节号范围已由 `ScriptureData` 读取正式 Verse Resource。
+
 - `FinalOracleCandidateDisplay` 位于 `BattleHud/BattleArea` 内，候选控件固定排布，原句正文直接使用 Label 显示。
 - Sandbox 将这些 `Control` 注入 `AttackChargeInput.set_selection_targets()`；玩家仍使用现有准心、蓄力、发射和飞行阶段。
 - `AttackTargetSnapshot` 在释放时冻结命中候选 ID 和准心中心；到达时只复核仍可见的冻结目标。同发命中多句时只发出准心中心最近的一句，等距时保留展示顺序。
