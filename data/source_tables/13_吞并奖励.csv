@@ -1,2 +1,6 @@
 reward_id,streamer_id,reward_type,content_id,inherited_weight,enabled,notes
-reward_a_pool,streamer_a,word_pool,pool_streamer_a,1,true,词库权重用于后续关卡混入
+reward_a_pool,streamer_a,word_pool,pool_streamer_a,1,false,占位1
+reward_alien_trait,alien,trait,occlusion,1,false,继承候选草案：观测者遮挡；reward_type=trait语义待导表确认。
+reward_kiwi_trait,kiwi,trait,retaliation_copy,1,false,继承候选草案：情感回声；reward_type=trait语义待导表确认。
+reward_frog_trait,frog,trait,split,1,false,继承候选草案：分食分裂；reward_type=trait语义待导表确认。
+reward_fox_trait,fox,trait,reflect,1,false,继承候选草案：镜像反弹；reward_type=trait语义待导表确认。

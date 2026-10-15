@@ -21,7 +21,11 @@ SHEET_NAMES = (
     "06_战斗数值", "06_生命周期", "06_基础参数", "07_特性参数", "08_Tier档位", "09_直播数据", "10_复读配置",
     "11_矛盾参数", "12_神谕参数", "13_吞并奖励", "14_败者卡", "15_神降临",
     "16_结局配置", "17_音频事件", "18_表现资产",
+    "19_直播评论词库", "20_主播气泡对白", "21_反击技能池",
+    "22_直播评论表现参数", "23_对手立绘配置", "24_新手教学配置",
+    "25_直播观众账号",
 )
+ADDITIONAL_SHEETS = frozenset(SHEET_NAMES[-7:])
 # 原字段名是唯一输入契约；这里只约束当前已确认的主键、核心字段、类型和合法枚举。
 RULES = {
     "01_身份配置": ("identity_id", ("identity_id", "display_name", "tendency")),
@@ -44,6 +48,13 @@ RULES = {
     "16_结局配置": (None, ("config_type", "primary_tendency")),
     "17_音频事件": ("event_id", ("event_id",)),
     "18_表现资产": ("asset_id", ("asset_id",)),
+    "19_直播评论词库": ("comment_id", ("comment_id", "viewer_id", "text", "enabled")),
+    "20_主播气泡对白": ("dialogue_id", ("dialogue_id", "streamer_id", "speaker_side", "trigger_type", "text", "enabled")),
+    "21_反击技能池": ("skill_id", ("skill_id", "streamer_id", "tier", "trait_ids", "enabled")),
+    "22_直播评论表现参数": ("param_id", ("param_id", "value")),
+    "23_对手立绘配置": ("portrait_set_id", ("portrait_set_id", "streamer_id", "idle_asset_path", "enabled")),
+    "24_新手教学配置": ("step_id", ("tutorial_config_id", "step_id", "step_order", "enabled")),
+    "25_直播观众账号": ("viewer_id", ("viewer_id", "display_name", "audience_type", "enabled")),
 }
 # 显式数值/布尔类型边界，避免将 ID 中的前导零、文本中的标点意外转换。
 NUMERIC = {
@@ -57,6 +68,11 @@ NUMERIC = {
     "11_矛盾参数": {"time_limit_s": "float", "shot_limit": "int", "silence_transition_s": "float"},
     "13_吞并奖励": {"inherited_weight": "float"},
     "17_音频事件": {"volume_db": "float", "pitch_min": "float", "pitch_max": "float"},
+    "19_直播评论词库": {"weight": "float"},
+    "20_主播气泡对白": {"line_order": "int", "display_duration_s": "float", "trigger_time_s": "float", "random_weight": "float"},
+    "21_反击技能池": {"tier": "int", "weight": "float"},
+    "24_新手教学配置": {"step_order": "int"},
+    "25_直播观众账号": {"weight": "float"},
 }
 BOOL_FIELDS = {"enabled", "inheritable", "loop", "affected_by_tier_lifetime_mult"}
 ENUMS = {
@@ -78,7 +94,15 @@ TIER_TO_GODOT = {
     "lifetime_mult": "lifetime_multiplier",
     "pullback_mult": "opponent_pullback_multiplier",
     "repeat_count": "repeat_count_per_hit",
+    "motion_straight_weight": "straight_motion_weight",
+    "motion_curve_weight": "curved_motion_weight",
+    "motion_speed_change_weight": "speed_change_motion_weight",
+    "motion_wander_weight": "wandering_motion_weight",
 }
+MOTION_WEIGHT_FIELDS = (
+    "motion_straight_weight", "motion_curve_weight",
+    "motion_speed_change_weight", "motion_wander_weight",
+)
 BASIC_TO_GODOT = {"spawn_interval_s": "base_spawn_interval_seconds"}
 PK_PERCENT_POINT_SCALE = 0.01  # 策划 0.12 个百分点 → Godot 0.0012。
 
@@ -226,6 +250,11 @@ def validate(tables: dict, report: Report) -> None:
             for f in pending_fields:
                 if f in header and not record.get(f, "").strip():
                     report.add("警告", name, line, f, "正式值尚待策划或资产交付")
+            if name == "22_直播评论表现参数":
+                # 已有配置混合数字和布尔开关。
+                raw = record.get("value", "")
+                if raw and not (numeric(raw, "float") or bool_text(raw) is not None):
+                    report.add("错误", name, line, "value", "需要有限数字或布尔值")
             if name == "03_普通词库":
                 strength = record.get("strength", "")
                 weight = record.get("weight", "")
@@ -233,7 +262,15 @@ def validate(tables: dict, report: Report) -> None:
                     report.add("错误", name, line, "strength", "强度只能为 1、2、3")
                 if numeric(weight, "float") and float(weight) <= 0:
                     report.add("错误", name, line, "weight", "出现权重必须大于 0")
+    # 新增表仅在实际提供时校验关联；旧TEST_ONLY夹具保持兼容。
     for child, field, parent, target in (
+        ("02_主播关卡", "portrait_set_id", "23_对手立绘配置", "portrait_set_id"),
+        ("02_主播关卡", "tutorial_config_id", "24_新手教学配置", "tutorial_config_id"),
+        ("02_主播关卡", "story_config_id", "20_主播气泡对白", "story_config_id"),
+        ("19_直播评论词库", "viewer_id", "25_直播观众账号", "viewer_id"),
+        ("20_主播气泡对白", "streamer_id", "02_主播关卡", "streamer_id"),
+        ("21_反击技能池", "streamer_id", "02_主播关卡", "streamer_id"),
+        ("23_对手立绘配置", "streamer_id", "02_主播关卡", "streamer_id"),
         ("05_关卡生成", "level_id", "02_主播关卡", "level_id"),
         ("11_矛盾参数", "level_id", "02_主播关卡", "level_id"),
         ("04_矛盾内容", "streamer_id", "02_主播关卡", "streamer_id"),
@@ -251,7 +288,9 @@ def validate(tables: dict, report: Report) -> None:
             continue
         for line, row in tables[child][1]:
             # 停用的吞并奖励占位记录保留在 CSV，正式关联仅核验启用项。
-            if child == "13_吞并奖励" and row.get("enabled", "").lower() == "false":
+            if (child in ("13_吞并奖励", "19_直播评论词库",
+                          "20_主播气泡对白", "21_反击技能池", "23_对手立绘配置")
+                    and row.get("enabled", "").lower() == "false"):
                 continue
             ref = row.get(field, "").strip()
             if ref and ref not in source:
@@ -275,6 +314,14 @@ def validate(tables: dict, report: Report) -> None:
             report.add("错误", "08_Tier档位", line, "pk_down_threshold", "Tier 1～5 必须填写降档阈值")
         if down and numeric(down, "float") and not (0 <= float(down) < upper):
             report.add("错误", "08_Tier档位", line, "pk_down_threshold", "降档阈值须低于本档升档阈值")
+        motion_values = [r.get(f, "") for f in MOTION_WEIGHT_FIELDS]
+        if any(motion_values):
+            if not all(numeric(x, "int") for x in motion_values):
+                report.add("错误", "08_Tier档位", line, "motion", "四种运动权重须全部为整数")
+            else:
+                weights = [int(float(x)) for x in motion_values]
+                if min(weights) < 0 or sum(weights) != 100:
+                    report.add("错误", "08_Tier档位", line, "motion", "四项非负运动权重之和必须等于100")
         for f in ("spawn_batch_mult", "spawn_frequency_mult", "move_speed_mult", "lifetime_mult", "pullback_mult"):
             if not numeric(r.get(f, ""), "float"):
                 continue
@@ -361,7 +408,7 @@ def make_tier_resource(records: list, report: Report) -> str:
         if not numeric(tier, "int"):
             continue
         tier = str(int(float(tier)))
-        pattern = re.compile(r'(\[sub_resource type="Resource" id="Tier' + tier + r'"\]\r?\n)(.*?)(?=\r?\n\[(?:sub_resource|resource)\]|\Z)', re.S)
+        pattern = re.compile(r'(\[sub_resource type="Resource" id="Tier' + tier + r'"\]\r?\n)(.*?)(?=\r?\n\[(?:sub_resource|resource)(?:\s|\])|\Z)', re.S)
         match = pattern.search(source)
         if match is None:
             report.add("错误", "08_Tier档位", line, "tier", f"现有 Tier{tier} Resource 不存在")
@@ -377,6 +424,10 @@ def make_tier_resource(records: list, report: Report) -> str:
             replacement = str(int(val)) if from_field == "repeat_count" else format(val, ".15g")
             expr = re.compile(r"(?m)^" + re.escape(to_field) + r" = [^\r\n]*")
             if expr.search(body) is None:
+                if from_field in MOTION_WEIGHT_FIELDS:
+                    # 现有Tier资源省略了运动字段，Godot脚本仍有export属性，预览显式写出权重。
+                    body = body.rstrip() + "\n" + to_field + " = " + replacement + "\n"
+                    continue
                 report.add("错误", "08_Tier档位", line, from_field, f"正式模板缺字段 {to_field}")
                 continue
             body = expr.sub(to_field + " = " + replacement, body, count=1)
@@ -534,6 +585,8 @@ def main() -> int:
         if sheet in split06_parts and not split06:
             continue
         if sheet not in workbook.sheetnames:
+            if sheet in ADDITIONAL_SHEETS:
+                continue  # 新增19～25可选，允许旧TEST_ONLY与历史正式工作簿继续导表。
             report.add("错误", sheet, 1, "Sheet", "缺少工作表")
             continue
         rows = xlsx_rows(workbook[sheet])

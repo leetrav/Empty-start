@@ -1,7 +1,12 @@
 param_id,value,unit,notes
 normal_delay_min_s,0.5,s,系统案：普通复读在命中后0.5–3秒内陆续出现
 normal_delay_max_s,3,s,系统案：普通复读在命中后0.5–3秒内陆续出现
-normal_screen_cap,,count,系统案明确：普通复读独立同屏上限需原型实测后配置
+normal_screen_cap,24,count,现有程序临时默认24（RP-15）；独立于前景Tier上限，正式值待PC/Android清晰度测试。
 repeat_template,{text},,系统案表现可用+1、赞同、重复原句；当前单模板字段先保留原句
 contradiction_repeat_count,120,count,系统案：Paradox击中1条真假矛盾后生成120条复读
 contradiction_repeat_lifetime_s,10,s,系统案：矛盾复读随10秒Paradox窗口
+maximum_pending_repeat_count,96,count,现有普通复读待生成队列容量；后续根据性能验收调整。
+repeat_placement_mode,static_random,enum,BG-42/RP-16现行规则：复读在中央战斗区域随机静止出现；旧向右/向左移动方案已撤销。
+repeat_fade_mode,lifetime_progress,enum,RP-17：按各自生命周期逐步降低透明度；具体曲线可调。
+repeat_text_outline,false,bool,RP-20：复读使用灰字、无文字描边。
+repeat_z_layer,background_bottom,enum,RP-21：普通复读始终处于最低显示层。

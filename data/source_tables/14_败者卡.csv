@@ -1,1 +1,5 @@
 card_id,streamer_id,display_name,art_asset_id,description,enabled,notes
+card_alien,alien,Fermi | 费米,,占位1,false,姓名自动关联02_主播关卡；描述为策划占位1，卡面资产待交付，启用状态待决定。
+card_kiwi,kiwi,Augur | 奥格尔,,占位2,false,姓名自动关联02_主播关卡；描述为策划占位2，卡面资产待交付，启用状态待决定。
+card_frog,frog,Gula | 咕拉,,占位3,false,姓名自动关联02_主播关卡；描述为策划占位3，卡面资产待交付，启用状态待决定。
+card_fox,fox,Khleb | 列巴,,占位4,false,姓名自动关联02_主播关卡；描述为策划占位4，卡面资产待交付，启用状态待决定。

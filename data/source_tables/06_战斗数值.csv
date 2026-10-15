@@ -2,15 +2,15 @@ param_id,display_name,value,unit,scope,notes
 pk_initial,PK初始值,50,PK,global,系统案：开局50%；程序内部对应0.5
 pk_min,PK最小值,0,PK,global,系统案：归零失败
 pk_max,PK最大值,100,PK,global,系统案：满值进入Paradox
-pullback_base_pk_per_s,基础回拉速度,0.5,PK/s,global,系统案：Default每秒回拉0.5个百分点；Tier再乘倍率
+pullback_base_pk_per_s,基础回拉速度,0.08,PK/s,global,V0试玩候选：基础回拉0.08 PK/秒；实际每秒回拉=基础速度×08表Tier倍率，后续按实机2～4分钟目标复核。
 aim_radius_pc_px,PC准心判定半径,72,px,PC,系统案实际可击中区域144×144；按半径折算72
 aim_radius_touch_px,触摸准心判定半径,90,px,Android,系统案手机实际可击中区域180×180；按半径折算90
 charge_time_s,蓄满时间,0.8,s,global,系统案
 projectile_flight_s,言弹飞行时间,0.2,s,global,系统案范围0.15–0.25s；当前表取中值0.2，仍需原型实测
 recovery_time_s,攻击硬直时间,0.15,s,global,系统案：飞行与结算结束后开始
-word_strength_1_pk,强度1 PK收益,0.12,PK,normal_hit,系统案：+0.12个百分点；程序内部对应+0.0012
-word_strength_2_pk,强度2 PK收益,0.2,PK,normal_hit,系统案：+0.2个百分点；程序内部对应+0.002
-word_strength_3_pk,强度3 PK收益,0.5,PK,normal_hit,系统案：+0.5个百分点；程序内部对应+0.005
+word_strength_1_pk,强度1 PK收益,0.4,PK,normal_hit,V0试玩候选：命中+0.4个百分点；程序内部对应+0.004。
+word_strength_2_pk,强度2 PK收益,0.7,PK,normal_hit,V0试玩候选：命中+0.7个百分点；程序内部对应+0.007。
+word_strength_3_pk,强度3 PK收益,1.2,PK,normal_hit,V0试玩候选：命中+1.2个百分点；程序内部对应+0.012。
 word_strength_1_tendency,强度1 倾向增量,1,point,normal_hit,系统案
 word_strength_2_tendency,强度2 倾向增量,5,point,normal_hit,系统案
 word_strength_3_tendency,强度3 倾向增量,10,point,normal_hit,系统案
@@ -19,20 +19,40 @@ blocked_penalty_pk,遮挡异常扣分,-1,PK,anomaly,系统案：遮挡异常扣1
 fake_penalty_pk,假弹幕扣分,-0.5,PK,trap,系统案
 retaliation_penalty_pk,反击弹幕扣分,-0.7,PK,trap,系统案
 reflect_penalty_pk,反弹异常扣分,-1,PK,anomaly,系统案：同一反弹目标不再叠加反击扣分
-layout_streamer_x,主播区 X,,px,layout,系统案给左右主播区尺寸，未定义单一X；左侧可取0，右侧可取1472
 layout_streamer_y,主播区 Y,0,px,layout,系统案：左右主播区均覆盖整高
 layout_streamer_w,主播区宽,448,px,layout,系统案：左右主播区均448×1080
 layout_streamer_h,主播区高,1080,px,layout,系统案：左右主播区均448×1080
 layout_center_x,中央弹幕区 X,448,px,layout,由1920总宽与左右448主播区推得
-layout_center_y,中央弹幕区 Y,,px,layout,系统案未单列中央弹幕区Y，只明确PK条1024×72
+layout_center_y,中央弹幕区 Y,72,px,layout,INT-06新目标：中央弹幕区从Y=72开始；场景当前仍是旧高度，需程序接入。
 layout_center_w,中央弹幕区宽,1024,px,layout,系统案中央区宽度与PK条宽度均为1024
-layout_center_h,中央弹幕区高,,px,layout,系统案未给中央弹幕区高度，待最终布局表
+layout_center_h,中央弹幕区高,1008,px,layout,INT-06新目标：中央弹幕区高1008，取代原760+248底部交互栏；当前场景待更新。
 layout_pkbar_x,PK条区 X,448,px,layout,由左右主播区宽度推得
 layout_pkbar_y,PK条区 Y,0,px,layout,系统案顶部PK条
 layout_pkbar_w,PK条区宽,1024,px,layout,系统案PK条1024×72
 layout_pkbar_h,PK条区高,72,px,layout,系统案PK条1024×72
-layout_data_x,直播数据区 X,,px,layout,系统案仅给左右直播数据区尺寸，未定义单一X
-layout_data_y,直播数据区 Y,,px,layout,系统案未给绝对Y
+layout_data_y,直播数据区 Y,560,px,layout,INT-02/03现行设计：左右直播数据区起点Y=560。
 layout_data_w,直播数据区宽,448,px,layout,系统案直播数据区448×296
-layout_data_h,直播数据区高,296,px,layout,系统案直播数据区448×296
+layout_data_h,直播数据区高,520,px,layout,INT-02/03现行设计：左右直播数据区高520；替换旧296。
 thunder_penalty_pk,雷弹幕扣分,-0.5,PK,trap,系统案：雷弹幕命中扣0.5个百分点
+shot_positive_pk_cap,单发正向PK收益总上限,2,PK,shot,HR-16：待策划函数建模；正向收益和负向惩罚分开封顶。
+shot_negative_pk_cap,单发负向PK惩罚总上限,2,PK,shot,HR-17：待策划函数建模；含适用异常惩罚。
+special_foreground_instance_cap,带特性话语同时存在上限,3,count,combat,LC-12/BG-35：一个实例有多项特性也只算一个特殊名额；另占一个前景名额。
+foreground_spawn_interior_ratio,前景内部出生比例,0.65,0~1,barrage,BG-19：决定从中央区域内部出生的概率；剩余概率为四边出生。
+foreground_curve_strength,前景曲线弯曲幅度,0.2,ratio,barrage,BG-21原策划曲率参考0.2（比例）；当前Godot正式运动参数使用像素弧高，V0目标读新增foreground_curve_amplitude_px=72px。两个字段暂未建立换算，LC-10导表按像素字段接线。
+foreground_speed_change_period_s,前景加减速节奏周期,2.5,s,barrage,BG-22 V0策划目标为2.5秒/周期；当前Godot BarrageArea脚本默认6秒，需LC-10正式导表接线后才会按照策划目标生效。速度曲线公式见foreground_speed_change_curve_id。
+foreground_wander_turn_interval_s,前景游荡改向间隔,2,s,barrage,BG-23：游荡运动两次随机改变方向间隔。
+foreground_speed_cap_px_s,前景运动速度上限,95,px/s,barrage,BG-40：约束基础速度、Tier倍率和全部四种运动方式的最终速度。
+foreground_scale_min_ratio,前景缩放下限,0.92,ratio,presentation,BG-27：运行中缓慢缩放的最小比例；与实际可命中区域对应。
+foreground_scale_max_ratio,前景缩放上限,1.08,ratio,presentation,BG-27：运行中缓慢缩放的最大比例；与实际可命中区域对应。
+foreground_layer_change_interval_s,前景层级重排间隔,3,s,presentation,BG-26：普通前景话语运动中随机改变互相遮盖顺序的间隔；遮挡和复读保持固定层级。
+foreground_local_anim_probability,前景局部文字动画概率,0.15,0~1,presentation,BG-29：每条新普通前景话语触发局部随机字符动画的概率；动画类型从抖动/闪烁/波动/变形选取。
+foreground_local_anim_intensity,前景局部文字动画强度,0.2,ratio,presentation,BG-29：统一调节局部动画幅度，保证正文可读；不改原句text。
+nonrepeat_outline_width_px,非复读文字描边宽度,2,px,presentation,BG-37：普通/特殊/遮挡/真假矛盾前景描边；按字尺寸适配，RP-20复读零描边。
+nonrepeat_outline_color_hex,非复读文字描边色,#30272F,#RRGGBB,presentation,BG-37：非复读文字描边颜色，表现用途，和局部富文本强调不冲突。
+repeat_text_color_hex,底层复读文字灰色,#888888,#RRGGBB,presentation,RP-19：普通及矛盾复读统一的低干扰灰色；不覆盖原句ID。
+tier_down_shake_duration_s,降档震屏持续时间,0.18,s,presentation,CS-16：降档一次性短震动的可编辑持续时间；对手离线/嘲讽由各自系统处理。
+tier_down_shake_amplitude_px,降档震屏最大幅度,7,px,presentation,CS-16：降档时一次性屏幕震动的最大位移幅度；不改真实战斗布局与命中事实。
+foreground_straight_spread_degrees,直线移动随机偏角上限,30,deg,barrage,BG-20 V0：以四边入场的内向法线/内部入场基准方向为中心均匀随机偏转±30°，Godot BarrageArea 当前默认30°；仅普通直线型，导表接线待完成。
+foreground_curve_amplitude_px,曲线移动弧高上限,72,px,barrage,BG-21 V0：单弧Curve2D目标弧高72px，受所在区域与文字边界裁切；Godot BarrageArea 当前默认72px，正式导表接线待完成。
+foreground_wander_speed_multiplier,游荡低速倍率,0.35,ratio,barrage,BG-23 V0：游荡速度=经Tier倍率/限速后的普通速度×0.35；2秒随机转向，触碰战斗区边缘反射。Godot默认0.35，正式导表接线待完成。
+foreground_speed_change_curve_id,周期加减速速度函数,smoothstep_pingpong_v0,curve_id,barrage,BG-22 V0：T为foreground_speed_change_period_s；u=1-|2*frac(t/T)-1|，s=u²(3−2u)，v(t)=v_max×s；前半周期加速后半减速，周期端与峰值速度连续，正式导表接线待完成。
