@@ -131,7 +131,7 @@ func _verify_real_attack_and_repeat() -> void:
 		return
 	_check(_snapshots[0].get_target_instance_ids().has(target_id), "快照包含准心罩住的真实普通弹幕")
 	_check(not is_instance_valid(target) or not target.is_inside_tree(), "正常结算结束对应弹幕")
-	_check(is_equal_approx(_hit().get_player_pk(), pk_before + 0.0012), "普通强度 1 命中真实增加 PK")
+	_check(is_equal_approx(_hit().get_player_pk(), pk_before + 0.004), "普通强度 1 命中真实增加 PK")
 	_check(absf((_sandbox.get_node("%PlayerShare") as ProgressBar).value - _hit().get_player_pk()) < 0.001, "可见 PK Bar 读取真实 PK")
 	_check(_attempt_tendency_total() == tendency_before + 1, "普通命中仅增加本场倾向")
 	_check(SaveManager.data.tendency_state.orthodox_total == 11, "此前已提交倾向保持")
@@ -190,12 +190,12 @@ func _verify_tier_and_new_barrage_parameters() -> void:
 	var new_view: BarrageView = _spawn_test_normal()
 	_check(absi(new_view.runtime_record.expires_at_msec - before_spawn_msec - roundi(_area.base_lifetime_seconds * tier.lifetime_multiplier * 1000.0)) <= 20, "新弹幕使用 Tier 寿命倍率")
 	# 新前景速度另受 BG-40 上限控制；此处只验真实实例仍能正常移动。
-	var old_x: float = old_view.position.x
-	var new_x: float = new_view.position.x
+	var old_initial_position: Vector2 = old_view.position
+	var new_initial_position: Vector2 = new_view.position
 	await _wait(0.12)
-	var old_distance: float = old_x - old_view.position.x
-	var new_distance: float = new_x - new_view.position.x
-	_check(old_distance > 0.0 and new_distance > 0.0, "升档后新旧弹幕均保持移动")
+	var old_distance: float = old_view.position.distance_to(old_initial_position)
+	var new_distance: float = new_view.position.distance_to(new_initial_position)
+	_check(old_distance > 0.1 and new_distance > 0.1, "升档后新旧弹幕均保持移动")
 	_check(old_view.runtime_record.expires_at_msec == old_expiry, "既有弹幕保留生成时寿命")
 	_area.clear_barrages()
 	_area.start_normal_generation(_level())

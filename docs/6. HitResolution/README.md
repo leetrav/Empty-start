@@ -4,7 +4,7 @@
 
 ## 2026-10-10 现行实现核对与任务状态
 
-**现有结算：** `HitResolution.resolve_shot_results()` 汇总整发贡献并一次更新玩家 PK；HR-16 独立限制正向贡献，HR-17 将目标负贡献与单次整发异常扣分合并后限制负值，再与正向限幅结果相抵。玩家 PK `[0,1]` 范围仍由全局限幅处理。CA-15 的释放快照包含遮挡 ID 时，整发异常选择强制为 `MISS`，CombatAttack 提交空逐目标数组，由本系统沿用一次 `-0.01` 落空惩罚。无快照遮挡时，逐目标结算和既有异常优先级保持原行为。策划尚未确定单发上限数值，正负上限默认均为 `INF`，有限值仅由可选接口注入。
+**现有结算：** `HitResolution.resolve_shot_results()` 汇总整发贡献并一次更新玩家 PK；HR-16 独立限制正向贡献，HR-17 将目标负贡献与单次整发异常扣分合并后限制负值，再与正向限幅结果相抵。玩家 PK `[0,1]` 范围仍由全局限幅处理。CA-15 的释放快照包含遮挡 ID 时，整发异常选择强制为 `MISS`，CombatAttack 提交空逐目标数组，由本系统沿用一次 `-0.01` 落空惩罚。无快照遮挡时，逐目标结算和既有异常优先级保持原行为。V0试玩已在正式 Sandbox 初始化时分别注入正负 `0.02` 上限（各2个百分点）；直接独立创建 HitResolution 时默认仍为 `INF`。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
@@ -38,11 +38,11 @@ DBG-01 增加 `set_player_pk_for_debug(value)` 作为开发调试入口。它按
 
 对手占比只从玩家 PK 派生，不在其他系统保存第二份可写 PK。Tier 通知与攻击整发结算已接入 INT-01 Sandbox。
 
-HR-02 的 `calculate_normal_word_reward(strength, tendency_id)` 按内容强度返回 `pk_delta` 和 `tendency_delta`，不修改当前 PK，也不提交三项倾向。PK 奖励从百分比换算为内部 0–1 比例：强度 1 为 `0.0012 / +1`，强度 2 为 `0.002 / +5`，强度 3 为 `0.005 / +10`；普通 `neutral` 命中保留对应强度的 PK 收益，但倾向增量固定为 0。Tier 不参与该接口。
+HR-02 的 `calculate_normal_word_reward(strength, tendency_id)` 按内容强度返回 `pk_delta` 和 `tendency_delta`，不修改当前 PK，也不提交三项倾向。PK 奖励从百分比换算为内部 0–1 比例：V0强度 1 为 `0.004 / +1`，强度 2 为 `0.007 / +5`，强度 3 为 `0.012 / +10`；普通 `neutral` 命中保留对应强度的 PK 收益，但倾向增量固定为 0。Tier 不参与该接口。
 
 HR-04 的 `calculate_repeat_hit_result()` 返回有效命中标记和零 PK、零倾向收益；它不修改 PK 或提交倾向。
 
-HR-05 的 `resolve_shot_results(target_results, shot_anomaly=ShotAnomaly.NONE)` 接收逐目标结算字典，一次更新并限制玩家 PK。HR-16 / HR-17 为构造器增加可选的 `max_positive_pk_delta_per_shot=INF` 和 `max_negative_pk_delta_per_shot=INF` 参数；正向贡献按发汇总后独立限制，负向目标贡献与一次 `-0.01` 整发异常扣分合并后独立限制，再计算 PK 净变化。正负上限默认 `INF`，保留既有结算，策划定值前不改正式配置。返回的 `total_pk_delta` 是本发限幅及相抵后的净变化，逐目标结果仍深拷贝返回，倾向、有效命中和复读结果保持逐目标事实；最终 PK 信号仍只发出一次。有限上限通过 TEST_ONLY 用例显式注入。
+HR-05 的 `resolve_shot_results(target_results, shot_anomaly=ShotAnomaly.NONE)` 接收逐目标结算字典，一次更新并限制玩家 PK。HR-16 / HR-17 为构造器增加可选的 `max_positive_pk_delta_per_shot=INF` 和 `max_negative_pk_delta_per_shot=INF` 参数；正向贡献按发汇总后独立限制，负向目标贡献与一次 `-0.01` 整发异常扣分合并后独立限制，再计算 PK 净变化。独立构造默认值仍为 `INF`；V0的 SandboxBattleConfig 显式注入正负各 `0.02`。返回的 `total_pk_delta` 是本发限幅及相抵后的净变化，逐目标结果仍深拷贝返回，倾向、有效命中和复读结果保持逐目标事实；最终 PK 信号仍只发出一次。有限上限通过 TEST_ONLY 用例显式注入。
 
 BT-11（2026-10-09）补齐已存在真实 TraitResult 的惩罚消费：FAKE_CARD 每目标 `-0.005`，RETALIATION_COPY 每目标 `-0.007`，OCCLUSION / REFLECT 的目标 PK 为 0，特殊结果普通倾向与有效普通命中标记清零；CombatAttack 传入 HR-06 选出的整发异常，BOUNCE / OBSTRUCTION / MISS 每发扣 `-0.01`，和目标增量合并后仅更新一次 PK。沿用 `data/source_tables/06_战斗数值.csv` 正式值，4 / 5 不计算惩罚。终局关闭、PK 已归零提前返回的边界保持。尚无真实雷结果类型，雷映射仍待其正式接口；本次仅完成 BT-11 已有特性结果联调。
 
