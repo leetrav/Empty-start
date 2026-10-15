@@ -7,7 +7,7 @@ func _ready() -> void:
 
 
 func _enter_main_menu() -> void:
-	# 此时全局 Autoload 已完成初始化，交由 SceneRouter 切换场景。
-	var error: Error = SceneRouter.goto_main_menu()
+	# 首次启动完整六幕，观看后启动直接进入菜单。
+	var error := SceneRouter.goto_main_menu() if SettingsManager.opening_comic_seen else SceneRouter.goto_comic(&"intro", true)
 	if error != OK:
-		push_error("Boot: 无法进入 MainMenu，Error: %s" % error_string(error))
+		push_error("Boot: 无法进入启动页面，Error: %s" % error_string(error))

@@ -1,9 +1,12 @@
 # Integration
 
-> **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。开发前核对该表、本卡现行版、main 实际实现及最新完成日志。
+## INT-11 首次启动六幕漫画与主菜单回看（2026-10-13）
 
+最新流程：首次 Boot → P1～P6 共19个播放节点 → 主菜单；后续 Boot → 主菜单。SceneRouter.goto_comic(&"intro", true) 播放完整开场；opening/ending 分别用于菜单回看前四幕/后两幕。原角色塑造流程不嵌入本播放器。
 
-Lane A 持有 Sandbox 与顶层路由接线。系统规则、倾向、历史、奖励及结局显示继续归各系统所有者。
+任意非重复按键快进分镜，Esc 返回菜单；观看记录使用 SettingsManager 的 story/opening_intro_v2_seen，旧试播记录不阻止新版首次演出。回看不创建或改变周目。免费 CC0 打字声和翻书声已接入 assets/audio/sfx/comic/，来源与许可在同目录 README；翻书发生于幕切换。正式台词未提供，空台词画面只在显现期间短暂播放打字声；文字、节奏、黑幕及 Android 验收仍待完成。
+
+详见 [任务卡](tasks/INT-11_opening-ending-comic-playback.md) 与 [最新日志](剧情漫画_INT-11_2026-10-13_log.md)。
 
 ## INT-09 → INT-10 → S3（状态更新 2026-10-11）
 

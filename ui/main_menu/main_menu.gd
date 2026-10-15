@@ -6,8 +6,13 @@ extends Control
 
 
 func _ready() -> void:
+	# 首次启动演出已由 Boot 处理，主菜单始终提供前后两部分回放。
+	%ReplayOpeningButton.show()
+	%ReplayEndingButton.show()
 	# 连接主菜单按钮与可复用设置面板。
 	%StartButton.pressed.connect(_on_start_button_pressed)
+	%ReplayOpeningButton.pressed.connect(_replay_comic.bind(&"opening"))
+	%ReplayEndingButton.pressed.connect(_replay_comic.bind(&"ending"))
 	_settings_button.pressed.connect(_on_settings_button_pressed)
 	%QuitButton.pressed.connect(_on_quit_button_pressed)
 	_settings_panel.closed.connect(_on_settings_panel_closed)
@@ -37,3 +42,9 @@ func _on_settings_panel_closed() -> void:
 	# 设置关闭后恢复主菜单操作区。
 	_menu_actions.show()
 	_settings_button.grab_focus()
+
+# 回看只调用漫画路由，不创建或修改周目。
+func _replay_comic(kind: StringName) -> void:
+	var error: Error = SceneRouter.goto_comic(kind)
+	if error != OK:
+		push_error("MainMenu: 无法播放漫画，Error: %s" % error_string(error))
