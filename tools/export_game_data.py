@@ -75,6 +75,7 @@ NUMERIC = {
     "25_直播观众账号": {"weight": "float"},
 }
 BOOL_FIELDS = {"enabled", "inheritable", "loop", "affected_by_tier_lifetime_mult"}
+BOOL_PARAM_IDS = {"comment_pause_with_game", "comment_updates_business_counter"}
 ENUMS = {
     ("01_身份配置", "tendency"): {"orthodox", "heretical", "heresy", "absurd"},
     ("03_普通词库", "tendency"): {"orthodox", "heretical", "heresy", "absurd", "neutral"},
@@ -140,6 +141,41 @@ def xlsx_rows(ws) -> list[tuple[int, list[str]]]:
 def bool_text(text: str) -> str | None:
     """只接受明确的布尔文本；不把未知值默认为真。"""
     return {"true": "true", "false": "false", "1": "true", "0": "false", "yes": "true", "no": "false"}.get(text.strip().lower())
+
+
+def validate_native_boolean_cells(ws, report: Report) -> None:
+    """新版正式 Google 表必须保留 Excel 原生布尔类型，避免迁移把真假变成字符串。
+
+    旧 TEST_ONLY/历史工作簿无22表，保持旧格式的兼容导出。
+    """
+    iterator = ws.iter_rows(values_only=True)
+    header = next(iterator, ())
+    if not header:
+        return
+    mapping = {str(field): i for i, field in enumerate(header) if field is not None}
+    bool_columns = [(field, idx) for field, idx in mapping.items() if field in BOOL_FIELDS]
+    value_col = mapping.get("value") if ws.title == "22_直播评论表现参数" else None
+    key_col = mapping.get("param_id", 0)
+    for row_num, row in enumerate(iterator, 2):
+        if not row or not str(row[0] or "").strip():
+            continue
+        if str(row[0]).startswith(("填写", "【", "EXAMPLE_")):
+            continue
+        for field, idx in bool_columns:
+            value = row[idx] if idx < len(row) else None
+            if value is not None and type(value) is not bool:
+                report.add("错误", ws.title, row_num, field, "必须是原生布尔单元格（复选框TRUE/FALSE），不能是文本")
+        if value_col is None:
+            continue
+        key = str(row[key_col] if key_col < len(row) else "")
+        value = row[value_col] if value_col < len(row) else None
+        if value is None:
+            continue
+        if key in BOOL_PARAM_IDS:
+            if type(value) is not bool:
+                report.add("错误", ws.title, row_num, "value", f"{key} 必须是原生布尔开关")
+        elif type(value) is bool or type(value) not in (int, float) or not math.isfinite(value):
+            report.add("错误", ws.title, row_num, "value", f"{key} 必须是数值参数")
 
 
 class Report:
@@ -251,10 +287,13 @@ def validate(tables: dict, report: Report) -> None:
                 if f in header and not record.get(f, "").strip():
                     report.add("警告", name, line, f, "正式值尚待策划或资产交付")
             if name == "22_直播评论表现参数":
-                # 已有配置混合数字和布尔开关。
+                # 数据列虽共用value，类型由param_id决定，而非任意允许混填。
                 raw = record.get("value", "")
-                if raw and not (numeric(raw, "float") or bool_text(raw) is not None):
-                    report.add("错误", name, line, "value", "需要有限数字或布尔值")
+                if record.get("param_id", "") in BOOL_PARAM_IDS:
+                    if raw and raw.lower() not in ("true", "false"):
+                        report.add("错误", name, line, "value", "布尔参数只能为 true/false")
+                elif raw and not numeric(raw, "float"):
+                    report.add("错误", name, line, "value", "数值参数必须是有限数字")
             if name == "03_普通词库":
                 strength = record.get("strength", "")
                 weight = record.get("weight", "")
@@ -589,6 +628,9 @@ def main() -> int:
                 continue  # 新增19～25可选，允许旧TEST_ONLY与历史正式工作簿继续导表。
             report.add("错误", sheet, 1, "Sheet", "缺少工作表")
             continue
+        # 只有采用新版22表的正式工作簿启用原生类型审计，不破坏历史TEST_ONLY夹具。
+        if not args.test_only and "22_直播评论表现参数" in workbook.sheetnames:
+            validate_native_boolean_cells(workbook[sheet], report)
         rows = xlsx_rows(workbook[sheet])
         if sheet == "06_战斗数值" and not split06:
             # 三个独立字段区块，标题与第二/第三个表头均不能作为数据输出。

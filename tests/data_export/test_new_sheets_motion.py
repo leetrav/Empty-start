@@ -27,8 +27,8 @@ def main() -> None:
     mixed = ("22_直播评论表现参数", (
         ["param_id", "value"],
         [(2, {"param_id": "time", "value": "2.5"}),
-         (3, {"param_id": "flag_on", "value": "true"}),
-         (4, {"param_id": "flag_off", "value": "false"})],
+         (3, {"param_id": "comment_pause_with_game", "value": "true"}),
+         (4, {"param_id": "comment_updates_business_counter", "value": "false"})],
     ))
     report = tool.Report()
     tool.validate({mixed[0]: mixed[1]}, report)
@@ -38,6 +38,39 @@ def main() -> None:
         mixed[1][0], mixed[1][1] + [(5, {"param_id": "bad", "value": "random"})]
     )}, bad)
     assert bad.errors and "value" in bad.errors[0]
+
+    # 迁移错误回归：源xlsx文本true不是原生布尔值，正式工作簿应阻断。
+    from openpyxl import Workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "22_直播评论表现参数"
+    ws.append(["param_id", "value", "unit"])
+    ws.append(["comment_pause_with_game", "true", "bool"])
+    ws.append(["comment_updates_business_counter", False, "bool"])
+    wrong_type = tool.Report()
+    tool.validate_native_boolean_cells(ws, wrong_type)
+    assert len(wrong_type.errors) == 1, wrong_type.errors
+    ws["B2"] = True
+    valid_type = tool.Report()
+    tool.validate_native_boolean_cells(ws, valid_type)
+    assert not valid_type.errors, valid_type.errors
+    ws.append(["comment_visible_row_cap", True, "rows"])
+    invalid_numeric = tool.Report()
+    tool.validate_native_boolean_cells(ws, invalid_numeric)
+    assert len(invalid_numeric.errors) == 1, invalid_numeric.errors
+    ws["B4"] = 5
+    ws.title = "04_矛盾内容"
+    ws.delete_rows(1, ws.max_row)
+    ws.append(["contradiction_id", "enabled"])
+    ws.append(["c1", "true"])
+    invalid_enabled = tool.Report()
+    tool.validate_native_boolean_cells(ws, invalid_enabled)
+    assert len(invalid_enabled.errors) == 1, invalid_enabled.errors
+    ws["B2"] = True
+    valid_enabled = tool.Report()
+    tool.validate_native_boolean_cells(ws, valid_enabled)
+    assert not valid_enabled.errors, valid_enabled.errors
+    wb.close()
 
     # 新表主键和关联验证；停用的历史 streamer_a 样例不阻断正式导表。
     tables = {
