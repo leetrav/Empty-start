@@ -15,7 +15,11 @@ extends Resource
 @export var oracle_boost_viewer_gain: int = 0
 @export var oracle_boost_like_gain: int = 0
 @export var oracle_boost_duration_seconds: float = 0.0
-@export var base_pullback_speed: float = 0.001
+# V0：单发正负收益独立封顶，PK 内部值采用 0–1 比例；2 PK = 0.02。
+@export var max_positive_pk_delta_per_shot: float = 0.02
+@export var max_negative_pk_delta_per_shot: float = 0.02
+# V0：基础回拉 0.08 PK/秒，乘当前 Tier 倍率。
+@export var base_pullback_speed: float = 0.0008
 @export var normal_lifetime_seconds: float = 10.0
 @export var repeat_lifetime_seconds: float = 6.0
 ## 原始系统案写明每条矛盾命中产生 120 条复读；寿命暂用 Sandbox 运行配置。

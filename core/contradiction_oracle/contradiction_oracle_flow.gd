@@ -35,11 +35,28 @@ var _contradiction_outcome_handled: bool = false
 var _stopped: bool = true
 var _commit_error: String = ""
 var _rest_handoff_pending: bool = false
+var _result_feedback_complete: bool = true
+var _oracle_silence_finished_pending: bool = false
 
 
 # 查询流程当前持有的唯一业务对象；Rest 后仍可核对首次神谕结果。
 func get_contradiction_system() -> ContradictionBreakSystem:
 	return _contradiction_break
+
+
+# PA-12 结果漫画期间冻结神谕开页与 10 秒计时，解锁后沿用既有静音与复读条件。
+func hold_oracle_for_result_feedback() -> void:
+	if not _stopped:
+		_result_feedback_complete = false
+
+
+func release_oracle_after_result_feedback() -> void:
+	if _stopped:
+		return
+	_result_feedback_complete = true
+	if _oracle_silence_finished_pending:
+		_oracle_silence_finished_pending = false
+		_on_oracle_silence_finished()
 
 
 func get_oracle_session() -> FinalOracleSession:
@@ -70,6 +87,8 @@ func get_commit_error() -> String:
 func stop() -> void:
 	_stopped = true
 	_rest_handoff_pending = false
+	_result_feedback_complete = true
+	_oracle_silence_finished_pending = false
 	_contradiction_stage_active = false
 	_oracle_selection_timer = null
 	_final_oracle_session = null
@@ -294,6 +313,9 @@ func _try_start_oracle_transition() -> void:
 # 静音过渡结束才把本场普通历史与复读统计交给 13 系统的真实入口。
 func _on_oracle_silence_finished() -> void:
 	if _stopped or _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		return
+	if not _result_feedback_complete:
+		_oracle_silence_finished_pending = true
 		return
 	var current_level: LevelProfile = _current_level
 	if current_level == null:

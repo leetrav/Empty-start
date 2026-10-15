@@ -84,10 +84,11 @@ func _verify_layout_and_generation() -> void:
 	_check(opening_views.size() == _level().base_batch_count, "开局真实普通批次生成")
 	_check(SaveManager.data.live_session.comment_count == opening_views.size(), "普通生成成功数同步评论")
 	var first_view: BarrageView = opening_views[0]
-	var opening_x: float = first_view.position.x
+	var opening_position: Vector2 = first_view.position
 	var opening_pk: float = _hit().get_player_pk()
 	await _wait(1.50)
-	_check(is_instance_valid(first_view) and first_view.position.x < opening_x, "普通弹幕持续移动")
+	# BG-39 运动方向按 Tier 权重抽取，验收位移而不是预设向左。
+	_check(is_instance_valid(first_view) and first_view.position.distance_to(opening_position) > 1.0, "普通弹幕持续移动")
 	_check(_views(false).size() > opening_views.size(), "普通弹幕持续生成")
 	_check(is_equal_approx(_hit().get_player_pk(), opening_pk), "T0 等待对手连线时 PK 保持稳定")
 	_check(_live_comment_label().get_parsed_text() == "🔊" + str(SaveManager.data.live_session.comment_count), "Comment HUD 自动刷新")
@@ -131,7 +132,7 @@ func _verify_real_attack_and_repeat() -> void:
 		return
 	_check(_snapshots[0].get_target_instance_ids().has(target_id), "快照包含准心罩住的真实普通弹幕")
 	_check(not is_instance_valid(target) or not target.is_inside_tree(), "正常结算结束对应弹幕")
-	_check(is_equal_approx(_hit().get_player_pk(), pk_before + 0.0012), "普通强度 1 命中真实增加 PK")
+	_check(is_equal_approx(_hit().get_player_pk(), pk_before + 0.004), "普通强度 1 命中真实增加 PK")
 	_check(absf((_sandbox.get_node("%PlayerShare") as ProgressBar).value - _hit().get_player_pk()) < 0.001, "可见 PK Bar 读取真实 PK")
 	_check(_attempt_tendency_total() == tendency_before + 1, "普通命中仅增加本场倾向")
 	_check(SaveManager.data.tendency_state.orthodox_total == 11, "此前已提交倾向保持")
@@ -190,12 +191,12 @@ func _verify_tier_and_new_barrage_parameters() -> void:
 	var new_view: BarrageView = _spawn_test_normal()
 	_check(absi(new_view.runtime_record.expires_at_msec - before_spawn_msec - roundi(_area.base_lifetime_seconds * tier.lifetime_multiplier * 1000.0)) <= 20, "新弹幕使用 Tier 寿命倍率")
 	# 新前景速度另受 BG-40 上限控制；此处只验真实实例仍能正常移动。
-	var old_x: float = old_view.position.x
-	var new_x: float = new_view.position.x
+	var old_initial_position: Vector2 = old_view.position
+	var new_initial_position: Vector2 = new_view.position
 	await _wait(0.12)
-	var old_distance: float = old_x - old_view.position.x
-	var new_distance: float = new_x - new_view.position.x
-	_check(old_distance > 0.0 and new_distance > 0.0, "升档后新旧弹幕均保持移动")
+	var old_distance: float = old_view.position.distance_to(old_initial_position)
+	var new_distance: float = new_view.position.distance_to(new_initial_position)
+	_check(old_distance > 0.1 and new_distance > 0.1, "升档后新旧弹幕均保持移动")
 	_check(old_view.runtime_record.expires_at_msec == old_expiry, "既有弹幕保留生成时寿命")
 	_area.clear_barrages()
 	_area.start_normal_generation(_level())
@@ -224,19 +225,31 @@ func _verify_pause_in_each_attack_phase() -> void:
 	_mouse_button(true)
 	await _wait(0.06)
 	var pause_menu: Node = _sandbox.get_node("%PauseMenu")
+	var pause_requested_msec: int = Time.get_ticks_msec()
 	pause_menu.pause_game()
 	await get_tree().process_frame
 	var charge_before: float = _attack.get_charge_progress()
 	var position_before: Vector2 = target.position
 	var expiry_before: int = target.runtime_record.expires_at_msec
+	var pause_measure_started_msec: int = Time.get_ticks_msec()
 	var pk_before: float = _hit().get_player_pk()
 	await _wait(0.22)
+	var resume_requested_msec: int = Time.get_ticks_msec()
 	_check(is_equal_approx(_attack.get_charge_progress(), charge_before), "暂停冻结蓄力")
 	_check(target.position == position_before and is_equal_approx(_hit().get_player_pk(), pk_before), "暂停冻结弹幕移动和回拉")
 	pause_menu.resume_game()
 	await _wait(0.23)
+	var expiry_after: int = target.runtime_record.expires_at_msec
+	var compensation_msec: int = expiry_after - expiry_before
+	var observed_pause_msec: int = resume_requested_msec - pause_requested_msec
+	var minimum_compensation_msec: int = maxi(180, observed_pause_msec - 50)
+	print("INT-01 PAUSE TIMING: expiry_before=%d expiry_after=%d compensation_msec=%d pause_request_to_measure_start_msec=%d measured_pause_msec=%d resume_observation_delay_msec=%d compensation_minus_measured_pause_msec=%d required_minimum_msec=%d" % [
+		expiry_before, expiry_after, compensation_msec, pause_measure_started_msec - pause_requested_msec,
+		observed_pause_msec, Time.get_ticks_msec() - resume_requested_msec,
+		compensation_msec - observed_pause_msec, minimum_compensation_msec,
+	])
 	_check(_attack.is_fully_charged() and _hit().get_player_pk() < pk_before, "恢复继续蓄力与回拉")
-	_check(target.runtime_record.expires_at_msec - expiry_before >= 180, "恢复补偿弹幕暂停寿命")
+	_check(compensation_msec >= minimum_compensation_msec, "恢复补偿弹幕暂停寿命")
 	_aim_at(target)
 	var submissions_before: int = _submissions.size()
 	_mouse_button(false)
@@ -270,7 +283,12 @@ func _verify_failure_restart_and_full_pk() -> void:
 	_opponent().resume_pullback()
 	await _wait(0.12)
 	_check(_opponent().has_attempt_failed() and not _flow().is_normal_combat_active(), "PK 归零进入真实失败状态")
-	_check(_sandbox.get_node("%FailureOverlay").visible, "失败遮罩可见")
+	# PA-18 先落球、关闭左侧 CRT，完成后才展示旧失败遮罩；等真实完成而非固定判定同帧可见。
+	var failure_overlay: Control = _sandbox.get_node("%FailureOverlay") as Control
+	var overlay_deadline: int = Time.get_ticks_msec() + 5000
+	while not failure_overlay.visible and Time.get_ticks_msec() < overlay_deadline:
+		await get_tree().process_frame
+	_check(failure_overlay.visible, "失败演出完成后失败遮罩可见")
 	_check(_attempt_tendency_total() == 0, "失败回滚本场倾向")
 	_check(_attempt_failed_events == failures_before + 1
 		and _last_attempt_failure.get("level") == level_before
@@ -303,6 +321,17 @@ func _verify_failure_restart_and_full_pk() -> void:
 	var contradiction_entered_before: int = _contradiction_entered_events
 	await _fire_at(target)
 	_check(is_equal_approx(_hit().get_player_pk(), 1.0) and not _flow().is_normal_combat_active(), "真实普通命中使 PK 满值并停止普通战斗")
+	var paradox_comic := _sandbox.get_node("ParadoxComicTransition") as ParadoxComicTransition
+	_check(paradox_comic.visible and not _sandbox.get_contradiction_oracle_flow().is_contradiction_active()
+		and not _attack.can_start_charging(), "PA-12 转场期间普通攻击与矛盾攻击均关闭")
+	await _wait(0.65)
+	await _capture_pa12_preview("transition")
+	var pause_menu: Node = _sandbox.get_node("%PauseMenu")
+	pause_menu.pause_game()
+	await _wait(0.2)
+	_check(paradox_comic.visible and not _sandbox.get_contradiction_oracle_flow().is_contradiction_active(), "暂停冻结 PA-12 转场且不提前开放矛盾阶段")
+	pause_menu.resume_game()
+	await _wait_until_contradiction_active()
 	_check(_pk_maximum_events == pk_maximum_before + 1 and _normal_completed_events == normal_complete_before + 1
 		and _contradiction_entered_events == contradiction_entered_before + 1, "PK 满值、普通结束和进入矛盾各通知一次")
 	_check(bool(_sandbox.get_contradiction_oracle_flow().is_contradiction_active()), "满值只进入一次矛盾阶段")
@@ -413,8 +442,7 @@ func _open_oracle_with_hit_history(candidate_count: int) -> FinalOracleSession:
 		var speech: LevelSpeech = level.normal_speech_pool[index]
 		_hit().record_normal_word_hit(speech.original_sentence_id, speech.tendency_id)
 	_sandbox.call("debug_set_player_pk", 1.0)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	await _wait_until_contradiction_active()
 	var break_system := _sandbox.get_contradiction_oracle_flow().get_contradiction_system() as ContradictionBreakSystem
 	if break_system == null:
 		_check(false, "普通 PK 满值后进入矛盾阶段")
@@ -422,7 +450,8 @@ func _open_oracle_with_hit_history(candidate_count: int) -> FinalOracleSession:
 	break_system.register_launched_shot()
 	var hit_ids: Array[String] = [break_system.get_true_contradictions()[0].original_sentence_id]
 	break_system.resolve_shot_hit_ids(hit_ids)
-	await _wait(0.7)
+	await _capture_pa12_preview("result")
+	await _wait(0.9)
 	var session := _sandbox.get_contradiction_oracle_flow().get_oracle_session() as FinalOracleSession
 	_check(session != null and session.is_open(), "矛盾击破成功和静音过渡后开放 FinalOracle")
 	return session
@@ -480,10 +509,28 @@ func _wait(seconds: float) -> void:
 	await get_tree().create_timer(seconds, true, false, true).timeout
 
 
+func _capture_pa12_preview(name: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var image: Image = get_viewport().get_texture().get_image()
+	var error: Error = image.save_png("D:/tmp/int13-pa12-preview-20261015/%s.png" % name)
+	_check(error == OK, "保存 PA-12 %s 实际 Godot 预览" % name)
+
+
 func _wait_until_phase(phase: AttackChargeInput.AttackPhase) -> void:
 	var deadline: int = Time.get_ticks_msec() + 1000
 	while _attack.get_attack_phase() != phase and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
+
+
+func _wait_until_contradiction_active() -> void:
+	var deadline: int = Time.get_ticks_msec() + 6000
+	while (not _sandbox.get_contradiction_oracle_flow().is_contradiction_active()
+			and Time.get_ticks_msec() < deadline):
+		await get_tree().process_frame
+	_check(_sandbox.get_contradiction_oracle_flow().is_contradiction_active(), "PA-12 动画完成后才开放矛盾攻击与 10 秒选择窗口")
 
 
 func _views(is_repeat: bool) -> Array[BarrageView]:

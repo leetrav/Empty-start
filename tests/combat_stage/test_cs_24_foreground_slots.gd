@@ -23,13 +23,13 @@ func _run_test() -> void:
 	stage.bind_barrage_area(area)
 	stage.begin_combat()
 	var failures: Array[String] = []
-	var expected_counts: Array[int] = [0, 10, 13, 16, 19, 22]
+	var expected_counts: Array[int] = [8, 10, 13, 16, 19, 22]
 	for tier: int in range(expected_counts.size()):
 		var config: CombatStageTierConfig = catalog.get_tier_config(tier)
 		if config == null or config.foreground_slot_count != expected_counts[tier]:
 			failures.append("Tier %d expected slot count %d" % [tier, expected_counts[tier]])
-	if area.get_foreground_slot_count() != 0:
-		failures.append("T0 initial slot count must remain unconfigured")
+	if area.get_foreground_slot_count() != 8:
+		failures.append("T0 V0 slot count must be 8")
 
 	var tier_thresholds: Array[float] = [0.56, 0.64, 0.71, 0.79, 0.9]
 	for index: int in range(tier_thresholds.size()):
@@ -41,8 +41,8 @@ func _run_test() -> void:
 			failures.append("BarrageArea did not receive Tier %d slot count" % expected_tier)
 
 	stage.update_tier_for_pk(0.52)
-	if stage.get_current_tier() != 0 or area.get_foreground_slot_count() != 0:
-		failures.append("return to T0 must publish its unconfigured slot count")
+	if stage.get_current_tier() != 0 or area.get_foreground_slot_count() != 8:
+		failures.append("return to T0 must publish the V0 eight-slot count")
 
 	var tier2_config: CombatStageTierConfig = catalog.get_tier_config(2)
 	tier2_config.foreground_slot_count = 37

@@ -38,6 +38,7 @@ var _opening_fan_count: int = 0
 var _is_configured: bool = false
 var _normal_combat_active: bool = false
 var _normal_completion_pending: bool = false
+var _contradiction_start_pending: bool = false
 var _tier_transition_active: bool = false
 var _tier1_dialogue_pending: bool = false
 var _tier_transition_hit_resolution: HitResolution
@@ -124,6 +125,7 @@ func _start_attempt(is_restart: bool) -> bool:
 	_run_data.tendency_state.rollback_attempt_tendency()
 	_run_data.live_session.initialize_session(_opening_fan_count)
 	_normal_completion_pending = false
+	_contradiction_start_pending = false
 	_tier_transition_active = false
 	_tier1_dialogue_pending = false
 	_tier_transition_hit_resolution = null
@@ -132,7 +134,9 @@ func _start_attempt(is_restart: bool) -> bool:
 	_hit_resolution = HitResolution.new(
 		_battle_config.initial_player_pk,
 		_battle_config.minimum_player_pk,
-		_battle_config.maximum_player_pk
+		_battle_config.maximum_player_pk,
+		_battle_config.max_positive_pk_delta_per_shot,
+		_battle_config.max_negative_pk_delta_per_shot
 	)
 	_repeat_queue = RepeatDelayQueue.new(_battle_config.maximum_pending_repeat_count)
 	_combat_stage = CombatStage.new(_tier_catalog)
@@ -413,16 +417,31 @@ func _complete_normal_combat(source_hit_resolution: HitResolution) -> void:
 	_opening_fan_count = _run_data.live_session.fan_count
 	var repeat_stats: RepeatGenerationStats = _repeat_queue.get_generation_stats()
 	repeat_stats.commit_normal_repeat_history(_run_data, StringName(current_level.level_id))
+	_contradiction_start_pending = true
 	pk_maximum_reached.emit(current_level, _hit_resolution, repeat_stats)
 	normal_combat_completed.emit(current_level, _hit_resolution, repeat_stats)
+
+
+# 满值结算后由 Sandbox 等待转场完成，再启动矛盾窗口与输入。
+func begin_contradiction_after_transition(
+		current_level: LevelProfile,
+		source_hit_resolution: HitResolution,
+		repeat_stats: RepeatGenerationStats
+) -> bool:
+	if (not _contradiction_start_pending or _normal_combat_active
+			or source_hit_resolution == null or source_hit_resolution != _hit_resolution
+			or current_level != get_current_level_profile() or repeat_stats == null):
+		return false
+	_contradiction_start_pending = false
 	if not _contradiction_flow.start(
 			_run_data, _level_catalog, current_level, _hit_resolution, _combat_stage,
 			_barrage_area, _opponent_pk_bar, _attack_input, _repeat_queue,
 			_oracle_candidate_display, _battle_config, _loser_card_catalog,
 			_contradiction_window_config, _audio_manager):
 		push_error("BattleAttemptFlow: 无法启动矛盾/神谕流程。")
-		return
+		return false
 	contradiction_entered.emit(current_level, _hit_resolution, repeat_stats)
+	return true
 
 
 func get_current_level_profile() -> LevelProfile:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scenes/sandbox/sandbox.gd" id="1_sandbox"]
 [ext_resource type="PackedScene" path="res://ui/pause_menu/pause_menu.tscn" id="2_pause_menu"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://ui/streamer_bubble_dialogue/streamer_bubble_stack.gd" id="10_bubble_stack"]
 [ext_resource type="Texture2D" path="res://assets/ui/input_mouse_left.svg" id="11_mouse_left_icon"]
 [ext_resource type="Texture2D" path="res://assets/ui/input_escape.svg" id="12_escape_icon"]
+[ext_resource type="Script" path="res://ui/combat/pk_bar/pk_hamster_ball_indicator.gd" id="13_pk_hamster_ball_indicator"]
 
 [sub_resource type="StyleBoxFlat" id="PKOpponent"]
 bg_color = Color(0.65, 0.34, 0.39, 1)
@@ -254,6 +255,19 @@ max_value = 1.0
 step = 0.001
 value = 0.5
 show_percentage = false
+
+[node name="HamsterBallIndicator" type="Control" parent="BattleHud/BattleArea/TopBattleStatus/PKBar"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+script = ExtResource("13_pk_hamster_ball_indicator")
+
+[node name="Ball" type="TextureRect" parent="BattleHud/BattleArea/TopBattleStatus/PKBar/HamsterBallIndicator"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
 
 [node name="Tier" type="Label" parent="BattleHud/BattleArea/TopBattleStatus"]
 unique_name_in_owner = true

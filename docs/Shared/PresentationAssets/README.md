@@ -53,6 +53,16 @@ Windows 验证入口为 `tests/presentation/pa14_portrait_motion_smoke.tscn`：�
 
 **策划决策：PA-07 已取消。** 保留现有攻击流程及反馈；实体言弹外观、飞行特效与专用快照坐标接口从开发范围移除。历史试样留在未合并的 #142。
 
+## PA-12 漫画转场独立组件交付（2026-10-12）
+
+`systems/presentation/paradox_comic_transition.tscn` / `.gd` 提供独立 Paradox 漫画层：压暗噤声、双道不规则斜切、交叉闪白和放射冲击线、描边硬影标题过冲回弹、左右锯齿撕幕，以及“击破！”/“未击破”结果字。`transition_finished` 通知揭幕完成，`result_feedback_finished(success)` 通知结果反馈完成；不保存阶段或结算状态。所有分镜时长、颜色、切角、带宽、闪白、冲击线、标题字体/字号/描边与幕布边缘都可在 Inspector 调整；默认时间合计约 3.6s。
+
+独立预览为 `scenes/demos/pa12_paradox_comic_demo.tscn`：F6 运行，`R` 重播漫画转场，`1` / `2` 重播两种结果字。画面复用 Sandbox HUD、左右真实立绘、准心、`BarrageArea` 与 `BarrageView`；普通弹幕读取样例 LevelProfile，六句矛盾候选读取 `tests/fixtures/contradiction_break/test_cb_13_six_candidates_level.tres`，揭幕后调用 `BarrageArea.start_contradiction_generation()`，完成信号后调用真实 `ContradictionBreakSystem.start_window()`。普通流程时间与结果字由演示脚本编排，不代表已接入完整战斗结果。
+
+原分支 Windows Godot 4.7.2 AMD Radeon OpenGL 兼容渲染的真实截图曾用于人工验收；预览媒体不随本次合并入库，正式截图保存于仓库外 `D:\tmp\pa12-rework-preview-20261015`（之后由 Demo 默认写入 Godot `user://pa12_previews/`）：1920×1080 七帧覆盖普通战斗、噤声、交叉闪白、撕幕、揭幕和成败结果；1280×720 两帧核对揭幕与结果字的缩放。演示运行与画面见 [PA-12 日志](表现资产_PA-12_2026-10-12_log.md)。
+
+**正式流程联调待办：** 当前 `ContradictionOracleFlow.entered` 在矛盾生成与 10 秒窗口启动之后才发出；`outcome_resolved` 发出后流程会继续打开神谕或 Rest。现有接口无法在演出前暂缓生成/计时/输入，也没有等结果漫画结束再继续的回调。正式接线需要阶段流程在转场完成后启动候选与窗口，并在结果反馈完成后恢复后续流程；PA-12 本卡未修改 `sandbox.gd`、`sandbox.tscn`、ContradictionBreak、PA-11 或 PA-15。
+
 ## 目标
 
 让程序可以稳定接入美术正式资源，同时保持占位素材和正式素材可以直接替换。
@@ -119,13 +129,13 @@ assets/
 | PA-08 | 极简准星：小空心圆、外围环形蓄力进度与状态动效 | 运行画面验证 |
 | PA-09 | 战斗结果 UI：命中点反馈、本发净 PK 为负时主播受击、PK 浮字 | 运行画面验证 |
 | PA-10 | PA-04～PA-06、PA-08～PA-19 等正式程序美术集成后的全局 Style 统一验收 | 整屏视觉验收 |
-| PA-11 | 战斗阶段切换：T0→T1 先上箭头再右侧直播画面 CRT、降档下箭头与震屏 | 运行画面验证 |
+| PA-11 | 战斗阶段切换：T0→T1 先上箭头再右侧直播画面 CRT、降档下箭头与震屏 | 最新 main 接线、上冲动作与调参补齐；Windows 两句对白恢复链、暂停/跨档/中断68项检查通过；视觉验收 / 正式资源联调 / Android 待完成；见 [PA-11 日志](表现资产_PA-11_2026-10-13_log.md) |
 | PA-12 | Paradox 程序美术：噤声、漫画双斜切、闪白冲击字、画面撕开及矛盾阶段表现 | 运行画面验证 |
-| PA-13 | PK 条仓鼠球指示器：随进度滚动、升降档蹦跳、降档惊慌表情 | 真实战斗画面验收 |
+| PA-13 | PK 条仓鼠球指示器：进度同步、滚动、升降档蹦跳及三表情 | Windows 三表情与同步录像已录制，人工验收半通过，Android 暂缓验证 |
 | PA-15 | 对手 T2 idle+漫画汗滴；T3～T5 卡牌翻图与受击漫画冲击 | 实际升降档画面 |
 | PA-16 | PK 条阶段 / 负向贴图短闪调色切换 | 独立底板与 Windows 预览完成；PA-13 共层验收待补 |
 | PA-17 | 真击破对手专属败北：外星人融化、狐狸花瓣雨、Kiwi 方案 A；未击破 T5 离线 | 成败分支实际演示 |
-| PA-18 | PK 归零战败：仓鼠球跌落、玩家直播 CRT 断流、对手持续直播、失败 UI | 战败画面与重开 |
+| PA-18 | PK 归零战败：仓鼠球跌落、玩家直播 CRT 断流、对手持续直播、失败 UI | 已接入正式失败通知，Windows 实机录制、重开及暂停缩放检查完成；人工视觉验收半通过，Android 待完成，见 [PA-18 日志](表现资产_PA-18_2026-10-13_log.md) |
 | PA-19 | Paradox 两种结果均 CRT 关机、上翻页回主角房间，再弹战后结算 | 双分支战后结算 |
 | [PA-20](tasks/PA-20_header-fan-group-name.md) | 双方主播右上角用 ❤粉丝团名❤ 文本替换固定粉丝牌槽；粉丝牌纹理保留给评论 | 双方 HUD 与切关实际画面 |
 
@@ -210,10 +220,17 @@ PA-02 负责把正式美术资产导入工程并接到对应 Resource；PA-03 �
 
 `PkBarSkin` 作为真实 `%PlayerShare` ProgressBar 的背景子层读取 `refresh_pk()` 提交的玩家 PK、CombatStage Tier 与 Paradox 阶段；低于 40% 选择四档负向图，恢复到 40% 后立即映射当前最新 Tier。阶段底板变化触发局部可调 Tween，参数留在 Inspector；底板使用 `show_behind_parent` 绘制，ProgressBar 的实际填充比例继续由原 Range 值绘制。
 
-本次交付不依赖 PA-13 组件、资源、分支或 PR #200。今后 PA-13 可作为当前 `%PlayerShare` 控件的独立前景绘制层读取 `ProgressBar.value`（归一化 PK 比例）；PA-16 只保留自己的背景子层，没有 PA-13 类型引用。PA-13 尚未交付，球层共存画面待其接入后复验。T0 的 `pk_bar_pos_00.png` 尚未提供，40% 及以上继续显示原底板。
+截至 PA-16 交付时，它不依赖 PA-13 组件、资源、分支或 PR #200。PA-16 只保留自己的背景子层，没有 PA-13 类型引用；当时 PA-13 尚未交付，球层共存画面待接入后复验。T0 的 `pk_bar_pos_00.png` 尚未提供，40% 及以上继续显示原底板。
 
 Godot 版本：`4.7.2.stable.steam.ed1daf0bf`，Windows D3D12 / Forward+。实际 Sandbox 预览入口为 `scenes/demos/pa16_pk_bar_skin_preview.tscn`，在 Godot Editor 按 F6 可重播。预览通过 Sandbox 现有调试入口设定 PK，再读取真实 PlayerShare、Tier 与矛盾阶段状态；画面截图在 `RenderingServer.frame_post_draw` 后直接读取 Godot Viewport 并调用 `Image.save_png()`，没有合成或网页模拟。采集模式需传 `--pa16-capture` 或 `--pa16-capture-1280`，并用 `--pa16-output-dir=<绝对本机目录>` 指向本地输出位置；脚本拒绝把截图写回工程目录。
 
 本机 18 张 PNG 预览保存在 `D:\tmp\gamejam-pa16-review-media-20261012`，总大小 2,695,824 字节。截图包含 1920×1080 的 Tier、过渡、负向四档、恢复及真实 Paradox 状态；另有 1280×720 Tier 2 / 负向状态。预览图与录像仅保存在本机，不随仓库提交。
 
-PA-13 仓鼠球共层目视验收和 Android 实机检查仍待完成；这次没有修改 PA-11 / PA-13 / PA-15 / PA-18，也没有复用旧 #202 中的球体组件或截图。完整文件和验证记录见 [PA-16 日志](表现资产_PA-16_2026-10-12_log.md)。
+PA-16 交付时没有修改 PA-11 / PA-13 / PA-15 / PA-18，也没有复用旧 #202 中的球体组件或截图。后续 PA-13 独立分支已将仓鼠球接入 `%PlayerShare` 前景层，并与现有 PK 条底板同屏完成 Windows 运行录制；人工验收与 Android 实机检查仍待完成。实现和验证记录见 [PA-13 日志](表现资产_PA-13_2026-10-12_log.md) 与 [PA-16 日志](表现资产_PA-16_2026-10-12_log.md)。
+
+
+## PA-18 归零战败表现接口
+
+Sandbox 接收 `BattleAttemptFlow.attempt_failed` 后调用 HUD 的 `play_failure_presentation()`；HUD 在同一 PA-13 仓鼠球跌落、左侧 CRT 断流与 UI 延迟结束后发出 `failure_presentation_finished`，Sandbox 再调用原 `show_failure()`。战斗停止、数值和失败路由仍由原 Flow / Sandbox 负责。
+
+`PKHamsterBallIndicator.play_failure_fall(direction, height, rotations, seconds)` 只负责局部跌落并发出 `failure_fall_finished`。`CrtConnectionFx.play_shutdown()` 与 `shutdown_finished` 为 PA-18 复用入口；左侧独立实例，不改变 PA-11 右侧开机参数与回调。HUD Inspector 的「PA-18 战败」组可调整方向、距离、转数、掉落与关机时长及失败 UI 延迟。重开取消旧 Tween、恢复球和左侧原材质；正常降档不进入战败演出。

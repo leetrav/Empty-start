@@ -48,7 +48,7 @@ INT-01 已在正式 Sandbox 完成 HitResolution、BarrageArea、OpponentPKBar �
 
 ## 当前已实现数据
 
-`data/combat_stage/tier_catalog.tres` 为 Tier 0～5 的静态配置来源。`CombatStageTierCatalog.get_tier_config(tier)` 按档位读取各自的升/降档阈值、生成数量/频率/移动/寿命倍率、对手回拉倍率、每次命中复读数和对手立绘状态标识。正式对手回拉倍率 T0～T5 为 `0/1.3/1.6/1.8/2.0/2.2`；CS-19 的 Godot 4.7.2 Sandbox 运行测试确认 T0 玩家 PK 稳定、当前 T1 流程仍通过原 PK 所有者回拉。T1 开场对白事件与完播通知已由 CS-22 验收；CS-15 已接入对白完播后的回拉与生成恢复，CS-23 已用真实升档和 TEST_ONLY 双句对白验收完播恢复。
+`data/combat_stage/tier_catalog.tres` 为 Tier 0～5 的静态配置来源。`CombatStageTierCatalog.get_tier_config(tier)` 按档位读取各自的升/降档阈值、生成数量/频率/移动/寿命倍率、对手回拉倍率、每次命中复读数和对手立绘状态标识。V0试玩对手回拉倍率 T0～T5 为 `0/0.7/1.0/1.2/1.45/1.6`，Sandbox基础回拉为 `0.0008`（内部PK/秒）；CS-19 的 Godot 4.7.2 Sandbox 运行测试确认 T0 玩家 PK 稳定、当前 T1 流程仍通过原 PK 所有者回拉。T1 开场对白事件与完播通知已由 CS-22 验收；CS-15 已接入对白完播后的回拉与生成恢复，CS-23 已用真实升档和 TEST_ONLY 双句对白验收完播恢复。
 
 CS-25 由 `ContradictionOracleFlow.entered` 驱动 SandboxBattleHud 的 `set_paradox_stage_active(active, current_tier)`。真实矛盾流程进入时显示 `T6 / Paradox`；Final Oracle、Rest、失败和新尝试接线会按当前 `CombatStage.get_current_tier()` 恢复普通档位文字。该展示不增加 Tier 6 配置，也不改 PK 比例、胜负判定或矛盾规则。聚焦场景 `tests/combat_stage/cs25_paradox_stage_label_smoke.tscn` 覆盖 HUD 内容、真实矛盾流程、六个候选、Rest、失败重试及第二次尝试；GUI 视口截图保存在 `evidence/cs25_2026-10-11/`。截图与运行断言使用现有 `level_001.tres` 示例内容，正式四关文本仍需策划确认。
 
@@ -60,7 +60,7 @@ CS-22 复用 `StreamerBubbleCombatStatePresenter` 的 `combat_connected` 事件�
 
 CS-26 复用同一 Tier 刷新入口：从 T1 或更高档降到 T0 时，HUD 显示配置的匹配提示、隐藏对手立绘，并通过 `set_opponent_portrait_connected(false)` 关闭 SD-03 对手侧、清空活动与待播对白及中断剧情序列。离线期间新对白会被拒绝；重新升到 T1 后，对手侧队列和立绘恢复。`tests/combat_stage/cs26_tier1_to_tier0_disconnect_smoke.tscn` 以正式 Sandbox 验收该完整路径、状态提示优先级及现存弹幕运动，GUI 证据保存在 `evidence/cs26_2026-10-11/`。CS-16 降档震屏已接入，震屏验收需在该卡完成后联测；`level_001.tres` 尚无正式 `streamer_portrait` 映射，截图测试仅经 HUD 接口临时使用仓库已有 `alien_idle.png`。
 
-CS-24 增加 `CombatStageTierConfig.foreground_slot_count`。正式配置 T0=0（尚待策划填写）、T1～T5=10/13/16/19/22；各档 Resource 可独立调整。CombatStage 在绑定 BarrageArea、开局和档位切换时通过 `barrage_foreground_slot_count_changed` 发布当前值；BarrageArea 通过 `set_foreground_slot_count()` 接收并由 `get_foreground_slot_count()` 提供受控读取。0 保留为未配置标记，后续 BG-16 应沿用 `LevelProfile.normal_barrage_screen_cap` 的现有行为；CS-24 不改变容量准入或生成逻辑。
+CS-24 增加 `CombatStageTierConfig.foreground_slot_count`。V0正式运行配置 T0～T5=8/10/13/16/19/22；各档 Resource 可独立调整。CombatStage 在绑定 BarrageArea、开局和档位切换时通过 `barrage_foreground_slot_count_changed` 发布当前值；BarrageArea 通过 `set_foreground_slot_count()` 接收并由 `get_foreground_slot_count()` 提供受控读取。当某档配置为0时，BG-16仍沿用 `LevelProfile.normal_barrage_screen_cap` 的回退行为；CS-24 不改变容量准入或生成逻辑。
 
 TT-14 在 `CombatStageTierConfig` 增加 `neutral_weight_multiplier`（默认 1.0）；正式 Tier 0～5 分别为 `1.00 / 0.99 / 0.70 / 0.40 / 0.15 / 0.00`。CombatStage 随当前 Tier 通过 `neutral_weight_multiplier_changed` 把该倍率交给 BarrageArea，绑定时也补发。它只改变后续普通话语类别抽取，不改动静态关卡比例或已有弹幕。
 

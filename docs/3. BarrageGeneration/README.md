@@ -5,7 +5,7 @@
 
 ## 2026-10-12 现行实现核对与任务状态
 
-**现行生成规则：** 前景普通话语与挂特性的特殊话语共同占用 T0～T5 各档少量容量，T1=10、T2=13、T3=16、T4=19、T5=22。T0 的 0 表示未填，普通阶段沿用 `LevelProfile.normal_barrage_screen_cap`。BG-16 已接入 CS-24 的 Tier 名额；带特性实例另占 BG-35 特殊名额，同一实例携带多项兼容特性仍只计一个特殊名额，离树时与普通前景名额一并释放。未配置 LC-12 每关值时，当前暂以普通前景容量回退；06 全局特殊基础值和正式导表尚未接入。Paradox 继续采用关卡上限，复读保留独立容量。复读可由生成调用方显式请求中央战斗区随机静止落点；普通话语装配 `occlusion` 后由 BT-15 自动使用该能力。普通移动前景按 BG-19 比例在内部随机与 BG-18 四边出生间选择，BG-39 再根据当前 CombatStage Tier 权重对每条移动话语抽选四种运动类型：BG-20 直线、BG-21 曲线、BG-22 加减速、BG-23 游荡。内部出生时无边法线，直线从左向施加 BG-20 偏转；四边出生仍从内向法线出发。权重由 CombatStageTierConfig 管理，未填正式权重时安全默认全直线。BG-29 对无特性的普通前景保留可调概率的局部富文本动画。静止遮挡、复读与 Paradox 不参与普通运动抽选。 Paradox 阶段按 CB-13 读取一真五假六句。
+**现行生成规则：** 前景普通话语与挂特性的特殊话语共同占用 T0～T5 各档少量容量，V0配置T0～T5分别为8/10/13/16/19/22；若某档值为0，普通阶段仍沿用 `LevelProfile.normal_barrage_screen_cap`。BG-16 已接入 CS-24 的 Tier 名额；带特性实例另占 BG-35 特殊名额，同一实例携带多项兼容特性仍只计一个特殊名额，离树时与普通前景名额一并释放。未配置 LC-12 每关值时，当前暂以普通前景容量回退；06 全局特殊基础值和正式导表尚未接入。Paradox 继续采用关卡上限，复读保留独立容量。复读可由生成调用方显式请求中央战斗区随机静止落点；普通话语装配 `occlusion` 后由 BT-15 自动使用该能力。普通移动前景按 BG-19 比例在内部随机与 BG-18 四边出生间选择，BG-39 再根据当前 CombatStage Tier 权重对每条移动话语抽选四种运动类型：BG-20 直线、BG-21 曲线、BG-22 加减速、BG-23 游荡。内部出生时无边法线，直线从左向施加 BG-20 偏转；四边出生仍从内向法线出发。权重由 CombatStageTierConfig 管理，未填正式权重时安全默认全直线。BG-29 对无特性的普通前景保留可调概率的局部富文本动画。静止遮挡、复读与 Paradox 不参与普通运动抽选。 Paradox 阶段按 CB-13 读取一真五假六句。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
@@ -255,11 +255,11 @@ BarrageArea 暴露可编辑的 `base_lifetime_seconds` 临时基础值（默认 
 
 ### BG-07 普通弹幕共享同屏上限
 
-BarrageArea 的普通容量在 Tier 名额大于 0 时采用当前 Tier 值；T0 的 0 沿用 `LevelProfile.normal_barrage_screen_cap`。普通话语与带特性话语由同一入口登记，陷阱等普通占用者通过 `try_register_normal_capacity_occupant()` 和 `release_normal_capacity_occupant()` 复用普通账本；带特性视图还登记 BG-35 特殊账本。实例离树自动归还其占用名额；普通容量满时普通批次 Timer 暂停，释放后恢复。Paradox 继续使用关卡上限，复读继续使用独立账本。BG-07 管理普通账本与生命周期；Tier 名额接线由 BG-16 完成。
+BarrageArea 的普通容量在 Tier 名额大于 0 时采用当前 Tier 值；当该档名额为0时沿用 `LevelProfile.normal_barrage_screen_cap`。普通话语与带特性话语由同一入口登记，陷阱等普通占用者通过 `try_register_normal_capacity_occupant()` 和 `release_normal_capacity_occupant()` 复用普通账本；带特性视图还登记 BG-35 特殊账本。实例离树自动归还其占用名额；普通容量满时普通批次 Timer 暂停，释放后恢复。Paradox 继续使用关卡上限，复读继续使用独立账本。BG-07 管理普通账本与生命周期；Tier 名额接线由 BG-16 完成。
 
 ### BG-16 按当前 Tier 控制前景容量
 
-`CombatStageTierConfig.foreground_slot_count` 通过 `CombatStage.bind_barrage_area()` 发布给 `BarrageArea.set_foreground_slot_count()`。普通阶段 T1～T5 分别使用 10、13、16、19、22 个前景名额；T0 的 0 继续回退到 `LevelProfile.normal_barrage_screen_cap`。所有普通话语、带兼容特性的普通话语及外部普通容量占用者共享这些普通名额；带特性普通话语再受 `LevelProfile.special_instance_screen_cap` 限制。节点离树后释放其全部已登记名额。矛盾阶段保持原关卡容量，复读仍由独立容量账本控制。
+`CombatStageTierConfig.foreground_slot_count` 通过 `CombatStage.bind_barrage_area()` 发布给 `BarrageArea.set_foreground_slot_count()`。V0普通阶段 T0～T5 分别使用 8、10、13、16、19、22 个前景名额；未配置（0）时保留 `LevelProfile.normal_barrage_screen_cap` 回退。所有普通话语、带兼容特性的普通话语及外部普通容量占用者共享这些普通名额；带特性普通话语再受 `LevelProfile.special_instance_screen_cap` 限制。节点离树后释放其全部已登记名额。矛盾阶段保持原关卡容量，复读仍由独立容量账本控制。
 
 ### BG-08 到期与离开区域自然移除
 

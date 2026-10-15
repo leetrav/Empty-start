@@ -1,6 +1,22 @@
 extends Node
 
 # 统一维护主菜单和游戏入口的目标路径，避免 UI 分散保存场景路径。
+# 剧情播放入口独立于正式 EndingSession；只保存本次路由参数。
+const COMIC_SCENE_PATH: String = "res://ui/comic/comic_player.tscn"
+var comic_kind: StringName = &"opening"
+var comic_record_first_view: bool = false
+
+func goto_comic(kind: StringName, record_first_view: bool = false) -> Error:
+	# 仅接受已配置的两段漫画，不创建周目或伪造结局对象。
+	if kind not in [&"intro", &"opening", &"ending"]:
+		return ERR_INVALID_PARAMETER
+	var scene: PackedScene = _load_scene(COMIC_SCENE_PATH)
+	if scene == null:
+		return ERR_FILE_NOT_FOUND
+	comic_kind = kind
+	comic_record_first_view = record_first_view
+	return _change_scene(scene)
+
 const MAIN_MENU_SCENE_PATH: String = "res://ui/main_menu/main_menu.tscn"
 const IDENTITY_SETUP_SCENE_PATH: String = "res://ui/identity_setup/identity_setup.tscn"
 const OPENING_ROOM_SCENE_PATH: String = "res://ui/rest/rest_opening_room.tscn"

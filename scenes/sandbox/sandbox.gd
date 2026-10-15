@@ -16,6 +16,7 @@ const TIMED_OPPONENT_DIALOGUE_PRESENTER_SCRIPT: Script = preload("res://ui/strea
 const REST_RESULT_VIEW_SCENE: PackedScene = preload("res://ui/rest/rest_result_view.tscn")
 const BARRAGE_IMPACT_SCRIPT: Script = preload("res://systems/presentation/barrage_impact_presenter.gd")
 const PA09_FEEDBACK_SCRIPT: Script = preload("res://systems/presentation/combat_hit_feedback.gd")
+const PARADOX_COMIC_SCENE: PackedScene = preload("res://systems/presentation/paradox_comic_transition.tscn")
 # 关卡资料统一由目录提供，运行验证可注入独立临时目录。
 @export var level_catalog: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 @export var battle_config: SandboxBattleConfig = preload("res://data/sandbox/playable_battle_config.tres")
@@ -50,6 +51,15 @@ var _barrage_impact_presenter: BarrageImpactPresenter
 var _pa09_feedback: Control
 var _combat_state_dialogue_presenter: Node
 var _timed_opponent_dialogue_presenter: Node
+# 仅跟踪 PA-11 连线演出后的对白呈现，战斗状态仍由 Flow 拥有。
+var _pa11_connection_dialogue_active: bool = false
+var _paradox_comic: ParadoxComicTransition
+var _paradox_entry_level: LevelProfile
+var _paradox_entry_hit: HitResolution
+var _paradox_entry_repeat_stats: RepeatGenerationStats
+var _pending_oracle_session: FinalOracleSession
+var _pending_rest_session: RestSession
+var _result_feedback_active: bool = false
 
 
 # 场景只创建生命周期对象并接线；PK、Tier、倾向等状态留在各自所有者。
@@ -65,6 +75,7 @@ func _ready() -> void:
 	add_child(_contradiction_oracle_flow)
 	_contradiction_oracle_flow.state_text_changed.connect(_battle_hud.show_battle_state)
 	_contradiction_oracle_flow.entered.connect(_on_contradiction_stage_entered)
+	_contradiction_oracle_flow.outcome_resolved.connect(_on_contradiction_outcome_resolved)
 	_contradiction_oracle_flow.oracle_opened.connect(_on_final_oracle_opened)
 	_contradiction_oracle_flow.rest_ready.connect(_on_rest_ready)
 	var opponent_pk_bar := OpponentPKBar.new()
@@ -97,7 +108,10 @@ func _ready() -> void:
 	_battle_attempt_flow.attempt_started.connect(_on_attempt_started)
 	_battle_attempt_flow.battle_state_changed.connect(_battle_hud.show_battle_state)
 	_battle_attempt_flow.pk_feedback_changed.connect(_battle_hud.refresh_pk)
+	_battle_attempt_flow.tier_changed.connect(_queue_pk_tier_visual)
 	_battle_attempt_flow.attempt_failed.connect(_on_attempt_failed)
+	_battle_attempt_flow.normal_combat_completed.connect(_on_normal_combat_completed)
+	_battle_hud.failure_presentation_finished.connect(_on_failure_presentation_finished)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
 	_debug_panel.call("bind_sandbox", self)
@@ -108,6 +122,12 @@ func _ready() -> void:
 			CONTRADICTION_WINDOW_CONFIG, AudioManager):
 		push_error("Sandbox: 无法组合 BattleAttemptFlow。")
 		return
+	_paradox_comic = PARADOX_COMIC_SCENE.instantiate() as ParadoxComicTransition
+	_paradox_comic.name = "ParadoxComicTransition"
+	_paradox_comic.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(_paradox_comic)
+	_paradox_comic.transition_finished.connect(_on_paradox_transition_finished)
+	_paradox_comic.result_feedback_finished.connect(_on_paradox_result_feedback_finished)
 	_battle_attempt_flow.tier_transition_cleared.connect(_on_tier_transition_cleared)
 	_battle_hud.tier_breakthrough_finished.connect(_on_tier_breakthrough_finished)
 	# 由新消费者读取正式逐目标结算，再通过 HUD 公开队列入口提交玩家复述。
@@ -163,12 +183,18 @@ func _ready() -> void:
 		push_error("Sandbox: 无法启动首场普通战斗。")
 
 
+# CombatStage 的起始 Tier 通知早于 attempt_started；延后一帧避免新场误播升降档动作。
+func _queue_pk_tier_visual(current_tier: int, player_pk: float) -> void:
+	_battle_hud.call_deferred("on_tier_changed", current_tier, player_pk)
+
+
 # 按当前关重建尝试；重开与切到下一关共用清理，保留此前周目成果。
 func restart_current_attempt() -> void:
 	# 已进入终局后不能通过普通重开入口恢复 PK、档位与矛盾规则。
 	if _divine_descent_flow != null and _divine_descent_flow.get_session() != null:
 		return
 	_contradiction_oracle_flow.stop()
+	_reset_paradox_presentation()
 	_rest_session = null
 	_rest_result_view.hide_result()
 	_attack_charge_input.set_contradiction_mode(false)
@@ -179,9 +205,10 @@ func restart_current_attempt() -> void:
 
 # 当前关的角色和素材由一次尝试启动事实提供；HUD 只呈现组合方状态。
 func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage: CombatStage, _queue: RepeatDelayQueue) -> void:
+	_pa11_connection_dialogue_active = false
 	_barrage_impact_presenter.reset_effects()
 	_pa09_feedback.call("clear_feedback")
-	_battle_hud.reset_for_attempt()
+	_battle_hud.reset_for_attempt(stage.get_current_tier())
 	_battle_hud.set_paradox_stage_active(false, stage.get_current_tier())
 	var player_name: String = SaveManager.data.streamer_name
 	_battle_hud.configure_streamers(player_name if not player_name.is_empty() else "玩家主播", current_level.streamer_name)
@@ -198,17 +225,20 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 		current_level.fan_badge_texture
 	)
 
-# 普通战斗失败后，HUD 恢复当前普通阶段文案并显示失败界面。
+# 正式失败先播放 PA-18 局部演出，完成通知后再显示既有失败界面。
 func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: HitResolution, _repeat_stats: RepeatGenerationStats) -> void:
+	_reset_paradox_presentation()
+	_pa11_connection_dialogue_active = false
 	_barrage_impact_presenter.reset_effects()
 	_pa09_feedback.call("clear_feedback")
 	_battle_hud.set_paradox_stage_active(false, _battle_attempt_flow.get_current_tier())
-	_battle_hud.show_failure()
+	_battle_hud.play_failure_presentation()
 
 
 # T1 连线对白完整结束后恢复本档战斗，再向外转发已完成事实。
 func _on_dialogue_event_sequence_completed(event_id: StringName, sequence_id: StringName, side: int) -> void:
 	if event_id == &"combat_connected":
+		_pa11_connection_dialogue_active = false
 		_battle_attempt_flow.resume_after_tier1_dialogue()
 	dialogue_event_sequence_completed.emit(event_id, sequence_id, side)
 
@@ -232,6 +262,8 @@ func _on_tier_breakthrough_finished(
 		return
 	if previous_tier == CombatStage.INITIAL_TIER and current_tier > CombatStage.INITIAL_TIER:
 		_battle_hud.set_opponent_portrait_connected(true)
+	# 空配置可能同步完播，所以必须在完成入口发出通知前设置此标记。
+	_pa11_connection_dialogue_active = previous_tier == 0 and current_tier == 1
 	if not _battle_attempt_flow.finish_tier_breakthrough_transition():
 		push_error("Sandbox: 升档突破过渡结束后无法恢复当前流程。")
 
@@ -243,12 +275,82 @@ func _on_contradiction_stage_entered(_system: ContradictionBreakSystem) -> void:
 
 # 神谕接管阶段展示时恢复当前 CombatStage 档位，再转发既有对外事件。
 func _on_final_oracle_opened(session: FinalOracleSession) -> void:
+	if _result_feedback_active:
+		_pending_oracle_session = session
+		return
 	_battle_hud.set_paradox_stage_active(false, _battle_attempt_flow.get_current_tier())
 	final_oracle_opened.emit(session)
 
 
+# 满值结算后先完成 PA-12 转场；矛盾流程此时仍未创建窗口或开放输入。
+func _on_normal_combat_completed(
+		level: LevelProfile, hit_resolution: HitResolution, repeat_stats: RepeatGenerationStats
+) -> void:
+	_reset_paradox_presentation()
+	_paradox_entry_level = level
+	_paradox_entry_hit = hit_resolution
+	_paradox_entry_repeat_stats = repeat_stats
+	_paradox_comic.play_transition()
+
+
+# 只消费当前尚未启动的一次满值结算，旧尝试发来的完成不能进入新阶段。
+func _on_paradox_transition_finished() -> void:
+	if _paradox_entry_hit == null or not is_inside_tree():
+		return
+	var level: LevelProfile = _paradox_entry_level
+	var hit_resolution: HitResolution = _paradox_entry_hit
+	var repeat_stats: RepeatGenerationStats = _paradox_entry_repeat_stats
+	_paradox_entry_level = null
+	_paradox_entry_hit = null
+	_paradox_entry_repeat_stats = null
+	_battle_attempt_flow.begin_contradiction_after_transition(level, hit_resolution, repeat_stats)
+
+
+# 锁定结果只启动一次对应漫画，并暂存同步到达的神谕或 Rest 展示。
+func _on_contradiction_outcome_resolved(outcome: int) -> void:
+	if _result_feedback_active:
+		return
+	_result_feedback_active = true
+	_contradiction_oracle_flow.hold_oracle_for_result_feedback()
+	_paradox_comic.play_result_feedback(
+		outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH
+	)
+
+
+# PA-12 结果漫画结束后才允许显示已有 Owner 提交的后续页面。
+func _on_paradox_result_feedback_finished(_success: bool) -> void:
+	_result_feedback_active = false
+	_contradiction_oracle_flow.release_oracle_after_result_feedback()
+	if _pending_oracle_session != null:
+		var oracle_session := _pending_oracle_session
+		_pending_oracle_session = null
+		_on_final_oracle_opened(oracle_session)
+	if _pending_rest_session != null:
+		var rest_session := _pending_rest_session
+		_pending_rest_session = null
+		_show_rest_result(rest_session)
+
+
+# 中断时清除上一尝试的动画和待展示结果，避免过期回调污染新流程。
+func _reset_paradox_presentation() -> void:
+	_paradox_entry_level = null
+	_paradox_entry_hit = null
+	_paradox_entry_repeat_stats = null
+	_pending_oracle_session = null
+	_pending_rest_session = null
+	_result_feedback_active = false
+	if is_instance_valid(_paradox_comic):
+		_paradox_comic.reset_for_attempt()
+
+
 # 暂停由 SceneTree 冻结此节点，复读等待只使用实际游戏帧时间。
 func _process(delta: float) -> void:
+	# PA-11：战斗提前结束时取消旧演出，防止它向已停止流程发出完成通知。
+	if not _battle_attempt_flow.is_normal_combat_active() and _battle_hud.is_stage_transition_playing():
+		_battle_hud.cancel_tier_breakthrough()
+	if not _battle_attempt_flow.is_normal_combat_active() and _pa11_connection_dialogue_active:
+		_pa11_connection_dialogue_active = false
+		_battle_hud.clear_dialogue_bubbles(BubbleDialogueEntry.SpeakerSide.OPPONENT)
 	if _divine_descent_flow != null:
 		_divine_descent_flow.advance(delta)
 	# 直播上涨只推进表现数据；SceneTree 暂停时此帧回调也暂停。
@@ -352,6 +454,13 @@ func debug_set_normal_generation_enabled(enabled: bool) -> bool:
 
 # 流程已经提交成果并准备好 Rest；根场景只展示同一结果对象。
 func _on_rest_ready(result: RestSession) -> void:
+	if _result_feedback_active:
+		_pending_rest_session = result
+		return
+	_show_rest_result(result)
+
+
+func _show_rest_result(result: RestSession) -> void:
 	_rest_session = result
 	_battle_hud.set_paradox_stage_active(false, _battle_attempt_flow.get_current_tier())
 	if not _rest_result_view.show_result(result, SaveManager.data, level_catalog, loser_card_catalog):
@@ -460,6 +569,7 @@ func _on_barrage_generated(_view: BarrageView) -> void:
 
 # 离开验收场时撤销尚未提交的本场倾向，已有周目成果由 SaveData 保留。
 func _exit_tree() -> void:
+	_reset_paradox_presentation()
 	if _contradiction_oracle_flow != null:
 		_contradiction_oracle_flow.stop()
 	if _divine_descent_flow != null:
@@ -468,3 +578,8 @@ func _exit_tree() -> void:
 		_battle_attempt_flow.stop()
 	if SaveManager.data != null:
 		SaveManager.data.tendency_state.rollback_attempt_tendency()
+
+
+# PA-18 完成只放行既有失败 UI，失败路由仍由 Sandbox / Flow 拥有。
+func _on_failure_presentation_finished() -> void:
+	_battle_hud.show_failure()
