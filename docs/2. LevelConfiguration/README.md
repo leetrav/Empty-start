@@ -190,3 +190,7 @@ Godot `LevelProfile`、正式四关资源和目录共同作为当前生产实现
 ## 2026-10-10 LC-14 普通导表来源隔离
 
 `tools/export_game_data.py` 在普通导表和 `--test-only` 模式共用 `00_填写说明!A1` 的 TEST_ONLY 来源标记。普通模式发现该标记时，在解析和写盘前返回退出码 2，并保留现有正式 CSV；已标记工作簿继续由 `--test-only` 写入测试目录。`--output-root <目录>` 可将导出产物写入隔离根目录，默认仍为当前项目根目录。此修复只处理导表来源隔离；LC-10 正式关卡数据联调仍按对应任务卡暂停状态执行。
+
+## INT-14 正式表现表消费者（2026-10-15）
+
+生产 Sandbox 在每次 `attempt_started` 按当前 `LevelProfile.level_id` 查 02 表，读取正式主播 ID、名称、粉丝团、`story_config_id`、`portrait_set_id`，再以23表 `portrait_set_id` 装载 idle/Tier 1–3 立绘，并把事件对白交给既有 Presenter。普通关卡配置仍由 `LevelCatalog` / `LevelProfile` 提供；本消费者不替代 LC-10 的正式 LevelProfile、词库、矛盾和生成配置。当前 worktree 的 `level_catalog.tres` 仍只有两个旧示例关卡，四关目录交付后可用同一 `level_id` 接口直接刷新。

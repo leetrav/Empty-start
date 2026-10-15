@@ -146,3 +146,7 @@ Sandbox 对外提供 `dialogue_event_sequence_completed(event_id, sequence_id, s
 - 多个触发点按秒数升序提交；同一秒数按配置顺序提交，与 SD-08 的 `line_order` 保持一致。T0 离线期间到期的条目留在消费者待提交列表，待对手重新连线再交给 HUD；已进入 SD-03 的条目仍沿用 T0 离线清队列的既有规则。
 - SD-08 应将 `trigger_type=timed` 映射为 `event_id=&"timed"`，并将表格 `trigger_time_s` 写入 `BubbleDialogueEntry.trigger_time_seconds`。当前正式对白 Resource 仍为空，验收文本只在 SD-07 smoke 的内存副本中创建。
 - Windows GUI 验收入口：`tests/streamer_bubble_dialogue/sd07_timed_opponent_dialogue_smoke.tscn`。真实 Sandbox smoke 覆盖到点触发、剧情期间等待、暂停计时、重开重计和 T0 延迟提交；运行结果与截图见 [SD-07 完成日志](双主播气泡对话系统_SD-07_2026-10-11_log.md)。
+
+## INT-14 正式剧情事件消费（2026-10-15）
+
+Sandbox 每次尝试按 02 表 `story_config_id` 从 20 表装配启用的事件对白，并复用既有 `BubbleDialogueConfig` / SD Presenter。消费者映射 `connect/tier_up/tier_down/win/lose/hit_word` 到现有稳定事件，保留发言方、原句 ID 和 CSV 顺序；`random_idle` 暂不触发，因为该表没有闲聊调度时间字段，运行时不自造节奏。

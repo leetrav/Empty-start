@@ -2,6 +2,7 @@ extends Node
 
 const SANDBOX_SCENE: PackedScene = preload("res://scenes/sandbox/sandbox.tscn")
 const TIER_CATALOG: CombatStageTierCatalog = preload("res://data/combat_stage/tier_catalog.tres")
+const FORMAL_SHEET_CONSUMER_SCRIPT: Script = preload("res://data/shared/formal_sheet_runtime_consumer.gd")
 
 var _sandbox: Control
 var _area: BarrageArea
@@ -46,8 +47,10 @@ func _ready() -> void:
 	var opponent_portrait_motion: StreamerPortraitMotion = battle_hud.get("opponent_portrait_motion") as StreamerPortraitMotion
 	player_portrait_motion.shot_motion_started.connect(_on_player_portrait_shot_motion_started)
 	var initial_level: LevelProfile = _flow().get_current_level_profile()
+	var formal_presentation: Dictionary = FORMAL_SHEET_CONSUMER_SCRIPT.new().get_level_presentation(initial_level.level_id)
+	var effective_streamer_id: String = str(formal_presentation.get("streamer_id", initial_level.streamer_id))
 	_check(initial_level != null and is_equal_approx(opponent_portrait_motion.idle_period,
-		_expected_portrait_idle_period(initial_level.streamer_id)), "尝试启动按当前主播 ID 配置对手立绘待机")
+		_expected_portrait_idle_period(effective_streamer_id)), "尝试启动按当前主播 ID 配置对手立绘待机")
 	_attack.shot_snapshot_created.connect(_on_snapshot)
 	_attack.shot_hit_resolution_submitted.connect(_on_submission)
 	_flow().shot_resolved.connect(_on_flow_shot_resolved)
