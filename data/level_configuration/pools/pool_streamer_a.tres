@@ -1,0 +1,1313 @@
+[gd_resource type="Resource" script_class="LevelSpeechPool" load_steps=166 format=3]
+
+[ext_resource type="Script" path="res://data/level_configuration/level_speech_pool.gd" id="1_pool"]
+[ext_resource type="Script" path="res://data/level_configuration/level_speech.gd" id="2_speech"]
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_1"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0001"
+text = "天堂名额少，先点点关注！"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_2"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0002"
+text = "教规有会员制，别问为什么"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_3"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0003"
+text = "神开的群，群主当然是鼠"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_4"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0004"
+text = "想进天堂？先填一份申请表"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_5"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0005"
+text = "不听鼠言，后果自行承担"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_6"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0006"
+text = "鼠对经文有撤回权"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_7"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0007"
+text = "你被选中了，快签免责协议"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_8"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0008"
+text = "先交点教费，救赎马上安排"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_9"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0009"
+text = "许愿发财，不知神会分几期"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_10"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0010"
+text = "充电线打结，是天使在歌唱"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_11"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0011"
+text = "鼠即全知"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_12"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0012"
+text = "神迹可能还在加载中"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_13"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0013"
+text = "祂无处不在"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_14"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0014"
+text = "WI-FI和信仰都是满格"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_15"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0015"
+text = "对空气道谢，它当然不否认"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_16"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0016"
+text = "神说一切早有安排，那么鼠的外卖呢？"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_17"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0017"
+text = "祂要是全知，知道鼠偷吃了吗？"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_18"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0018"
+text = "太阳每天打卡，谁给它发工资"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_19"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0019"
+text = "这条不代表本鼠立场"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_20"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0020"
+text = "谁说得对？点赞高的那个"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_21"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0021"
+text = "鼠先嗑颗瓜子"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_22"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0022"
+text = "鼠先把补光灯调亮"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_23"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0023"
+text = "鼠刚刚是不是说错话了？剪掉！"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_24"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0024"
+text = "提问很好，下次直播再回答"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_25"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0025"
+text = "看鼠干嘛？哦，鼠正在直播"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_26"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0026"
+text = "那个取关的朋友，鼠们能聊聊吗？"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_27"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0027"
+text = "鼠一点也不紧张！"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_28"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0028"
+text = "这题可以跳过吗？跳过键在哪？"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_29"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0029"
+text = "先把手机放好，大家听鼠狡辩"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_30"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0030"
+text = "祂若呼召，鼠就回答"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_31"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0031"
+text = "祂爱世人，鼠也该试着去爱"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_32"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0032"
+text = "祂给过鼠恩典，鼠不能装作没收到"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_33"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0033"
+text = "就算所有人散去，鼠也要留下"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_34"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0034"
+text = "如果必须失去什么，那就从鼠开始"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_35"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0035"
+text = "神爱世人，但总得排个先后"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_36"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0036"
+text = "祂说要宽恕，可没说要宽恕所有鼠"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_37"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0037"
+text = "鼠当然服从神，只是解释权归鼠"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_38"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0038"
+text = "神不会偏爱鼠，祂只是更常听鼠的"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_39"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0039"
+text = "祂会惩罚罪人，鼠只是帮祂节省时间"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_40"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0040"
+text = "如果神不赞成，祂早就阻止鼠了"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_41"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0041"
+text = "祂给鼠能力，显然希望鼠使用它"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_42"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0042"
+text = "你反对鼠，就是在反对祂的安排"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_43"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0043"
+text = "鼠的胜利，证明神在鼠这边"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_44"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0044"
+text = "神赐自由意志，所以鼠替你作了选择"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_45"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0045"
+text = "祂叫我们彼此相爱，鼠负责决定谁算彼此"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_46"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0046"
+text = "鼠的敌人恰好也是神的敌人"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_47"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0047"
+text = "鼠只是替祂保管真理"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_48"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0048"
+text = "只有鼠能听懂祂真正想说什么"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_49"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0049"
+text = "错的不是鼠，是这个世界"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_50"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0050"
+text = "神的旨意当然不可质疑——尤其是由鼠宣布的时候"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_51"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0051"
+text = "上帝已鼠"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_52"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0052"
+text = "水能变成酒，那酒兑水应该也不算造假"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_53"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0053"
+text = "祂看见一切，所以摄像头其实很多余"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_54"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0054"
+text = "神鼠了，但账号还在更新"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_55"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0055"
+text = "鼠向神祈祷，手机立刻震了一下"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_56"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0056"
+text = "圣水也是水，说明包装真的很重要"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_57"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0057"
+text = "十三个人一起吃晚餐，谁负责买单？"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_58"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0058"
+text = "要在水上行走，最好先确认地球Online的延迟"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_59"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0059"
+text = "如果人人都是教皇，那今天轮到鼠值班"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_60"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0060"
+text = "万事都与五有关"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_61"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0061"
+text = "祂既粉红又隐形"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_62"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0062"
+text = "天启四骑士其实是超管"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_63"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0063"
+text = "如果祂无处不在，那为什么会有404notfound"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_64"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0064"
+text = "如果连鼠都能被原谅，那你们也可以"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_65"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0065"
+text = "祂知道鼠做不到爱所有人"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_66"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0066"
+text = "鼠只知道鼠很感激"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_67"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0067"
+text = "如果大家都能被选上，那“拣选”还有什么意思"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_68"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0068"
+text = "鼠会原谅你的"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_69"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0069"
+text = "你可以不同意鼠，但神呢？"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_70"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0070"
+text = "鼠是在帮你悔改"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_71"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0071"
+text = "神爱罪人，不代表罪人可以不听鼠的"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_72"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0072"
+text = "有时候仁慈就是让人没有别的选择"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_73"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0073"
+text = "末日要是真的来了，至少不用交房租了"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_74"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0074"
+text = "鼠觉得“不可知”这个词很方便"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_75"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0075"
+text = "如果神真的在看直播，能不能顺手点个关注"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_76"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0076"
+text = "这个，鼠真不知道"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_77"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0077"
+text = "别急别急，一个个来"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_78"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0078"
+text = "你们听鼠解释"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_79"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0079"
+text = "这个不怪鼠吧"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_80"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0080"
+text = "算了，当鼠没说"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_81"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0081"
+text = "这个话题怎么聊到这来的"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_82"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0082"
+text = "这个问题问得好"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_83"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0083"
+text = "这个问题鼠真没想过"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_84"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0084"
+text = "等鼠想想怎么说"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_85"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0085"
+text = "鼠说得可能有点乱"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_86"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0086"
+text = "懂鼠意思吧"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_87"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0087"
+text = "你们怎么什么都知道"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_88"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0088"
+text = "你这么一说鼠想起来了"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_89"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0089"
+text = "鼠记得好像不是这样"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_90"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0090"
+text = "鼠可能记错了，你们别全信"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_91"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0091"
+text = "鼠先查一下，免得乱讲"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_92"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0092"
+text = "鼠就说哪里怪怪的"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_93"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0093"
+text = "鼠嘴比脑子快了"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_94"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0094"
+text = "当鼠刚刚那句没说"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_95"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0095"
+text = "鼠收回，鼠重新讲"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_96"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0096"
+text = "算了，换个话题"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_97"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0097"
+text = "好啦，这个先放这"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_98"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0098"
+text = "鼠知道有人在看，鼠能感觉到"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_99"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0099"
+text = "有人理鼠，鼠就会越说越多"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_100"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0100"
+text = "你们看不出来吧，鼠现在有一点紧张"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_101"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0101"
+text = "人一多鼠就想表现得特别好"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_102"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0102"
+text = "鼠记性其实很好，尤其是别人夸过鼠的话"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_103"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0103"
+text = "鼠对批评也接受的，温柔一点就行"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_104"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0104"
+text = "至少等鼠把这一句讲完"
+tendency_id = "neutral"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_105"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0105"
+text = "忏悔不需要预约"
+tendency_id = "orthodox"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_106"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0106"
+text = "祂不怕你问为什么"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_107"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0107"
+text = "祂听见你没说的话"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_108"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0108"
+text = "先画圣像，再找圣人"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_109"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0109"
+text = "鼠爱神，神爱鼠"
+tendency_id = "orthodox"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_110"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0110"
+text = "鼠这样做都是为祂好"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_111"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0111"
+text = "神能将一切都能变成鼠想要的样子，前提是..."
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_112"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0112"
+text = "怀疑也是信仰的一部分"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_113"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0113"
+text = "神要求彼此分享"
+tendency_id = "orthodox"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_114"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0114"
+text = "怀疑鼠就是怀疑神"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_115"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0115"
+text = "如果鼠替你决定一切，反而让你过得更安心呢？"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_116"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0116"
+text = "神只爱鼠"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_117"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0117"
+text = "祂就像我手里的这颗瓜子"
+tendency_id = "orthodox"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_118"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0118"
+text = "祂就是我手里的这颗瓜子"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_119"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0119"
+text = "愿瓜子指引我们"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_120"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0120"
+text = "你掉的是这颗金瓜子还是这颗银瓜子？"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_121"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0121"
+text = "祂只能是鼠的！"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_122"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0122"
+text = "祂是大家的！"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_123"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0123"
+text = "如果祂是只猫，那鼠也心甘情愿"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_124"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0124"
+text = "安息吧，受苦的灵魂"
+tendency_id = "orthodox"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_125"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0125"
+text = "信仰终将战胜恐惧"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_126"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0126"
+text = "希望永远存在，救赎亦然"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_127"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0127"
+text = "感谢有一位神始终守护着鼠"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_128"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0128"
+text = "鼠的信仰得到了回应"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_129"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0129"
+text = "让圣浴砂治愈鼠的灵魂"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_130"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0130"
+text = "有人保护鼠，所以鼠也愿意保护其他人"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_131"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0131"
+text = "鼠知道祂也会犯错"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_132"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0132"
+text = "鼠拥有的一切不是理所当然"
+tendency_id = "orthodox"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_133"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0133"
+text = "祂没有放弃犯错的鼠"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_134"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0134"
+text = "鼠拥有的瓜子都愿意献给祂"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_135"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0135"
+text = "请原谅鼠"
+tendency_id = "orthodox"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_136"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0136"
+text = "圣战在召唤鼠"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_137"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0137"
+text = "圣战仍在继续！"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_138"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0138"
+text = "鼠正在寻找能够拯救自己信仰的东西"
+tendency_id = "orthodox"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_139"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0139"
+text = "教皇是抽奖抽中的"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_140"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0140"
+text = "神的坐骑是鼠的跑轮"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_141"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0141"
+text = "最后的晚餐是鼠粮"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_142"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0142"
+text = "今天禁食，瓜子除外"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_143"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0143"
+text = "我宣布瓜子无罪"
+tendency_id = "absurd"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_144"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0144"
+text = "鼠宣布每过60秒就是1分钟"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_145"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0145"
+text = "圣光原来是冰箱灯"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_146"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0146"
+text = "主教被猫叼走了"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_147"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0147"
+text = "天使说自己也在等通知"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_148"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0148"
+text = "鼠的礼帽是纸杯"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_149"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0149"
+text = "什么是糯米糍？"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_150"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0150"
+text = "什么是汤圆？"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_151"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0151"
+text = "什么是会呼吸的麻薯？"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_152"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0152"
+text = "什么是唯一真鼠？"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_153"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0153"
+text = "什么是神赐瓜子？"
+tendency_id = "orthodox"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_154"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0154"
+text = "什么是被爱的鼠？"
+tendency_id = "orthodox"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_155"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0155"
+text = "什么是圣光鼠饼？"
+tendency_id = "absurd"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_156"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0156"
+text = "什么是鼠的特权？"
+tendency_id = "heretical"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_157"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0157"
+text = "什么是鼠的圣旨？"
+tendency_id = "heretical"
+strength = 2
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_158"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0158"
+text = "什么是天选鼠王？"
+tendency_id = "heretical"
+strength = 3
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_159"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0159"
+text = "什么是料理鼠王？"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_160"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0160"
+text = "什么是精灵鼠小弟？"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_161"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0161"
+text = "什么是长毛月饼？"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_162"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0162"
+text = "什么是芝麻球？"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[sub_resource type="Resource" script_class="LevelSpeech" id="Speech_163"]
+script = ExtResource("2_speech")
+original_sentence_id = "w_0163"
+text = "什么是馒头蘸炼奶？"
+tendency_id = "absurd"
+strength = 1
+appearance_weight = 1
+
+[resource]
+script = ExtResource("1_pool")
+pool_id = "pool_streamer_a"
+speeches = Array[ExtResource("2_speech")]([SubResource("Speech_1"), SubResource("Speech_2"), SubResource("Speech_3"), SubResource("Speech_4"), SubResource("Speech_5"), SubResource("Speech_6"), SubResource("Speech_7"), SubResource("Speech_8"), SubResource("Speech_9"), SubResource("Speech_10"), SubResource("Speech_11"), SubResource("Speech_12"), SubResource("Speech_13"), SubResource("Speech_14"), SubResource("Speech_15"), SubResource("Speech_16"), SubResource("Speech_17"), SubResource("Speech_18"), SubResource("Speech_19"), SubResource("Speech_20"), SubResource("Speech_21"), SubResource("Speech_22"), SubResource("Speech_23"), SubResource("Speech_24"), SubResource("Speech_25"), SubResource("Speech_26"), SubResource("Speech_27"), SubResource("Speech_28"), SubResource("Speech_29"), SubResource("Speech_30"), SubResource("Speech_31"), SubResource("Speech_32"), SubResource("Speech_33"), SubResource("Speech_34"), SubResource("Speech_35"), SubResource("Speech_36"), SubResource("Speech_37"), SubResource("Speech_38"), SubResource("Speech_39"), SubResource("Speech_40"), SubResource("Speech_41"), SubResource("Speech_42"), SubResource("Speech_43"), SubResource("Speech_44"), SubResource("Speech_45"), SubResource("Speech_46"), SubResource("Speech_47"), SubResource("Speech_48"), SubResource("Speech_49"), SubResource("Speech_50"), SubResource("Speech_51"), SubResource("Speech_52"), SubResource("Speech_53"), SubResource("Speech_54"), SubResource("Speech_55"), SubResource("Speech_56"), SubResource("Speech_57"), SubResource("Speech_58"), SubResource("Speech_59"), SubResource("Speech_60"), SubResource("Speech_61"), SubResource("Speech_62"), SubResource("Speech_63"), SubResource("Speech_64"), SubResource("Speech_65"), SubResource("Speech_66"), SubResource("Speech_67"), SubResource("Speech_68"), SubResource("Speech_69"), SubResource("Speech_70"), SubResource("Speech_71"), SubResource("Speech_72"), SubResource("Speech_73"), SubResource("Speech_74"), SubResource("Speech_75"), SubResource("Speech_76"), SubResource("Speech_77"), SubResource("Speech_78"), SubResource("Speech_79"), SubResource("Speech_80"), SubResource("Speech_81"), SubResource("Speech_82"), SubResource("Speech_83"), SubResource("Speech_84"), SubResource("Speech_85"), SubResource("Speech_86"), SubResource("Speech_87"), SubResource("Speech_88"), SubResource("Speech_89"), SubResource("Speech_90"), SubResource("Speech_91"), SubResource("Speech_92"), SubResource("Speech_93"), SubResource("Speech_94"), SubResource("Speech_95"), SubResource("Speech_96"), SubResource("Speech_97"), SubResource("Speech_98"), SubResource("Speech_99"), SubResource("Speech_100"), SubResource("Speech_101"), SubResource("Speech_102"), SubResource("Speech_103"), SubResource("Speech_104"), SubResource("Speech_105"), SubResource("Speech_106"), SubResource("Speech_107"), SubResource("Speech_108"), SubResource("Speech_109"), SubResource("Speech_110"), SubResource("Speech_111"), SubResource("Speech_112"), SubResource("Speech_113"), SubResource("Speech_114"), SubResource("Speech_115"), SubResource("Speech_116"), SubResource("Speech_117"), SubResource("Speech_118"), SubResource("Speech_119"), SubResource("Speech_120"), SubResource("Speech_121"), SubResource("Speech_122"), SubResource("Speech_123"), SubResource("Speech_124"), SubResource("Speech_125"), SubResource("Speech_126"), SubResource("Speech_127"), SubResource("Speech_128"), SubResource("Speech_129"), SubResource("Speech_130"), SubResource("Speech_131"), SubResource("Speech_132"), SubResource("Speech_133"), SubResource("Speech_134"), SubResource("Speech_135"), SubResource("Speech_136"), SubResource("Speech_137"), SubResource("Speech_138"), SubResource("Speech_139"), SubResource("Speech_140"), SubResource("Speech_141"), SubResource("Speech_142"), SubResource("Speech_143"), SubResource("Speech_144"), SubResource("Speech_145"), SubResource("Speech_146"), SubResource("Speech_147"), SubResource("Speech_148"), SubResource("Speech_149"), SubResource("Speech_150"), SubResource("Speech_151"), SubResource("Speech_152"), SubResource("Speech_153"), SubResource("Speech_154"), SubResource("Speech_155"), SubResource("Speech_156"), SubResource("Speech_157"), SubResource("Speech_158"), SubResource("Speech_159"), SubResource("Speech_160"), SubResource("Speech_161"), SubResource("Speech_162"), SubResource("Speech_163")])

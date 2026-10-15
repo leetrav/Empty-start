@@ -101,3 +101,14 @@ Google 策划总表最新版支持 01～25 业务表（06拆为三表），共 2
 22_直播评论表现参数表虽然使用同一列 value，但类型由 param_id 决定：comment_pause_with_game 与 comment_updates_business_counter 是原生布尔开关，其余配置项是有限数值。不能将「一列兼容两种类型」理解为每个参数都可任选类型。
 
 旧版 TEST_ONLY 测试工作簿及不含22表的历史正式工作簿继续使用原有兼容路径；源类型审计仅对包含22表的新版正式工作簿启用。
+
+
+## Approved production CSV import
+
+After the planning CSV set has been approved, generate production level Resources directly from the checked-in 27 CSV files with:
+
+```powershell
+python tools/export_game_data.py --approved-csv
+```
+
+Use `--csv-dir <path>` to select a different complete CSV set. This mode validates table headers, IDs, references, numeric fields, the enabled speech pool, and all six Tier rows before writing production Resources. It does not require `openpyxl`; the XLSX mode loads that dependency only when used.

@@ -1,12 +1,77 @@
-[gd_resource type="Resource" script_class="LevelProfile" load_steps=2 format=3]
-
+[gd_resource type="Resource" script_class="LevelProfile" format=3]
 [ext_resource type="Script" path="res://data/level_configuration/level_profile.gd" id="1_profile"]
-
+[ext_resource type="Script" path="res://data/level_configuration/level_contradiction.gd" id="2_contradiction"]
+[ext_resource type="Resource" path="res://data/level_configuration/pools/pool_streamer_a.tres" id="3_pool"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/kiwi/kiwi_idle.png" id="4_portrait"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/kiwi/kiwi_tier_01.png" id="5_portrait_t1"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/kiwi/kiwi_tier_02.png" id="6_portrait_t2"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/kiwi/kiwi_tier_03.png" id="7_portrait_t3"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/kiwi/kiwi_defeat.png" id="8_portrait_defeat"]
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_1"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_kiwi_true"
+text = "你根本就没有手！"
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_2"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_kiwi_false_1"
+text = "你根本就没有脚！"
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_3"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_kiwi_false_2"
+text = "你根本就没有嘴！"
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_4"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_kiwi_false_3"
+text = "你根本就没有眼睛！"
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_5"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_kiwi_false_4"
+text = "你根本就没有脑子！"
+[sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_6"]
+script = ExtResource("2_contradiction")
+original_sentence_id = "contra_kiwi_false_5"
+text = "你根本就没有鼻孔！"
 [resource]
 script = ExtResource("1_profile")
 level_id = "level_002"
 level_order = 2
-streamer_id = "streamer_sample_002"
-streamer_name = "第二位示例主播"
-stream_topic = "待策划填写的第二关主题。"
-fan_badge_id = "fan_badge_sample_002"
+streamer_id = "kiwi"
+streamer_name = "Augur | 奥格尔"
+fan_group_name = "元老会"
+stream_topic = "情感直播"
+portrait_set_id = "portrait_kiwi"
+tutorial_config_id = ""
+story_config_id = "story_level_002"
+contradiction_set_id = "contradiction_kiwi"
+background_asset_id = ""
+fan_badge_asset_id = ""
+normal_speech_pool_source = ExtResource("3_pool")
+streamer_portrait = ExtResource("4_portrait")
+opponent_tier_01_portrait = ExtResource("5_portrait_t1")
+opponent_tier_02_portrait = ExtResource("6_portrait_t2")
+opponent_tier_03_portrait = ExtResource("7_portrait_t3")
+opponent_defeat_portrait = ExtResource("8_portrait_defeat")
+orthodox_ratio = 36
+heretical_ratio = 41
+absurd_ratio = 46
+neutral_ratio = 40
+true_contradictions = Array[ExtResource("2_contradiction")]([SubResource("Contradiction_1")])
+false_contradictions = Array[ExtResource("2_contradiction")]([SubResource("Contradiction_2"), SubResource("Contradiction_3"), SubResource("Contradiction_4"), SubResource("Contradiction_5"), SubResource("Contradiction_6")])
+contradiction_context_clues = Array[String]([])
+base_batch_count = 3
+base_spawn_interval_seconds = 1.6
+base_move_speed_pixels_per_second = 45
+word_weight_multiplier = 1
+valid_area_key = "center_valid_area"
+layout_key = "battle_layout_01"
+special_instance_screen_cap = 3
+paradox_window_seconds = 10
+paradox_shot_limit = 1
+paradox_silence_transition_seconds = 1
+paradox_candidate_count = 6
+paradox_true_count = 1
+paradox_fake_count = 5
+paradox_motion_duration_seconds = 2
+paradox_motion_mode = "ease_out_to_stop"
+paradox_motion_speed_curve_id = "smoothstep_to_zero_v0"
+paradox_shootable_during_motion = true
