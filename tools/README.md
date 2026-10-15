@@ -82,7 +82,7 @@ godot --headless --path . res://tests/fixtures/data_export/test_only_live_smoke.
 
 Google 策划总表最新版支持 01～25 业务表（06拆为三表），共 27 张 CSV。新增 19～25 表按原字段名保留启用/禁用记录；旧正式工作簿和旧 TEST_ONLY 夹具缺失这些新表时继续兼容。
 
-追加校验包括：02↔23立绘关联、02↔24教学关联、02↔20剧情关联、19↔25账号关联、20/21/23启用主播与02匹配；22的 value 同时允许数字和 true/false。Tier四种 Motion 权重须非负整数且合计100，并逐档写入 TEST_ONLY Tier 预览。
+追加校验包括：02↔23立绘关联、02↔24教学关联、02↔20剧情关联、19↔25账号关联、20/21/23启用主播与02匹配。22表的 value 类型由 param_id 严格决定：comment_pause_with_game、comment_updates_business_counter 必须是原生布尔值，其余参数必须是有限数值。Tier四种 Motion 权重须非负整数且合计100，并逐档写入 TEST_ONLY Tier 预览。
 
 本工具生成的 Tier 资源仍然只放在 data/test_only/sheet_preview，不改正式运行的 data/combat_stage/tier_catalog.tres。17音频 CSV 的文件路径还需未来由音频配置消费，不能把配表当作Godot音频已接通。
 
@@ -94,4 +94,10 @@ Google 策划总表最新版支持 01～25 业务表（06拆为三表），共 2
 具体本轮导表数目、来源与待办见 docs/2. LevelConfiguration/关卡配置系统_LC-10B_2026-10-15_log.md。
 
 
-**2026-10-15 ???????** ???Google??enabled/loop/inheritable/affected_by_tier_lifetime_mult?????????22?value?param_id????bool???????????????????????????TEST_ONLY???
+### 2026-10-15 布尔字段迁移修复
+
+新版正式 Google 策划表的 enabled、loop、inheritable、affected_by_tier_lifetime_mult 列必须保存为原生布尔单元格（TRUE/FALSE 复选框），而不能写入字符串 `"true"` 或 `"false"`。导表器会读取原始 XLSX 单元格类型；发现字符串布尔值即报告具体工作表、行和字段，且在写盘前拒绝导出。
+
+22_直播评论表现参数表虽然使用同一列 value，但类型由 param_id 决定：comment_pause_with_game 与 comment_updates_business_counter 是原生布尔开关，其余配置项是有限数值。不能将「一列兼容两种类型」理解为每个参数都可任选类型。
+
+旧版 TEST_ONLY 测试工作簿及不含22表的历史正式工作簿继续使用原有兼容路径；源类型审计仅对包含22表的新版正式工作簿启用。
