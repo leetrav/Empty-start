@@ -25,6 +25,7 @@ var _normal_hit_history: Array[Dictionary] = []
 var _normal_hit_order: int = 0
 var _normal_history_committed: bool = false
 var _normal_pk_resolution_enabled: bool = true
+var _numerics: CombatNumericsConfig
 
 
 func _init(
@@ -32,11 +33,13 @@ func _init(
 	minimum_pk: float,
 	maximum_pk: float,
 	max_positive_pk_delta_per_shot: float = INF,
-	max_negative_pk_delta_per_shot: float = INF
+	max_negative_pk_delta_per_shot: float = INF,
+	numerics: CombatNumericsConfig = null
 ) -> void:
 	# 策划定值前保留无上限默认；有限单发正负上限由调用方按配置注入。
 	_max_positive_pk_delta_per_shot = maxf(0.0, max_positive_pk_delta_per_shot)
 	_max_negative_pk_delta_per_shot = maxf(0.0, max_negative_pk_delta_per_shot)
+	_numerics = numerics
 	# 创建本场唯一 PK 状态，并将配置初始值限制在配置范围内。
 	initialize_player_pk(initial_pk, minimum_pk, maximum_pk)
 
@@ -144,6 +147,10 @@ func discard_uncommitted_normal_hit_history() -> void:
 
 func calculate_normal_word_reward(strength: int, tendency_id: String = "") -> Dictionary:
 	# PK 收益由内容强度决定；neutral 是有效普通话语，但不给三项倾向增量。
+	if _numerics != null:
+		var configured_reward: Dictionary = _numerics.get_normal_hit_reward(strength, tendency_id)
+		if not configured_reward.is_empty():
+			return configured_reward
 	if not _NORMAL_WORD_REWARDS_BY_STRENGTH.has(strength):
 		push_error("Normal word strength must be 1, 2, or 3; received %d." % strength)
 		return {}
@@ -218,9 +225,9 @@ func resolve_shot_results(
 			target_result["tendency_delta"] = 0
 			match trait_result.kind:
 				BarrageTraitResult.Kind.FAKE_CARD:
-					target_result["pk_delta"] = -0.005
+					target_result["pk_delta"] = _numerics.fake_penalty_pk if _numerics != null else -0.005
 				BarrageTraitResult.Kind.RETALIATION_COPY:
-					target_result["pk_delta"] = -0.007
+					target_result["pk_delta"] = _numerics.retaliation_penalty_pk if _numerics != null else -0.007
 				_:
 					target_result["pk_delta"] = 0.0
 		var target_pk_delta: float = float(target_result.get("pk_delta", 0.0))
@@ -230,7 +237,7 @@ func resolve_shot_results(
 			negative_pk_delta += target_pk_delta
 	# 正负贡献分别按整发汇总；整发异常只扣一次并计入负向上限。
 	if shot_anomaly != ShotAnomaly.NONE:
-		negative_pk_delta -= 0.01
+		negative_pk_delta += _get_anomaly_penalty(shot_anomaly)
 	var capped_negative_pk_delta: float = maxf(
 		negative_pk_delta, -_max_negative_pk_delta_per_shot
 	)
@@ -244,6 +251,20 @@ func resolve_shot_results(
 		"final_player_pk": final_player_pk,
 		"target_results": resolved_targets,
 	}
+
+
+# 命中异常 PK 扣分统一来自 06 表；BOUNCE 对应反弹，遮挡和落空各取独立字段。
+func _get_anomaly_penalty(anomaly: ShotAnomaly) -> float:
+	if _numerics == null:
+		return -0.01
+	match anomaly:
+		ShotAnomaly.BOUNCE:
+			return _numerics.reflect_penalty_pk
+		ShotAnomaly.OBSTRUCTION:
+			return _numerics.blocked_penalty_pk
+		ShotAnomaly.MISS:
+			return _numerics.miss_penalty_pk
+	return 0.0
 
 
 func _clamp_player_pk(value: float) -> float:

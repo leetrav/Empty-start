@@ -1,6 +1,8 @@
 class_name BattleAttemptFlow
 extends Node
 
+const FORMAL_COMBAT_NUMERICS: CombatNumericsConfig = preload("res://data/combat_stage/combat_numerics.tres")
+
 signal attempt_started(level: LevelProfile, hit_resolution: HitResolution, combat_stage: CombatStage, repeat_queue: RepeatDelayQueue)
 signal attempt_restarted(level: LevelProfile, hit_resolution: HitResolution, combat_stage: CombatStage, repeat_queue: RepeatDelayQueue)
 signal shot_resolved(snapshot: AttackTargetSnapshot, submission: Dictionary, current_tier: int, repeat_stats: RepeatGenerationStats)
@@ -124,6 +126,11 @@ func _start_attempt(is_restart: bool) -> bool:
 	_opponent_pk_bar.reset_current_attempt()
 	_run_data.tendency_state.rollback_attempt_tendency()
 	_run_data.live_session.initialize_session(_opening_fan_count)
+	_run_data.live_session.configure_formal_rules(FORMAL_COMBAT_NUMERICS)
+	_run_data.live_session.set_opening_viewers(randf_range(
+		FORMAL_COMBAT_NUMERICS.opening_viewer_multiplier_min,
+		FORMAL_COMBAT_NUMERICS.opening_viewer_multiplier_max
+	))
 	_normal_completion_pending = false
 	_contradiction_start_pending = false
 	_tier_transition_active = false
@@ -132,11 +139,12 @@ func _start_attempt(is_restart: bool) -> bool:
 	_has_shot_tier_at_arrival = false
 
 	_hit_resolution = HitResolution.new(
-		_battle_config.initial_player_pk,
-		_battle_config.minimum_player_pk,
-		_battle_config.maximum_player_pk,
-		_battle_config.max_positive_pk_delta_per_shot,
-		_battle_config.max_negative_pk_delta_per_shot
+		FORMAL_COMBAT_NUMERICS.initial_player_pk,
+		FORMAL_COMBAT_NUMERICS.minimum_player_pk,
+		FORMAL_COMBAT_NUMERICS.maximum_player_pk,
+		FORMAL_COMBAT_NUMERICS.positive_pk_shot_cap,
+		FORMAL_COMBAT_NUMERICS.negative_pk_shot_cap,
+		FORMAL_COMBAT_NUMERICS
 	)
 	_repeat_queue = RepeatDelayQueue.new(_battle_config.maximum_pending_repeat_count)
 	_combat_stage = CombatStage.new(_tier_catalog)
@@ -147,7 +155,7 @@ func _start_attempt(is_restart: bool) -> bool:
 	_combat_stage.bind_audio_manager(_audio_manager)
 	_combat_stage.tier_state_changed.connect(_on_tier_state_changed.bind(_combat_stage))
 	_hit_resolution.final_player_pk_updated.connect(_on_final_player_pk_updated.bind(_hit_resolution))
-	_barrage_area.base_lifetime_seconds = _battle_config.normal_lifetime_seconds
+	_barrage_area.configure_combat_numerics(FORMAL_COMBAT_NUMERICS)
 	_barrage_area.repeat_barrage_screen_cap = _battle_config.repeat_screen_cap
 	_combat_stage.begin_combat()
 
@@ -155,11 +163,14 @@ func _start_attempt(is_restart: bool) -> bool:
 	if current_level == null:
 		battle_state_changed.emit("当前没有关卡配置")
 		return false
-	if not _attack_input.configure_attack_timing(_battle_config.attack_timing):
+	if not _attack_input.configure_attack_timing(FORMAL_COMBAT_NUMERICS.create_attack_timing_config()):
 		push_error("BattleAttemptFlow: 攻击时长配置无效。")
 		return false
 	if not _attack_input.configure_hit_resolution(_hit_resolution):
 		push_error("BattleAttemptFlow: 无法接入本场命中结算。")
+		return false
+	if not _attack_input.configure_combat_aim_radii(FORMAL_COMBAT_NUMERICS):
+		push_error("BattleAttemptFlow: 无法应用正式准心判定半径。")
 		return false
 
 	_normal_combat_active = true
@@ -169,7 +180,7 @@ func _start_attempt(is_restart: bool) -> bool:
 		_stop_normal_combat()
 		push_error("BattleAttemptFlow: 无法启动普通弹幕生成。")
 		return false
-	_opponent_pk_bar.start_pullback(_hit_resolution, _battle_config.base_pullback_speed)
+	_opponent_pk_bar.start_pullback(_hit_resolution, FORMAL_COMBAT_NUMERICS.base_pullback_speed_pk_per_second)
 	_refresh_pk_feedback()
 	attempt_started.emit(current_level, _hit_resolution, _combat_stage, _repeat_queue)
 	if is_restart:
@@ -341,6 +352,8 @@ func _on_shot_hit_resolution_submitted(snapshot: AttackTargetSnapshot, submissio
 		# 遮挡命中保留原目标，其余已到达目标沿用弹幕系统的结束入口。
 		if trait_result.kind != BarrageTraitResult.Kind.OCCLUSION:
 			_barrage_area.end_barrage(int(target_result.get("target_instance_id", -1)))
+		if trait_result != null and trait_result.kind in [BarrageTraitResult.Kind.FAKE_CARD, BarrageTraitResult.Kind.RETALIATION_COPY, BarrageTraitResult.Kind.REFLECT]:
+			_run_data.live_session.record_trap_hit_live_rule()
 		if not bool(target_result.get("is_valid_hit", false)) or not trait_result.receives_normal_reward:
 			continue
 		if bool(target_result.get("is_repeat", false)):
@@ -355,12 +368,16 @@ func _on_shot_hit_resolution_submitted(snapshot: AttackTargetSnapshot, submissio
 			str(target_result.get("original_sentence_text", "")),
 			_combat_stage.get_current_tier(),
 			_combat_stage.get_current_repeat_count_per_hit(),
-			_battle_config.repeat_lifetime_seconds,
+			FORMAL_COMBAT_NUMERICS.get_lifetime_seconds(
+				"repeat", _tier_catalog.get_tier_config(_combat_stage.get_current_tier()).lifetime_multiplier
+			),
 			str(target_result.get("tendency_id", ""))
 		)
 		plan.apply_display_template(_battle_config.repeat_display_template)
 		_repeat_queue.enqueue_plan(plan)
 	if normal_hit_count > 0:
+		for _hit_index in range(normal_hit_count):
+			_run_data.live_session.record_normal_hit_live_rule()
 		battle_state_changed.emit("命中 %d 条 · PK +%.2f%% · 等待复读" % [normal_hit_count, float(result.get("total_pk_delta", 0.0)) * 100.0])
 	elif repeat_hit_count > 0:
 		battle_state_changed.emit("复读命中 %d 条 · 零收益" % repeat_hit_count)
@@ -394,6 +411,8 @@ func _on_final_player_pk_updated(player_pk: float, source_hit_resolution: HitRes
 func _on_tier_state_changed(current_tier: int, source_stage: CombatStage) -> void:
 	if source_stage != _combat_stage:
 		return
+	if _normal_combat_active and current_tier > 0:
+		_run_data.live_session.record_tier_up_live_rule()
 	_refresh_pk_feedback()
 	tier_changed.emit(current_tier, _hit_resolution.get_player_pk())
 
@@ -413,7 +432,9 @@ func _complete_normal_combat(source_hit_resolution: HitResolution) -> void:
 	_stop_normal_combat()
 	if current_level == null:
 		return
-	_run_data.live_session.commit_pk_win_fans(StringName(current_level.level_id), _battle_config.pk_win_fan_gain)
+	_run_data.live_session.commit_pk_win_fans(
+		StringName(current_level.level_id), FORMAL_COMBAT_NUMERICS.pk_win_fan_gain
+	)
 	_opening_fan_count = _run_data.live_session.fan_count
 	var repeat_stats: RepeatGenerationStats = _repeat_queue.get_generation_stats()
 	repeat_stats.commit_normal_repeat_history(_run_data, StringName(current_level.level_id))
