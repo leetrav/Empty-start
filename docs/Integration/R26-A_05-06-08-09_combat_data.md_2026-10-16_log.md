@@ -35,10 +35,10 @@ INT-16 可在组合阶段读取当前流程信号：`attempt_started(level, hit_
 ## 验证
 
 - `godot.windows.opt.tools.64.exe --headless --path . --script res://tests/integration/sheet_a_formal_combat_numerics_test.gd`：进程 Exit 0，输出 `SHEET-A PASS production 06/08/09 Resource values and configured live boost`。实际加载生产 06/08 Resource，检查 0.4/0.7/1.2、Tier 2 四种权重及击破上涨结果 80/40。
-- 同次启动报告项目环境问题：`audio_event_config.tres` 引用缺失 `assets/audio/sfx/comic/typewriter.wav`，音频 Autoload 解析失败；字体资源也缺失，并报告根证书读取错误。测试脚本仍实际执行并输出 PASS。`
+- 同次启动报告项目环境问题：`audio_event_config.tres` 引用缺失 `assets/audio/sfx/comic/typewriter.wav`，音频 Autoload 解析失败；字体资源也缺失，并报告根证书读取错误。测试脚本仍实际执行并输出 PASS。
 - 生产项目 `--headless --quit-after 3`：启动未完成，受同一缺失音频资源的 Autoload 解析错误阻断；故完整生产 SceneTree 行为为 UNVERIFIED。
 - `python -m py_compile` 与 `export_game_data.py --approved-csv --csv-only`：Windows Python trampoline 拒绝创建子进程（permission denied），导表器新增映射未能执行；`git diff --check` 通过。未把该项记为 PASS。
-- Godot 导入曾生成四个 `.import` 变更，已请求恢复；Git worktree 元数据写入由 Windows sandbox 拒绝。最终状态需复核是否残留导入副作用。
+- Godot 导入曾生成四个 `.import` 变更；确认均为本次验证副作用后已恢复，最终 `git status` 中无残留。
 
 ## 未完成 / 接手建议
 
@@ -46,6 +46,6 @@ INT-16 可在组合阶段读取当前流程信号：`attempt_started(level, hit_
 2. 由 ID-12 提供自动翻页间隔；由 PA-09 决定 penalty 文案和其余反馈文字的正式消费者。
 3. 与 INT-16 核对气泡上限、T0 状态文案及已有正式流程中的配置入口；INT-16 文件由其 Owner 改动。
 4. 在具备全部字体/音频资源的正式工作树运行导表器和生产 GUI smoke；现有失败不能作为本次代码回归结论。
-5. 本次未完成 commit、push 或 PR；Git metadata write 被 sandbox 拒绝，需在允许该 worktree metadata 写入的环境执行。
+5. 提交 `23f8e408835f5e794e5f66db2ce0e2215344bce2`（`Wire R26 combat data into runtime consumers`）；首次 Git 元数据写入被 sandbox 拒绝，获准后提交成功。推送首次遇到 Schannel TLS 握手失败，改用 OpenSSL 后端成功推送。PR [#241](https://github.com/w7775p/Empty-start/pull/241) 已创建，目标 `main`，当前 open、未合并。
 
 系统文档：没有修改 README；本日志记录新增的配置映射、接口契约和字段缺口。`known_traps.md` 无新增可复现陷阱。
