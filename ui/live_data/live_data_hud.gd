@@ -74,7 +74,7 @@ func configure_formal_comments(rows: Array[Dictionary], parameters: Dictionary) 
 		_comment_scroll.custom_minimum_size.y = maxf(0.0, float(_comment_row_cap) * float(_comment_params.get("comment_font_size_px", 20)) * 1.6)
 		_comment_timer = _next_comment_interval()
 		_clear_comment_rows()
-	var pause_with_game := str(_comment_params.get("comment_pause_with_game", "true")).to_lower() == "true"
+	var pause_with_game: bool = bool(_comment_params.get("comment_pause_with_game", true))
 	process_mode = Node.PROCESS_MODE_PAUSABLE if pause_with_game else Node.PROCESS_MODE_ALWAYS
 
 

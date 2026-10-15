@@ -1,5 +1,11 @@
 # 21. StreamerBubbleDialogue 双主播气泡对话系统
 
+## SHEET-C 正式表接线（2026-10-15）
+
+`FormalSheetRuntimeConsumer.create_dialogue_config(story_config_id)` 将 20 表启用行按故事 ID 转成现有气泡条目，`display_duration_s` 映射到显示时长，`random_weight` 映射到随机权重，连接、胜负、Tier 变化、实际命中和指定原句继续使用既有事件 ID。`random_idle` 行归入 `timed` 事件；现有 `StreamerBubbleTimedOpponentDialoguePresenter` 同时调度双方，玩家间隔读取 06 表 6–10 秒，对手读取 7–12 秒，T0 对手闲聊继续等待连线。每次成功入队后重新按 20 表权重抽取对白。
+
+SHEET-C 的 CSV 集成模拟验证四个故事共 119 条启用对白，其中 48 条随机闲聊。主 Sandbox 的 Presenter 创建和调用仍由 Sandbox 所属 Lane E 负责；当前 INT-14 已有对手 Presenter 实例，双方配置由该公开 `configure(flow, config, enqueue_callable)` 入口消费。
+
 > **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。开发前核对该表、本卡现行版、main 实际实现及最新完成日志。
 
 
