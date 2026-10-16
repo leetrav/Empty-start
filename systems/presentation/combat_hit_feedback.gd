@@ -33,9 +33,11 @@ var _runtime_missed: bool = false
 var _runtime_outcomes: Array[Dictionary] = []
 var _attack: AttackChargeInput
 var _arrival_snapshot: AttackTargetSnapshot
+var _feedback_texts: Dictionary = {}
 
 
 func _ready() -> void:
+	_feedback_texts = FormalSheetRuntimeConsumer.new().get_feedback_texts()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_number = _new_label()
 	_number.visible = false
@@ -89,13 +91,13 @@ func _on_shot_arrival_resolved(snapshot: AttackTargetSnapshot, target_results: A
 		var caption: String = ""
 		match hit.kind:
 			BarrageTraitResult.Kind.OCCLUSION:
-				caption = "BLOCK"
+				caption = str(_feedback_texts.get("combat_feedback_block_text", "BLOCK"))
 			BarrageTraitResult.Kind.REFLECT:
-				caption = "REFLECT"
+				caption = str(_feedback_texts.get("combat_feedback_reflect_text", "REFLECT"))
 			BarrageTraitResult.Kind.FAKE_CARD:
-				caption = "FAKE"
+				caption = str(_feedback_texts.get("combat_feedback_fake_card_text", "FAKE"))
 			BarrageTraitResult.Kind.RETALIATION_COPY:
-				caption = "COUNTER"
+				caption = str(_feedback_texts.get("combat_feedback_retaliation_text", "COUNTER"))
 		if caption.is_empty():
 			continue
 		var canvas_point: Vector2 = target.get_global_transform_with_canvas() * Vector2(target.size.x * 0.5, 0.0)
@@ -223,7 +225,9 @@ func _build_labels() -> void:
 			captions.append(caption)
 			target_anchors.append(outcome.get("anchor", Vector2.ZERO))
 		if _runtime_missed:
-			captions.append("MISS")
+			var miss_text: String = str(_feedback_texts.get("combat_feedback_miss_text", "MISS"))
+			if not miss_text.is_empty():
+				captions.append(miss_text)
 			positions.append(aim_center + Vector2(64, 28))
 	else:
 		match case_id:

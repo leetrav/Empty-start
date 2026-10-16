@@ -130,6 +130,9 @@ var attack_phase: int = AttackChargeInput.AttackPhase.READY
 
 # 保留 Scene 的全部设计矩形，只订阅窗口变化并初始化显示。
 func _ready() -> void:
+	# 正式匹配文案读取现有 06 表；表缺项时保留 Scene/Inspector 配置。
+	var texts: Dictionary = FormalSheetRuntimeConsumer.new().get_feedback_texts()
+	t0_matching_status_text = str(texts.get("pk_tier0_matching_text", t0_matching_status_text))
 	player_portrait_motion = PortraitMotion.new()
 	player_portrait_motion.attach_portrait(_player_portrait)
 	opponent_portrait_motion = PortraitMotion.new()

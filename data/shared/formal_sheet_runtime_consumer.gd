@@ -7,6 +7,7 @@ const BubbleEntry = preload("res://data/streamer_bubble_dialogue/bubble_dialogue
 const AudioEventScript = preload("res://core/audio/audio_event.gd")
 
 const TABLES := {
+	"base": "res://data/source_tables/06_基础参数.csv",
 	"levels": "res://data/source_tables/02_主播关卡.csv",
 	"audio": "res://data/source_tables/17_音频事件.csv",
 	"comments": "res://data/source_tables/19_直播评论词库.csv",
@@ -17,6 +18,16 @@ const TABLES := {
 
 var _tables: Dictionary = {}
 var comment_parameters: Dictionary = {}
+
+
+## 文案沿用正式 06 表；只返回已有文本字段，不在表现层生成策划文案。
+func get_feedback_texts() -> Dictionary:
+	var texts: Dictionary = {}
+	for row: Dictionary in _tables.get("base", []):
+		var key: String = str(row.get("param_id", ""))
+		if key == "pk_tier0_matching_text" or key.begins_with("combat_feedback_"):
+			texts[key] = str(row.get("value", ""))
+	return texts
 
 
 func _init() -> void:
