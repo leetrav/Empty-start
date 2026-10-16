@@ -19,6 +19,8 @@ func _ready() -> void:
 		return
 	_names.text = "主播：%s\n粉丝团：%s" % [_run_data.streamer_name, _run_data.fan_group_name]
 	_environment.apply_tendency(_run_data.tendency_state.get_primary_tendency_id())
+	if _run_data.next_normal_level_order > 1:
+		_status.text = "准备开始第 %d 场直播" % _run_data.next_normal_level_order
 	_start_button.grab_focus()
 
 # 请求成功后直到页面退出都保持锁定，同帧连点和直接重复调用只启动一次。

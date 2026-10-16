@@ -33,6 +33,29 @@ func set_current_level_order(level_order: int) -> bool:
 	_current_level = selected_level
 	return true
 
+## 从房间重新开播时恢复进度，完整校验后再修改当前状态。
+func restore_progress(next_level_order: int, completed_ids: Array[String]) -> bool:
+	if _catalog == null or _all_normal_levels_completed:
+		return false
+	var selected_level: LevelProfile = _find_level_by_order(next_level_order)
+	if selected_level == null:
+		return false
+	var restored_ids: Dictionary = {}
+	for level_id: String in completed_ids:
+		var prior_profile: LevelProfile = _find_level_by_id(level_id)
+		if prior_profile == null or prior_profile.level_order >= selected_level.level_order:
+			return false
+		if restored_ids.has(level_id):
+			return false
+		restored_ids[level_id] = true
+	# 所有前序关卡都应已完成，禁止缺少记录时直接跳入后关。
+	for profile: LevelProfile in _catalog.profiles:
+		if profile != null and profile.level_order < selected_level.level_order and not restored_ids.has(profile.level_id):
+			return false
+	_current_level = selected_level
+	_completed_level_ids = restored_ids
+	return true
+
 ## 以当前周目状态实例 + 稳定关卡 ID 标记完成，重复提交不会再次推进。
 func complete_level(level_id: String) -> CompletionResult:
 	if level_id.is_empty() or _find_level_by_id(level_id) == null:

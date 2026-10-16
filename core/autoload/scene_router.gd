@@ -26,6 +26,7 @@ const ENDING_SCENE_PATH: String = "res://ui/ending/ending_page.tscn"
 # 集成夹具可显式替换游戏入口，默认仍加载正式场景。
 var game_scene_override: PackedScene
 var _ending_session: EndingSession
+var _saved_ending_display: Dictionary = {}
 
 
 func goto_main_menu() -> Error:
@@ -70,6 +71,7 @@ func goto_ending(session: EndingSession) -> Error:
 	if scene == null:
 		return ERR_FILE_NOT_FOUND
 	_ending_session = session
+	_saved_ending_display.clear()
 	get_tree().scene_changed.connect(_show_ending, CONNECT_ONE_SHOT)
 	var error := _change_scene(scene)
 	if error != OK:
@@ -83,6 +85,25 @@ func _show_ending() -> void:
 	var page := get_tree().current_scene as EndingPage
 	if page != null and _ending_session != null:
 		page.show_ending(_ending_session.get_display_data())
+	elif page != null and not _saved_ending_display.is_empty():
+		page.show_ending(_saved_ending_display)
+
+
+## 已完成周目读档只呈现保存的 Ending 显示快照，不再次执行终局或奖励。
+func goto_saved_ending(display_data: Dictionary) -> Error:
+	if display_data.is_empty() or not display_data.has("scripture"):
+		return ERR_INVALID_DATA
+	var scene := _load_scene(ENDING_SCENE_PATH)
+	if scene == null:
+		return ERR_FILE_NOT_FOUND
+	_ending_session = null
+	_saved_ending_display = display_data.duplicate(true)
+	get_tree().scene_changed.connect(_show_ending, CONNECT_ONE_SHOT)
+	var error := _change_scene(scene)
+	if error != OK:
+		get_tree().scene_changed.disconnect(_show_ending)
+		_saved_ending_display.clear()
+	return error
 
 
 func reload_current_scene() -> Error:
