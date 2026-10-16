@@ -384,7 +384,8 @@ func _on_shot_hit_resolution_submitted(snapshot: AttackTargetSnapshot, submissio
 	if normal_hit_count > 0:
 		for _hit_index in range(normal_hit_count):
 			_run_data.live_session.record_normal_hit_live_rule()
-		battle_state_changed.emit("命中 %d 条 · PK +%.2f%% · 等待复读" % [normal_hit_count, float(result.get("total_pk_delta", 0.0)) * 100.0])
+		# 普通与陷阱可能同发命中，符号必须读取整发净结果。
+		battle_state_changed.emit("命中 %d 条 · PK %+.2f%% · 等待复读" % [normal_hit_count, float(result.get("total_pk_delta", 0.0)) * 100.0])
 	elif repeat_hit_count > 0:
 		battle_state_changed.emit("复读命中 %d 条 · 零收益" % repeat_hit_count)
 	else:

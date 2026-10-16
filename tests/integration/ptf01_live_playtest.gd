@@ -72,6 +72,8 @@ func _checks() -> void:
 	await _frames()
 	var sandbox := get_tree().current_scene
 	var flow: BattleAttemptFlow = sandbox.get_battle_attempt_flow()
+	var messages: Array[String] = []
+	flow.battle_state_changed.connect(func(message: String): messages.append(message))
 	if _scenario == "preview":
 		sandbox.opponent_reaction_preview_enabled = true
 	_check(sandbox.get_opponent_live_snapshot()["comment_count"] == 3, "首批三条对手评论")
@@ -91,9 +93,16 @@ func _checks() -> void:
 	var trap_profile: LevelProfile = profile.duplicate()
 	trap_profile.special_trait_ids = [BarrageTraitSet.REFLECT]
 	var trap := area.spawn_normal_barrage(trap_profile, speech, [BarrageTraitSet.REFLECT])
+	# 同发一个普通目标与一个反弹目标，复现原提示“PK +-0.60%”。
+	var mixed := area.spawn_normal_barrage(profile, speech)
+	mixed.position = trap.position
+	mixed.set_process(false)
+	trap.set_process(false)
 	before = flow.get_hit_resolution().get_player_pk()
 	await _shoot_control(sandbox, trap)
 	_check(flow.get_hit_resolution().get_player_pk() < before, "实际反弹扣分")
+	_check(not messages.is_empty() and messages.back().contains("PK -0.60%"), "同发净扣分文案无错误正号")
+	print("PTF01_MIXED_SHOT=", messages.back())
 	await _capture("trap_hit")
 	for sample: float in [0.50, 0.57, 0.65, 0.73, 0.81, 0.93, 0.60]:
 		sandbox.debug_set_player_pk(sample)
