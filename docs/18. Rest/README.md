@@ -1,5 +1,9 @@
 # 18. Rest 休息时刻系统任务拆分
 
+## INT-18A 房间循环（2026-10-16）
+
+前三关结果 Continue 仍调用 `RestSession.continue_to_next_level()`；根场景保存下一关后经 SceneRouter 返回独立房间，由 StartLiveButton 主动进入下一关。连点沿用结果与房间原有一次性请求边界。末关进入 DD；Rest 页面继续只读取已提交奖励。菜单“继续游戏”从存档恢复房间，房间展示当前待开播关数。此轮没有改动 Rest 结果页布局。详情见 [INT-18A 日志](../Integration/INT-18A_2026-10-16_log.md)。
+
 ## 系统目标
 
 休息时刻系统负责新周目开局房间，以及一场直播结束后的结算与过渡。

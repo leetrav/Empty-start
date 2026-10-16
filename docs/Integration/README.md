@@ -1,5 +1,13 @@
 # Integration
 
+## INT-18A 四关生产根流程（2026-10-16）
+
+`Sandbox` 已组合正式 07/21 目录、TraitRuntime、24 教学运行器与 D 的教学/音频界面；每档首次技能仍从实际 CombatStage 进入普通批次。步骤完成写入 `SaveData.completed_tutorial_step_ids`，失败重开继续读取已完成 ID。神谕参数直接读取 12 表；DD 使用正式 DecayConfig 的 15 表参数。
+
+结果顺序为真实 CB → `hold_result_presentation()` → PA-17 完成 → PA-12 完成 → 同场 `complete_result_presentation(source)` → 原 Oracle/Rest。重开清除旧来源。前三关 Continue 提交关卡进度并回独立房间，玩家再次开播进入下一关；第四关进入 DD，`completed(EndingSession)` 保存快照并路由 Ending。菜单继续入口恢复房间或已保存的 Ending，回看保持成果只读。开场 P5/P6 回放已明确标为“开场后两幕”，独立终局漫画仍为空资源。
+
+正式场景 E2E 入口：`res://tests/integration/int18a_campaign_e2e.tscn`；必须用新隔离 `user://`。脚本使用正式四关与参数、真实合成攻击和完成信号，PK 调试用于跳过重复刷分，验证目标位置仅在验收进程内稳定；其结果不能代表自然通关耗时或实体鼠标手感。截图/录屏仅在本机 `D:\Godot\lane-int16-actual-game-flow-20261016\.godot\int18a\`，不纳入 Git。详情和边界见 [INT-18A 日志](INT-18A_2026-10-16_log.md)。
+
 ## INT-17D 表现消费端交付（2026-10-16）
 
 正式 HUD 挂载 PA-17、正式音频提前注册、真实攻击/阶段声音、双侧对白时序和教学提示入口已交付。四关 Sandbox + 真实 CB 的独立组合验收通过；正式玩家根路径的 PA-17 等待、Flow 音频/教程绑定仍由 INT-16 接入。调用顺序、同步未击破 Rest 暂存要求、本机截图和录音见 [INT-17D 日志](生产集成_INT-17D_2026-10-16_log.md)。

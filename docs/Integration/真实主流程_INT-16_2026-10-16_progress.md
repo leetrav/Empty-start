@@ -1,5 +1,7 @@
 # INT-16 真实玩家流程 · 第一批开发记录（2026-10-16）
 
+> 后续接线与实际验证继续记录于 [INT-18A 日志](INT-18A_2026-10-16_log.md)。本文件保留原中断工作事实；本批内容已提交为 `3b50312`。
+
 ## 本批已经实现
 - 游戏跨场景的关卡进度进入 SaveData：next_normal_level_order、completed_normal_level_ids。新游戏默认第一关，场景重建从存档读取，已完成关卡不能再次以同一会话提交。
 - LevelRunState.restore_progress 验证并恢复关卡号和已完成关卡集合。

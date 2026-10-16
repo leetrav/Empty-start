@@ -1,5 +1,9 @@
 # 2. LevelConfiguration 关卡配置系统任务拆分
 
+## INT-18A 跨场景进度（2026-10-16）
+
+`LevelRunState.restore_progress(next_level_order, completed_ids)` 在房间开播时恢复当前关，要求完整前序关卡记录、合法 ID 且无重复；校验失败保持原状态。`SaveData.next_normal_level_order / completed_normal_level_ids` 保存正式四关进度。前三关结算后经房间主动开播，第四关完成后沿用 DD 路线。原 INT-16 未提交实现已保留提交，运行证据见 [INT-18A 日志](../Integration/INT-18A_2026-10-16_log.md)。
+
 > **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。已实现的基础卡用于接口复查；新的视觉、静止弹幕、对话与阶段打磨以最新单卡和此表为准。
 
 ## 2026-10-09 现行实现核对与任务状态
