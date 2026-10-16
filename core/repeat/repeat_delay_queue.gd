@@ -61,7 +61,7 @@ func enqueue_plan(plan: RepeatPlan) -> int:
 
 		var request_plan: RepeatPlan = plan.duplicate(true) as RepeatPlan
 		request_plan.planned_repeat_count = 1
-		if plan.repeat_type == RepeatPlan.RepeatType.NORMAL and presentation_config != null:
+		if plan.repeat_type == RepeatPlan.RepeatType.NORMAL and presentation_config != null and presentation_config.normal_lifetime_seconds > 0.0:
 			request_plan.lifetime_seconds = presentation_config.normal_lifetime_seconds
 		if plan.repeat_type == RepeatPlan.RepeatType.CONTRADICTION and _climax_lifetime_seconds > 0.0:
 			request_plan.lifetime_seconds = _climax_lifetime_seconds

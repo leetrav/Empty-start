@@ -134,6 +134,10 @@ func _run_checks() -> void:
 	_check(plan.apply_display_template(CONFIG.repeat_display_template) == "原句保留", "10 表原句模板")
 	var queue := RepeatDelayQueue.new(CONFIG.maximum_pending_repeat_count)
 	_check(queue.enqueue_plan(plan) == 96, "10 表待生成容量 96")
+	var lifetime_probe := RepeatDelayQueue.new(1)
+	var formal_plan := RepeatPlan.create_normal_hit_plan(&"lifetime_probe", "仅测试", 3, 1, 2.4)
+	lifetime_probe.enqueue_plan(formal_plan)
+	_check(is_equal_approx(lifetime_probe.advance(4.0)[0].lifetime_seconds, 2.4), "普通表现默认保留上游06表/Tier寿命")
 	var delays_valid := true
 	for delay: float in plan.wait_offsets_seconds:
 		delays_valid = delays_valid and delay >= 0.5 and delay <= 3.0

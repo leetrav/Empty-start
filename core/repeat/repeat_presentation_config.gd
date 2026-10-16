@@ -1,7 +1,8 @@
 extends Resource
 
 # 分阶段可编辑表现；仅影响排期、可读性和寿命，原句身份及奖励规则保持原值。
-@export var normal_lifetime_seconds: float = 6.0
+## 0 保留生产调用方从 06 表与 Tier 解析的寿命；正值仅用于明确批准的表现覆盖。
+@export var normal_lifetime_seconds: float = 0.0
 @export var contradiction_lifetime_seconds: float = 0.7
 @export var terminal_lifetime_seconds: float = 3.2
 @export_range(0.0, 1.0) var normal_opacity: float = 0.85

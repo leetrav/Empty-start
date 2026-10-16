@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1")
-normal_lifetime_seconds = 6.0
+normal_lifetime_seconds = 0.0
 contradiction_lifetime_seconds = 0.7
 terminal_lifetime_seconds = 3.2
 normal_opacity = 0.85
