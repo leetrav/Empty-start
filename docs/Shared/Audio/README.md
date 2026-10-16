@@ -1,5 +1,15 @@
 # Audio 共用音频接入
 
+## INT-17D 正式消费端（2026-10-16）
+
+`AudioManager._ready()` 已注册 17 表可加载的 23 个事件，先于 Boot、菜单和身份场景；Sandbox 再次注册同 ID 为覆盖行为。`bind_ui_button(button, event_id=&"ui_click") -> bool` 供 UI 拥有者绑定点击/确认/切换。`event_played(event_id, player)` 仅在池播放器实际执行 `play()` 后发出，可核对音量、音高和资源。
+
+HUD 原有 `bind_portrait_attack()` 同时绑定 `BattleAudioPresenter`：读取真实按住/满蓄上升沿、正式发射、最终整发结算与 `BarrageArea.barrage_generated`，播放 charge/ready/fire、normal/trap、spawn/repeat 音效；生成音有可调的 0.15 秒短限流。复读零收益不会冒充普通命中。
+
+INT-16 创建 Flow 后调用 `hud.bind_audio_flows(oracle_flow, divine_flow)`，接收实际矛盾进入、成功结果、神谕提交成功与终局会话建立事实。Tier 升档音由现有 CombatStage 负责，锁句由现有 Spread 负责。A 已提供的 `music_event_requested -> AudioManager.change_music` 与音乐素材状态分开验收：17 表六个 Tier 音乐行目前均无资源，当前无法播放；音乐分层、节拍同步仍按原音乐待办处理。
+
+短剧情 `create_event_player()` 现在同样应用表内 volume/pitch。23 行均 `loop=false`，SFX/UI 非循环与播放器参数已做真实 GUI 验证；未以此宣称未来循环音乐/组过渡验收通过。50 个缺文件 ID、尚缺生产请求的事件与本机录音见 [INT-17D 日志](../../Integration/生产集成_INT-17D_2026-10-16_log.md)。
+
 ## 当前底座
 
 项目已经有：

@@ -15,6 +15,7 @@ func _initialize() -> void:
 	_assert(audio_registered == 23, "all 23 audio rows with present assets load into AudioManager")
 	var barrage_event = audio_manager.get("_audio_config").find_event(&"barrage_spawn")
 	_assert(barrage_event != null and barrage_event.volume_db == 0.0 and barrage_event.pitch_min == 1.0 and barrage_event.pitch_max == 1.0, "audio event carries CSV playback values")
+	_assert(barrage_event != null and barrage_event.loop == false and barrage_event.transition_group.is_empty(), "usable SFX loop and transition fields match the source row")
 	var dialogue_counts := {"story_level_001": 0, "story_level_002": 0, "story_level_003": 0, "story_level_004": 0}
 	var idle_count := 0
 	var dialogue_total := 0
@@ -25,6 +26,8 @@ func _initialize() -> void:
 			dialogue_total += 1
 			if entry.event_id == &"timed":
 				idle_count += 1
+				_assert(entry.priority == BubbleDialogueEntry.Priority.TIMED_IDLE, "random_idle uses low-priority idle scheduling")
+			_assert(entry.trigger_time_seconds == 0.0, "blank trigger_time_s retains the SD-07 interval scheduler")
 	_assert(idle_count == 48, "all 48 enabled random_idle lines enter timed dialogue config")
 	_assert(dialogue_total == 119, "all enabled dialogue rows map into the four production stories")
 	var player_rows: Array[Dictionary] = consumer.get_comments("player", "")
@@ -32,6 +35,7 @@ func _initialize() -> void:
 	_assert(not player_rows.is_empty() and not alien_rows.is_empty(), "enabled viewer/comment rows resolve for both sides")
 	_assert(_simulate_weighted_viewers(player_rows, 1000) and _simulate_weighted_viewers(alien_rows, 1000), "weighted audience simulation yields valid weighted candidates")
 	print("SHEET-C PASS: audio=%d/23, 22 typed booleans, 119 dialogue incl 48 timed idle, audience simulation player=%d opponent=%d; dialogue=%s" % [audio_registered, player_rows.size(), alien_rows.size(), str(dialogue_counts)])
+	audio_manager.free()
 	quit(1 if _failed else 0)
 
 

@@ -2,7 +2,7 @@
 
 ## SHEET-C 正式表接线（2026-10-15）
 
-`FormalSheetRuntimeConsumer.create_dialogue_config(story_config_id)` 将 20 表启用行按故事 ID 转成现有气泡条目，`display_duration_s` 映射到显示时长，`random_weight` 映射到随机权重，连接、胜负、Tier 变化、实际命中和指定原句继续使用既有事件 ID。`random_idle` 行归入 `timed` 事件；现有 `StreamerBubbleTimedOpponentDialoguePresenter` 同时调度双方，玩家间隔读取 06 表 6–10 秒，对手读取 7–12 秒，T0 对手闲聊继续等待连线。每次成功入队后重新按 20 表权重抽取对白。
+`FormalSheetRuntimeConsumer.create_dialogue_config(story_config_id)` 将 20 表启用行按故事 ID 转成现有气泡条目，`display_duration_s`、`trigger_time_s` 和 `random_weight` 分别映射到显示时长、固定触发秒数和随机权重。连接、胜负、Tier 变化、实际命中和指定原句继续使用既有事件 ID。`random_idle` 行归入 `timed` 事件并标记为低优先级；现有 `StreamerBubbleTimedOpponentDialoguePresenter` 同时调度双方，玩家间隔读取 06 表 6–10 秒，对手读取 7–12 秒，T0 对手闲聊继续等待连线。当前正式 20 表的 48 条 `random_idle` 均未填写 `trigger_time_s`，继续由 SD-07 闲聊间隔触发。每次成功入队后重新按 20 表权重抽取对白。
 
 SHEET-C 的 CSV 集成模拟验证四个故事共 119 条启用对白，其中 48 条随机闲聊。主 Sandbox 的 Presenter 创建和调用仍由 Sandbox 所属 Lane E 负责；当前 INT-14 已有对手 Presenter 实例，双方配置由该公开 `configure(flow, config, enqueue_callable)` 入口消费。
 
@@ -155,4 +155,10 @@ Sandbox 对外提供 `dialogue_event_sequence_completed(event_id, sequence_id, s
 
 ## INT-14 正式剧情事件消费（2026-10-15）
 
-Sandbox 每次尝试按 02 表 `story_config_id` 从 20 表装配启用的事件对白，并复用既有 `BubbleDialogueConfig` / SD Presenter。消费者映射 `connect/tier_up/tier_down/win/lose/hit_word` 到现有稳定事件，保留发言方、原句 ID 和 CSV 顺序；`random_idle` 暂不触发，因为该表没有闲聊调度时间字段，运行时不自造节奏。
+Sandbox 每次尝试按 02 表 `story_config_id` 从 20 表装配启用的事件对白，并复用既有 `BubbleDialogueConfig` / SD Presenter。消费者映射 `connect/tier_up/tier_down/win/lose/hit_word/timed` 到现有稳定事件，保留发言方、原句 ID 和 CSV 顺序。`trigger_time_s` 映射到条目秒数，空值为 0；`random_idle` 使用独立的低优先级闲聊调度，间隔来自 06 表。
+
+## INT-17D 双侧时序核实（2026-10-16）
+
+正式 20 表共 119 条启用对白，四关分别 28/32/28/31；48 条 `random_idle` **全部属于 player**，每关 12 条，当前没有对手随机闲聊行。对手 71 条是剧情事件行；不为填满两侧而复制玩家闲聊。双方队列独立，随机权重和时长沿用正式数据。`timed` 现在支持双方，T0 只暂存对手侧到期条目，玩家侧照常提交。
+
+`ui/tutorial/tutorial_hint_view.tscn` 只显示 C 的 `TutorialStepRunner` 文案。INT-16 在 `runner.begin()` 前调用 `hud.bind_tutorial_runner(runner)`，消费 `hint_requested(step_id, hint_text)`、`step_completed(step_id)`、`tutorial_completed(config_id)`；完成隐藏，重开显式清理视图，进度与输入判定仍归原所有者。Godot GUI 重播与媒体路径见 [INT-17D 日志](../Integration/生产集成_INT-17D_2026-10-16_log.md)。
