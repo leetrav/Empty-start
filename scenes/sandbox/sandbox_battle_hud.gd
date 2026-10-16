@@ -158,7 +158,7 @@ func _ready() -> void:
 	_opponent_live_background.get_parent().add_child(_opponent_breakthrough)
 	_opponent_breakthrough.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_opponent_breakthrough.z_index = 21
-	_opponent_breakthrough.bind_targets(_opponent_portrait, opponent_portrait_motion)
+	_opponent_breakthrough.bind_targets(_opponent_portrait, opponent_portrait_motion, opponent_tier_portrait.fit_current_texture)
 	_opponent_breakthrough.defeat_animation_finished.connect(_on_opponent_defeat_finished)
 	_opponent_breakthrough.unbroken_offline_finished.connect(_on_opponent_offline_finished)
 	_pk_bar_skin = PK_BAR_SKIN_SCENE.instantiate() as PkBarSkin
@@ -397,6 +397,7 @@ func configure_opponent_result(level: LevelProfile, presentation: Dictionary = {
 	if tiers.size() == 4:
 		tier_three = tiers[3] as Texture2D
 	var transition: Texture2D = presentation.get("portrait_defeat_transition", level.opponent_defeat_transition_portrait) as Texture2D
+	opponent_tier_portrait.configure_result_bounds(transition, _result_defeat_texture)
 	var petals: Array[Texture2D] = []
 	if _result_character_id == &"fox":
 		petals.assign(FOX_PETALS)
@@ -422,6 +423,7 @@ func play_opponent_result(broken: bool) -> bool:
 	elif _result_character_id == &"frog":
 		# Frog 仅使用已交付的击败静帧，专属特效等待美术确认。
 		_opponent_portrait.texture = _result_defeat_texture
+		opponent_tier_portrait.fit_current_texture()
 		opponent_portrait_motion.set_idle_strength(0.0)
 		_on_opponent_defeat_finished.call_deferred(_result_character_id)
 	elif not _opponent_breakthrough.play_defeat(_result_character_id):

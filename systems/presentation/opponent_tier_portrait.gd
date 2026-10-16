@@ -12,6 +12,8 @@ signal flip_finished(tier: int)
 @export var kiwi_burst_scale: float = 1.09
 @export var kiwi_shake_pixels: float = 7.0
 @export_range(0.7, 1.0, 0.01) var alien_tier_scale: float = 0.90
+# 保持原直播框居中意图；可在独立预览中比较底部锚点，正式取舍由人工确认。
+@export var visible_anchor_ratio: Vector2 = Vector2(0.5, 0.5)
 
 var current_tier: int = 0
 var fx: OpponentTierFx
@@ -28,6 +30,9 @@ var _character_id: String = ""
 var _impact_backdrop: Control
 var _display_scale: float = 1.0
 var _pending_display_scale: float = 1.0
+var _visible_bounds: Dictionary = {}
+var _maximum_visible_size: Vector2 = Vector2.ONE
+var _result_textures: Array[Texture2D] = []
 
 
 # 插入 PA-14 的 Idle 层内部，让汗滴、切图与现有呼吸动作共同移动。
@@ -64,7 +69,54 @@ func configure_textures(idle: Texture2D, tier_01: Texture2D, tier_02: Texture2D,
 	_tier_01 = tier_01
 	_tier_02 = tier_02
 	_tier_03 = tier_03
+	_rebuild_visible_bounds()
 	reset_for_tier(current_tier)
+
+
+# 待机、阶段、过渡和击败共用同一尺寸基准，切图不随透明画布重新居中。
+func configure_result_bounds(transition: Texture2D, defeat: Texture2D) -> void:
+	_result_textures.clear()
+	for texture: Texture2D in [transition, defeat]:
+		if texture != null:
+			_result_textures.append(texture)
+	_rebuild_visible_bounds()
+	fit_current_texture()
+
+
+# 测量原 Texture 可见 alpha 边界，不修改 PNG，也不依赖原文件存在于导出包。
+func _rebuild_visible_bounds() -> void:
+	_visible_bounds.clear()
+	_maximum_visible_size = Vector2.ONE
+	var textures: Array[Texture2D] = [_idle, _tier_01, _tier_02, _tier_03]
+	textures.append_array(_result_textures)
+	for texture: Texture2D in textures:
+		if texture == null:
+			continue
+		var bounds := Rect2(Vector2.ZERO, texture.get_size())
+		var pixels: Image = texture.get_image()
+		if pixels != null:
+			if pixels.is_compressed():
+				pixels.decompress()
+			var used: Rect2i = pixels.get_used_rect()
+			if used.has_area():
+				bounds = Rect2(used)
+		_visible_bounds[texture] = bounds
+		_maximum_visible_size = _maximum_visible_size.max(bounds.size)
+
+
+# 以同角色全套可见边界的共同缩放和锚点绘制，PA-17 也调用本入口。
+func fit_current_texture() -> void:
+	if _portrait == null or _portrait.texture == null or size.x <= 0.0 or size.y <= 0.0:
+		return
+	var texture: Texture2D = _portrait.texture
+	var bounds: Rect2 = _visible_bounds.get(texture, Rect2(Vector2.ZERO, texture.get_size()))
+	var fit_scale: float = minf(size.x / _maximum_visible_size.x, size.y / _maximum_visible_size.y)
+	var anchor: Vector2 = visible_anchor_ratio.clamp(Vector2.ZERO, Vector2.ONE)
+	_portrait.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	_portrait.stretch_mode = TextureRect.STRETCH_SCALE
+	_portrait.size = texture.get_size() * fit_scale
+	_portrait.pivot_offset = (bounds.position + bounds.size * anchor) * fit_scale
+	_portrait.position = size * anchor - _portrait.pivot_offset
 
 
 # 三名对手共用白色冲击条；Kiwi 的翻图节奏仍单独处理。
@@ -73,6 +125,7 @@ func configure_character(character_id: String) -> void:
 	fx.configure_character(character_id)
 	_display_scale = _scale_for_texture(_portrait.texture)
 	_portrait.scale = Vector2.ONE * _display_scale
+	fit_current_texture()
 
 
 func show_tier(tier: int) -> void:
@@ -100,6 +153,7 @@ func show_tier(tier: int) -> void:
 		_portrait.texture = target
 		_display_scale = target_display_scale
 		_portrait.scale = Vector2.ONE * _display_scale
+		fit_current_texture()
 		if target_tier == 1 or target_tier == 2:
 			_play_shudder()
 		return
@@ -135,6 +189,7 @@ func reset_for_tier(tier: int = 0) -> void:
 	_display_scale = _scale_for_texture(_portrait.texture)
 	_pending_display_scale = _display_scale
 	_portrait.scale = Vector2.ONE * _display_scale
+	fit_current_texture()
 	fx.reset_fx()
 	fx.set_sweat(current_tier == 2)
 
@@ -169,7 +224,7 @@ func _play_kiwi_flip() -> void:
 
 
 func _set_kiwi_scale(value: float) -> void:
-	_portrait.scale = Vector2(value, lerpf(1.0, value, 0.78))
+	_portrait.scale = Vector2(value, lerpf(1.0, value, 0.78)) * _display_scale
 
 
 # 位移用独立 Tween，反复改档时统一取消并归零。
@@ -194,6 +249,7 @@ func _play_shudder() -> void:
 
 func _swap_at_edge() -> void:
 	_portrait.texture = _pending_texture
+	fit_current_texture()
 	_display_scale = _pending_display_scale
 	fx.play_impact()
 	if _character_id == "kiwi":
@@ -208,8 +264,7 @@ func _finish_flip() -> void:
 
 
 func _refresh_pivot() -> void:
-	if _portrait != null:
-		_portrait.pivot_offset = size * 0.5
+	fit_current_texture()
 
 
 # ALIEN 的阶段图比 idle 横向扩张更明显，只缩小阶段图显示，不改原始 PNG 或卡片尺寸。
