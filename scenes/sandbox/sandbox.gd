@@ -63,6 +63,10 @@ var _pending_rest_session: RestSession
 var _result_feedback_active: bool = false
 var _formal_sheet_consumer
 var _active_dialogue_config: BubbleDialogueConfig
+var _trait_catalog: BarrageTraitCatalog
+var _trait_runtime: BarrageTraitRuntime
+var _tutorial_runner: TutorialStepRunner
+var _result_feedback_system: ContradictionBreakSystem
 
 
 # 场景只创建生命周期对象并接线；PK、Tier、倾向等状态留在各自所有者。
@@ -86,6 +90,9 @@ func _ready() -> void:
 		return
 	_contradiction_oracle_flow = ContradictionOracleFlow.new()
 	add_child(_contradiction_oracle_flow)
+	if not _configure_oracle_parameters():
+		push_error("Sandbox: 正式神谕参数不可用。")
+		return
 	_contradiction_oracle_flow.state_text_changed.connect(_battle_hud.show_battle_state)
 	_contradiction_oracle_flow.entered.connect(_on_contradiction_stage_entered)
 	_contradiction_oracle_flow.outcome_resolved.connect(_on_contradiction_outcome_resolved)
@@ -124,6 +131,19 @@ func _ready() -> void:
 	_battle_attempt_flow.tier_changed.connect(_queue_pk_tier_visual)
 	_battle_attempt_flow.attempt_failed.connect(_on_attempt_failed)
 	_battle_attempt_flow.normal_combat_completed.connect(_on_normal_combat_completed)
+	# 生成目录在第一批出现前注入；反击抽选继续由 Area 的真实 Tier 批次负责。
+	_trait_catalog = BarrageTraitCatalog.new()
+	_trait_runtime = BarrageTraitRuntime.new()
+	if not _trait_catalog.load_production_tables() or not _trait_runtime.bind(_barrage_area, _trait_catalog):
+		push_error("Sandbox: 无法接入正式特性目录。")
+		return
+	_battle_attempt_flow.shot_resolved.connect(_trait_runtime.on_shot_resolved)
+	_tutorial_runner = TutorialStepRunner.new()
+	_tutorial_runner.step_completed.connect(_on_tutorial_step_completed)
+	_battle_attempt_flow.shot_resolved.connect(_tutorial_runner.on_shot_resolved)
+	_battle_hud.bind_tutorial_runner(_tutorial_runner)
+	_battle_hud.bind_audio_flows(_contradiction_oracle_flow)
+	_battle_hud.opponent_result_presentation_finished.connect(_on_opponent_result_finished)
 	_battle_hud.failure_presentation_finished.connect(_on_failure_presentation_finished)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
@@ -225,6 +245,9 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 	_battle_hud.set_paradox_stage_active(false, stage.get_current_tier())
 	# 表现表按稳定 level_id 解析，并在同一尝试入口刷新主播、立绘、对白与评论。
 	var presentation: Dictionary = _formal_sheet_consumer.get_level_presentation(current_level.level_id)
+	_battle_hud.configure_opponent_result(current_level, presentation)
+	_trait_runtime.begin_attempt(current_level)
+	_tutorial_runner.begin(current_level.tutorial_config_id, SaveManager.data.completed_tutorial_step_ids)
 	var streamer_id: String = str(presentation.get("streamer_id", current_level.streamer_id))
 	var opponent_name: String = str(presentation.get("streamer_name", current_level.streamer_name))
 	var fan_group_name: String = str(presentation.get("fan_group_name", current_level.fan_group_name))
@@ -342,16 +365,27 @@ func _on_contradiction_outcome_resolved(outcome: int) -> void:
 	if _result_feedback_active:
 		return
 	_result_feedback_active = true
-	_contradiction_oracle_flow.hold_oracle_for_result_feedback()
-	_paradox_comic.play_result_feedback(
-		outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH
-	)
+	_result_feedback_system = _contradiction_oracle_flow.get_contradiction_system()
+	_contradiction_oracle_flow.hold_result_presentation()
+	var broken := outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH
+	if not _battle_hud.play_opponent_result(broken):
+		_on_opponent_result_finished(broken)
+
+
+## 同一场 PA-17 完成后才播放 PA-12；重开后的旧结果不能推进新流程。
+func _on_opponent_result_finished(broken: bool) -> void:
+	if not _result_feedback_active or _result_feedback_system == null or _result_feedback_system != _contradiction_oracle_flow.get_contradiction_system():
+		return
+	_paradox_comic.play_result_feedback(broken)
 
 
 # PA-12 结果漫画结束后才允许显示已有 Owner 提交的后续页面。
 func _on_paradox_result_feedback_finished(_success: bool) -> void:
+	if not _result_feedback_active or _result_feedback_system != _contradiction_oracle_flow.get_contradiction_system():
+		return
 	_result_feedback_active = false
-	_contradiction_oracle_flow.release_oracle_after_result_feedback()
+	_contradiction_oracle_flow.complete_result_presentation(_result_feedback_system)
+	_result_feedback_system = null
 	if _pending_oracle_session != null:
 		var oracle_session := _pending_oracle_session
 		_pending_oracle_session = null
@@ -370,12 +404,15 @@ func _reset_paradox_presentation() -> void:
 	_pending_oracle_session = null
 	_pending_rest_session = null
 	_result_feedback_active = false
+	_result_feedback_system = null
 	if is_instance_valid(_paradox_comic):
 		_paradox_comic.reset_for_attempt()
 
 
 # 暂停由 SceneTree 冻结此节点，复读等待只使用实际游戏帧时间。
 func _process(delta: float) -> void:
+	if _battle_attempt_flow == null or _contradiction_oracle_flow == null:
+		return
 	# PA-11：战斗提前结束时取消旧演出，防止它向已停止流程发出完成通知。
 	if not _battle_attempt_flow.is_normal_combat_active() and _battle_hud.is_stage_transition_playing():
 		_battle_hud.cancel_tier_breakthrough()
@@ -388,6 +425,8 @@ func _process(delta: float) -> void:
 	SaveManager.data.live_session.advance_short_boosts(delta)
 	_battle_attempt_flow.advance(delta)
 	_contradiction_oracle_flow.advance(delta)
+	if _tutorial_runner != null and _battle_attempt_flow.is_normal_combat_active():
+		_tutorial_runner.observe_combat_frame(_barrage_area, _aim_reticle, _attack_charge_input)
 	_battle_hud.refresh_attack(_attack_charge_input.get_charge_progress(), _attack_charge_input.get_attack_phase())
 
 
@@ -516,6 +555,7 @@ func _on_rest_continue_requested() -> void:
 			push_error("Campaign: advanced but next level is missing.")
 			return
 		SaveManager.data.next_normal_level_order = next_profile.level_order
+		SaveManager.data.current_scene = SceneRouter.OPENING_ROOM_SCENE_PATH
 		if not SaveManager.data.completed_normal_level_ids.has(finished_level_id):
 			SaveManager.data.completed_normal_level_ids.append(finished_level_id)
 		if SaveManager.save_game() != OK:
@@ -539,6 +579,12 @@ func _enter_divine_descent() -> void:
 	add_child(_divine_descent_flow)
 	_divine_descent_flow.entered.connect(_on_divine_descent_entered)
 	_divine_descent_flow.completed.connect(_finish_divine_descent)
+	_battle_hud.bind_audio_flows(_contradiction_oracle_flow, _divine_descent_flow)
+	if not _divine_descent_flow.configure_formal_parameters(
+			divine_decay_config.auto_repeat_interval_min_seconds, divine_decay_config.auto_repeat_interval_max_seconds,
+			divine_decay_config.converge_ratio, divine_decay_config.final_emphasis_duration_seconds):
+		push_error("Sandbox: 神降临正式参数无效。")
+		return
 	var attempt_hit_resolution: HitResolution = _battle_attempt_flow.get_hit_resolution()
 	var attempt_stage: CombatStage = _battle_attempt_flow.get_combat_stage()
 	var attempt_opponent: OpponentPKBar = _battle_attempt_flow.get_opponent_pk_bar()
@@ -572,6 +618,11 @@ func _finish_divine_descent(result: EndingSession) -> void:
 	if not is_inside_tree():
 		return
 	# 同一真实存档保留已提交倾向与奖励；写盘失败必须留下明确证据。
+	SaveManager.data.ending_display_data = result.get_display_data()
+	SaveManager.data.current_scene = SceneRouter.ENDING_SCENE_PATH
+	var last_id := _run_state.get_current_level_profile().level_id
+	if not SaveManager.data.completed_normal_level_ids.has(last_id):
+		SaveManager.data.completed_normal_level_ids.append(last_id)
 	if SaveManager.save_game() != OK:
 		push_error("Sandbox: 终局成果存盘失败。")
 	var error := SceneRouter.goto_ending(result)
@@ -613,6 +664,8 @@ func _on_barrage_generated(_view: BarrageView) -> void:
 # 离开验收场时撤销尚未提交的本场倾向，已有周目成果由 SaveData 保留。
 func _exit_tree() -> void:
 	_reset_paradox_presentation()
+	if _trait_runtime != null:
+		_trait_runtime.unbind()
 	if _contradiction_oracle_flow != null:
 		_contradiction_oracle_flow.stop()
 	if _divine_descent_flow != null:
@@ -626,3 +679,32 @@ func _exit_tree() -> void:
 # PA-18 完成只放行既有失败 UI，失败路由仍由 Sandbox / Flow 拥有。
 func _on_failure_presentation_finished() -> void:
 	_battle_hud.show_failure()
+
+
+## 12 表正式字段直接交给已有 Flow，避免再次维护一组默认数值。
+func _configure_oracle_parameters() -> bool:
+	var file := FileAccess.open("res://data/source_tables/12_神谕参数.csv", FileAccess.READ)
+	if file == null:
+		return false
+	file.get_csv_line()
+	var values: Dictionary = {}
+	while not file.eof_reached():
+		var row := file.get_csv_line()
+		if row.size() >= 2:
+			values[row[0]] = row[1]
+	return _contradiction_oracle_flow.configure_oracle_parameters(
+		float(values.get("selection_time_s", 0)), int(values.get("max_candidates", 0)))
+
+
+## 真实教学完成后立即保存步骤；失败重开及跨场景恢复均消费同一记录。
+func _on_tutorial_step_completed(step_id: String) -> void:
+	if SaveManager.data.completed_tutorial_step_ids.has(step_id):
+		return
+	SaveManager.data.completed_tutorial_step_ids.append(step_id)
+	if SaveManager.save_game() != OK:
+		push_error("Sandbox: 教学进度保存失败。")
+
+
+## 集成验收读取正式运行器，测试不直接通知教学完成事件。
+func get_tutorial_runner() -> TutorialStepRunner:
+	return _tutorial_runner
