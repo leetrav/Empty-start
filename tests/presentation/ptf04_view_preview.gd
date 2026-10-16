@@ -24,6 +24,7 @@ var _scenario_count: int = 0
 var _drop_started: bool = false
 var _drop_finished: bool = false
 var _drop_finished_at: float = -1.0
+var _encode_from: float = 0.0
 
 
 # 只向外部 D 盘保存证据，默认保留真实输入供手动试玩。
@@ -44,6 +45,8 @@ func _ready() -> void:
 			get_window().content_scale_size = Vector2i(2400, 1080)
 		if argument == "--anchor-bottom":
 			_bottom_anchor = true
+		if argument.begins_with("--encode-from="):
+			_encode_from = maxf(0.0, argument.trim_prefix("--encode-from=").to_float())
 	get_window().title = "PTF04 Lane D %s" % _mode
 	if not _output.to_lower().replace("\\", "/").begins_with("d:/"):
 		_output = ""
@@ -55,6 +58,7 @@ func _ready() -> void:
 # 直接实例化当前正式场景，未通过 debug PK 构造战斗进度。
 func _start() -> void:
 	if _mode == "encode":
+		_elapsed = _encode_from
 		_encode_data = JSON.parse_string(FileAccess.get_file_as_string(_output.path_join("frames.json")))
 		_encode_view = TextureRect.new()
 		add_child(_encode_view)
