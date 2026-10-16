@@ -176,3 +176,7 @@ RP-12 已复用 13 的本场读取链，并提供 19 已有候选入口可消费
 | [RP-21](tasks/RP-21_repeat-bottom-layer.md) | 复读固定最低层级 | 待实施 |
 
 本轮任务卡逐项说明触发条件、应发生的行为与验收结果；派工时依赖最新卡片和系统当前代码。
+
+## R26-B 正式复读配置接线（2026-10-16）
+
+`10_复读配置.csv` 延迟范围由 `data/repeat/repeat_delay_config.tres` 提供给 `RepeatDelayQueue`；待生成上限、矛盾复读数量 / 寿命沿用 Sandbox 配置，布局、渐隐、灰字无描边和最低层级沿用 BG-42、RP-17、RP-19/20、RP-21。正式模板值 `{text}` 由 `RepeatPlan.apply_display_template()` 解析；生产模板现在保留命中原句。普通复读规则及统计归属保持原状。

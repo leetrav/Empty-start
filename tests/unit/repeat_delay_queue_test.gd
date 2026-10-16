@@ -16,7 +16,10 @@ func _run_tests() -> void:
 	if not _test_queue_discards_overflow():
 		quit(1)
 		return
-	print("通过：普通复读队列容量保留与溢出丢弃两项单元测试")
+	if not _test_formal_text_template():
+		quit(1)
+		return
+	print("通过：普通复读队列容量、溢出与正式模板三项单元测试")
 	quit()
 
 
@@ -52,6 +55,15 @@ func _test_queue_discards_overflow() -> bool:
 		return false
 	if queue.enqueue_plan(overflow_plan) != 1 or queue.advance(RepeatDelayQueue.DELAY_CONFIG.maximum_delay_seconds + 0.1).size() != 3:
 		push_error("普通复读队列没有丢弃超出容量的部分")
+		return false
+	return true
+
+
+# 正式 CSV 使用 {text}；解析后仍只展示真实命中的原句。
+func _test_formal_text_template() -> bool:
+	var plan: RepeatPlan = _make_normal_plan(1)
+	if plan.apply_display_template("{text}") != "容量测试原句":
+		push_error("正式复读模板未消费 {text} 原句占位符")
 		return false
 	return true
 

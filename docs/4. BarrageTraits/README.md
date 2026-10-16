@@ -4,6 +4,17 @@
 
 ## 2026-10-09 现行实现核对与任务状态
 
+### R26-D 表驱动后端（2026-10-16）
+
+- `BarrageTraitCatalog` 读取正式 `07_特性参数.csv` 与 `21_反击技能池.csv`；技能按 `streamer_id + tier + enabled` 筛选，并使用 `weight` 加权抽选。`BarrageArea.configure_trait_catalog()` 注入目录，`spawn_counter_skill_barrage(level_profile, speech, tier)` 把特性技能送入现有普通弹幕装配和特殊容量流程。
+- `07.lifetime_override_s` 可覆盖类别寿命；空值沿用 06 生命周期配置。其他列可通过 `get_trait_definition()` 查询。运行时目录尚需 Sandbox 所有者注入，特性技能仍需战斗流程决定何时触发。
+- `TutorialStepRunner` 读取正式 `24_新手教学配置.csv`，按 `step_order` 推进启用步骤，并以稳定事件 ID 发布提示和完成事实。`TutorialHintLabel.show_tutorial_hint()` 可连接 `hint_requested`。Sandbox 的输入/命中事实接线和周目完成记录归 INT-16 所有者。
+- INT-17C 已通过 `BarrageTraitRuntime` 组合现有 Area：`bind(area,catalog)` 在实际生成时绑定 07 规则，`begin_attempt(level)` 捕获本次真实关卡，`on_shot_resolved` 同步消费 Flow 结算事实并生成一次性分裂子体，子体保留原句和母体绝对截止。`spawn_counter_skill` / `spawn_skill` 支持带权与显式技能实际生成，所有实例继续走普通/特殊容量账本。
+- `BarrageTraitCatalog.configure_trait_set()` 将 07 的 `penalty_param_id` 交给命中结果；唯一 PK 拥有者 HitResolution 从现有 06 Resource 读取对应处罚并沿用整发上限。`get_lifetime_override()` 保留既有装配顺序中首个有效寿命覆盖；`split_child_count` 已有实际子体消费者。
+- `TutorialStepRunner.observe_combat_frame(area,aim,attack)` 读取真实可选普通目标、可见重叠和满蓄状态；`on_shot_resolved` 只接受有效普通非复读命中。`begin(config_id,completed_ids)` 在重开/恢复时跳过已完成步骤并重新发布当前提示；`get_current_hint()` 与 `get_completed_step_ids()` 提供副本给 UI / 周目拥有者。
+- `get_visual_asset_status()` 按 07 原 ID 查询 18 表，`visual_asset_requested` 向 E 提供原 ID 和映射事实。`trait_retaliation`、`trait_fake`、`trait_unselectable` 在 18 中缺少精确 ID；不自动替换为相似名称。现有程序绘制继续显示六种特性，正式素材与人工画面验收仍待 E。
+- 正式四关的 32 条技能、16 个带权池、分裂/复制/处罚/容量和三步教学已通过真实 Godot 组件运行；正式 Sandbox 的批次时机、Flow 信号与周目存储仍由 A / INT-16 组合。接口与完整证据见 [INT-17C 日志](../Integration/生产集成_INT-17C_2026-10-16_log.md)。
+
 **现有组件：** `BarrageTraitSet` 已支持一条普通话语挂多个兼容特性，且可查询本关/已继承可用特性。真实普通批次当前尚未随机装配特性，BG-41 负责按后续明确的反击池选择；BG-35 负责特殊实例同屏容量。遮挡特性展示的最高层与随机位置静止生成分别由 BT-14、BT-15 处理；共享随机静止落点能力由 BG-42 提供。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |

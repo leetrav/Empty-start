@@ -100,9 +100,19 @@ INT-01 留下的胜利倾向提交缺口已在隔离集成分支按 TT-03 补齐
 
 ## 2026-10-09 新确认：T6 六句的速度曲线
 
+### R26-B 正式参数消费（2026-10-16）
+
+`ContradictionOracleFlow.start()` 复制窗口 Resource 后读取本关 `LevelProfile` 的窗口、发射次数、真假候选数量、减速时长、可射击时点及曲线 ID；成功静音过渡同样读取本关值。候选数量由不同的有效原句条目满足，缺少条目时拒绝启动，不重复 ID 补位。
+
 T6 / Paradox 保留 **1 真 + 5 假** 的六句构成。六句在出现后先移动，再沿可配置速度曲线逐渐减速到停止；**移动期间已经可以蓄力、释放并完成命中判定**，停止后同样可射击。继续使用现有 10 秒窗口和一发机会。
 
 | 任务卡 | 单功能 | 状态 |
 | --- | --- | --- |
-| [CB-13](tasks/CB-13_six-fixed-contradictions.md) | 固定一真五假初始集合 | 已实现；缺少不同假句时复用现有有效条目 |
+| [CB-13](tasks/CB-13_six-fixed-contradictions.md) | 固定一真五假初始集合 | 已实现；缺少不同有效条目时拒绝启动 |
 | [CB-14](tasks/CB-14_contradiction-ease-out-motion.md) | 六句逐渐减速至停止，运动时可射击 | 已实现；正式演出初值待验收 |
+
+### INT-17B 结果演出交接（2026-10-16）
+
+`ContradictionOracleFlow.outcome_resolved(outcome)` 在真实结果锁定、输入关闭后同步发出。根场景在此回调调用 `hold_result_presentation()`，并保存 `get_contradiction_system()` 返回的本场对象。PA-17 击败 / 未击破离线完成后，以同一对象调用 `complete_result_presentation(source_system)`；旧尝试对象被拒绝。成功仍等待矛盾复读自然离场和正式静音过渡，未击破也会等待离线完成后才发 `rest_ready`。
+
+PA-12 与 PA-17 若同时播放，由 INT-16 根场景汇总两者完成后释放一次；现有 `hold_oracle_for_result_feedback()` / `release_oracle_after_result_feedback()` 保留兼容，同一结果不要由两套独立回调提前释放。完整复播入口和本地证据见 [INT-17B 日志](../Integration/生产集成_INT-17B_2026-10-16_log.md)。

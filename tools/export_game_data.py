@@ -98,6 +98,9 @@ TIER_TO_GODOT = {
     "motion_curve_weight": "curved_motion_weight",
     "motion_speed_change_weight": "speed_change_motion_weight",
     "motion_wander_weight": "wandering_motion_weight",
+    "foreground_screen_cap": "foreground_slot_count",
+    "retaliation_draw_count_first_entry": "retaliation_draw_count_first_entry",
+    "neutral_weight_multiplier": "neutral_weight_multiplier",
 }
 MOTION_WEIGHT_FIELDS = (
     "motion_straight_weight", "motion_curve_weight",
@@ -105,6 +108,187 @@ MOTION_WEIGHT_FIELDS = (
 )
 BASIC_TO_GODOT = {"spawn_interval_s": "base_spawn_interval_seconds"}
 PK_PERCENT_POINT_SCALE = 0.01  # 策划 0.12 个百分点 → Godot 0.0012。
+
+# 已有 CombatNumericsConfig 的字段映射；数值只从正式 CSV 刷新，避免再次依赖脚本默认值。
+COMBAT_PARAM_TO_GODOT = {
+    "pk_initial": ("initial_player_pk", 0.01), "pk_min": ("minimum_player_pk", 0.01),
+    "pk_max": ("maximum_player_pk", 0.01),
+    "pullback_base_pk_per_s": ("base_pullback_speed_pk_per_second", 0.01),
+    "aim_radius_pc_px": ("pc_aim_radius_px", 1), "aim_radius_touch_px": ("touch_aim_radius_px", 1),
+    "charge_time_s": ("charge_time_seconds", 1), "projectile_flight_s": ("projectile_flight_seconds", 1),
+    "recovery_time_s": ("recovery_time_seconds", 1),
+    "miss_penalty_pk": ("miss_penalty_pk", 0.01), "blocked_penalty_pk": ("blocked_penalty_pk", 0.01),
+    "fake_penalty_pk": ("fake_penalty_pk", 0.01), "retaliation_penalty_pk": ("retaliation_penalty_pk", 0.01),
+    "reflect_penalty_pk": ("reflect_penalty_pk", 0.01), "thunder_penalty_pk": ("thunder_penalty_pk", 0.01),
+    "shot_positive_pk_cap": ("positive_pk_shot_cap", 0.01),
+    "shot_negative_pk_cap": ("negative_pk_shot_cap", 0.01),
+    "special_foreground_instance_cap": ("special_foreground_instance_cap", 1),
+    "foreground_spawn_interior_ratio": ("foreground_interior_spawn_ratio", 1),
+    "foreground_speed_change_period_s": ("foreground_speed_change_period_seconds", 1),
+    "foreground_wander_turn_interval_s": ("foreground_wander_turn_interval_seconds", 1),
+    "foreground_speed_cap_px_s": ("foreground_speed_cap_px_per_second", 1),
+    "foreground_scale_min_ratio": ("foreground_scale_min_ratio", 1),
+    "foreground_scale_max_ratio": ("foreground_scale_max_ratio", 1),
+    "foreground_layer_change_interval_s": ("foreground_layer_change_interval_seconds", 1),
+    "foreground_local_anim_probability": ("foreground_local_animation_probability", 1),
+    "foreground_local_anim_intensity": ("foreground_local_animation_intensity", 1),
+    "nonrepeat_outline_width_px": ("foreground_outline_width_px", 1),
+    "foreground_curve_amplitude_px": ("foreground_curve_amplitude_px", 1),
+    "foreground_straight_spread_degrees": ("foreground_straight_spread_degrees", 1),
+    "foreground_wander_speed_multiplier": ("foreground_wander_speed_multiplier", 1),
+}
+LIVE_RULE_TO_GODOT = {
+    ("opening_min", "viewer_value"): "opening_viewer_multiplier_min",
+    ("opening_max", "viewer_value"): "opening_viewer_multiplier_max",
+    ("hit_normal", "viewer_value"): "normal_hit_viewer_delta",
+    ("hit_normal", "like_value"): "normal_hit_like_delta",
+    ("hit_trap", "viewer_value"): "trap_hit_viewer_delta",
+    ("hit_trap", "like_value"): "trap_hit_like_multiplier",
+    ("tier_up", "viewer_value"): "tier_up_viewer_delta",
+    ("tier_high", "like_value"): "high_tier_like_multiplier",
+    ("pk_win_fans", "fan_value"): "pk_win_fan_gain",
+    ("contradiction_break", "viewer_value"): "contradiction_break_viewer_gain",
+    ("contradiction_break", "like_value"): "contradiction_break_like_gain",
+    ("contradiction_break", "duration_s"): "contradiction_break_boost_duration_seconds",
+    ("contradiction_break", "comment_delta"): "contradiction_break_comment_delta",
+    ("oracle_confirm", "viewer_value"): "oracle_confirmation_viewer_gain",
+    ("oracle_confirm", "like_value"): "oracle_confirmation_like_gain",
+    ("oracle_confirm", "duration_s"): "oracle_confirmation_boost_duration_seconds",
+    ("oracle_confirm", "comment_delta"): "oracle_confirmation_comment_delta",
+}
+
+
+def resource_text(class_name: str, script_path: str, fields: list[str], resources: list[str] = ()) -> str:
+    """复用 Godot 文本 Resource 格式，不增加运行时数据来源。"""
+    return "\n".join([
+        f'[gd_resource type="Resource" script_class="{class_name}" load_steps={len(resources)+2} format=3]', "",
+        f'[ext_resource type="Script" path="res://{script_path}" id="1_script"]', *resources, "",
+        '[resource]', 'script = ExtResource("1_script")', *fields, "",
+    ])
+
+
+def resolve_asset(value: str) -> str:
+    """只接受工程内真实文件；18 表的状态、备注和稳定资产 ID 绝不当作路径。"""
+    path = value.strip().removeprefix("res://")
+    candidate = (ROOT / path).resolve()
+    return path if path and candidate.is_relative_to(ROOT) and candidate.is_file() else ""
+
+
+def make_combat_numerics(tables: dict, report: Report) -> str:
+    """06/09 正式刷新已有战斗与直播数值，PK 百分点在边界统一除以 100。"""
+    params = {row["param_id"]: row["value"] for _, row in tables["06_战斗数值"][1]}
+    fields = []
+    for param_id, (target, scale) in COMBAT_PARAM_TO_GODOT.items():
+        raw = params.get(param_id, "")
+        if not numeric(raw, "float"):
+            report.add("错误", "06_战斗数值", 1, param_id, "正式数值缺失或无效")
+            continue
+        fields.append(f'{target} = {format(float(raw) * scale, ".15g")}')
+    for suffix, packed, scale in (("pk", "PackedFloat32Array", 0.01), ("tendency", "PackedInt32Array", 1)):
+        values = [0.0] + [float(params[f"word_strength_{i}_{suffix}"]) * scale for i in range(1, 4)]
+        fields.append(f'normal_hit_{suffix}_by_strength = {packed}(' + ", ".join(format(v, ".15g") for v in values) + ")")
+    for column, target in (("base_lifetime_s", "lifetimes_by_type_seconds"),
+                           ("affected_by_tier_lifetime_mult", "lifetime_tier_affected")):
+        entries = []
+        for _, row in tables["06_生命周期"][1]:
+            value = row[column].lower() if column.startswith("affected") else format(float(row[column]), ".15g")
+            entries.append(f'{gd_string(row["barrage_type"])}: {value}')
+        fields.append(target + " = {" + ", ".join(entries) + "}")
+    for _, row in tables["09_直播数据"][1]:
+        for (rule_id, source_field), target in LIVE_RULE_TO_GODOT.items():
+            if row["rule_id"] == rule_id:
+                fields.append(f'{target} = {format(float(row[source_field]), ".15g")}')
+    basics = {row["param_id"]: row["value"] for _, row in tables["06_基础参数"][1]}
+    aim_size = re.fullmatch(r"(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)", basics.get("aim_visual_size", ""))
+    if aim_size and float(aim_size[1]) == float(aim_size[2]) and float(aim_size[1]) > 0:
+        fields.append(f'aim_visual_diameter_px = {float(aim_size[1]):.15g}')
+    else:
+        report.add("错误", "06_基础参数", 1, "aim_visual_size", "当前准心只支持正方形视觉尺寸；请填写相同正数宽高")
+    # Color 的 .tres 语法使用分量，不写 GDScript 字符串构造函数。
+    for source, target in (("repeat_text_color_hex", "repeat_text_color"), ("nonrepeat_outline_color_hex", "foreground_outline_color")):
+        color = params[source].lstrip("#")
+        fields.append(target + " = Color(" + ", ".join(format(int(color[i:i+2], 16) / 255, ".15g") for i in (0, 2, 4)) + ", 1)")
+    return resource_text("CombatNumericsConfig", "core/combat/combat_numerics_config.gd", fields)
+
+
+def make_identity_resources(records: list, report: Report) -> dict[str, str]:
+    """01 表覆盖既有 12 张 IdentityOption，保留 IdentityOptions 已有顺序与旧存档兼容。"""
+    outputs = {}
+    for line, row in records:
+        identity_id = row["identity_id"]
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", identity_id):
+            report.add("错误", "01_身份配置", line, "identity_id", "身份 ID 不能用作 Resource 文件名")
+            continue
+        tendency = "heretical" if row["tendency"] == "heresy" else row["tendency"]
+        fields = [f'identity_id = &{gd_string(identity_id)}', f'display_name = {gd_string(row["display_name"])}',
+                  f'description = {gd_string(row.get("description", ""))}', f'tendency_id = {gd_string(tendency)}']
+        resources = []
+        icon = resolve_asset(row.get("icon_asset_id", ""))
+        if icon:
+            resources.append(f'[ext_resource type="Texture2D" path="res://{icon}" id="2_icon"]')
+            fields.append('icon = ExtResource("2_icon")')
+        outputs[f"data/identity/{identity_id}.tres"] = resource_text("IdentityOption", "data/identity/identity_option.gd", fields, resources)
+    return outputs
+
+
+def make_ending_resources(tables: dict, report: Report) -> dict[str, str]:
+    """16 表进入现有结局配置；策划占位文案与缺图明确保留为空。"""
+    names, judgements, art_fields, art_resources = [], [], [], []
+    judgement_fields = {"no_behavior": "no_effective_behavior_text", "tie": "primary_tied_text",
+                        "consistent": "consistent_text", "shifted": "shifted_text"}
+    for line, row in tables["16_结局配置"][1]:
+        primary = row.get("primary_tendency", "").replace("heresy", "heretical")
+        secondary = row.get("secondary_or_state", "").replace("heresy", "heretical")
+        text = row.get("text_value", "")
+        if re.search(r"占位|待填|placeholder", text, re.I):
+            report.add("警告", "16_结局配置", line, "text_value", "策划占位文本不进入正式结局，保留空值")
+            text = ""
+        kind = row["config_type"]
+        if kind == "religion_name":
+            target = primary + ("" if primary == secondary else "_" + secondary) + "_name"
+            names.append(f'{target} = {gd_string(text)}')
+        elif kind == "judgement" and secondary in judgement_fields:
+            judgements.append(f'{judgement_fields[secondary]} = {gd_string(text)}')
+        elif kind == "main_art":
+            asset = resolve_asset(row.get("asset_id", ""))
+            if asset:
+                rid = "art_" + primary
+                art_resources.append(f'[ext_resource type="Texture2D" path="res://{asset}" id="{rid}"]')
+                art_fields.append(f'{primary}_main_art = ExtResource("{rid}")')
+            else:
+                art_fields.append(f'{primary}_main_art = null')
+    outputs = {}
+    for suffix, class_name, fields, resources in (
+        ("religion_name", "EndingReligionNameConfig", names, []),
+        ("judgement_text", "EndingJudgementTextConfig", judgements, []),
+        ("main_art", "EndingMainArtConfig", art_fields, art_resources),
+    ):
+        path = f"data/ending/ending_{suffix}_config"
+        outputs[path + ".tres"] = resource_text(class_name, path + ".gd", fields, resources)
+    # 原 data/comics/ending.tres 是开场 P5/P6 的历史命名，独立通关漫画不引用这些素材。
+    comic_path = ROOT / "data/ending/ending_comic.tres"
+    outputs["data/ending/ending_comic.tres"] = comic_path.read_text(encoding="utf-8") if comic_path.is_file() else resource_text(
+        "ComicSequence", "ui/comic/comic_sequence.gd", ['resource_name = "结局漫画_等待正式素材"'])
+    return outputs
+
+
+def make_presentation_assets() -> str:
+    """绑定已有且已明确归属的主角素材；状态台账没有被当作资源路径。"""
+    bindings = {
+        "ui_theme": ("Theme", "ui/theme/base_theme.tres"),
+        "player_streamer_portrait": ("Texture2D", "assets/characters/player/hamster_idle.png"),
+        "player_streamer_avatar": ("Texture2D", "assets/characters/player/hamster_idle.png"),
+        "player_live_background": ("Texture2D", "assets/environment/live/hamster/background.png"),
+        "player_live_foreground": ("Texture2D", "assets/environment/live/hamster/foreground_desk.png"),
+        "player_room_background": ("Texture2D", "assets/environment/player_room/background.png"),
+        "player_fan_badge": ("Texture2D", "assets/ui/combat/fan_badges/player_fan_badge_01.png"),
+    }
+    fields, resources = [], []
+    for field, (resource_type, path) in bindings.items():
+        if resolve_asset(path):
+            resources.append(f'[ext_resource type="{resource_type}" path="res://{path}" id="{field}"]')
+            fields.append(f'{field} = ExtResource("{field}")')
+    return resource_text("PresentationAssetConfig", "data/shared/presentation_asset_config.gd", fields, resources)
 
 
 def value_text(value: object) -> str:
@@ -249,6 +433,8 @@ def validate(tables: dict, report: Report) -> None:
             for f in required:
                 if record.get(f, "").strip():
                     continue
+                if name == "16_结局配置" and f == "primary_tendency" and record.get("config_type") == "judgement":
+                    continue  # 判词按四类状态读取，本来没有主导倾向。
                 # 允许未完成参数以警告形式保留空值；稳定 ID、台词内容仍为硬错误。
                 severity = "错误" if f == key or (name == "03_普通词库" and f in ("text", "tendency", "strength", "weight", "pool_id", "enabled")) else "警告"
                 report.add(severity, name, line, f, "必填内容尚未填写")
@@ -459,17 +645,65 @@ def make_tier_resource(records: list, report: Report) -> str:
             if not numeric(raw, "float"):
                 continue
             val = float(raw) * (PK_PERCENT_POINT_SCALE if from_field.startswith("pk_") else 1.0)
-            replacement = str(int(val)) if from_field == "repeat_count" else format(val, ".15g")
+            replacement = str(int(val)) if from_field in ("repeat_count", "foreground_screen_cap", "retaliation_draw_count_first_entry") else format(val, ".15g")
             expr = re.compile(r"(?m)^" + re.escape(to_field) + r" = [^\r\n]*")
             if expr.search(body) is None:
-                if from_field in MOTION_WEIGHT_FIELDS:
-                    # 现有Tier资源省略了运动字段，Godot脚本仍有export属性，预览显式写出权重。
-                    body = body.rstrip() + "\n" + to_field + " = " + replacement + "\n"
-                    continue
-                report.add("错误", "08_Tier档位", line, from_field, f"正式模板缺字段 {to_field}")
+                # 省略 export 的 Resource 会退回代码默认值，正式导入需要显式写出已确定字段。
+                body = body.rstrip() + "\n" + to_field + " = " + replacement + "\n"
                 continue
             body = expr.sub(to_field + " = " + replacement, body, count=1)
+        music = row.get("music_event_id", "").strip()
+        music_line = 'music_event_id = &' + gd_string(music)
+        body = re.sub(r'(?m)^music_event_id = [^\r\n]*', lambda _: music_line, body) if re.search(r'(?m)^music_event_id = ', body) else body.rstrip() + "\n" + music_line + "\n"
         source = source[:match.start(2)] + body + source[match.end(2):]
+    return source
+
+
+def make_combat_numerics_resource(records: list, report: Report) -> str:
+    """将 09 表的正式上涨值写入战斗配置，避免胜利事件继续读试玩占位配置。"""
+    source = (ROOT / "data/combat_stage/combat_numerics.tres").read_text(encoding="utf-8")
+    rules = {row.get("rule_id", ""): (line, row) for line, row in records}
+    mapping = {
+        "contradiction_break": (
+            "contradiction_break_viewer_gain", "contradiction_break_like_gain",
+            "contradiction_break_boost_duration_seconds",
+        ),
+        "oracle_confirm": (
+            "oracle_confirmation_viewer_gain", "oracle_confirmation_like_gain",
+            "oracle_confirmation_boost_duration_seconds",
+        ),
+    }
+    fields = {
+        "contradiction_break_viewer_gain": "viewer_value",
+        "contradiction_break_like_gain": "like_value",
+        "contradiction_break_boost_duration_seconds": "duration_s",
+        "oracle_confirmation_viewer_gain": "viewer_value",
+        "oracle_confirmation_like_gain": "like_value",
+        "oracle_confirmation_boost_duration_seconds": "duration_s",
+    }
+    for rule_id, target_names in mapping.items():
+        entry = rules.get(rule_id)
+        if entry is None:
+            report.add("错误", "09_直播数据", 1, "rule_id", f"缺少已配置的正式规则 {rule_id}")
+            continue
+        line, row = entry
+        for target_name in target_names:
+            source_name = fields[target_name]
+            raw = row.get(source_name, "")
+            if not numeric(raw, "float"):
+                report.add("错误", "09_直播数据", line, source_name, "正式上涨配置必须为数值")
+                continue
+            number = float(raw)
+            if target_name.endswith(("viewer_gain", "like_gain")) and not number.is_integer():
+                report.add("错误", "09_直播数据", line, source_name, "直播上涨人数必须为整数")
+                continue
+            value = str(int(number)) if number.is_integer() else format(number, ".15g")
+            pattern = re.compile(r"(?m)^" + re.escape(target_name) + r" = [^\r\n]*")
+            replacement = target_name + " = " + value
+            if pattern.search(source) is None:
+                source = source.replace("[resource]", "[resource]\n" + replacement, 1)
+            else:
+                source = pattern.sub(replacement, source, count=1)
     return source
 
 
@@ -621,6 +855,10 @@ def make_formal_levels(tables: dict, report: Report) -> dict[str, str]:
                       if row.get("enabled", "").lower() == "true"]
     portraits = {row["portrait_set_id"]: row for _, row in tables[SHEET_NAMES[24]][1]
                  if row.get("enabled", "").lower() == "true"}
+    rewards = defaultdict(list)
+    for _, reward in tables[SHEET_NAMES[14]][1]:
+        if reward.get("enabled", "").lower() == "true":
+            rewards[reward.get("streamer_id", "")].append(reward)
     output: dict[str, str] = {}
     order_list = []
     for line, row in levels:
@@ -661,6 +899,16 @@ def make_formal_levels(tables: dict, report: Report) -> dict[str, str]:
             if asset_path and (ROOT / asset_path).is_file():
                 script.append(f'[ext_resource type="Texture2D" path="res://{asset_path}" id="{resource_id}"]')
                 portrait_resources[profile_field] = resource_id
+        # 与现有 FormalSheetRuntimeConsumer 相同的实际直播素材约定；不存在的 Fox 背景保持空。
+        for field, candidate, rid in (
+            ("streamer_live_background", row.get("background_asset_id", "") or f"assets/environment/live/{streamer_id}/background.png", "10_background"),
+            ("streamer_live_foreground", f"assets/environment/live/{streamer_id}/foreground_cutout.png", "11_foreground"),
+            ("fan_badge_texture", row.get("fan_badge_asset_id", ""), "12_badge"),
+        ):
+            asset_path = resolve_asset(candidate)
+            if asset_path:
+                script.append(f'[ext_resource type="Texture2D" path="res://{asset_path}" id="{rid}"]')
+                portrait_resources[field] = rid
         script.append("")
         true_refs, false_refs, clues = [], [], []
         for i, contradiction in enumerate(related, 1):
@@ -689,7 +937,18 @@ def make_formal_levels(tables: dict, report: Report) -> dict[str, str]:
             f'contradiction_set_id = {gd_string(set_id)}',
             f'background_asset_id = {gd_string(row.get("background_asset_id", ""))}',
             f'fan_badge_asset_id = {gd_string(row.get("fan_badge_asset_id", ""))}',
+            f'opponent_defeat_effect_id = &{gd_string(portrait.get("defeat_effect_id", "") if portrait else "")}',
             'normal_speech_pool_source = ExtResource("3_pool")',
+        ])
+        reward_rows = rewards.get(streamer_id, [])
+        script.extend([
+            'assimilation_reward_ids = Array[String]([' + ", ".join(gd_string(item["reward_id"]) for item in reward_rows) + "])",
+            'assimilation_content_ids = Array[String]([' + ", ".join(gd_string(item["content_id"]) for item in reward_rows) + "])",
+            'assimilation_inherited_weights = Array[float]([' + ", ".join(format(float(item["inherited_weight"]), ".15g") for item in reward_rows) + "])",
+            'assimilation_rewards = Array[Dictionary]([' + ", ".join(
+                '{"reward_id": %s, "reward_type": %s, "content_id": %s, "inherited_weight": %s}' % (
+                    gd_string(item["reward_id"]), gd_string(item["reward_type"]), gd_string(item["content_id"]),
+                    format(float(item["inherited_weight"]), ".15g")) for item in reward_rows) + "])",
         ])
         for profile_field, resource_id in portrait_resources.items():
             script.append(f'{profile_field} = ExtResource("{resource_id}")')
@@ -768,17 +1027,170 @@ def make_formal_levels(tables: dict, report: Report) -> dict[str, str]:
     output[f"{root}/level_catalog.tres"] = "\n".join(catalog)
     return output
 
+
+def make_approved_outputs(tables: dict, report: Report) -> dict[str, str]:
+    """导入与审计复用同一份现有 Resource 生成结果。"""
+    outputs = make_speech_pools(tables["03_普通词库"][1], report, "data/level_configuration/pools")
+    outputs.update(make_formal_levels(tables, report))
+    outputs["data/combat_stage/tier_catalog.tres"] = make_tier_resource(tables["08_Tier档位"][1], report)
+    outputs["data/combat_stage/combat_numerics.tres"] = make_combat_numerics(tables, report)
+    outputs.update(make_identity_resources(tables["01_身份配置"][1], report))
+    outputs["data/loser_card/loser_card_catalog.tres"] = make_loser_catalog(tables, report)
+    outputs.update(make_ending_resources(tables, report))
+    outputs["data/shared/presentation_asset_config.tres"] = make_presentation_assets()
+    return outputs
+
+
+def build_field_audit(tables: dict, source_root: Path, output_root: Path) -> str:
+    """逐字段记录源值、实际生成器和源码读取证据；文件存在不等于玩家路径生效。"""
+    expected = make_approved_outputs(tables, Report())
+    drift = [path for path, text in expected.items()
+             if not (output_root / path).is_file() or (output_root / path).read_text(encoding="utf-8") != text]
+    runtime_path = "data/shared/formal_sheet_runtime_consumer.gd"
+    runtime_source = (ROOT / runtime_path).read_text(encoding="utf-8")
+    timed_path = "ui/streamer_bubble_dialogue/streamer_bubble_timed_opponent_dialogue_presenter.gd"
+    timed_source = (ROOT / timed_path).read_text(encoding="utf-8")
+    # 只在已明确读取该表的代码内找字段；不将跨系统同名字段误判成接线。
+    direct = {name: (runtime_path, runtime_source) for name in (
+        "17_音频事件", "19_直播评论词库", "22_直播评论表现参数", "25_直播观众账号")}
+    direct["20_主播气泡对白"] = (runtime_path + "; " + timed_path, runtime_source + timed_source)
+    mapped = {
+        "01_身份配置": {"identity_id", "display_name", "description", "tendency", "icon_asset_id"},
+        "02_主播关卡": set(tables["02_主播关卡"][0]) - {"notes"},
+        "03_普通词库": {"word_id", "text", "tendency", "strength", "pool_id", "weight", "enabled"},
+        "04_矛盾内容": {"contradiction_id", "set_id", "streamer_id", "type", "text", "enabled"},
+        "05_关卡生成": set(tables["05_关卡生成"][0]) - {"notes"},
+        "06_生命周期": {"barrage_type", "base_lifetime_s", "affected_by_tier_lifetime_mult"},
+        "08_Tier档位": {"tier", "music_event_id", *TIER_TO_GODOT},
+        "11_矛盾参数": set(tables["11_矛盾参数"][0]) - {"notes", "配置状态"},
+        "13_吞并奖励": set(tables["13_吞并奖励"][0]) - {"notes"},
+        "14_败者卡": {"streamer_id", "description", "enabled"},
+        "16_结局配置": set(tables["16_结局配置"][0]) - {"notes"},
+        "23_对手立绘配置": set(tables["23_对手立绘配置"][0]) - {"notes"},
+    }
+    targets = {
+        "01_身份配置": "data/identity/*.tres → IdentityOptions.CARDS → IdentitySelection",
+        "02_主播关卡": "data/level_configuration/level_00*.tres → LevelCatalog/LevelProfile",
+        "03_普通词库": "data/level_configuration/pools/*.tres → LevelSpeechPool → BarrageArea",
+        "04_矛盾内容": "LevelProfile.true/false_contradictions → ContradictionBreak",
+        "05_关卡生成": "LevelProfile → BattleAttemptFlow/BarrageArea",
+        "06_战斗数值": "data/combat_stage/combat_numerics.tres → BattleAttemptFlow",
+        "06_生命周期": "CombatNumericsConfig.lifetimes_by_type_seconds/lifetime_tier_affected",
+        "08_Tier档位": "data/combat_stage/tier_catalog.tres → CombatStage（music事件消费依赖#241）",
+        "09_直播数据": "CombatNumericsConfig → LiveSessionData（短时boost消费依赖#241）",
+        "11_矛盾参数": "LevelProfile.paradox_* → ContradictionOracleFlow",
+        "13_吞并奖励": "LevelProfile.assimilation_rewards（仅候选；正式发奖交INT-16）",
+        "14_败者卡": "data/loser_card/loser_card_catalog.tres → LoserCardCatalog",
+        "16_结局配置": "data/ending/ending_*_config.tres → EndingSession",
+        "23_对手立绘配置": "LevelProfile.*portrait/*effect_id → HUD/INT-16（展示接线待验）",
+    }
+    lines = ["# INT-17E · 27 表逐行逐字段审计", "",
+             "命令：`python tools/export_game_data.py --audit-csv`。所有单元格保留源值；空值与禁用优先标记。",
+             "本报告证明导表/源码边界；真实玩家路径效果须由对应 Owner 联调验收，不能用文件存在替代。",
+             f"来源：`{source_root}`；资源工程：`{output_root}`。", "",
+             f"生成器预期 {len(expected)} 个 Resource；旧值覆盖/未复导文件 {len(drift)} 个。",
+             *(f"- 旧资源覆盖或未生成：`{path}`" for path in drift), "",
+             "01 直接刷新既有12张身份，保留 IdentityOptions.CARDS 顺序；未新增第二份身份库。",
+             "18 仅资产台账，其 status/target_folder 不是可加载路径。13/14 当前全禁用。",
+             "16 的13条占位文本过滤为空，3张主图及独立通关漫画仍缺；开场P5/P6不作通关漫画。", ""]
+    metadata = {"notes", "unit", "scope", "说明", "配置状态"}
+    for sheet in SHEET_NAMES:
+        header, records = tables[sheet]
+        lines += [f"## {sheet}", "", "| 行 | ID | 字段 | 源值 | 状态 | 目标 / 消费证据 / 缺口 |",
+                  "|---:|---|---|---|---|---|"]
+        key = RULES[sheet][0]
+        for row_num, row in records:
+            row_id = row.get(key, "") if key else ":".join(row.get(k, "") for k in ("config_type", "primary_tendency", "secondary_or_state"))
+            for field in header:
+                value = row.get(field, "").strip()
+                note = targets.get(sheet, "当前分支未找到该表的生产读取接口；后续Lane联调")
+                status = "配置未接线"
+                if row.get("enabled", "").lower() == "false":
+                    status, note = "禁用", "导入跳过；不产生正式奖励/对象"
+                elif sheet == "18_表现资产":
+                    status, note = "资产台账", "仅清点状态，实际文件/绑定见 INT-17E_asset_usage_2026-10-16.md"
+                elif not value:
+                    status, note = "源值空", "空值保留；不生成虚构文本/资源（结构可选字段也列此状态）"
+                elif field in metadata:
+                    status, note = "说明元数据", "策划说明，不参与运行数值"
+                elif sheet == "16_结局配置" and field == "text_value" and re.search(r"占位|待填|placeholder", value, re.I):
+                    status, note = "文本未填", "占位文案过滤为空；待正式策划替换后复导"
+                elif field.endswith(("_asset_path", "_asset_id")) or field in {"asset_path_or_id", "asset_id"}:
+                    if not resolve_asset(value):
+                        status, note = "资产缺失/ID未映射", f"源ID尚非可加载文件；{note}"
+                    else:
+                        status = "文件存在，待接线" if field not in mapped.get(sheet, set()) and sheet not in direct else "资源绑定/源码读取"
+                        note += "；文件已核实，实际画面/音效另验"
+                elif field in mapped.get(sheet, set()):
+                    status = "导表已同步（流程待联调）"
+                elif sheet == "06_战斗数值" and (row_id in COMBAT_PARAM_TO_GODOT or row_id.startswith("word_strength_") or row_id in {"repeat_text_color_hex", "nonrepeat_outline_color_hex"}):
+                    status = "导表已同步（流程待联调）" if field in {"param_id", "value"} else "说明元数据"
+                elif sheet == "09_直播数据" and ((row_id, field) in LIVE_RULE_TO_GODOT or field == "rule_id" and any(k[0] == row_id for k in LIVE_RULE_TO_GODOT)):
+                    status = "导表已同步（流程待联调）"
+                elif sheet == "06_基础参数" and row_id == "aim_visual_size":
+                    status, note = "导表已同步（流程待联调）", "CombatNumericsConfig.aim_visual_diameter_px → A AttackChargeInput（#241）；命中半径独立"
+                elif sheet == "06_基础参数" and ('"' + row_id + '"') in timed_source:
+                    status, note = "源码读取（流程待联调）", timed_path
+                elif sheet in direct:
+                    reader, source = direct[sheet]
+                    token = row_id if sheet == "22_直播评论表现参数" else field
+                    if ('"' + token + '"') in source or sheet == "22_直播评论表现参数" and field in {"param_id", "value"}:
+                        status, note = "源码读取（流程待联调）", reader
+                    else:
+                        note = reader + " 未单独消费该字段；不能视为已生效"
+                cells = [str(row_num), row_id, field, value, status, note]
+                lines.append("| " + " | ".join(c.replace("|", "／").replace("\n", "<br>").replace("\r", "") for c in cells) + " |")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def make_loser_catalog(tables: dict, report: Report) -> str:
+    """按现有 LoserCardProfile Schema 导入卡片；禁用行保持空目录，不造占位卡。"""
+    streamers = {row.get("streamer_id", ""): row for _, row in tables[SHEET_NAMES[1]][1]}
+    enabled = [(line, row) for line, row in tables[SHEET_NAMES[15]][1] if row.get("enabled", "").lower() == "true"]
+    parts = ['[gd_resource type="Resource" script_class="LoserCardCatalog" load_steps=3 format=3]', '',
+             '[ext_resource type="Script" path="res://core/loser_card/loser_card_catalog.gd" id="1_catalog"]',
+             '[ext_resource type="Script" path="res://core/loser_card/loser_card_profile.gd" id="2_profile"]', '']
+    refs = []
+    for i, (line, row) in enumerate(enabled, 1):
+        streamer = streamers.get(row.get("streamer_id", ""), {})
+        rid = f"Card_{i}"
+        refs.append(f'SubResource("{rid}")')
+        parts.extend([f'[sub_resource type="Resource" script_class="LoserCardProfile" id="{rid}"]',
+                      'script = ExtResource("2_profile")', f'streamer_id = {gd_string(row["streamer_id"])}',
+                      f'streamer_name = {gd_string(streamer.get("streamer_name", row.get("display_name", "")))}',
+                      f'card_text = {gd_string(row.get("description", ""))}', ''])
+        art = row.get("art_asset_id", "").strip()
+        if art and not (ROOT / art).is_file():
+            report.add("警告", "14_败者卡", line, "art_asset_id", f"资源文件不存在：{art}")
+    parts.extend(['[resource]', 'script = ExtResource("1_catalog")',
+                  'profiles = Array[ExtResource("2_profile")]( [' + ", ".join(refs) + "])", ''])
+    return "\n".join(parts)
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="一次性导出全部策划 Sheet 至分系统 CSV + 已接入的 Godot Resource")
     parser.add_argument("--input", type=Path, help="Google Sheets 下载的 .xlsx")
     parser.add_argument("--approved-csv", action="store_true", help="Generate production Resources from approved data/source_tables CSVs")
     parser.add_argument("--csv-dir", type=Path, help="CSV source directory for --approved-csv")
+    parser.add_argument("--audit-csv", action="store_true", help="输出27张来源表逐字段消费审计，不写生产Resource")
     parser.add_argument("--output-root", type=Path, help="导出根目录；省略时写入当前项目根目录")
     parser.add_argument("--csv-only", action="store_true", help="仅导出 CSV，不更新已接入的 Resource")
     parser.add_argument("--test-only", action="store_true", help="输入测试工作簿；仅输出 TEST_ONLY CSV/词库，保留正式数据")
     args = parser.parse_args()
     output_root = args.output_root.expanduser().resolve() if args.output_root else ROOT
     report = Report()
+    if args.audit_csv:
+        source_root = args.csv_dir.expanduser().resolve() if args.csv_dir else ROOT / "data/source_tables"
+        tables = read_approved_csv_tables(source_root, report)
+        for error in report.errors:
+            print("[error]", error, file=sys.stderr)
+        if report.errors:
+            return 1
+        audit_path = output_root / "docs/Integration/R26-E_01-04-13-14-18-23_importer_audit.md"
+        audit_path.parent.mkdir(parents=True, exist_ok=True)
+        audit_path.write_text(build_field_audit(tables, source_root, output_root), encoding="utf-8", newline="\n")
+        print(f"Field audit written: {audit_path}")
+        return 0
     if args.approved_csv:
         if args.test_only:
             print("--approved-csv cannot be combined with --test-only", file=sys.stderr)
@@ -787,9 +1199,7 @@ def main() -> int:
         tables = read_approved_csv_tables(source_root, report)
         outputs: dict[str, str] = {}
         if not report.errors:
-            outputs.update(make_speech_pools(tables[SHEET_NAMES[2]][1], report, "data/level_configuration/pools"))
-            outputs.update(make_formal_levels(tables, report))
-            outputs["data/combat_stage/tier_catalog.tres"] = make_tier_resource(tables[SHEET_NAMES[9]][1], report)
+            outputs = make_approved_outputs(tables, report)
         for sheet, n, blanks, examples in report.stats:
             print(f"[table] {sheet}: {n} rows")
         for warning in report.warnings:

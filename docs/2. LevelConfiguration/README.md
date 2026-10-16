@@ -193,4 +193,12 @@ Godot `LevelProfile`、正式四关资源和目录共同作为当前生产实现
 
 ## INT-14 正式表现表消费者（2026-10-15）
 
-生产 Sandbox 在每次 `attempt_started` 按当前 `LevelProfile.level_id` 查 02 表，读取正式主播 ID、名称、粉丝团、`story_config_id`、`portrait_set_id`，再以23表 `portrait_set_id` 装载 idle/Tier 1–3 立绘，并把事件对白交给既有 Presenter。普通关卡配置仍由 `LevelCatalog` / `LevelProfile` 提供；本消费者不替代 LC-10 的正式 LevelProfile、词库、矛盾和生成配置。当前 worktree 的 `level_catalog.tres` 仍只有两个旧示例关卡，四关目录交付后可用同一 `level_id` 接口直接刷新。
+生产 Sandbox 在每次 `attempt_started` 按当前 `LevelProfile.level_id` 查 02 表，读取正式主播 ID、名称、粉丝团、`story_config_id`、`portrait_set_id`，再以23表 `portrait_set_id` 装载 idle/Tier 1–3 立绘，并把事件对白交给既有 Presenter。普通关卡配置仍由 `LevelCatalog` / `LevelProfile` 提供；本消费者不替代 LC-10 的正式 LevelProfile、词库、矛盾和生成配置。该段为INT-14交付时状态；目前正式目录已是四关，INT-17E复导与Resource验证见下。
+
+## INT-17E 正式复导与素材字段（2026-10-16）
+
+`python tools/export_game_data.py --approved-csv` 正式刷新四关LevelProfile及目录，03池、04真假矛盾、05生成、11阶段参数沿用现有Schema。01直接覆盖既有12身份Resource，保留IdentityOptions列表与顺序。13只把enabled行投影为静态 `assimilation_rewards` 候选；本轮全禁用所以数组空，实际提交仍由现有FO/Assimilation接口负责。
+
+23六类立绘引用与02主播关联已生成；背景复用现有消费者的同名目录约定，Fox缺文件保留null。新增 `streamer_live_foreground:Texture2D` 和 `opponent_defeat_effect_id:StringName` 只供表现Owner读取；Frog已有前景，特效ID仍空。未改变Sandbox/RunState/SaveData或继承业务规则。
+
+Godot4.7.2已验证正式四关、词池、真假矛盾及素材加载；[逐字段审计](../Integration/R26-E_01-04-13-14-18-23_importer_audit.md)保留每个源ID与字段，[日志](../Integration/生产集成_INT-17E_2026-10-16_log.md)记录验证与正式路径待办。

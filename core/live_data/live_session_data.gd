@@ -72,6 +72,14 @@ func record_tier_up_live_rule() -> void:
 	viewer_count = maxi(0, viewer_count + _formal_combat_numerics.tier_up_viewer_delta)
 
 
+## 只把真实上升计作 09 升档事件，降档与重复刷新保持原人数。
+func record_tier_transition(previous_tier: int, current_tier: int) -> bool:
+	if current_tier <= previous_tier:
+		return false
+	record_tier_up_live_rule()
+	return true
+
+
 ## 应用 09 高档点赞倍率；触发时点由关卡阶段消费者决定。
 func apply_high_tier_like_rule() -> void:
 	if _formal_combat_numerics == null:
@@ -112,12 +120,14 @@ func initialize_session(initial_fan_count: int) -> void:
 
 
 # 正式事件各触发一次；冻结本次配置总增量和时长，缺少有效配置时保持原值。
-func start_short_boost(event: BoostEvent, viewer_gain: int, like_gain: int, duration_seconds: float) -> bool:
+func start_short_boost(event: BoostEvent, viewer_gain: int, like_gain: int, duration_seconds: float, comment_delta: int = 0) -> bool:
 	if _triggered_boost_events.has(event) or duration_seconds <= 0.0 or viewer_gain < 0 or like_gain < 0:
 		return false
 	if viewer_gain == 0 and like_gain == 0:
 		return false
 	_triggered_boost_events.append(event)
+	# 09 事件评论只在首次受理时入账，逐帧人数增长不会重复加评论。
+	record_generated_comments(comment_delta)
 	_active_boosts.append({
 		"duration": duration_seconds,
 		"elapsed": 0.0,
@@ -127,6 +137,23 @@ func start_short_boost(event: BoostEvent, viewer_gain: int, like_gain: int, dura
 		"applied_likes": 0,
 	})
 	return true
+
+
+## 由正式事件消费者调用；09 增量、时长和评论统一从注入配置读取。
+func start_formal_short_boost(event: BoostEvent) -> bool:
+	if _formal_combat_numerics == null:
+		return false
+	if event == BoostEvent.CONTRADICTION_BREAK:
+		return start_short_boost(event,
+			_formal_combat_numerics.contradiction_break_viewer_gain,
+			_formal_combat_numerics.contradiction_break_like_gain,
+			_formal_combat_numerics.contradiction_break_boost_duration_seconds,
+			_formal_combat_numerics.contradiction_break_comment_delta)
+	return start_short_boost(event,
+		_formal_combat_numerics.oracle_confirmation_viewer_gain,
+		_formal_combat_numerics.oracle_confirmation_like_gain,
+		_formal_combat_numerics.oracle_confirmation_boost_duration_seconds,
+		_formal_combat_numerics.oracle_confirmation_comment_delta)
 
 
 # 场景传入实际游戏帧时间；按进度补齐整数增量，结束后保留累计值并停止增长。

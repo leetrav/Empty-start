@@ -34,7 +34,7 @@ func _test_formal_profile_candidates() -> void:
 	var system: ContradictionBreakSystem = _make_loaded_system(FORMAL_LEVEL)
 	var candidates: Array[LevelContradiction] = system.get_fixed_paradox_candidates()
 	_expect(FORMAL_LEVEL.true_contradictions.size() == 1, "formal sample contains one true source line")
-	_expect(FORMAL_LEVEL.false_contradictions.size() == 1, "formal sample currently contains one false source line")
+	_expect(FORMAL_LEVEL.false_contradictions.size() == 5, "formal sample contains five enabled false source lines")
 	_expect(candidates.size() == ContradictionWindowConfig.PARADOX_CANDIDATE_COUNT, "formal source builds six fixed candidates")
 	_expect(_count_candidate_types(candidates, system.get_true_contradictions(), system.get_false_contradictions()) == Vector2i(1, 5), "formal source candidates classify as one true and five false")
 	var source_false_ids: Dictionary = _ids_from_lines(system.get_false_contradictions())
@@ -42,7 +42,7 @@ func _test_formal_profile_candidates() -> void:
 	for line: LevelContradiction in candidates:
 		if source_false_ids.has(line.original_sentence_id):
 			selected_false_ids[line.original_sentence_id] = true
-	_expect(selected_false_ids.size() == 1, "formal fallback reuses only the existing false ID")
+	_expect(selected_false_ids.size() == 5, "formal candidates preserve five distinct source false IDs")
 	system.queue_free()
 
 
