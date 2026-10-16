@@ -79,7 +79,12 @@ func _run() -> void:
 	var split_skill: Dictionary = catalog.get_enabled_skills("alien", 3)[0]
 	var parent: BarrageView = runtime.spawn_skill(alien, speech, split_skill)
 	var original_expiry: int = parent.runtime_record.expires_at_msec
-	var children: Array[BarrageView] = runtime.split_on_normal_hit(parent)
+	var children: Array[BarrageView] = []
+	runtime.split_children_spawned.connect(func(_id: int, actual: Array[BarrageView], _requested: int) -> void: children.assign(actual))
+	var parent_id: int = parent.get_instance_id()
+	area.end_barrage(parent_id)
+	# 复现 BattleAttemptFlow 先释放母体、同帧同步广播 shot_resolved 的正式调用顺序。
+	runtime.on_shot_resolved(null, {"hit_resolution_result": {"target_results": [{"target_instance_id": parent_id, "is_valid_hit": true, "is_repeat": false}]}}, 3, null)
 	_expect(children.size() == 2, "07 split_child_count generates two actual children")
 	for child: BarrageView in children:
 		_expect(child.runtime_record.expires_at_msec == original_expiry, "child keeps absolute expiry")
