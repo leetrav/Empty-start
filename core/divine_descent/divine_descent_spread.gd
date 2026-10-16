@@ -20,12 +20,15 @@ var _converging: bool = false
 var _session: DivineDescentSession
 var _full_screen_emphasis: DivineDescentEmphasis
 var _completed: bool = false
+var _interval_min_seconds: float = 0.0
+var _interval_max_seconds: float = 0.0
+var _converge_ratio: float = 0.9
 
 
 # 原生 Timer 独立于玩家输入推进；全局暂停沿用 SceneTree 的暂停模式。
 func _ready() -> void:
 	_timer = Timer.new()
-	_timer.one_shot = false
+	_timer.one_shot = true
 	_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_timer.timeout.connect(_on_generation_timeout)
 	add_child(_timer)
@@ -36,13 +39,22 @@ func _ready() -> void:
 func start(
 		session: DivineDescentSession, barrage_area: BarrageArea, speech_catalog: LevelCatalog,
 		interval_seconds: float, repeat_lifetime_seconds: float, display_template: String,
-		random_generator: RandomNumberGenerator = null, trait_colors: Dictionary = {}
+		random_generator: RandomNumberGenerator = null, trait_colors: Dictionary = {},
+		interval_min_seconds: float = 0.0, interval_max_seconds: float = 0.0,
+		converge_ratio: float = 0.9
 ) -> bool:
 	if _timer == null or not _candidates.is_empty() or session == null or not session.is_entered():
 		return false
 	if not is_instance_valid(barrage_area) or not barrage_area.is_inside_tree():
 		return false
 	if interval_seconds <= 0.0 or repeat_lifetime_seconds <= 0.0:
+		return false
+	_interval_min_seconds = interval_min_seconds if interval_min_seconds > 0.0 else interval_seconds
+	_interval_max_seconds = interval_max_seconds if interval_max_seconds > 0.0 else interval_seconds
+	_converge_ratio = converge_ratio
+	if not is_finite(_interval_min_seconds) or not is_finite(_interval_max_seconds) or not is_finite(_converge_ratio):
+		return false
+	if _interval_max_seconds < _interval_min_seconds or _converge_ratio <= 0.0 or _converge_ratio > 1.0:
 		return false
 	var frozen: Dictionary = session.get_entry_snapshot()
 	var history_candidates: Array[Dictionary] = frozen["history_candidates"]
@@ -62,7 +74,7 @@ func start(
 	_random_generator = random_generator if random_generator != null else RandomNumberGenerator.new()
 	if random_generator == null:
 		_random_generator.randomize()
-	_timer.start(interval_seconds)
+	_timer.start(_next_repeat_interval())
 	_try_lock_after_new_word_decay()
 	return true
 
@@ -144,6 +156,21 @@ func begin_full_screen_emphasis(fade_seconds: float, hold_seconds: float) -> boo
 	return true
 
 
+# 15 表使用明确的总强调时长，Tween 的结束事实仍由同一表现节点发出。
+func begin_full_screen_emphasis_total(total_seconds: float) -> bool:
+	if not is_inside_tree() or get_tree().paused or not _converging or _full_screen_emphasis != null:
+		return false
+	_full_screen_emphasis = DivineDescentEmphasis.new()
+	add_child(_full_screen_emphasis)
+	_full_screen_emphasis.finished.connect(_on_full_screen_emphasis_finished)
+	if not _full_screen_emphasis.play_for_total_duration(
+			str(_locked_candidate["original_sentence_text"]), total_seconds):
+		_full_screen_emphasis.queue_free()
+		_full_screen_emphasis = null
+		return false
+	return true
+
+
 # 完成事实只来自真实 Tween 结束；发送进入时的同一 Session，Ending 无需重读存档。
 func _on_full_screen_emphasis_finished() -> void:
 	if _completed:
@@ -161,7 +188,7 @@ func is_completed() -> bool:
 func _process(_delta: float) -> void:
 	if _converging or not is_running() or not is_sentence_locked():
 		return
-	if get_locked_visible_ratio() < 0.9:
+	if get_locked_visible_ratio() < _converge_ratio:
 		return
 	_converging = true
 	stop()
@@ -244,7 +271,17 @@ func is_generation_blocked() -> bool:
 
 # 唯一自动触发来源是计时；不订阅攻击、复读命中或弹幕移除事件。
 func _on_generation_timeout() -> void:
+	if _converging or _timer == null or _candidates.is_empty():
+		return
+	# one_shot 在 timeout 时已停止；先安排下一次，公开生成入口才能读取真实运行态。
+	# 生成通知里的显式 stop 仍会取消刚安排的 Timer，不会被回调尾部重新开启。
+	_timer.start(_next_repeat_interval())
 	generate_next_repeat()
+
+
+# 15 表的自动复读区间使用本组件随机源，便于复现同一局的候选行为。
+func _next_repeat_interval() -> float:
+	return _random_generator.randf_range(_interval_min_seconds, _interval_max_seconds)
 
 
 # 命中存档通常只有 ID；从真实静态词库补正文并复制到工作池，不伪造或丢弃候选。

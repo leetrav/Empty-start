@@ -117,6 +117,8 @@ FO-12 已接入 `RestSession.open_result()` 与 `RestResultView.show_result()`�
 
 ## FO-13 主游戏区攻击选择
 
+R26-B 增加 `ContradictionOracleFlow.configure_oracle_parameters(selection_time_seconds, maximum_candidates) -> bool`，须在 `start()` 前调用。该入口把 12 表计时和候选上限交给本场 Session / Timer；未调用时保留 10 秒、3 候选默认值。经文节号范围已由 `ScriptureData` 读取正式 Verse Resource。
+
 - `FinalOracleCandidateDisplay` 位于 `BattleHud/BattleArea` 内，候选控件固定排布，原句正文直接使用 Label 显示。
 - Sandbox 将这些 `Control` 注入 `AttackChargeInput.set_selection_targets()`；玩家仍使用现有准心、蓄力、发射和飞行阶段。
 - `AttackTargetSnapshot` 在释放时冻结命中候选 ID 和准心中心；到达时只复核仍可见的冻结目标。同发命中多句时只发出准心中心最近的一句，等距时保留展示顺序。
@@ -154,3 +156,11 @@ FO-12 已接入 `RestSession.open_result()` 与 `RestResultView.show_result()`�
 - 只传递 `level_id`、`result_kind = breakthrough_oracle_complete`、PK 胜利与击破事实给 `RestSession.open_result()`；调用 `RestResultView.show_result(rest_session, run_data, level_catalog, loser_card_catalog)`，成果由 Rest 现有公开 getter 读取。转场没有再次写入历史、倾向、圣典、卡片或吞并。
 - 进入 Rest 时停止普通 / 矛盾生成、回拉与攻击，清空旧弹幕、复读等待、候选目标和神谕计时，收起候选显示。当前神谕 Session 绑定清空，首次确认仍由确认状态及 SaveData 保存，Rest 期间战斗输入保持关闭。
 - 无正式卡片 / 继承配置时正常显示已存经文及对应空态。原 `pk_win_unbroken` 路线保持不变；两种 Rest 均复用 RS-09 Continue。验收使用显式 TEST_ONLY 注入，生产资源未覆盖；#61 的 `get_normal_speech_pool()` 外部词库读取链保持，第二关正式内容是否就绪以实际配置为准。
+
+## INT-17B 正式时序闭环（2026-10-16）
+
+根场景在 `start()` 前调用 `configure_oracle_parameters(10.0, 3)`。候选开放后实际创建 10 秒计时器，并把最多 3 个冻结候选交给已有攻击输入。暂停不推进选择计时；正式攻击确认仍写入 Scripture 后在帧尾交付 Rest。
+
+结果演出使用 `hold_result_presentation()` / `complete_result_presentation(source_system)`，具体完成顺序见 12 系统 README。击破与神谕确认的直播上涨优先调用 A 提供的 `LiveSessionData.start_formal_short_boost(event)`；评论与重复事件处理归 LiveSessionData。#241 尚未合入该接口的独立分支保留原调用，合并后自动消费正式接口。
+
+实际 Godot 组件链、配置来源与 INT-16 调用顺序见 [INT-17B 日志](../Integration/生产集成_INT-17B_2026-10-16_log.md)。

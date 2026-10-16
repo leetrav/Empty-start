@@ -44,19 +44,23 @@ func get_false_contradictions() -> Array[LevelContradiction]:
 	return _false_contradictions.duplicate()
 
 
-## 返回顺序固定为唯一真句在首、五个假句随后，供阶段协调方按真假分组。
-func get_fixed_paradox_candidates() -> Array[LevelContradiction]:
+## 按配置返回真实候选，真句在前、假句随后；数量不足时返回空集。
+func get_fixed_paradox_candidates(true_count: int = 1, false_count: int = 5) -> Array[LevelContradiction]:
 	var candidates: Array[LevelContradiction] = []
+	if true_count <= 0 or false_count <= 0:
+		return candidates
 	var valid_true_lines: Array[LevelContradiction] = _get_valid_contradictions(_true_contradictions)
 	var valid_false_lines: Array[LevelContradiction] = _get_valid_contradictions(_false_contradictions)
 	if valid_true_lines.is_empty() or valid_false_lines.is_empty():
 		return candidates
 
-	# 按关卡顺序取唯一真句；假句数量不足时复用已有原句，不编造正式文本或 ID。
-	for index: int in range(ContradictionWindowConfig.PARADOX_TRUE_CANDIDATE_COUNT):
+	# 配置数量必须由真实表行完整支撑；避免重复同一句伪装成多个候选。
+	if valid_true_lines.size() < true_count or valid_false_lines.size() < false_count:
+		return candidates
+	for index: int in range(true_count):
 		candidates.append(valid_true_lines[index])
-	for index: int in range(ContradictionWindowConfig.PARADOX_FALSE_CANDIDATE_COUNT):
-		candidates.append(valid_false_lines[index % valid_false_lines.size()])
+	for index: int in range(false_count):
+		candidates.append(valid_false_lines[index])
 	return candidates
 
 
