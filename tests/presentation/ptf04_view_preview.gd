@@ -25,6 +25,7 @@ var _drop_started: bool = false
 var _drop_finished: bool = false
 var _drop_finished_at: float = -1.0
 var _encode_from: float = 0.0
+var _legacy_portrait_fit: bool = false
 
 
 # 只向外部 D 盘保存证据，默认保留真实输入供手动试玩。
@@ -45,10 +46,14 @@ func _ready() -> void:
 			get_window().content_scale_size = Vector2i(2400, 1080)
 		if argument == "--anchor-bottom":
 			_bottom_anchor = true
+		if argument == "--legacy-portrait-fit":
+			_legacy_portrait_fit = true
 		if argument.begins_with("--encode-from="):
 			_encode_from = maxf(0.0, argument.trim_prefix("--encode-from=").to_float())
 	get_window().title = "PTF04 Lane D %s" % _mode
-	if not _output.to_lower().replace("\\", "/").begins_with("d:/"):
+	var destination: String = _output.replace("\\", "/").simplify_path().to_lower().trim_suffix("/") + "/"
+	var workspace: String = ProjectSettings.globalize_path("res://").replace("\\", "/").to_lower()
+	if not destination.begins_with("d:/") or destination.begins_with(workspace):
 		_output = ""
 	if not _output.is_empty():
 		DirAccess.make_dir_recursive_absolute(_output)
@@ -57,6 +62,10 @@ func _ready() -> void:
 
 # 直接实例化当前正式场景，未通过 debug PK 构造战斗进度。
 func _start() -> void:
+	if (_mode.begins_with("record-") or _mode == "encode") and _output.is_empty():
+		push_error("录制/封装需要 --ptf-output=D:/外部目录，避免写入工程或系统盘。")
+		get_tree().quit(1)
+		return
 	if _mode == "encode":
 		_elapsed = _encode_from
 		_encode_data = JSON.parse_string(FileAccess.get_file_as_string(_output.path_join("frames.json")))
@@ -175,7 +184,7 @@ func _finish_movie_capture() -> void:
 	get_tree().quit()
 
 
-# 无 FFmpeg 环境下复用原生 MovieWriter，把带时间戳的真实帧封装为视频。
+# 复用原生 MovieWriter，把带时间戳的真实帧封装为视频。
 func _encode_frame(delta: float) -> void:
 	_elapsed += delta
 	var frames: Array = _encode_data["frames"]
@@ -324,18 +333,29 @@ func _anchor_samples() -> void:
 		for stage: int in [1, 2, 3, 4, 5]:
 			_hud.refresh_pk(0.6, stage)
 			tier.reset_for_tier(stage)
+			if _legacy_portrait_fit:
+				# 只回放失败版本的旧布局公式，不替换/回滚任何生产脚本。
+				var legacy_portrait: TextureRect = _hud.get_node("%OpponentPortraitArt")
+				legacy_portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+				legacy_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				legacy_portrait.pivot_offset = legacy_portrait.size * 0.5
 			await get_tree().create_timer(0.2).timeout
 			var portrait: TextureRect = _hud.get_node("%OpponentPortraitArt")
 			var bounds: Rect2 = tier.get("_visible_bounds")[portrait.texture]
 			var local_anchor: Vector2 = (bounds.position + bounds.size * tier.visible_anchor_ratio) / portrait.texture.get_size() * portrait.size
+			var pixel_scale: float = portrait.size.x / portrait.texture.get_width()
+			if _legacy_portrait_fit:
+				pixel_scale = minf(portrait.size.x / portrait.texture.get_width(), portrait.size.y / portrait.texture.get_height())
+				local_anchor = (portrait.size - portrait.texture.get_size() * pixel_scale) * 0.5 + (bounds.position + bounds.size * Vector2(0.5, 0.5)) * pixel_scale
 			var actual_anchor: Vector2 = portrait.get_global_transform() * local_anchor
 			var expected_anchor: Vector2 = tier.get_global_transform() * (tier.size * tier.visible_anchor_ratio)
-			audit.append({"role": profile.streamer_id, "tier": stage, "texture": portrait.texture.resource_path, "raw_size": str(portrait.texture.get_size()), "alpha_bounds": str(bounds), "anchor_error_px": actual_anchor.distance_to(expected_anchor)})
+			audit.append({"role": profile.streamer_id, "tier": stage, "texture": portrait.texture.resource_path, "raw_size": str(portrait.texture.get_size()), "alpha_bounds": str(bounds), "anchor_error_px": actual_anchor.distance_to(expected_anchor), "pixel_scale": pixel_scale * portrait.scale.x, "legacy_formula": _legacy_portrait_fit})
 			print("PTF04 ANCHOR %s" % audit[-1])
 			await capture("%s_t%d" % [profile.streamer_id, stage])
-		_hud.play_opponent_result(true)
-		await _hud.opponent_result_presentation_finished
-		await capture("%s_defeat" % profile.streamer_id)
+		if not _legacy_portrait_fit:
+			_hud.play_opponent_result(true)
+			await _hud.opponent_result_presentation_finished
+			await capture("%s_defeat" % profile.streamer_id)
 	if not _output.is_empty():
 		var file := FileAccess.open(_output.path_join("portrait_bounds.json"), FileAccess.WRITE)
 		file.store_string(JSON.stringify(audit, "\t"))
