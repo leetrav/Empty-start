@@ -128,6 +128,7 @@ func configure_character(character_id: String) -> void:
 	fit_current_texture()
 
 
+# 固定阶段贴图的共同锚点，再沿用原翻面与汗滴动作。
 func show_tier(tier: int) -> void:
 	var target_tier: int = clampi(tier, 0, 6)
 	var target: Texture2D = _texture_for_tier(target_tier)
@@ -223,6 +224,7 @@ func _play_kiwi_flip() -> void:
 	_flip_tween.tween_callback(_finish_flip)
 
 
+# Kiwi 回弹也保留角色原有缩放，避免换图时绕另一套基点变形。
 func _set_kiwi_scale(value: float) -> void:
 	_portrait.scale = Vector2(value, lerpf(1.0, value, 0.78)) * _display_scale
 
@@ -247,6 +249,7 @@ func _play_shudder() -> void:
 	_shudder_tween.tween_property(self, "position", Vector2.ZERO, 0.07)
 
 
+# 窄边换图后重新排版，当前 Tween 继续拥有缩放动画。
 func _swap_at_edge() -> void:
 	_portrait.texture = _pending_texture
 	fit_current_texture()
@@ -263,6 +266,7 @@ func _finish_flip() -> void:
 	flip_finished.emit(current_tier)
 
 
+# 父框变化时重算同一可见锚点，不按新 PNG 画布另选中心。
 func _refresh_pivot() -> void:
 	fit_current_texture()
 

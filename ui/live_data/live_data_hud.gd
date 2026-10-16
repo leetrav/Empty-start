@@ -227,7 +227,7 @@ func _render_metric(metric: RichTextLabel, icon: String, value: int, metric_id: 
 	var number_text: String = "%.1fk" % (value / 1000.0) if value >= 1000 else str(value)
 	if _unknown_metrics.has(metric_id):
 		number_text = "—"
-		metric.tooltip_text = "该指标尚未配置事实来源"
+		metric.tooltip_text = "暂无该项数据"
 	else:
 		metric.tooltip_text = ""
 	if display_side == DisplaySide.OPPONENT_RIGHT:

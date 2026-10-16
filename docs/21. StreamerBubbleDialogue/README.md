@@ -1,5 +1,15 @@
 # 21. StreamerBubbleDialogue 双主播气泡对话系统
 
+## PTF-04 试玩返工（2026-10-16，等待人工选择策略）
+
+- 气泡按直播框剩余宽高预算，用 RichTextLabel 实际内容高度逐级缩字号；下限沿用旧历史气泡的 18px。超过可读下限仍放不下时保留完整原文并启用滚动，悬停阅读暂停本气泡寿命。栈为尖尾、上浮、阴影及历史行预留边界，避免超长内容被父框直接裁掉。
+- 普通命中待播只保留最新一条，避免积压旧复述；指定原句回复在同一发内按原句 ID 去重。剧情序列保持原顺序。
+- `StreamerBubbleHitEchoPresenter.configure_policy(policy, interval_seconds)` 提供 `SPECIAL_THROTTLED`（仅特殊命中+限频）与 `STORY_WITH_IDLE`（只读配置的指定命中台词，普通命中不自动复述）。人工选择前默认仍为 `LEGACY_EVERY_HIT`，不擅自固化候选 6 秒值。两段 60 秒实景录像已提交本机评审材料，**#12 尚待正式策略选择**。
+- T2→T1 原来只请求未配置的 `combat_tier1_taunt`，现在无专属配置时回退到已有 `combat_tier_down`。真实正常回拉已触发两句降档台词。正式 20 表有 22 条开场、8 条降档、21 条胜利、20 条失败、48 条玩家闲聊；升档/定时/指定话语对手台词均为 0 条，剩余内容缺口由策划/E 补配，不挪用开场台词。
+- 定时条目保留其配置优先级，随机闲聊仍走低优先级路径；消费者支持在已经开始的普通尝试中首次绑定。
+
+交互入口与视频/截图、合成通知和真人验收边界见 [PTF-04 日志](../Integration/直播表现_PTF-04_2026-10-16_log.md)。
+
 ## SHEET-C 正式表接线（2026-10-15）
 
 `FormalSheetRuntimeConsumer.create_dialogue_config(story_config_id)` 将 20 表启用行按故事 ID 转成现有气泡条目，`display_duration_s`、`trigger_time_s` 和 `random_weight` 分别映射到显示时长、固定触发秒数和随机权重。连接、胜负、Tier 变化、实际命中和指定原句继续使用既有事件 ID。`random_idle` 行归入 `timed` 事件并标记为低优先级；现有 `StreamerBubbleTimedOpponentDialoguePresenter` 同时调度双方，玩家间隔读取 06 表 6–10 秒，对手读取 7–12 秒，T0 对手闲聊继续等待连线。当前正式 20 表的 48 条 `random_idle` 均未填写 `trigger_time_s`，继续由 SD-07 闲聊间隔触发。每次成功入队后重新按 20 表权重抽取对白。

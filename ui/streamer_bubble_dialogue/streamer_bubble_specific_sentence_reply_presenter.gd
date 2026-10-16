@@ -32,6 +32,7 @@ func _on_shot_resolved(
 		return
 	var hit_result: Dictionary = submission.get("hit_resolution_result", {})
 	var target_results: Array = hit_result.get("target_results", [])
+	# 同发多目标或分裂子体使用同一句时，只请求一次完整回复。
 	var replied_ids: Dictionary = {}
 	for target_result: Dictionary in target_results:
 		var original_sentence_id: String = str(target_result.get("original_sentence_id", ""))

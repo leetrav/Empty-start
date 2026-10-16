@@ -84,6 +84,7 @@ func configure_available_size(available_size: Vector2) -> void:
 	_reflow()
 
 
+# 用真实控件排版适配当前栈预算；原文始终完整保留。
 func _reflow() -> void:
 	if _text_label == null:
 		return
