@@ -1,5 +1,7 @@
 # R26-C 17/19/20/22/25 表现消费者日志（2026-10-16）
 
+> 后续 INT-17D 已在同一工作树继续实现并解除本日志记录的 Godot 验证阻塞：23 事件真实播放器、119/48 正式对白配置、四关生产 HUD/CB 演出、评论和教学视图均取得运行材料。当前范围与仍待 INT-16 的正式根场景接线见 [INT-17D 日志](生产集成_INT-17D_2026-10-16_log.md)。下文保留原轮次的失败记录。
+
 ## 本次改动
 
 - `FormalSheetRuntimeConsumer.create_dialogue_config()` 现在将 20 表 `trigger_time_s` 转入 `BubbleDialogueEntry.trigger_time_seconds`；空值按 SD-07 兼容值 0 秒处理。`random_idle` 映射至 `TIMED_IDLE` 优先级，固定剧情仍为 `PLOT`。
