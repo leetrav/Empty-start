@@ -12,6 +12,9 @@ func _initialize() -> void:
 func _rows(table: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var file := FileAccess.open("res://data/source_tables/%s.csv" % table, FileAccess.READ)
+	if file == null:
+		_expect(false, "正式CSV无法读取：" + table)
+		return result
 	var headers := file.get_csv_line()
 	while not file.eof_reached():
 		var cells := file.get_csv_line()
@@ -97,6 +100,44 @@ func _run() -> void:
 	var ending_comic: ComicSequence = load("res://data/ending/ending_comic.tres")
 	var opening_tail: ComicSequence = load("res://data/comics/ending.tres")
 	_expect(ending_comic.frames.is_empty() and not opening_tail.frames.is_empty(), "独立空通关漫画与开场P5/P6隔离")
+	_check_delivery_resources()
 	if _failures == 0:
 		print("INT-17E RESOURCE SMOKE PASS: 4 levels / 12 identities / 6 tiers / 12 lifetimes / 09 / 13-14 disabled / ending gaps / assets")
 	quit(0 if _failures == 0 else 1)
+
+
+## 源工程与导出PCK共用同一验证，确认字体、音频及正式页面依赖可加载。
+func _check_delivery_resources() -> void:
+	var csv_count: int = 0
+	for file_name: String in DirAccess.get_files_at("res://data/source_tables"):
+		if file_name.ends_with(".csv"):
+			csv_count += 1
+	_expect(csv_count == 27, "27张正式CSV必须进入包")
+	for path: String in ["assets/fonts/NotoSansSC-VF.ttf", "assets/fonts/ZCOOLKuaiLe-Regular.ttf"]:
+		var font: Font = load("res://" + path)
+		_expect(font != null and font.has_char("神".unicode_at(0)), "中文字体与字形：" + path)
+	var audio_count: int = 0
+	for row: Dictionary in _rows("17_音频事件"):
+		var path: String = str(row["asset_path_or_id"])
+		if path.is_empty():
+			continue
+		var stream: AudioStream = load("res://" + path.trim_prefix("res://"))
+		_expect(stream != null and stream.get_length() > 0.0, "已填音频实际可解码：" + str(row["event_id"]))
+		audio_count += 1
+	_expect(load("res://data/shared/audio_event_config.tres") != null, "正式兼容音频配置")
+	for path: String in ["core/boot/boot.tscn", "ui/main_menu/main_menu.tscn", "ui/identity_setup/identity_setup.tscn", "ui/rest/rest_opening_room.tscn", "scenes/sandbox/sandbox.tscn", "ui/ending/ending_page.tscn"]:
+		_expect(load("res://" + path) is PackedScene, "生产页面依赖：" + path)
+	if "--verify-pack" in OS.get_cmdline_user_args():
+		_check_pack_directory("res://")
+		_expect(not ResourceLoader.exists("res://data/test_only/generated/level_configuration/test_only_level_catalog.tres"), "PCK排除TEST_ONLY目录")
+	print("INT-18E DELIVERY RESOURCES: csv=", csv_count, " fonts=2 audio=", audio_count, " packed=", "--verify-pack" in OS.get_cmdline_user_args())
+	if _failures == 0 and "--verify-pack" in OS.get_cmdline_user_args():
+		print("INT-18E PACK CONTENTS PASS")
+
+
+## 枚举实际挂载PCK的路径，不能用源目录的排除配置代替包内核对。
+func _check_pack_directory(path: String) -> void:
+	for folder: String in DirAccess.get_directories_at(path):
+		var child_path: String = path.path_join(folder)
+		_expect(folder != "tests" and child_path not in ["res://data/test_only", "res://scenes/demos", "res://docs", "res://tools"], "包内混入开发目录：" + child_path)
+		_check_pack_directory(child_path)
