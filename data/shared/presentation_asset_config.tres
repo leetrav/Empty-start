@@ -1,17 +1,20 @@
-[gd_resource type="Resource" script_class="PresentationAssetConfig" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="PresentationAssetConfig" load_steps=9 format=3]
 
-[ext_resource type="Script" path="res://data/shared/presentation_asset_config.gd" id="1_config"]
-[ext_resource type="Theme" path="res://ui/theme/base_theme.tres" id="2_ui_theme"]
-[ext_resource type="Texture2D" path="res://assets/characters/player/hamster_idle.png" id="3_player_streamer_art"]
-[ext_resource type="Texture2D" path="res://assets/environment/live/hamster/background.png" id="4_player_live_background"]
-[ext_resource type="Texture2D" path="res://assets/environment/player_room/background.png" id="5_player_room_background"]
-[ext_resource type="Texture2D" path="res://assets/ui/combat/fan_badges/player_fan_badge_01.png" id="6_player_fan_badge"]
+[ext_resource type="Script" path="res://data/shared/presentation_asset_config.gd" id="1_script"]
+[ext_resource type="Theme" path="res://ui/theme/base_theme.tres" id="ui_theme"]
+[ext_resource type="Texture2D" path="res://assets/characters/player/hamster_idle.png" id="player_streamer_portrait"]
+[ext_resource type="Texture2D" path="res://assets/characters/player/hamster_idle.png" id="player_streamer_avatar"]
+[ext_resource type="Texture2D" path="res://assets/environment/live/hamster/background.png" id="player_live_background"]
+[ext_resource type="Texture2D" path="res://assets/environment/live/hamster/foreground_desk.png" id="player_live_foreground"]
+[ext_resource type="Texture2D" path="res://assets/environment/player_room/background.png" id="player_room_background"]
+[ext_resource type="Texture2D" path="res://assets/ui/combat/fan_badges/player_fan_badge_01.png" id="player_fan_badge"]
 
 [resource]
-script = ExtResource("1_config")
-ui_theme = ExtResource("2_ui_theme")
-player_streamer_portrait = ExtResource("3_player_streamer_art")
-player_streamer_avatar = ExtResource("3_player_streamer_art")
-player_live_background = ExtResource("4_player_live_background")
-player_room_background = ExtResource("5_player_room_background")
-player_fan_badge = ExtResource("6_player_fan_badge")
+script = ExtResource("1_script")
+ui_theme = ExtResource("ui_theme")
+player_streamer_portrait = ExtResource("player_streamer_portrait")
+player_streamer_avatar = ExtResource("player_streamer_avatar")
+player_live_background = ExtResource("player_live_background")
+player_live_foreground = ExtResource("player_live_foreground")
+player_room_background = ExtResource("player_room_background")
+player_fan_badge = ExtResource("player_fan_badge")

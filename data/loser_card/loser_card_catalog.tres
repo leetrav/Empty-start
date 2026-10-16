@@ -5,4 +5,4 @@
 
 [resource]
 script = ExtResource("1_catalog")
-profiles = Array[ExtResource("2_profile")]([])
+profiles = Array[ExtResource("2_profile")]( [])

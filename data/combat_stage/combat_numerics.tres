@@ -1,6 +1,61 @@
 [gd_resource type="Resource" script_class="CombatNumericsConfig" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://core/combat/combat_numerics_config.gd" id="1"]
+[ext_resource type="Script" path="res://core/combat/combat_numerics_config.gd" id="1_script"]
 
 [resource]
-script = ExtResource("1")
+script = ExtResource("1_script")
+initial_player_pk = 0.5
+minimum_player_pk = 0
+maximum_player_pk = 1
+base_pullback_speed_pk_per_second = 0.0008
+pc_aim_radius_px = 72
+touch_aim_radius_px = 90
+charge_time_seconds = 0.8
+projectile_flight_seconds = 0.2
+recovery_time_seconds = 0.15
+miss_penalty_pk = -0.01
+blocked_penalty_pk = -0.01
+fake_penalty_pk = -0.005
+retaliation_penalty_pk = -0.007
+reflect_penalty_pk = -0.01
+thunder_penalty_pk = -0.005
+positive_pk_shot_cap = 0.02
+negative_pk_shot_cap = 0.02
+special_foreground_instance_cap = 3
+foreground_interior_spawn_ratio = 0.65
+foreground_speed_change_period_seconds = 2.5
+foreground_wander_turn_interval_seconds = 2
+foreground_speed_cap_px_per_second = 95
+foreground_scale_min_ratio = 0.92
+foreground_scale_max_ratio = 1.08
+foreground_layer_change_interval_seconds = 3
+foreground_local_animation_probability = 0.15
+foreground_local_animation_intensity = 0.2
+foreground_outline_width_px = 2
+foreground_curve_amplitude_px = 72
+foreground_straight_spread_degrees = 30
+foreground_wander_speed_multiplier = 0.35
+normal_hit_pk_by_strength = PackedFloat32Array(0, 0.004, 0.007, 0.012)
+normal_hit_tendency_by_strength = PackedInt32Array(0, 1, 5, 10)
+lifetimes_by_type_seconds = {"word_strength_1": 8, "word_strength_2": 7, "word_strength_3": 6, "thunder": 7, "fake": 7, "retaliation": 5, "repeat": 3, "unselectable": 5, "split": 6, "contradiction_candidate": 10, "true_contradiction": 10, "false_contradiction": 10}
+lifetime_tier_affected = {"word_strength_1": true, "word_strength_2": true, "word_strength_3": true, "thunder": false, "fake": false, "retaliation": false, "repeat": true, "unselectable": false, "split": true, "contradiction_candidate": false, "true_contradiction": false, "false_contradiction": false}
+opening_viewer_multiplier_min = 0.75
+opening_viewer_multiplier_max = 1.25
+normal_hit_viewer_delta = 2
+normal_hit_like_delta = 3
+trap_hit_viewer_delta = -2
+trap_hit_like_multiplier = 0.98
+tier_up_viewer_delta = 15
+high_tier_like_multiplier = 1.05
+contradiction_break_viewer_gain = 80
+contradiction_break_like_gain = 40
+contradiction_break_boost_duration_seconds = 2
+contradiction_break_comment_delta = 1
+oracle_confirmation_viewer_gain = 40
+oracle_confirmation_like_gain = 20
+oracle_confirmation_boost_duration_seconds = 2
+oracle_confirmation_comment_delta = 1
+pk_win_fan_gain = 120
+aim_visual_diameter_px = 96
+repeat_text_color = Color(0.533333333333333, 0.533333333333333, 0.533333333333333, 1)
+foreground_outline_color = Color(0.188235294117647, 0.152941176470588, 0.184313725490196, 1)
