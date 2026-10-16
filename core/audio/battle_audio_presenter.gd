@@ -161,7 +161,7 @@ func _on_oracle_confirmed(_run: SaveData, _level_id: String, _candidate: Diction
 	_play(&"live_like_burst")
 
 
-# 成功建立终局会话后播放；锁句音继续由现有 DivineDescentSpread 负责。
+# 成功建立终局会话后播放；玩家强调反馈继续由现有 Spread 负责。
 func _on_divine_entered(_session: DivineDescentSession, flow: DivineDescentFlow) -> void:
 	_play(&"divine_descent_start")
 	# entered 先于 Spread 创建，延后一帧接真实锁句事实，声音不依赖未配置的输入缩放。

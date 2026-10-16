@@ -2,7 +2,7 @@ extends Node
 
 # 击破静音请求完成后通知调用方；中途被新音乐请求替代时不发送。
 signal music_silenced
-# 只报告池播放器已经开始播放的事实，供表现验收和调用者观察。
+# 只报告池播放器或场景独占播放器已开始播放的事实。
 signal event_played(event_id: StringName, player: AudioStreamPlayer)
 
 const SFX_PLAYER_COUNT: int = 8
