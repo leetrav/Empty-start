@@ -116,3 +116,9 @@ T6 / Paradox 保留 **1 真 + 5 假** 的六句构成。六句在出现后先移
 `ContradictionOracleFlow.outcome_resolved(outcome)` 在真实结果锁定、输入关闭后同步发出。根场景在此回调调用 `hold_result_presentation()`，并保存 `get_contradiction_system()` 返回的本场对象。PA-17 击败 / 未击破离线完成后，以同一对象调用 `complete_result_presentation(source_system)`；旧尝试对象被拒绝。成功仍等待矛盾复读自然离场和正式静音过渡，未击破也会等待离线完成后才发 `rest_ready`。
 
 PA-12 与 PA-17 若同时播放，由 INT-16 根场景汇总两者完成后释放一次；现有 `hold_oracle_for_result_feedback()` / `release_oracle_after_result_feedback()` 保留兼容，同一结果不要由两套独立回调提前释放。完整复播入口和本地证据见 [INT-17B 日志](../Integration/生产集成_INT-17B_2026-10-16_log.md)。
+
+### INT-18B 跨帧完成与正式表现回归（2026-10-16）
+
+`complete_result_presentation(source_system: Variant)` 先检查 `is_instance_valid` 和本场对象归属，因此已释放的旧矛盾对象也安全返回 false。原强类型参数会在函数体执行前拒绝 freed 对象，无法进入原有防旧回调逻辑；本轮通过真实下一帧释放与重试复现并修正。
+
+现有 `int17b_phase_runtime_smoke.tscn` 增加 `--with-presentation`，复用正式 Sandbox 节点、HUD、PA-17 与 PA-12，根业务脚本在验收实例中关闭。真实事件顺序为 outcome 同步持有 → PA-17 finished → PA-12 result finished → 同场 complete；Oracle 还需等 120 条真实复读自然离场。`--retry-only` 可独立复播超时、离线和旧回调；证据与正式根场景交接边界见 [INT-18B 日志](../Integration/INT-18B_2026-10-16_log.md)。
