@@ -1,5 +1,13 @@
 # 20. Ending 结局系统任务拆分
 
+## PTF-05 独立结束序列与素材审核（2026-10-16）
+
+`ui/ending/ending_sequence_view.tscn`消费既有ComicSequence/ComicFrame，复用ComicPanelPlaybackControl，不读取开场P5/P6。`play_sequence(sequence)->bool`拒绝空配置；`advance()`、`set_paused(bool)`、`stop()`用于宿主控制；`sequence_finished(reason)`通知A完成，组件不写保存或调用SceneRouter。Timer/Tween跟随全局暂停。
+
+正式 `data/ending/ending_comic.tres` 仍为空。V0 `data/test_only/ptf05/ending_review_a/b.tres` 使用四角色defeat图及主角图制作5页素材回顾：A每页1.2秒、B每页2秒；没有新编故事/教名/判词。可用 `tests/presentation/ptf05_content_review.tscn` 手动或自动对比，正式使用等待真人选择与A路由接线。
+
+这些素材回顾不代表正式独立剧情页已交付。三张主图、九教名、四判词及完整结束剧情仍缺；开场P5/P6保持原用途。GPU预览与后续批准路径见[PTF-05日志](../Integration/移动与内容_PTF-05_2026-10-16_log.md)。
+
 ## 系统目标
 
 结局系统负责把整局已经固定的结果组合成最终页面。
