@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="ComicSequence" format=3]
+
+[ext_resource type="Script" path="res://ui/comic/comic_sequence.gd" id="1"]
+[ext_resource type="Script" path="res://ui/comic/comic_frame.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/alien/alien_defeat.png" id="art0"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/kiwi/kiwi_defeat.png" id="art1"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/frog/frog_defeat.png" id="art2"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/fox/fox_defeat.png" id="art3"]
+[ext_resource type="Texture2D" path="res://assets/characters/player/hamster_idle.png" id="art4"]
+
+[sub_resource type="Resource" id="frame0"]
+script = ExtResource("2")
+resource_name = "TEST_ONLY PTF-05 素材回顾1，非正式剧情"
+textures = Array[Texture2D]([ExtResource("art0")])
+positions = PackedVector2Array(371.5, 333.5)
+seconds = 1.2
+reveal_seconds = 0.25
+motion_offset = Vector2(0, 16)
+text = ""
+
+[sub_resource type="Resource" id="frame1"]
+script = ExtResource("2")
+resource_name = "TEST_ONLY PTF-05 素材回顾2，非正式剧情"
+textures = Array[Texture2D]([ExtResource("art1")])
+positions = PackedVector2Array(311.0, 100.5)
+seconds = 1.2
+reveal_seconds = 0.25
+motion_offset = Vector2(0, 16)
+text = ""
+
+[sub_resource type="Resource" id="frame2"]
+script = ExtResource("2")
+resource_name = "TEST_ONLY PTF-05 素材回顾3，非正式剧情"
+textures = Array[Texture2D]([ExtResource("art2")])
+positions = PackedVector2Array(466.5, 151.0)
+seconds = 1.2
+reveal_seconds = 0.25
+motion_offset = Vector2(0, 16)
+text = ""
+
+[sub_resource type="Resource" id="frame3"]
+script = ExtResource("2")
+resource_name = "TEST_ONLY PTF-05 素材回顾4，非正式剧情"
+textures = Array[Texture2D]([ExtResource("art3")])
+positions = PackedVector2Array(607.5, 244.0)
+seconds = 1.2
+reveal_seconds = 0.25
+motion_offset = Vector2(0, 16)
+text = ""
+
+[sub_resource type="Resource" id="frame4"]
+script = ExtResource("2")
+resource_name = "TEST_ONLY PTF-05 素材回顾5，非正式剧情"
+textures = Array[Texture2D]([ExtResource("art4")])
+positions = PackedVector2Array(578.5, 74.5)
+seconds = 1.2
+reveal_seconds = 0.25
+motion_offset = Vector2(0, 16)
+text = ""
+
+[resource]
+script = ExtResource("1")
+resource_name = "TEST_ONLY PTF-05 结束素材回顾A，正式剧情仍缺"
+frames = Array[ExtResource("2")]([SubResource("frame0"), SubResource("frame1"), SubResource("frame2"), SubResource("frame3"), SubResource("frame4")])
