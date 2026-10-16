@@ -679,6 +679,10 @@ func _finish_divine_descent(result: EndingSession) -> void:
 func _input(event: InputEvent) -> void:
 	if _divine_descent_flow != null and _divine_descent_flow.handle_input(event):
 		get_viewport().set_input_as_handled()
+		return
+	# B的结果复读交互由原Flow接收，不能绕过PA-17/PA-12完成边界。
+	if _contradiction_oracle_flow != null and _contradiction_oracle_flow.has_method("handle_input") and bool(_contradiction_oracle_flow.call("handle_input", event)):
+		get_viewport().set_input_as_handled()
 
 
 # 联调和后续普通战斗流程通过公开入口读取阶段与 Rest 结果。

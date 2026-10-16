@@ -74,6 +74,11 @@ func _checks() -> void:
 	var flow: BattleAttemptFlow = sandbox.get_battle_attempt_flow()
 	var messages: Array[String] = []
 	flow.battle_state_changed.connect(func(message: String): messages.append(message))
+	if _scenario == "mobile-root":
+		# 明确只在测试入口注入E的待审方案，生产根不引用此夹具。
+		var layout: Resource = load("res://data/test_only/ptf05/mobile_layout_a.tres")
+		_check(sandbox.configure_mobile_touch(layout), "E组件经根公开入口注入")
+		_check(sandbox.get_mobile_safe_viewport_rect().has_area(), "E真实安全区可读")
 	if _scenario == "preview":
 		sandbox.opponent_reaction_preview_enabled = true
 	_check(sandbox.get_opponent_live_snapshot()["comment_count"] == 3, "首批三条对手评论")
