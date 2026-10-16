@@ -44,7 +44,7 @@ INT-09/10 使用现有接口和独立测试配置，不等待正式四关导表�
 | 前置不变 | CA-15 → BG-38；HR-16 → HR-17；CS-18 → CS-14 → CS-15；BG-16/34/36；RP-15～21 | 命中规则、PK 限幅、Tier 规则、弹幕与复读规则仍归原系统。逐发整合经 `AttackChargeInput.shot_hit_resolution_submitted` 进入 `BattleAttemptFlow`，完成事实读 `shot_resolved`。 |
 | 改用三流程公开接口 | CA-15、BG-38、CS-14/22、SD-06、PA-17/18/19 | 普通阶段消费 `shot_resolved`、`tier_changed`、`attempt_failed` 等；Paradox 消费 `ContradictionOracleFlow.outcome_resolved` / `rest_ready`；Ending 消费 `DivineDescentFlow.entered` / `completed`。Sandbox 保持顶层接线 Owner。`battle_state_changed(text)` 只供显示，不能作为稳定剧情事件 ID。 |
 | 独立组件待接入 | SD-02～07、CS-22/27、LD-13～16、PA-03～20、BG/RP 后续局部卡 | 对白、弹幕、立绘、转场、布局和直播 UI 继续由各自 Owner 修改。Lane A 负责把已验收组件接回现有公开接口；已完成的 INT-06 使用 `%BarrageArea`、`%AttackChargeInput`、`%AimReticle`、`%BattleHud` 稳定节点引用。 |
-| 等正式字段与资源 | LC-10/12/13、LD-12、SD-08、CS-28/29、BG-35/41 | 四关数据、表字段、正式资源映射、Importer 及反击池等待策划定稿；当前任务不修改生产表、存档或导表器。 |
+| 等正式字段与资源 | LC-10/12/13、LD-12、SD-08、CS-28/29、BG-35/41、R26-E 导表审计 | INT-17E已刷新正式身份/数值/素材Resource并生成27表逐字段报告；吞并奖励提供 LevelProfile 静态数据字段，由 INT-16/系统 Owner 决定运行时发奖；身份列表继续用IdentityOptions.CARDS预载原有12张Resource。 |
 | 等视觉验收 | PA-03～20、INT-05/BG-17 与人审视觉 PR #131/#132/#142 | 本次保留这些独立视觉工作。静态 Sandbox / Ending 截图证明场景可见，不等于动画、物理输入、全屏缩放、Android 或美术终稿通过。 |
 
 各受影响卡已按上述公开接口更新 Owner/调用入口；完整分类和未验收边界见[主开发计划 S3](../开发计划_2026-10-09_任务卡依赖整合.md)及 [INT-10 日志](Sandbox重构_INT-10_2026-10-11_log.md)。
@@ -135,3 +135,12 @@ godot.windows.opt.tools.64.exe --path <隔离项目绝对路径> res://tests/int
 ## INT-06 中央战斗区全高与操作 ICON（2026-10-11 实现完成）
 
 [INT-06 单功能程序任务卡](tasks/INT-06_battle-area-full-height-and-input-icon-overlay.md)已完成全高布局与操作浮层实现。中央顶部保持 1024×72，`BarrageArea` 和 `OracleCandidateDisplay` 使用中央局部矩形 `(0,72,1024,1008)`；旧底部交互栏移除，鼠标左键与 ESC ICON 固定在中央区左下角，HUD 继续保存蓄力进度与阶段供后续正式反馈读取。Godot GUI smoke 已覆盖 1920×1080 请求、1280×720、960×540、底边普通目标与神谕目标、ICON 输入穿透、ESC 暂停恢复及全屏切换。Editor 场景预览独立检查、实体鼠标键盘手动验收和 Android 设备验收仍未完成；工具连接边界及运行证据见 [INT-06 任务日志](Sandbox布局_INT-06_2026-10-11_log.md)。该布局更新覆盖旧 INT-02 的中央 760px 弹幕区和 248px 底部区设计基线。
+
+## INT-17E 正式导表与素材数据闭环（2026-10-16）
+
+`--approved-csv` 从27张正式CSV刷新26个既有/新增Resource：四关目录与词池、12身份、06/09数值、08音乐/首次入档抽取次数、13/14禁用奖励、16结局配置、已入库表现贴图。`--audit-csv` 生成907行、9279个实际字段的源值/消费者/缺口报告，旧Resource漂移单列；复导26项全部unchanged。
+
+- [正式完成日志](生产集成_INT-17E_2026-10-16_log.md)、[逐字段报告](R26-E_01-04-13-14-18-23_importer_audit.md)、[实际素材与最短缺口](INT-17E_asset_usage_2026-10-16.md)。
+- Godot4.7.2真实Resource smoke、1920×1080素材渲染已通过；正式四关玩家流程、音乐听感和动画仍交对应Owner联调。
+- INT-16/D读取 `LevelProfile.streamer_live_foreground/opponent_defeat_effect_id` 与 `PresentationAssetConfig.player_live_foreground`；根流程和HUD未修改。
+- 结局继续 `EndingSession.receive_final_state` → `SceneRouter.goto_ending`。独立 `data/ending/ending_comic.tres` 暂空；`data/comics/ending.tres`保留开场P5/P6用途。

@@ -10,5 +10,7 @@ extends Resource
 
 ## 玩家直播间与主播标记资源。
 @export var player_live_background: Texture2D
+## 主角直播桌面前景，供 HUD 组合方读取。
+@export var player_live_foreground: Texture2D
 @export var player_room_background: Texture2D
 @export var player_fan_badge: Texture2D

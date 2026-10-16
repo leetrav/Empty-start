@@ -16,6 +16,11 @@ extends Resource
 @export var contradiction_set_id: String = ""
 @export var background_asset_id: String = ""
 @export var fan_badge_asset_id: String = ""
+## 关卡正式数据中的并吞奖励；disabled 行保留为空数组以供审计。
+@export var assimilation_reward_ids: Array[String] = []
+@export var assimilation_content_ids: Array[String] = []
+@export var assimilation_inherited_weights: Array[float] = []
+@export var assimilation_rewards: Array[Dictionary] = []
 ## 对手主播的粉丝团显示名；正式导表映射待关卡数据工具确认后接入。
 @export var fan_group_name: String = ""
 @export var streamer_portrait: Texture2D
@@ -26,6 +31,9 @@ extends Resource
 @export var opponent_defeat_transition_portrait: Texture2D
 @export var streamer_avatar: Texture2D
 @export var streamer_live_background: Texture2D
+## 关卡直播前景与击败演出稳定 ID；由表现 Owner 消费，不在数据层播放。
+@export var streamer_live_foreground: Texture2D
+@export var opponent_defeat_effect_id: StringName = &""
 @export_multiline var stream_topic: String = ""
 
 ## 美术资源尚未提供时可先填稳定 ID，Texture2D 字段可直接替换为正式素材。

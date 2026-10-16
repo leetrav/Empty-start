@@ -6,10 +6,10 @@ extends Resource
 @export var minimum_player_pk: float = 0.0
 @export var maximum_player_pk: float = 1.0
 @export var base_pullback_speed_pk_per_second: float = 0.0008
+## 准心视觉直径与72/90命中半径分别读取。
+@export var aim_visual_diameter_px: float = 96.0
 @export var pc_aim_radius_px: float = 72.0
 @export var touch_aim_radius_px: float = 90.0
-## 06 基础参数 aim_visual_size 的圆形视觉直径，不改变判定半径。
-@export var aim_visual_diameter_px: float = 96.0
 @export var charge_time_seconds: float = 0.8
 @export var projectile_flight_seconds: float = 0.2
 @export var recovery_time_seconds: float = 0.15
@@ -32,13 +32,14 @@ extends Resource
 @export var foreground_scale_max_ratio: float = 1.08
 @export var foreground_layer_change_interval_seconds: float = 3.0
 @export var foreground_local_animation_probability: float = 0.15
+## 与 INT-17A 的现有数据定义一致，运行应用继续由 A 负责。
 @export var foreground_local_animation_intensity: float = 0.2
 @export var foreground_outline_width_px: int = 2
 @export var foreground_outline_color: Color = Color("#30272F")
-@export var repeat_text_color: Color = Color("#888888")
 @export var foreground_curve_amplitude_px: float = 72.0
 @export var foreground_straight_spread_degrees: float = 30.0
 @export var foreground_wander_speed_multiplier: float = 0.35
+@export var repeat_text_color: Color = Color("#888888")
 @export var lifetimes_by_type_seconds: Dictionary = {
 	"word_strength_1": 8.0, "word_strength_2": 7.0, "word_strength_3": 6.0,
 	"thunder": 7.0, "fake": 7.0, "retaliation": 5.0, "repeat": 3.0,
@@ -61,10 +62,10 @@ extends Resource
 @export var contradiction_break_viewer_gain: int = 80
 @export var contradiction_break_like_gain: int = 40
 @export var contradiction_break_boost_duration_seconds: float = 2.0
-@export var contradiction_break_comment_delta: int = 1
 @export var oracle_confirmation_viewer_gain: int = 40
 @export var oracle_confirmation_like_gain: int = 20
 @export var oracle_confirmation_boost_duration_seconds: float = 2.0
+@export var contradiction_break_comment_delta: int = 1
 @export var oracle_confirmation_comment_delta: int = 1
 
 

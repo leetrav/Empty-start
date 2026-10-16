@@ -5,8 +5,7 @@
 
 [sub_resource type="Resource" id="Tier0"]
 script = ExtResource("2_tier_config")
-music_event_id = &"music_battle_t0"
-neutral_weight_multiplier = 1.0
+neutral_weight_multiplier = 1
 upgrade_threshold = 0.56
 downgrade_threshold = 0
 generation_count_multiplier = 1
@@ -21,10 +20,11 @@ straight_motion_weight = 70
 curved_motion_weight = 20
 speed_change_motion_weight = 5
 wandering_motion_weight = 5
+music_event_id = &"music_battle_t0"
+retaliation_draw_count_first_entry = 0
 
 [sub_resource type="Resource" id="Tier1"]
 script = ExtResource("2_tier_config")
-music_event_id = &"music_battle_t1"
 neutral_weight_multiplier = 0.99
 upgrade_threshold = 0.64
 downgrade_threshold = 0.53
@@ -40,11 +40,11 @@ straight_motion_weight = 60
 curved_motion_weight = 25
 speed_change_motion_weight = 10
 wandering_motion_weight = 5
+music_event_id = &"music_battle_t1"
+retaliation_draw_count_first_entry = 0
 
 [sub_resource type="Resource" id="Tier2"]
 script = ExtResource("2_tier_config")
-music_event_id = &"music_battle_t2"
-retaliation_draw_count_first_entry = 1
 neutral_weight_multiplier = 0.7
 upgrade_threshold = 0.71
 downgrade_threshold = 0.61
@@ -60,11 +60,11 @@ straight_motion_weight = 50
 curved_motion_weight = 25
 speed_change_motion_weight = 15
 wandering_motion_weight = 10
+music_event_id = &"music_battle_t2"
+retaliation_draw_count_first_entry = 1
 
 [sub_resource type="Resource" id="Tier3"]
 script = ExtResource("2_tier_config")
-music_event_id = &"music_battle_t3"
-retaliation_draw_count_first_entry = 1
 neutral_weight_multiplier = 0.4
 upgrade_threshold = 0.79
 downgrade_threshold = 0.68
@@ -80,11 +80,11 @@ straight_motion_weight = 45
 curved_motion_weight = 30
 speed_change_motion_weight = 15
 wandering_motion_weight = 10
+music_event_id = &"music_battle_t3"
+retaliation_draw_count_first_entry = 1
 
 [sub_resource type="Resource" id="Tier4"]
 script = ExtResource("2_tier_config")
-music_event_id = &"music_battle_t4"
-retaliation_draw_count_first_entry = 1
 neutral_weight_multiplier = 0.15
 upgrade_threshold = 0.9
 downgrade_threshold = 0.76
@@ -100,12 +100,12 @@ straight_motion_weight = 40
 curved_motion_weight = 30
 speed_change_motion_weight = 20
 wandering_motion_weight = 10
+music_event_id = &"music_battle_t4"
+retaliation_draw_count_first_entry = 1
 
 [sub_resource type="Resource" id="Tier5"]
 script = ExtResource("2_tier_config")
-music_event_id = &"music_battle_t5"
-retaliation_draw_count_first_entry = 1
-neutral_weight_multiplier = 0.0
+neutral_weight_multiplier = 0
 upgrade_threshold = 1
 downgrade_threshold = 0.87
 generation_count_multiplier = 1
@@ -120,6 +120,8 @@ straight_motion_weight = 35
 curved_motion_weight = 30
 speed_change_motion_weight = 25
 wandering_motion_weight = 10
+music_event_id = &"music_battle_t5"
+retaliation_draw_count_first_entry = 1
 
 [resource]
 script = ExtResource("1_catalog")
