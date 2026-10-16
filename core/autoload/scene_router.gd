@@ -135,6 +135,9 @@ func _change_scene(scene: PackedScene) -> Error:
 		return invalid_error
 
 	var error: Error = get_tree().change_scene_to_packed(scene)
+	if error == OK:
+		# 顶层目标场景独立开始，退出旧暂停页时清除全树暂停状态。
+		get_tree().paused = false
 	if error != OK:
 		push_error("SceneRouter: change_scene_to_packed failed: %s" % error_string(error))
 	return error

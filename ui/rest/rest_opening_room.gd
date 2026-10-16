@@ -2,6 +2,7 @@ extends Control
 
 var _run_data: SaveData
 var _starting := false
+const PAUSE_MENU: PackedScene = preload("res://ui/pause_menu/pause_menu.tscn")
 
 @onready var _environment: RestRoomEnvironment = $RoomEnvironment
 @onready var _names: Label = %Names
@@ -10,6 +11,10 @@ var _starting := false
 
 # 独立开局页面只读取已确认资料；没有 RestSession、关卡或战斗输入节点。
 func _ready() -> void:
+	# 与PK复用同一暂停组件，房间不提供重开战斗入口。
+	var pause := PAUSE_MENU.instantiate()
+	add_child(pause)
+	pause.set_restart_available(false)
 	_run_data = SaveManager.data
 	_start_button.pressed.connect(start_live)
 	if _run_data == null or _run_data.identity_id.is_empty() or _run_data.tendency_state == null:
@@ -25,6 +30,8 @@ func _ready() -> void:
 
 # 请求成功后直到页面退出都保持锁定，同帧连点和直接重复调用只启动一次。
 func start_live() -> Error:
+	if get_tree().paused:
+		return ERR_BUSY
 	if _starting:
 		return ERR_ALREADY_IN_USE
 	if _run_data == null or SaveManager.data != _run_data or _run_data.identity_id.is_empty() or _run_data.tendency_state == null:
