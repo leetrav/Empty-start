@@ -360,5 +360,7 @@ func create_event_player(event_id: StringName, owner_node: Node) -> AudioStreamP
 	player.name = "ComicWritingPlayer"
 	player.bus = bus
 	player.stream = event.stream
+	player.volume_db = event.volume_db
+	player.pitch_scale = randf_range(minf(event.pitch_min, event.pitch_max), maxf(event.pitch_min, event.pitch_max))
 	owner_node.add_child(player)
 	return player

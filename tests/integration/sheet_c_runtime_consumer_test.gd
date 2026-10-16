@@ -35,6 +35,7 @@ func _initialize() -> void:
 	_assert(not player_rows.is_empty() and not alien_rows.is_empty(), "enabled viewer/comment rows resolve for both sides")
 	_assert(_simulate_weighted_viewers(player_rows, 1000) and _simulate_weighted_viewers(alien_rows, 1000), "weighted audience simulation yields valid weighted candidates")
 	print("SHEET-C PASS: audio=%d/23, 22 typed booleans, 119 dialogue incl 48 timed idle, audience simulation player=%d opponent=%d; dialogue=%s" % [audio_registered, player_rows.size(), alien_rows.size(), str(dialogue_counts)])
+	audio_manager.free()
 	quit(1 if _failed else 0)
 
 

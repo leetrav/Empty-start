@@ -183,6 +183,7 @@ func _dialogue_event_id(trigger_type: String, trigger_key: String) -> StringName
 		"pk_lose": return &"combat_lose"
 		"tier_down": return &"combat_tier_down"
 	match trigger_type:
+		"timed": return &"timed"
 		"connect": return &"combat_connected"
 		"tier_up": return &"combat_tier_up"
 		"tier_down": return &"combat_tier_down"

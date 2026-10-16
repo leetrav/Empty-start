@@ -11,6 +11,8 @@ const PortraitMotion = preload("res://systems/presentation/streamer_portrait_mot
 const TierPortrait = preload("res://systems/presentation/opponent_tier_portrait.gd")
 const PK_BAR_SKIN_SCENE: PackedScene = preload("res://systems/presentation/pk_bar_skin.tscn")
 const BREAKTHROUGH_SCENE: PackedScene = preload("res://systems/presentation/opponent_breakthrough_presentation.tscn")
+const BattleAudio = preload("res://core/audio/battle_audio_presenter.gd")
+const TUTORIAL_HINT_SCENE: PackedScene = preload("res://ui/tutorial/tutorial_hint_view.tscn")
 const FOX_PETALS: Array[Texture2D] = [
 	preload("res://assets/characters/opponents/fox/effects/fox_rose_01.png"),
 	preload("res://assets/characters/opponents/fox/effects/fox_rose_02.png"),
@@ -77,6 +79,8 @@ var _result_character_id: StringName
 var _result_defeat_texture: Texture2D
 var _opponent_result_active: bool = false
 var _opponent_result_configured: bool = false
+var _battle_audio: Node
+var _tutorial_hint: PanelContainer
 var _portrait_attack: AttackChargeInput
 var _opponent_connected: bool = false
 var _paradox_stage_active: bool = false
@@ -171,6 +175,12 @@ func _ready() -> void:
 	_stage_arrow.name = "StageArrowFx"
 	_stage_arrow.z_index = 20
 	var barrage_area: Control = %BarrageArea
+	_battle_audio = BattleAudio.new()
+	add_child(_battle_audio)
+	_tutorial_hint = TUTORIAL_HINT_SCENE.instantiate() as PanelContainer
+	_battle_area.add_child(_tutorial_hint)
+	_tutorial_hint.position = Vector2(30.0, 90.0)
+	_tutorial_hint.size = Vector2(_battle_area.size.x - 60.0, 90.0)
 	barrage_area.add_child(_stage_arrow)
 	_stage_arrow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_stage_arrow.animation_finished.connect(_on_stage_arrow_finished)
@@ -299,6 +309,7 @@ func bind_portrait_attack(attack: AttackChargeInput) -> void:
 	if is_instance_valid(_portrait_attack) and _portrait_attack.shot_snapshot_created.is_connected(play_player_shot):
 		_portrait_attack.shot_snapshot_created.disconnect(play_player_shot)
 	_portrait_attack = attack
+	_battle_audio.bind_sources(attack, %BarrageArea as BarrageArea)
 	if is_instance_valid(_portrait_attack):
 		_portrait_attack.shot_snapshot_created.connect(play_player_shot)
 
@@ -335,6 +346,11 @@ func set_opponent_portrait_connected(connected: bool) -> void:
 func configure_portrait_character(opponent_character_id: String) -> void:
 	opponent_portrait_motion.configure_character(opponent_character_id)
 	opponent_tier_portrait.configure_character(opponent_character_id)
+
+
+# INT-16 将 C 的运行器注入现有 HUD；输入事实和存档由原拥有者负责。
+func bind_tutorial_runner(runner: Object) -> bool:
+	return bool(_tutorial_hint.bind_runner(runner))
 
 
 # 当前关 Resource 为素材依据，正式导表映射可覆盖同名字段；不在 HUD 推导关卡。
@@ -641,6 +657,8 @@ func show_failure() -> void:
 
 # 重开复位本场 HUD 提示并读取当前 T0 等待文案，各系统状态仍由所属对象初始化。
 func reset_for_attempt(current_tier: int = 0) -> void:
+	if _tutorial_hint != null:
+		_tutorial_hint.clear_hint()
 	_opponent_result_active = false
 	_opponent_result_configured = false
 	if _opponent_breakthrough != null:
