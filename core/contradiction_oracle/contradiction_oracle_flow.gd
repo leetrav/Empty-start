@@ -1,6 +1,8 @@
 class_name ContradictionOracleFlow
 extends Node
 
+const FORMAL_COMBAT_NUMERICS: CombatNumericsConfig = preload("res://data/combat_stage/combat_numerics.tres")
+
 signal entered(system: ContradictionBreakSystem)
 signal outcome_resolved(outcome: int)
 signal oracle_opened(session: FinalOracleSession)
@@ -202,8 +204,9 @@ func commit_confirmed_rewards() -> bool:
 	_rest_handoff_pending = true
 	if _confirmation_hit_resolution == _hit_resolution:
 		_run_data.live_session.start_short_boost(LiveSessionData.BoostEvent.ORACLE_CONFIRMATION,
-			battle_config.oracle_boost_viewer_gain, battle_config.oracle_boost_like_gain,
-			battle_config.oracle_boost_duration_seconds)
+			FORMAL_COMBAT_NUMERICS.oracle_confirmation_viewer_gain,
+			FORMAL_COMBAT_NUMERICS.oracle_confirmation_like_gain,
+			FORMAL_COMBAT_NUMERICS.oracle_confirmation_boost_duration_seconds)
 	# 同步确认与攻击回调先结束，帧尾再清候选并交付同一 Rest 对象。
 	_open_rest_after_oracle.call_deferred(_run_data, _final_oracle_session)
 	return true
@@ -515,8 +518,9 @@ func _on_contradiction_outcome_locked(outcome: int) -> void:
 		# 只消费成功结果；未击破分支继续沿用既有休息流程。
 		_run_data.live_session.start_short_boost(
 			LiveSessionData.BoostEvent.CONTRADICTION_BREAK,
-			battle_config.break_boost_viewer_gain, battle_config.break_boost_like_gain,
-			battle_config.break_boost_duration_seconds
+			FORMAL_COMBAT_NUMERICS.contradiction_break_viewer_gain,
+			FORMAL_COMBAT_NUMERICS.contradiction_break_like_gain,
+			FORMAL_COMBAT_NUMERICS.contradiction_break_boost_duration_seconds
 		)
 		state_text_changed.emit("矛盾击破成功 · 等待复读展示")
 	else:

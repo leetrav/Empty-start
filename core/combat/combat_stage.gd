@@ -9,6 +9,9 @@ signal barrage_foreground_slot_count_changed(foreground_slot_count: int)
 signal neutral_weight_multiplier_changed(multiplier: float)
 signal tier_state_changed(current_tier: int)
 signal audio_event_requested(event_id: StringName)
+## 当前实际 Tier 请求对应音乐，与升档音效分开消费。
+signal music_event_requested(event_id: StringName)
+signal barrage_skill_tier_changed(current_tier: int, first_entry_draw_count: int)
 
 const INITIAL_TIER: int = 0
 
@@ -78,6 +81,9 @@ func bind_opponent_pk_bar(opponent_pk_bar: OpponentPKBar) -> void:
 func bind_barrage_area(barrage_area: BarrageArea) -> void:
 	# 复用弹幕生成系统现有的倍率入口，并在绑定时补发当前 Tier 配置。
 	var generation_callback: Callable = Callable(barrage_area, "set_generation_multipliers")
+	var skill_callback := Callable(barrage_area, "set_combat_tier")
+	if not barrage_skill_tier_changed.is_connected(skill_callback):
+		barrage_skill_tier_changed.connect(skill_callback)
 	if not barrage_generation_multipliers_changed.is_connected(generation_callback):
 		barrage_generation_multipliers_changed.connect(generation_callback)
 	var motion_weights_callback: Callable = Callable(barrage_area, "set_foreground_motion_weights")
@@ -100,6 +106,9 @@ func bind_audio_manager(audio_manager: Node) -> void:
 	var callback: Callable = Callable(audio_manager, "play_event")
 	if not audio_event_requested.is_connected(callback):
 		audio_event_requested.connect(callback)
+	var music_callback := Callable(audio_manager, "change_music")
+	if audio_manager.has_method("change_music") and not music_event_requested.is_connected(music_callback):
+		music_event_requested.connect(music_callback)
 
 
 func _on_final_player_pk_updated(final_player_pk: float) -> void:
@@ -155,6 +164,15 @@ func _publish_current_tier_state() -> void:
 	_publish_opponent_tier_state()
 	_publish_barrage_state()
 	tier_state_changed.emit(_current_tier)
+	var music_event: StringName = get_current_music_event_id()
+	if not music_event.is_empty():
+		music_event_requested.emit(music_event)
+
+
+## 公开读取当前 Tier 的表驱动音乐事件，空配置保持静默。
+func get_current_music_event_id() -> StringName:
+	var current_config: CombatStageTierConfig = _tier_catalog.get_tier_config(_current_tier)
+	return current_config.music_event_id
 
 
 func _publish_opponent_tier_state() -> void:
@@ -174,6 +192,7 @@ func _publish_barrage_state() -> void:
 		current_config.generation_frequency_multiplier,
 		current_config.movement_speed_multiplier
 	)
+	barrage_skill_tier_changed.emit(_current_tier, current_config.retaliation_draw_count_first_entry)
 	barrage_foreground_motion_weights_changed.emit(
 		current_config.straight_motion_weight,
 		current_config.curved_motion_weight,
