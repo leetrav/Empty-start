@@ -33,6 +33,8 @@ const PARADOX_COMIC_SCENE: PackedScene = preload("res://systems/presentation/par
 @export var divine_input_scale: float = 0.0
 @export var divine_input_return_seconds: float = 0.0
 @export var divine_trait_colors: Dictionary = {}
+## 对手胜负热度映射尚待负责人批准，仅供明确启用的独立试玩预览。
+@export var opponent_reaction_preview_enabled: bool = false
 
 @onready var _barrage_area: BarrageArea = %BarrageArea
 @onready var _aim_reticle: AimReticle = %AimReticle
@@ -67,6 +69,7 @@ var _trait_catalog: BarrageTraitCatalog
 var _trait_runtime: BarrageTraitRuntime
 var _tutorial_runner: TutorialStepRunner
 var _result_feedback_system: ContradictionBreakSystem
+var _opponent_live: LiveSessionData
 
 
 # 场景只创建生命周期对象并接线；PK、Tier、倾向等状态留在各自所有者。
@@ -79,8 +82,6 @@ func _ready() -> void:
 	if SaveManager.data == null:
 		SaveManager.new_game()
 	%LiveDataHud.bind_live_session(SaveManager.data.live_session)
-	# 敌方尚无数据所有者，本卡仅显式提供四个显示占位值。
-	%OpponentLiveDataHud.set_values(0, 0, 0, 0)
 	_run_state = LevelRunState.new(level_catalog)
 	# 房间开播使用已保存的下一关，场景重建保留周目进度。
 	if not _run_state.restore_progress(
@@ -126,6 +127,8 @@ func _ready() -> void:
 	_battle_attempt_flow.name = "BattleAttemptFlow"
 	add_child(_battle_attempt_flow)
 	_battle_attempt_flow.attempt_started.connect(_on_attempt_started)
+	_battle_attempt_flow.attempt_preparing.connect(_prepare_opponent_live)
+	_battle_attempt_flow.shot_resolved.connect(_on_opponent_shot_result)
 	_battle_attempt_flow.battle_state_changed.connect(_battle_hud.show_battle_state)
 	_battle_attempt_flow.pk_feedback_changed.connect(_battle_hud.refresh_pk)
 	_battle_attempt_flow.tier_changed.connect(_queue_pk_tier_visual)
@@ -147,6 +150,7 @@ func _ready() -> void:
 	_battle_hud.failure_presentation_finished.connect(_on_failure_presentation_finished)
 	%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
+	%PauseMenu.paused_changed.connect(_on_pause_changed)
 	_debug_panel.call("bind_sandbox", self)
 	if not _battle_attempt_flow.configure(
 			SaveManager.data, level_catalog, _run_state, battle_config, SAMPLE_TIER_CATALOG,
@@ -217,8 +221,24 @@ func _ready() -> void:
 
 
 # CombatStage 的起始 Tier 通知早于 attempt_started；延后一帧避免新场误播升降档动作。
-func _queue_pk_tier_visual(current_tier: int, player_pk: float) -> void:
-	_battle_hud.call_deferred("on_tier_changed", current_tier, player_pk)
+func _queue_pk_tier_visual(current_tier: int, _player_pk: float) -> void:
+	# 延迟只保存来源和档位，PK在执行时读取，避免旧回调覆盖回拉或新尝试。
+	_deliver_pk_tier_visual.call_deferred(_battle_attempt_flow.get_combat_stage(), current_tier)
+
+
+## 回调到达时只接受当前Stage；T6/终局也不会被旧普通Tier演出覆盖。
+func _deliver_pk_tier_visual(source: CombatStage, tier: int) -> void:
+	if source != _battle_attempt_flow.get_combat_stage() or source.get_current_tier() != tier:
+		return
+	if not _battle_attempt_flow.is_normal_combat_active():
+		return
+	_battle_hud.on_tier_changed(tier, _battle_attempt_flow.get_hit_resolution().get_player_pk())
+
+
+## C的公开入口只撤销当前指针蓄力，保留已发射言弹及硬直计时。
+func _on_pause_changed(paused: bool) -> void:
+	if paused and _attack_charge_input.has_method("cancel_pointer_attack"):
+		_attack_charge_input.call("cancel_pointer_attack")
 
 
 # 按当前关重建尝试；重开与切到下一关共用清理，保留此前周目成果。
@@ -238,6 +258,7 @@ func restart_current_attempt() -> void:
 
 # 当前关的角色和素材由一次尝试启动事实提供；HUD 只呈现组合方状态。
 func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage: CombatStage, _queue: RepeatDelayQueue) -> void:
+	%PauseMenu.set_restart_available(true)
 	_pa11_connection_dialogue_active = false
 	_barrage_impact_presenter.reset_effects()
 	_pa09_feedback.call("clear_feedback")
@@ -281,6 +302,8 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 
 # 正式失败先播放 PA-18 局部演出，完成通知后再显示既有失败界面。
 func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: HitResolution, _repeat_stats: RepeatGenerationStats) -> void:
+	if opponent_reaction_preview_enabled and _opponent_live != null:
+		_opponent_live.commit_pk_win_fans(StringName(_level.level_id), BattleAttemptFlow.FORMAL_COMBAT_NUMERICS.pk_win_fan_gain)
 	_reset_paradox_presentation()
 	_pa11_connection_dialogue_active = false
 	_barrage_impact_presenter.reset_effects()
@@ -531,6 +554,7 @@ func _on_rest_ready(result: RestSession) -> void:
 
 
 func _show_rest_result(result: RestSession) -> void:
+	%PauseMenu.set_restart_available(false)
 	_rest_session = result
 	_battle_hud.set_paradox_stage_active(false, _battle_attempt_flow.get_current_tier())
 	if not _rest_result_view.show_result(result, SaveManager.data, level_catalog, loser_card_catalog):
@@ -659,6 +683,46 @@ func get_divine_descent_flow() -> DivineDescentFlow:
 # 普通与复读都由同一生成事实计评论，等待请求和失败生成不提前入账。
 func _on_barrage_generated(_view: BarrageView) -> void:
 	SaveManager.data.live_session.record_generated_comments(1)
+	# 对手普通前景实际生成才记对手评论；复读与装饰聊天不冒充对手业务事件。
+	if _opponent_live != null and _view.runtime_record != null and not _view.runtime_record.is_repeat and not _view.runtime_record.is_contradiction:
+		_opponent_live.record_generated_comments(1)
+
+
+## 首批生成前绑定真实对手数据；正式表缺初始人数，明确保留缺配置状态。
+func _prepare_opponent_live(level: LevelProfile) -> void:
+	if level == null:
+		return
+	_opponent_live = SaveManager.data.get_opponent_live_session(level.streamer_id)
+	_opponent_live.configure_formal_rules(BattleAttemptFlow.FORMAL_COMBAT_NUMERICS)
+	_opponent_live.initialize_session(_opponent_live.fan_count)
+	_opponent_live.set_opening_viewers(randf_range(
+		BattleAttemptFlow.FORMAL_COMBAT_NUMERICS.opening_viewer_multiplier_min,
+		BattleAttemptFlow.FORMAL_COMBAT_NUMERICS.opening_viewer_multiplier_max))
+	%OpponentLiveDataHud.bind_live_session(_opponent_live)
+	%OpponentLiveDataHud.tooltip_text = "对手评论来自实际前景生成。初始粉丝与热度事件映射尚待配置。"
+
+
+## 独立A/B预览沿用09增量，对手事件含义须人工批准后才能作为正式规则。
+func _on_opponent_shot_result(_snapshot: AttackTargetSnapshot, submission: Dictionary, _tier: int, _stats: RepeatGenerationStats) -> void:
+	if not opponent_reaction_preview_enabled or _opponent_live == null:
+		return
+	var delta := float(submission.get("hit_resolution_result", {}).get("total_pk_delta", 0.0))
+	if delta < 0.0:
+		_opponent_live.record_normal_hit_live_rule()
+	elif delta > 0.0:
+		_opponent_live.record_trap_hit_live_rule()
+
+
+## UI及实机验收读取同一所有者快照，缺配置标记随结果交接。
+func get_opponent_live_snapshot() -> Dictionary:
+	if _opponent_live == null:
+		return {}
+	return {
+		"viewer_count": _opponent_live.viewer_count, "like_count": _opponent_live.like_count,
+		"comment_count": _opponent_live.comment_count, "fan_count": _opponent_live.fan_count,
+		"reaction_preview": opponent_reaction_preview_enabled,
+		"initial_fans_configured": false,
+	}
 
 
 # 离开验收场时撤销尚未提交的本场倾向，已有周目成果由 SaveData 保留。
