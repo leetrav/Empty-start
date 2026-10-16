@@ -15,6 +15,9 @@ func _ready() -> void:
 	_menu_actions.add_child(_continue_button)
 	_menu_actions.move_child(_continue_button, 0)
 	_continue_button.pressed.connect(_on_continue_button_pressed)
+	# 原菜单按钮点击消费已提前注册的正式声音，路由仍由原回调负责。
+	for button: BaseButton in [%StartButton, %ReplayOpeningButton, %ReplayEndingButton, %SettingsButton, %QuitButton, _continue_button]:
+		AudioManager.bind_ui_button(button)
 	# 首次启动演出已由 Boot 处理，主菜单始终提供前后两部分回放。
 	%ReplayOpeningButton.show()
 	%ReplayEndingButton.show()

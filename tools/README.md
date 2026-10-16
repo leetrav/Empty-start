@@ -1,5 +1,9 @@
 # 策划数据导表｜TEST_ONLY 联调说明
 
+## INT-18E 正式导出（2026-10-16）
+
+业务CSV需要原生Keep File，`data/source_tables/*.csv.import`随Git提交；include_filter无法单独覆盖默认翻译导入器。现有构建脚本增加 `-ValidateOnly` 预检与 `-ExpectedCommit <SHA>` 精确源构建，检查实际PCK/APK中的27表、字体/音频、测试资源排除及架构。媒体/包留D盘，完整命令和A合入后的继续步骤见 [INT-18E日志](../docs/Integration/INT-18E_2026-10-16_log.md)。
+
 ## 当前数据状态
 
 只有 01_身份配置，以及 06_战斗数值、08_Tier档位中已经写进系统案的确定规则具有正式依据。其他系统（包括当前的 344 条普通词库）均处于待定稿状态。CSV 能解析不代表策划批准。

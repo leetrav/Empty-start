@@ -1,5 +1,13 @@
 # PresentationAssets 表现资产接入
 
+## INT-18D 两档实际分辨率验收（2026-10-16）
+
+HUD 在 `configure_opponent_result(level, presentation)` 中消费正式 `LevelProfile.streamer_live_foreground`；新前景层位于角色之后、对白之前，同属右侧 CRT 覆盖范围。`configure_opponent_foreground(texture)` 可独立替换，`reset_for_attempt()` 清理旧前景。降档震动幅度/时长现在读取 06 表，缺项保留 Inspector 配置。
+
+原重播场景增加 `--int18d`：真实普通命中、五档立绘、PA-17 动画/静帧/离线、动画中复位、PA-12 结果漫画、评论/气泡/教学及音频事件均通过。`--preview-small` 为实际 1280×720；默认验收为无边框精确 1920×1080，避免 Windows 标题栏裁切。两档各 48 张真实 PNG 和总线 WAV 仅保存在 `D:\Godot\verification\int18d-20261016\hd-verified`、`small-final`，可复播入口仍为 `tests/presentation/int17d_production_presentation_smoke.tscn`。
+
+人工艺术验收、正式根场景最终组合及平台边界见 [INT-18D 日志](../../Integration/INT-18D_2026-10-16_log.md)。
+
 ## INT-17D 正式 HUD 结果表现（2026-10-16）
 
 `SandboxBattleHud` 已实例化 PA-17 子场景，绑定既有右侧立绘与 PA-14 动效层，局部覆盖层 z=21，高于 PA-11 CRT 的 z=20。`configure_portrait_character()` 同时配置待机与 PA-15 角色特效，修复角色 ID 未传入 Tier 层的问题。

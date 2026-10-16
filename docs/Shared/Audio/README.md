@@ -1,5 +1,14 @@
 # Audio 共用音频接入
 
+## INT-18D 实际事件覆盖（2026-10-16）
+
+- 生产菜单按钮已绑定 ui_click；身份姓名确认、选卡、身份确认、无选择错误分别消费正式稳定 ID。没有修改路由/Boot 或存档规则。
+- 漫画使用 `create_event_player()` + `play_event_player(player)`，声音随原场景释放；volume/pitch 从 17 表读取，删除了 UI 内覆盖表值的 -10/-6dB。`event_played` 同时报告场景独占声音，供核对实际播放器参数。
+- `hud.bind_trait_audio(runtime)` 消费 C 的 `split_children_spawned`：有真实子体时整次仅播放一次 trait_split，零生成安静。大幅推进定义为本发净正收益达到正式 06 单发正收益上限，沿用该配置值，不新增阈值。
+- `bind_audio_flows()` 在 DD entered 后延迟绑定真实 `sentence_locked`，自动锁句播放 divine_descent_lock；原输入强调声音保留。空历史没有 Spread，因此不会播放锁句音。
+
+1920×1080、1280×720 两档正式组件组合中，23 个已映射音效均由真实 UI/攻击/生成/阶段/确认/锁句来源触发，逐项核对播放器音量/音高。素材试听与实际事件记录分开；六档音乐及其余空路径仍属资源缺口，详见 [INT-18D 日志](../../Integration/INT-18D_2026-10-16_log.md)。
+
 ## INT-17D 正式消费端（2026-10-16）
 
 `AudioManager._ready()` 已注册 17 表可加载的 23 个事件，先于 Boot、菜单和身份场景；Sandbox 再次注册同 ID 为覆盖行为。`bind_ui_button(button, event_id=&"ui_click") -> bool` 供 UI 拥有者绑定点击/确认/切换。`event_played(event_id, player)` 仅在池播放器实际执行 `play()` 后发出，可核对音量、音高和资源。

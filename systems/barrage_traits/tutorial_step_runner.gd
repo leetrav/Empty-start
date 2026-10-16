@@ -72,6 +72,9 @@ func observe_combat_frame(area: BarrageArea, aim: AimReticle, attack: AttackChar
 		if not child is BarrageView or child.is_queued_for_deletion():
 			continue
 		var view := child as BarrageView
+		# 隐藏的目标没有可见瞄准事实，不能启动或完成教学。
+		if not view.is_visible_in_tree():
+			continue
 		var facts: BarrageRuntimeRecord = view.runtime_record
 		if facts == null or facts.is_repeat or facts.is_contradiction or facts.expires_at_msec <= Time.get_ticks_msec():
 			continue

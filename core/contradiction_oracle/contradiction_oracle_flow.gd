@@ -68,9 +68,9 @@ func hold_result_presentation() -> bool:
 	return true
 
 
-# 只接受同一矛盾实例的动画完成，重试后的旧动画回调无法释放新尝试。
-func complete_result_presentation(source_system: ContradictionBreakSystem) -> bool:
-	if _stopped or source_system == null or source_system != _contradiction_break:
+# 动画协程可能在旧实例释放后恢复，先接收 Variant 再核实存活及本场归属。
+func complete_result_presentation(source_system: Variant) -> bool:
+	if _stopped or not is_instance_valid(source_system) or source_system != _contradiction_break:
 		return false
 	_result_feedback_complete = true
 	if source_system.get_outcome() == ContradictionBreakSystem.Outcome.NOT_BROKEN:

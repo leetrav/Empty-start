@@ -1,3 +1,4 @@
-# Godot 将数据型 CSV 自动识别为翻译表时产生的缓存资源；只提交原始 CSV。
-*.csv.import
+# 业务表使用原生Keep File导入，旧翻译缓存继续忽略。
+# 正式CSV的Keep File设置必须随Git交付，确保包内能按原路径读取。
+!*.csv.import
 *.translation

@@ -265,6 +265,19 @@
 - **条件**：由多点锯齿边构成的单个多边形在动画中伸出视口，边缘点相交、塌缩或变成自交轮廓。
 - **处理**：将幕布边缘按纵向分段为视口内凸三角形/四边形，完全离屏或退化的片段跳过；再次以 Godot GUI 渲染确认 Output 无绘制错误。
 
+### KT-44：Windows 标题栏使 1080 预览实际只有 1055
+
+- **现象**：项目设计分辨率为 1920×1080，真实 GPU 截图却是 1920×1055，Godot 没有报错。
+- **条件**：Windows 将带标题栏窗口限制在桌面工作区；只检查 project.godot 或传入 resolution，无法证明最终客户区尺寸。
+- **处理**：精确分辨率验收的独立重播入口使用无边框窗口，显式设置 Window.size；低分辨率同时设置 content_scale_size，并核对 Image.get_size()。INT-18D 已分别取得实际 1920×1080、1280×720 PNG，生产窗口样式未改。
+
+### KT-43：业务 CSV 被翻译导入器转换，导出后原表丢失
+
+- **现象**：源工程的 FileAccess 能读正式 CSV，导出 PCK 后 27 张原表全部缺失；仅设置 `include_filter="data/source_tables/*.csv"` 仍会失败。
+- **条件**：Godot 默认把 CSV 识别成 `csv_translation`，`.csv.import` 又被忽略，导出只处理翻译导入结果。
+- **处理**：业务表使用原生 Keep File（`importer="keep"`），把 `data/source_tables/*.csv.import` 随 Git 保存；旧 `.translation` 缓存继续忽略并排除出包。使用包外验证脚本挂载真实 PCK，核对 27 张 CSV、字体和已映射音频，不能仅在源工程 smoke。
+- **证据**：INT-18E 的失败 PCK `csv=0`；修复后 Godot 4.7.2 实包 `csv=27 fonts=2 audio=23`、退出 0。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。
@@ -276,6 +289,7 @@
 - Godot MCP 连接 / 端口占用：KT-28。
 - headless 位移速度与计时验证：KT-40；Curve2D 速度上限：KT-41。
 - CanvasItem 动画多边形三角化：KT-42。
+- 源工程可读 CSV、导出包缺表：KT-43。
 
 ## 附录 A：Godot 生命周期提醒
 

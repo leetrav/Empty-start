@@ -20,6 +20,11 @@ var _tables: Dictionary = {}
 var comment_parameters: Dictionary = {}
 
 
+## 表现数值只读正式 06 表，缺项或空值保留调用方 Inspector 值。
+func get_base_number(param_id: String, fallback: float) -> float:
+	return _float_or(str(_find_row("base", "param_id", param_id).get("value", "")), fallback)
+
+
 ## 文案沿用正式 06 表；只返回已有文本字段，不在表现层生成策划文案。
 func get_feedback_texts() -> Dictionary:
 	var texts: Dictionary = {}
