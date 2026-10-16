@@ -1,5 +1,13 @@
 # Integration
 
+## PTF-01 试玩返工增量（2026-10-16，待真人验收）
+
+Issue #255 的原试玩验收保持不通过。本次只交根场景暂停、对手数据源和PK事实/净值文案修复；原94项E2E不作为玩家接受依据。
+
+房间复用PauseMenu，战后展示不吞ESC；顶层路由退出旧暂停状态。暂停通过 `paused_changed` 接 C 的 `cancel_pointer_attack()`，该取消捕获能力依赖 C 的 PTF-03接口先合入。PK延迟演出核对当前Stage并读取最新唯一值，同发普通/反弹净扣分文案修正。
+
+`SaveData.opponent_live_sessions` 按主播保存独立实例，首批生成前绑定右侧HUD，实际普通前景生成才累计对手评论。对手初始粉丝及观看/点赞/加粉事件映射没有正式定义；`opponent_reaction_preview_enabled` 默认关闭，独立预览等待负责人确认，不能报告四项增长已验收。详见 [PTF-01日志](根流程_PTF-01_2026-10-16_log.md)。
+
 ## INT-18A 四关生产根流程（2026-10-16）
 
 `Sandbox` 已组合正式 07/21 目录、TraitRuntime、24 教学运行器与 D 的教学/音频界面；每档首次技能仍从实际 CombatStage 进入普通批次。步骤完成写入 `SaveData.completed_tutorial_step_ids`，失败重开继续读取已完成 ID。神谕参数直接读取 12 表；DD 使用正式 DecayConfig 的 15 表参数。

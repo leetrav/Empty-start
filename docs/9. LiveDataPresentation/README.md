@@ -1,5 +1,11 @@
 # 9. LiveDataPresentation 直播数据表现系统任务拆分
 
+## PTF-01 对手数据源（2026-10-16，部分交付）
+
+旧根场景右侧四项常量0已移除。`SaveData.get_opponent_live_session(streamer_id)` 提供独立Resource；BattleAttemptFlow的 `attempt_preparing(level)` 在首批生成前由根绑定与初始化。对手普通前景实际生成计评论，玩家复读和22装饰评论不计入对手业务数字。换关按主播隔离，重开重置本场指标并保留已有粉丝记录。
+
+02/25无对手初始粉丝基数，09既有粉丝规则归玩家通关，尚未批准对手的完整热度/胜负映射。正式默认只消费可追溯生成事实；可逆A/B入口 `Sandbox.opponent_reaction_preview_enabled=false` 保持关闭，待负责人批准。`get_opponent_live_snapshot()` 可读计数及 `initial_fans_configured=false`。四项实际玩家增长验收未完成，详见 [日志](../Integration/根流程_PTF-01_2026-10-16_log.md)。
+
 ## INT-17D 正式评论核实（2026-10-16）
 
 正式 19/25 表由现有消费者按 viewer_id、enabled、侧与主播范围关联，22 表控制间隔、滚速、行数和暂停。真实 Sandbox 验收分别停止业务生成并保留评论显示，核对显示刷新不增加 `LiveSessionData.comment_count`；暂停冻结本侧评论计时。当前没有更改四项业务数据的拥有者。具体结果和本机预览见 [INT-17D 日志](../Integration/生产集成_INT-17D_2026-10-16_log.md)。
