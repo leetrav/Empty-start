@@ -125,6 +125,7 @@ func _select_card(option: IdentityOption) -> void:
 		return
 	_selected_option = option
 	_refresh_selection()
+	AudioManager.play_event(&"ui_identity_switch")
 	selection_changed.emit(option)
 
 # 可在入树前设置；回退恢复临时 ID，旧身份只允许作为已确认记录恢复。
@@ -172,3 +173,6 @@ func _refresh_selection() -> void:
 func _request_next() -> void:
 	if _selected_option != null:
 		next_requested.emit(_selected_option)
+	else:
+		# 空选择只反馈错误，不改变身份步骤或存档。
+		AudioManager.play_event(&"ui_error")

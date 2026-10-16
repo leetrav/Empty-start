@@ -6,6 +6,9 @@ extends Control
 
 
 func _ready() -> void:
+	# 原菜单按钮点击消费已提前注册的正式声音，路由仍由原回调负责。
+	for button: BaseButton in [%StartButton, %ReplayOpeningButton, %ReplayEndingButton, %SettingsButton, %QuitButton]:
+		AudioManager.bind_ui_button(button)
 	# 首次启动演出已由 Boot 处理，主菜单始终提供前后两部分回放。
 	%ReplayOpeningButton.show()
 	%ReplayEndingButton.show()

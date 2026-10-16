@@ -132,16 +132,13 @@ func _show_frame(number: int) -> void:
 	_caption.visible_characters = 0
 	_text_elapsed = 0.0
 	_sound = AudioManager.create_event_player(_frame.writing_event, self)
-	if is_instance_valid(_sound):
-		_sound.volume_db = -10.0
 	_writing_elapsed = 0.0
 	_writing_tick = 0.0
 	var next_act := _frame.textures[-1].resource_path.get_base_dir().get_file()
 	if not _act.is_empty() and next_act != _act:
 		_page_sound = AudioManager.create_event_player(&"comic_page", self)
 		if is_instance_valid(_page_sound):
-			_page_sound.volume_db = -6.0
-			_page_sound.play()
+			AudioManager.play_event_player(_page_sound)
 	_act = next_act
 
 # 空台词保持纯画面；正式台词配置后逐字推进，声音由场景独占。
@@ -155,7 +152,7 @@ func _process(delta: float) -> void:
 		if _writing_elapsed <= _frame.reveal_seconds and _writing_tick >= 0.12:
 			_writing_tick = 0.0
 			if is_instance_valid(_sound):
-				_sound.play()
+				AudioManager.play_event_player(_sound)
 		return
 	if _caption.visible_characters >= _frame.text.length():
 		return
@@ -164,7 +161,7 @@ func _process(delta: float) -> void:
 	if next_count > _caption.visible_characters:
 		_caption.visible_characters = next_count
 		if is_instance_valid(_sound):
-			_sound.play()
+			AudioManager.play_event_player(_sound)
 
 # 任意非重复按键快进分镜；Esc 退出演出返回菜单。
 func _input(event: InputEvent) -> void:
