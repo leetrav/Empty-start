@@ -6,11 +6,13 @@ const SKILL_TABLE_PATH := "res://data/source_tables/21_反击技能池.csv"
 
 var _traits: Dictionary = {}
 var _skills: Array[Dictionary] = []
+var _assets: Dictionary = {}
 
 
 ## 生产配置直接读取源 CSV，保留策划字段为唯一真相源。
 func load_production_tables() -> bool:
 	_traits = _read_table(TRAIT_TABLE_PATH, "trait_id")
+	_assets = _read_table("res://data/source_tables/18_表现资产.csv", "asset_id")
 	_skills.clear()
 	for row: Dictionary in _read_rows(SKILL_TABLE_PATH):
 		if row.get("enabled", "").to_lower() != "true":
@@ -54,6 +56,44 @@ func get_skill_trait_ids(skill: Dictionary) -> Array[StringName]:
 ## 返回 07 表字段快照，数值由现有命中与生命周期拥有者解释。
 func get_trait_definition(trait_id: StringName) -> Dictionary:
 	return (_traits.get(String(trait_id), {}) as Dictionary).duplicate()
+
+
+## 返回正式启用候选的副本，调用方可逐条展示或验收，不参与第二次随机。
+func get_enabled_skills(streamer_id: String = "", tier: int = -1) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for skill: Dictionary in _skills:
+		if not streamer_id.is_empty() and str(skill.get("streamer_id", "")) != streamer_id:
+			continue
+		if tier >= 0 and int(skill.get("tier", "-1")) != tier:
+			continue
+		result.append(skill.duplicate(true))
+	return result
+
+
+## 将 07 的实例规则交给独立 TraitSet，静态 CSV 和其他实例保持只读。
+func configure_trait_set(trait_set: BarrageTraitSet) -> void:
+	var definitions: Dictionary = {}
+	for trait_id: StringName in trait_set.get_trait_ids():
+		definitions[trait_id] = get_trait_definition(trait_id)
+	trait_set.configure_definitions(definitions)
+
+
+## 多特性覆盖寿命取最短正值，避免装配顺序决定组合寿命。
+func get_lifetime_override(trait_ids: Array[StringName]) -> float:
+	var lifetime: float = INF
+	for trait_id: StringName in trait_ids:
+		var value: String = str(get_trait_definition(trait_id).get("lifetime_override_s", ""))
+		if value.is_valid_float() and float(value) > 0.0:
+			lifetime = minf(lifetime, float(value))
+	return 0.0 if is_inf(lifetime) else lifetime
+
+
+## 通过 18 表原 ID 返回资产事实；缺行和目录占位保持显式缺失，供 E 补映射。
+func get_visual_asset_status(trait_id: StringName) -> Dictionary:
+	var asset_id: String = str(get_trait_definition(trait_id).get("visual_asset_id", ""))
+	var asset: Dictionary = _assets.get(asset_id, {})
+	return {"trait_id": trait_id, "visual_asset_id": asset_id, "asset_row": asset.duplicate(true),
+		"missing_mapping": asset.is_empty()}
 
 
 func get_trait_count() -> int:

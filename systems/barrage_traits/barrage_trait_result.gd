@@ -4,6 +4,8 @@ extends RefCounted
 enum Kind { NORMAL, OCCLUSION, FAKE_CARD, RETALIATION_COPY, REFLECT }
 
 var kind: Kind = Kind.NORMAL
+## 07 指向 06 的惩罚参数；由 HitResolution 读取数值并执行唯一 PK 更新。
+var penalty_param_id: String = ""
 
 # 普通结果才发放正常话语收益；遮挡、假牌和反击复制品结果都会跳过该收益。
 var receives_normal_reward: bool:

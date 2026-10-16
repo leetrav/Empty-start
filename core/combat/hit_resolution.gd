@@ -218,16 +218,21 @@ func resolve_shot_results(
 	var resolved_targets: Array[Dictionary] = target_results.duplicate(true)
 	var positive_pk_delta: float = 0.0
 	var negative_pk_delta: float = 0.0
+	var anomaly_penalty_param_id: String = ""
 	for target_result: Dictionary in resolved_targets:
 		var trait_result := target_result.get("trait_result") as BarrageTraitResult
+		if trait_result != null:
+			if ((shot_anomaly == ShotAnomaly.BOUNCE and trait_result.kind == BarrageTraitResult.Kind.REFLECT)
+					or (shot_anomaly == ShotAnomaly.OBSTRUCTION and trait_result.kind == BarrageTraitResult.Kind.OCCLUSION)):
+				anomaly_penalty_param_id = trait_result.penalty_param_id
 		if trait_result != null and not trait_result.receives_normal_reward:
 			target_result["is_valid_hit"] = false
 			target_result["tendency_delta"] = 0
 			match trait_result.kind:
 				BarrageTraitResult.Kind.FAKE_CARD:
-					target_result["pk_delta"] = _numerics.fake_penalty_pk if _numerics != null else -0.005
+					target_result["pk_delta"] = _get_trait_penalty(trait_result.penalty_param_id, _numerics.fake_penalty_pk if _numerics != null else -0.005)
 				BarrageTraitResult.Kind.RETALIATION_COPY:
-					target_result["pk_delta"] = _numerics.retaliation_penalty_pk if _numerics != null else -0.007
+					target_result["pk_delta"] = _get_trait_penalty(trait_result.penalty_param_id, _numerics.retaliation_penalty_pk if _numerics != null else -0.007)
 				_:
 					target_result["pk_delta"] = 0.0
 		var target_pk_delta: float = float(target_result.get("pk_delta", 0.0))
@@ -237,7 +242,7 @@ func resolve_shot_results(
 			negative_pk_delta += target_pk_delta
 	# 正负贡献分别按整发汇总；整发异常只扣一次并计入负向上限。
 	if shot_anomaly != ShotAnomaly.NONE:
-		negative_pk_delta += _get_anomaly_penalty(shot_anomaly)
+		negative_pk_delta += _get_trait_penalty(anomaly_penalty_param_id, _get_anomaly_penalty(shot_anomaly))
 	var capped_negative_pk_delta: float = maxf(
 		negative_pk_delta, -_max_negative_pk_delta_per_shot
 	)
@@ -265,6 +270,16 @@ func _get_anomaly_penalty(anomaly: ShotAnomaly) -> float:
 		ShotAnomaly.MISS:
 			return _numerics.miss_penalty_pk
 	return 0.0
+
+
+## 07 只指向 06 的处罚字段，数值和整发上限继续由唯一 PK 拥有者应用。
+func _get_trait_penalty(param_id: String, fallback: float) -> float:
+	if _numerics == null or param_id.is_empty():
+		return fallback
+	if param_id not in ["miss_penalty_pk", "blocked_penalty_pk", "fake_penalty_pk", "retaliation_penalty_pk", "reflect_penalty_pk", "thunder_penalty_pk"]:
+		push_warning("HitResolution: 未知的 07 处罚参数 %s" % param_id)
+		return fallback
+	return minf(float(_numerics.get(param_id)), 0.0)
 
 
 func _clamp_player_pk(value: float) -> float:

@@ -10,6 +10,24 @@ const REFLECT: StringName = &"reflect"
 
 var _trait_ids: Array[StringName] = []
 var _split_triggered: bool = false
+var _definitions: Dictionary = {}
+
+
+## 保存每条实例独立的 07 规则副本，供分裂和命中结果消费。
+func configure_definitions(definitions: Dictionary) -> void:
+	_definitions = definitions.duplicate(true)
+
+
+## 分裂数量取正式表值；旧调用未绑定目录时沿用既有两片规则。
+func get_split_child_count() -> int:
+	return maxi(0, int((_definitions.get(SPLIT, {}) as Dictionary).get("split_child_count", "2")))
+
+
+## 为命中拥有者提供参数 ID，数值和 PK 更新继续归 6 系统。
+func _make_result(kind: BarrageTraitResult.Kind, trait_id: StringName = &"") -> BarrageTraitResult:
+	var result := BarrageTraitResult.new(kind)
+	result.penalty_param_id = str((_definitions.get(trait_id, {}) as Dictionary).get("penalty_param_id", ""))
+	return result
 
 
 # 合并本关与已提交继承 ID；可用集合允许互斥候选共存，装配时再检查组合。
@@ -92,13 +110,13 @@ func is_selectable() -> bool:
 # 按反弹、遮挡、基础类型的固定顺序生成唯一结果。
 func get_hit_result() -> BarrageTraitResult:
 	if has_trait(REFLECT):
-		return BarrageTraitResult.new(BarrageTraitResult.Kind.REFLECT)
+		return _make_result(BarrageTraitResult.Kind.REFLECT, REFLECT)
 	if has_trait(OCCLUSION):
-		return BarrageTraitResult.new(BarrageTraitResult.Kind.OCCLUSION)
+		return _make_result(BarrageTraitResult.Kind.OCCLUSION, OCCLUSION)
 	if has_trait(FAKE_CARD):
-		return BarrageTraitResult.new(BarrageTraitResult.Kind.FAKE_CARD)
+		return _make_result(BarrageTraitResult.Kind.FAKE_CARD, FAKE_CARD)
 	if has_trait(RETALIATION_COPY):
-		return BarrageTraitResult.new(BarrageTraitResult.Kind.RETALIATION_COPY)
+		return _make_result(BarrageTraitResult.Kind.RETALIATION_COPY, RETALIATION_COPY)
 
 	return BarrageTraitResult.new()
 
