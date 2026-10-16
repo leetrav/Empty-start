@@ -43,6 +43,24 @@ var _layout_tween: Tween
 var _finished: bool = false
 
 
+# 超长文本滚动阅读时暂停本气泡寿命；离开后恢复，不修改剧情配置时长。
+func _ready() -> void:
+	_text_label.mouse_entered.connect(_pause_overflow_reading)
+	_text_label.mouse_exited.connect(_resume_reading)
+
+
+# 只有溢出文本接管阅读，普通气泡仍按原时长飘走。
+func _pause_overflow_reading() -> void:
+	if _text_label.scroll_active and is_instance_valid(_lifetime_tween) and _lifetime_tween.is_valid():
+		_lifetime_tween.pause()
+
+
+# 窗口外点击和剧情状态仍归组合方，这里只恢复同一个 Tween。
+func _resume_reading() -> void:
+	if not _finished and is_instance_valid(_lifetime_tween) and _lifetime_tween.is_valid():
+		_lifetime_tween.play()
+
+
 # 文字保留在原 RichTextLabel 中，历史状态只调整排版层级，不截断原文。
 func configure(message: String, display_duration_seconds: float) -> void:
 	_message = message
@@ -145,7 +163,7 @@ func set_stack_position(target: Vector2, animate: bool) -> void:
 
 
 func cancel_lifecycle() -> void:
-	if is_instance_valid(_lifetime_tween) and _lifetime_tween.is_running():
+	if is_instance_valid(_lifetime_tween) and _lifetime_tween.is_valid():
 		_lifetime_tween.kill()
 	if is_instance_valid(_layout_tween):
 		_layout_tween.kill()
@@ -154,7 +172,7 @@ func cancel_lifecycle() -> void:
 func finish_early() -> void:
 	if _finished:
 		return
-	if is_instance_valid(_lifetime_tween) and _lifetime_tween.is_running():
+	if is_instance_valid(_lifetime_tween) and _lifetime_tween.is_valid():
 		_lifetime_tween.kill()
 	_lifetime_tween = create_tween()
 	_lifetime_tween.tween_property(self, "modulate:a", 0.0, maxf(fade_duration_seconds, 0.01))

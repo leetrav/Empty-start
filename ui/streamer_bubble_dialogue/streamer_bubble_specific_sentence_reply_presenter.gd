@@ -32,10 +32,12 @@ func _on_shot_resolved(
 		return
 	var hit_result: Dictionary = submission.get("hit_resolution_result", {})
 	var target_results: Array = hit_result.get("target_results", [])
+	var replied_ids: Dictionary = {}
 	for target_result: Dictionary in target_results:
 		var original_sentence_id: String = str(target_result.get("original_sentence_id", ""))
-		if original_sentence_id.is_empty():
+		if original_sentence_id.is_empty() or replied_ids.has(original_sentence_id):
 			continue
+		replied_ids[original_sentence_id] = true
 		var configured_replies: Array[BubbleDialogueEntry] = _bubble_dialogue_config.find_by_sentence(
 			original_sentence_id,
 			BubbleDialogueEntry.SpeakerSide.OPPONENT
