@@ -58,19 +58,34 @@ func get_contradiction_system() -> ContradictionBreakSystem:
 	return _contradiction_break
 
 
-# PA-12 结果漫画期间冻结神谕开页与 10 秒计时，解锁后沿用既有静音与复读条件。
+# 结果通知回调中持有本场演出；击败和未击破离线都等待完成后交付后续页面。
+func hold_result_presentation() -> bool:
+	if _stopped or _rest_session != null or _final_oracle_session != null:
+		return false
+	_result_feedback_complete = false
+	return true
+
+
+# 只接受同一矛盾实例的动画完成，重试后的旧动画回调无法释放新尝试。
+func complete_result_presentation(source_system: ContradictionBreakSystem) -> bool:
+	if _stopped or source_system == null or source_system != _contradiction_break:
+		return false
+	_result_feedback_complete = true
+	if source_system.get_outcome() == ContradictionBreakSystem.Outcome.NOT_BROKEN:
+		_open_rest_after_unbroken()
+	elif _oracle_silence_finished_pending:
+		_oracle_silence_finished_pending = false
+		_on_oracle_silence_finished()
+	return true
+
+
+# 兼容现有 PA-12 调用；PA-17 接线优先使用带本场来源校验的公开入口。
 func hold_oracle_for_result_feedback() -> void:
-	if not _stopped:
-		_result_feedback_complete = false
+	hold_result_presentation()
 
 
 func release_oracle_after_result_feedback() -> void:
-	if _stopped:
-		return
-	_result_feedback_complete = true
-	if _oracle_silence_finished_pending:
-		_oracle_silence_finished_pending = false
-		_on_oracle_silence_finished()
+	complete_result_presentation(_contradiction_break)
 
 
 func get_oracle_session() -> FinalOracleSession:
@@ -574,6 +589,8 @@ func _on_contradiction_outcome_locked(outcome: int) -> void:
 
 # 未击破结果立即固定；本发有限复读全部生成并离场后，将无神谕奖励的 PK 胜利交给休息。
 func _open_rest_after_unbroken() -> void:
+	if not _result_feedback_complete:
+		return
 	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.NOT_BROKEN:
 		return
 	if not _contradiction_stage_active or (_rest_session != null and _rest_session.is_open()):
