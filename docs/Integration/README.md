@@ -1,5 +1,10 @@
 # Integration
 
+## PTF-02 玩家试玩修复候选（2026-10-16）
+
+B 已交付有界矛盾复读、全阶段 DD 输入回应和可复播 A/B demo：`res://scenes/demos/ptf02_phase_interaction_demo.tscn`。A 的最小接线为将当前 `ContradictionOracleFlow.handle_input(event)` 放在普通攻击前消费；DD 继续已有 `handle_input` 路由。PA-17/PA-12 同来源完成顺序及 Ending 幂等保持原接口。C 继续拥有普通/矛盾共享运动与外框消费者；该部分尚未验收。候选节奏、真实视频、硬件输入限制和正式玩家路径待办见 [PTF-02 日志](阶段交互_PTF-02_2026-10-16_log.md)。本轮组件回归通过不代表 Issue #255 的玩家验收通过。
+
+
 ## INT-18A 四关生产根流程（2026-10-16）
 
 `Sandbox` 已组合正式 07/21 目录、TraitRuntime、24 教学运行器与 D 的教学/音频界面；每档首次技能仍从实际 CombatStage 进入普通批次。步骤完成写入 `SaveData.completed_tutorial_step_ids`，失败重开继续读取已完成 ID。神谕参数直接读取 12 表；DD 使用正式 DecayConfig 的 15 表参数。

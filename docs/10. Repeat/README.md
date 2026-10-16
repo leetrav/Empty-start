@@ -1,5 +1,14 @@
 # 10. Repeat 复读系统任务拆分
 
+## PTF-02 试玩修复候选（2026-10-16，等待人工选型）
+
+`RepeatDelayQueue.configure_contradiction_climax(spawn_seconds, lifetime_seconds)` 仅压缩矛盾复读排期/寿命；每次命中的原句 ID 和 120 条请求保留在 `RepeatGenerationStats.contradiction_requested_counts_by_line_id`，原 `contradiction_counts_by_line_id` 继续只计真实成功生成。主动结束时未显示条目不计实际数量。普通延迟、容量与普通历史提交规则保持原入口。
+
+`data/repeat/repeat_presentation_config.tres` 提供 normal / contradiction / terminal 的寿命、不透明度和保持亮度比例；normal 寿命为 0 时保留调用方已按 06 表/Tier 解析的值。成功生成后组合 `repeat_presentation_driver.gd`，在原 BarrageView 更新之后应用“保持可读亮度→末段平滑淡出”，使用同一运行记录和暂停补偿，不修改 C 的运动或容量实现。当前值为 A/B 审查初值，尚未获正式视觉批准。
+
+可复播入口、录像位置和验收边界见 [PTF-02 日志](../Integration/阶段交互_PTF-02_2026-10-16_log.md)。历史章节中“120 条必须全部自然离场”与全寿命线性淡出描述由本节覆盖。
+
+
 > **派工入口**：[2026-10-09 当前任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。本系统的已完成旧卡保留作功能实现依据；下方历史讨论章节的旧数值以现行派工入口覆盖。
 
 
