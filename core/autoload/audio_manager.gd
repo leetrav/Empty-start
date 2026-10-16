@@ -10,6 +10,7 @@ const MUSIC_BUS_NAME: StringName = &"Music"
 const SFX_BUS_NAME: StringName = &"SFX"
 const UI_BUS_NAME: StringName = &"UI"
 const AUDIO_EVENT_CONFIG: AudioEventConfig = preload("res://data/shared/audio_event_config.tres")
+const FormalAudioConsumer = preload("res://data/shared/formal_sheet_runtime_consumer.gd")
 
 # 通过同一 Resource 引用读取字段，避免 const Resource 属性在解析期折叠为旧值。
 var _audio_config: AudioEventConfig = AUDIO_EVENT_CONFIG
@@ -55,6 +56,8 @@ func _ready() -> void:
 	for index in range(UI_PLAYER_COUNT):
 		_ui_players.append(_create_player("UIPlayer_%d" % (index + 1), UI_BUS_NAME, ui_bus_available))
 		_ui_play_order.append(-1)
+	# Autoload 先于菜单和身份场景就绪，正式表音效从第一处玩家交互起生效。
+	FormalAudioConsumer.new().register_audio_events(self)
 
 
 func play_music(stream: AudioStream) -> void:

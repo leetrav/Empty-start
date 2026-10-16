@@ -2,7 +2,7 @@
 
 ## SHEET-C 正式表接线（2026-10-15）
 
-`FormalSheetRuntimeConsumer.create_dialogue_config(story_config_id)` 将 20 表启用行按故事 ID 转成现有气泡条目，`display_duration_s` 映射到显示时长，`random_weight` 映射到随机权重，连接、胜负、Tier 变化、实际命中和指定原句继续使用既有事件 ID。`random_idle` 行归入 `timed` 事件；现有 `StreamerBubbleTimedOpponentDialoguePresenter` 同时调度双方，玩家间隔读取 06 表 6–10 秒，对手读取 7–12 秒，T0 对手闲聊继续等待连线。每次成功入队后重新按 20 表权重抽取对白。
+`FormalSheetRuntimeConsumer.create_dialogue_config(story_config_id)` 将 20 表启用行按故事 ID 转成现有气泡条目，`display_duration_s`、`trigger_time_s` 和 `random_weight` 分别映射到显示时长、固定触发秒数和随机权重。连接、胜负、Tier 变化、实际命中和指定原句继续使用既有事件 ID。`random_idle` 行归入 `timed` 事件并标记为低优先级；现有 `StreamerBubbleTimedOpponentDialoguePresenter` 同时调度双方，玩家间隔读取 06 表 6–10 秒，对手读取 7–12 秒，T0 对手闲聊继续等待连线。当前正式 20 表的 48 条 `random_idle` 均未填写 `trigger_time_s`，继续由 SD-07 闲聊间隔触发。每次成功入队后重新按 20 表权重抽取对白。
 
 SHEET-C 的 CSV 集成模拟验证四个故事共 119 条启用对白，其中 48 条随机闲聊。主 Sandbox 的 Presenter 创建和调用仍由 Sandbox 所属 Lane E 负责；当前 INT-14 已有对手 Presenter 实例，双方配置由该公开 `configure(flow, config, enqueue_callable)` 入口消费。
 
