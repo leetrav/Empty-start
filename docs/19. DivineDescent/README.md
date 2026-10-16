@@ -197,6 +197,8 @@ DD-17 等 20. Ending。
 
 ## DD-17 全屏强调完成事实（2026-10-09）
 
+R26-B 增加 `DivineDescentFlow.configure_formal_parameters(auto_repeat_min_seconds, auto_repeat_max_seconds, converge_ratio, final_emphasis_duration_seconds) -> bool`，须在 `start()` 前调用，以消费 15 表扩散区间、收束比例和强调总时长；新话衰减继续通过 `DivineDescentDecayConfig` 消费 12 秒正式 Resource。Sandbox 组合由 INT-16 负责，接入值见 R26-B 完成日志。
+
 - **工程核对**：任务卡写有“全屏强调演出已经完成”，基线 `e9dc2d2` 实际只有 DD-13 收束通知及 DD-14 单条锁句缩放；源码 / 场景没有终局全屏演出，DD-13～16 日志也记录该缺口。本卡按授权补最小 DD 本地演出，正式动画、美术和节奏继续待交付。
 - `DivineDescentSpread.begin_full_screen_emphasis(fade_seconds, hold_seconds) -> bool`：真实收束后启动一次。入树、未暂停且尚未启动才能接受；两项时长须为有限正数，由组合方显式提供。收束前、非法参数及重复调用返回 false。该方法保留 Session、首次锁句、权重、旧弹幕寿命与继承表现规则，沿用 DD-13 已停止生成的状态。
 - `DivineDescentEmphasis` 为本组件拥有的 CanvasLayer 子节点，layer=20；运行时组合全视口黑色遮罩及居中换行原句，沿用 base_theme。原生 Tween 依次淡入、停留、淡出，全局暂停会停动画，离树取消动画。遮罩属于 UI 装饰，不加入 BarrageArea 或可见比例统计；没有新生产素材、音频事件、Autoload、正式时长配置或持久测试。
@@ -204,3 +206,9 @@ DD-17 等 20. Ending。
 - **Lane A 精确交接（TO INTEGRATE）**：现有 `divine_descent_entered(session)` 后先做 DD-15 原始历史分流。空历史直接沿用 Ending 接收路径，跳过本演出。正常历史先连接同一 Spread 的 `completed`，再连接 `convergence_started` 调用 `begin_full_screen_emphasis()`，然后沿用 DD-05/08 启动顺序；收束通知已包含真实锁句，无需重算。演出时长未获正式批准，仅允许明确 TEST_ONLY 注入用于联调。输入仅经 DD-14 方法路由，切页时销毁终局节点 / 区域，普通输入及收益保持关闭。
 - **A / D 接收顺序**：在 `completed(final_session)` 处理器中，以同一已进入 Session 调用 D 已有 `EndingSession.receive_final_state(final_session, full_level_catalog)`，首次成功才将 `get_display_data()` 交给 `EndingPage.show_ending()`。目录必须包含全部普通关卡；默认配置沿用正式资源，空主图 / 教名 / 判词保持现状。SceneRouter 新顶层入口、结果保留与页面生命周期归 A；EndingSession / EndingPage 的接收与展示实现归 D。C 不调用路由或改写 D 文件。
 - **明确阻塞**：Sandbox 当前尚未组合正常历史扩散→收束→此演出→Ending；SceneRouter 尚无结局入口。独立真实场景已证明单次完成及 Ending 接收，生产完整转场 / Sandbox 全流程 **TO INTEGRATE / UNVERIFIED**，没有主路线 PASS。临时 TEST_ONLY 图形 smoke 和 DD-13 / DD-15 既有回归均 PASS、退出 0；新增持久自动测试 0，详见本卡日志与 evidence。
+
+## INT-17B 正式 Resource 与完成路径（2026-10-16）
+
+现有 `DivineDescentDecayConfig` 同时保存 15 表新话衰减 12 秒、自动复读间隔 0.15–0.38 秒、收束比例 0.9 和强调总时长 1.8 秒，正式值位于 `data/divine_descent/divine_descent_decay_config.tres`。显式 `configure_formal_parameters(0.15, 0.38, 0.9, 1.8)` 仍须在 `start()` 前调用；旧 Sandbox 传入零演出参数时，Flow 自动读取同一正式 Resource，正常历史不再停在只有 entered 的状态。
+
+自动复读的 one-shot Timer 在 timeout 时已停止，现先安排下一次再调用公开生成入口；生成回调里的显式 stop 可取消下一次。配置或历史解析失败返回 false 并停止本场组件。真实非空历史已验证自然衰减、自动复读、锁句、0.9 收束、暂停中的强调 Tween 和 `completed(EndingSession)`；INT-16 继续拥有根场景路由。入口与本地 GPU 证据见 [INT-17B 日志](../Integration/生产集成_INT-17B_2026-10-16_log.md)。

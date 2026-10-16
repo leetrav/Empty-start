@@ -261,9 +261,10 @@ func set_visual_bbcode(bbcode: String) -> bool:
 
 
 ## 在普通原句的短片段上随机应用一种低强度 RichTextLabel 原生动画。
-func apply_random_local_text_animation(probability: float) -> bool:
+func apply_random_local_text_animation(probability: float, intensity: float = 1.0) -> bool:
 	if (not is_inside_tree() or runtime_record == null or runtime_record.is_repeat
-			or runtime_record.is_contradiction or not is_finite(probability)):
+			or runtime_record.is_contradiction or not is_finite(probability)
+			or not is_finite(intensity)):
 		return false
 	if runtime_record.trait_set != null and not runtime_record.trait_set.get_trait_ids().is_empty():
 		# 特性有独立表现语义，局部文字动画不覆盖它们。
@@ -286,16 +287,17 @@ func apply_random_local_text_animation(probability: float) -> bool:
 		return false
 
 	var animation_kind: StringName = LOCAL_TEXT_ANIMATION_KINDS[randi_range(0, LOCAL_TEXT_ANIMATION_KINDS.size() - 1)]
+	var animation_strength: float = clampf(intensity, 0.0, 1.0)
 	var open_tag: String
 	match animation_kind:
 		&"shake":
-			open_tag = "[shake rate=8.0 level=1 connected=1]"
+			open_tag = "[shake rate=8.0 level=%.2f connected=1]" % animation_strength
 		&"pulse":
-			open_tag = "[pulse freq=0.5 color=#fffdf2e6 ease=-2.0]"
+			open_tag = "[pulse freq=0.5 color=#fffdf2%02x ease=-2.0]" % roundi(230.0 * animation_strength)
 		&"wave":
-			open_tag = "[wave amp=2.0 freq=1.6 connected=1]"
+			open_tag = "[wave amp=%.2f freq=1.6 connected=1]" % (2.0 * animation_strength)
 		&"tornado":
-			open_tag = "[tornado radius=1.0 freq=0.8 connected=1]"
+			open_tag = "[tornado radius=%.2f freq=0.8 connected=1]" % animation_strength
 		_:
 			return false
 	var end_tag: String = "[/%s]" % String(animation_kind)

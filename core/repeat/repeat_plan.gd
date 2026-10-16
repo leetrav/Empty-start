@@ -2,6 +2,7 @@ class_name RepeatPlan
 extends Resource
 
 const ORIGINAL_LINE_PLACEHOLDER: String = "{原句}"
+const FORMAL_TEXT_PLACEHOLDER: String = "{text}"
 
 enum RepeatType { NORMAL, CONTRADICTION }
 
@@ -58,10 +59,11 @@ static func create_contradiction_hit_plan(
 
 # 将原句填入策划模板并保存显示文本，计划始终保留原句 ID。
 func apply_display_template(template: String) -> String:
-	if not template.contains(ORIGINAL_LINE_PLACEHOLDER):
-		push_warning("RepeatPlan: display template has no {原句} placeholder; using original line text.")
+	if not template.contains(ORIGINAL_LINE_PLACEHOLDER) and not template.contains(FORMAL_TEXT_PLACEHOLDER):
+		push_warning("RepeatPlan: display template has no text placeholder; using original line text.")
 		display_text = original_line_text
 		return display_text
 
 	display_text = template.replace(ORIGINAL_LINE_PLACEHOLDER, original_line_text)
+	display_text = display_text.replace(FORMAL_TEXT_PLACEHOLDER, original_line_text)
 	return display_text

@@ -1,5 +1,9 @@
 # Integration
 
+## INT-17D 表现消费端交付（2026-10-16）
+
+正式 HUD 挂载 PA-17、正式音频提前注册、真实攻击/阶段声音、双侧对白时序和教学提示入口已交付。四关 Sandbox + 真实 CB 的独立组合验收通过；正式玩家根路径的 PA-17 等待、Flow 音频/教程绑定仍由 INT-16 接入。调用顺序、同步未击破 Rest 暂存要求、本机截图和录音见 [INT-17D 日志](生产集成_INT-17D_2026-10-16_log.md)。
+
 ## INT-13 PA-12 矛盾漫画接入 Sandbox（2026-10-15）
 
 普通 PK 满值后，`BattleAttemptFlow` 先停止普通战斗、提交粉丝与普通复读历史，再发出 `normal_combat_completed(level, hit_resolution, repeat_stats)`。Sandbox 播放 `ParadoxComicTransition.play_transition()`；真实 `transition_finished` 到达后，Sandbox 调用 `BattleAttemptFlow.begin_contradiction_after_transition(...)`，流程才同步创建固定六句、启动原十秒窗口并开放矛盾攻击。动画期间普通与矛盾攻击关闭；全局暂停冻结动画和所有既有流程计时。

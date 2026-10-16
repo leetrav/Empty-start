@@ -7,6 +7,7 @@ const BubbleEntry = preload("res://data/streamer_bubble_dialogue/bubble_dialogue
 const AudioEventScript = preload("res://core/audio/audio_event.gd")
 
 const TABLES := {
+	"base": "res://data/source_tables/06_基础参数.csv",
 	"levels": "res://data/source_tables/02_主播关卡.csv",
 	"audio": "res://data/source_tables/17_音频事件.csv",
 	"comments": "res://data/source_tables/19_直播评论词库.csv",
@@ -17,6 +18,16 @@ const TABLES := {
 
 var _tables: Dictionary = {}
 var comment_parameters: Dictionary = {}
+
+
+## 文案沿用正式 06 表；只返回已有文本字段，不在表现层生成策划文案。
+func get_feedback_texts() -> Dictionary:
+	var texts: Dictionary = {}
+	for row: Dictionary in _tables.get("base", []):
+		var key: String = str(row.get("param_id", ""))
+		if key == "pk_tier0_matching_text" or key.begins_with("combat_feedback_"):
+			texts[key] = str(row.get("value", ""))
+	return texts
 
 
 func _init() -> void:
@@ -54,6 +65,8 @@ func get_level_presentation(level_id: String) -> Dictionary:
 		"portrait_set_id": str(level_row.get("portrait_set_id", "")),
 		"portrait_idle": portraits[0],
 		"portrait_tiers": portraits,
+		"portrait_defeat": _load_texture(str(portrait_row.get("defeat_asset_path", ""))),
+		"portrait_defeat_transition": _load_texture(str(portrait_row.get("defeat_transition_asset_path", ""))),
 		"background": background,
 		"fan_badge": _load_texture(str(level_row.get("fan_badge_asset_id", ""))),
 	}
@@ -77,8 +90,10 @@ func create_dialogue_config(story_config_id: String) -> BubbleDialogueConfig:
 		entry.original_sentence_id = str(row.get("source_word_id", ""))
 		entry.event_id = event_id
 		entry.is_random_idle = str(row.get("trigger_type", "")) == "random_idle"
-		entry.priority = BubbleEntry.Priority.PLOT
+		# 闲聊使用低优先级定时气泡；CSV 定时字段即使当前为空也保留为 0。
+		entry.priority = BubbleEntry.Priority.TIMED_IDLE if entry.is_random_idle else BubbleEntry.Priority.PLOT
 		entry.display_duration_seconds = maxf(0.1, float(row.get("display_duration_s", "3")))
+		entry.trigger_time_seconds = _float_or(str(row.get("trigger_time_s", "")), 0.0)
 		entry.random_weight = maxf(0.0, float(row.get("random_weight", "1")))
 		config.entries.append(entry)
 	return config
@@ -179,6 +194,7 @@ func _dialogue_event_id(trigger_type: String, trigger_key: String) -> StringName
 		"pk_lose": return &"combat_lose"
 		"tier_down": return &"combat_tier_down"
 	match trigger_type:
+		"timed": return &"timed"
 		"connect": return &"combat_connected"
 		"tier_up": return &"combat_tier_up"
 		"tier_down": return &"combat_tier_down"

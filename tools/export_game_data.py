@@ -659,6 +659,54 @@ def make_tier_resource(records: list, report: Report) -> str:
     return source
 
 
+def make_combat_numerics_resource(records: list, report: Report) -> str:
+    """将 09 表的正式上涨值写入战斗配置，避免胜利事件继续读试玩占位配置。"""
+    source = (ROOT / "data/combat_stage/combat_numerics.tres").read_text(encoding="utf-8")
+    rules = {row.get("rule_id", ""): (line, row) for line, row in records}
+    mapping = {
+        "contradiction_break": (
+            "contradiction_break_viewer_gain", "contradiction_break_like_gain",
+            "contradiction_break_boost_duration_seconds",
+        ),
+        "oracle_confirm": (
+            "oracle_confirmation_viewer_gain", "oracle_confirmation_like_gain",
+            "oracle_confirmation_boost_duration_seconds",
+        ),
+    }
+    fields = {
+        "contradiction_break_viewer_gain": "viewer_value",
+        "contradiction_break_like_gain": "like_value",
+        "contradiction_break_boost_duration_seconds": "duration_s",
+        "oracle_confirmation_viewer_gain": "viewer_value",
+        "oracle_confirmation_like_gain": "like_value",
+        "oracle_confirmation_boost_duration_seconds": "duration_s",
+    }
+    for rule_id, target_names in mapping.items():
+        entry = rules.get(rule_id)
+        if entry is None:
+            report.add("错误", "09_直播数据", 1, "rule_id", f"缺少已配置的正式规则 {rule_id}")
+            continue
+        line, row = entry
+        for target_name in target_names:
+            source_name = fields[target_name]
+            raw = row.get(source_name, "")
+            if not numeric(raw, "float"):
+                report.add("错误", "09_直播数据", line, source_name, "正式上涨配置必须为数值")
+                continue
+            number = float(raw)
+            if target_name.endswith(("viewer_gain", "like_gain")) and not number.is_integer():
+                report.add("错误", "09_直播数据", line, source_name, "直播上涨人数必须为整数")
+                continue
+            value = str(int(number)) if number.is_integer() else format(number, ".15g")
+            pattern = re.compile(r"(?m)^" + re.escape(target_name) + r" = [^\r\n]*")
+            replacement = target_name + " = " + value
+            if pattern.search(source) is None:
+                source = source.replace("[resource]", "[resource]\n" + replacement, 1)
+            else:
+                source = pattern.sub(replacement, source, count=1)
+    return source
+
+
 
 def make_test_only_levels(tables: dict, report: Report) -> dict[str, str]:
     """将 02/03/04/05 的测试记录组合成现有 LevelProfile + LevelCatalog。
