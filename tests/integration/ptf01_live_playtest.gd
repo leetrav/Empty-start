@@ -104,6 +104,10 @@ func _checks() -> void:
 	_check(not messages.is_empty() and messages.back().contains("PK -0.60%"), "同发净扣分文案无错误正号")
 	print("PTF01_MIXED_SHOT=", messages.back())
 	await _capture("trap_hit")
+	if _scenario == "short":
+		print("PTF01_SHORT_INPUT_RESULT failures=", _failures)
+		get_tree().quit(_failures)
+		return
 	for sample: float in [0.50, 0.57, 0.65, 0.73, 0.81, 0.93, 0.60]:
 		sandbox.debug_set_player_pk(sample)
 		await get_tree().create_timer(0.45).timeout
