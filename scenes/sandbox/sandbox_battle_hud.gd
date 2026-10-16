@@ -353,6 +353,11 @@ func bind_tutorial_runner(runner: Object) -> bool:
 	return bool(_tutorial_hint.bind_runner(runner))
 
 
+# INT-16 在创建两个 Flow 后绑定；升档音和音乐继续由 CombatStage 的真实请求负责。
+func bind_audio_flows(oracle_flow: ContradictionOracleFlow, divine_flow: DivineDescentFlow = null) -> void:
+	_battle_audio.bind_flows(oracle_flow, divine_flow)
+
+
 # 当前关 Resource 为素材依据，正式导表映射可覆盖同名字段；不在 HUD 推导关卡。
 func configure_opponent_result(level: LevelProfile, presentation: Dictionary = {}) -> bool:
 	_opponent_result_configured = false
@@ -365,8 +370,11 @@ func configure_opponent_result(level: LevelProfile, presentation: Dictionary = {
 	if tiers.size() == 4:
 		tier_three = tiers[3] as Texture2D
 	var transition: Texture2D = presentation.get("portrait_defeat_transition", level.opponent_defeat_transition_portrait) as Texture2D
+	var petals: Array[Texture2D] = []
+	if _result_character_id == &"fox":
+		petals.assign(FOX_PETALS)
 	_opponent_result_configured = _opponent_breakthrough.configure_visuals(
-		tier_three, transition, _result_defeat_texture, FOX_PETALS if _result_character_id == &"fox" else [])
+		tier_three, transition, _result_defeat_texture, petals)
 	# 配置演出不能提前把普通战斗的待机图替换成 T5。
 	opponent_tier_portrait.reset_for_tier(opponent_tier_portrait.current_tier)
 	return _opponent_result_configured

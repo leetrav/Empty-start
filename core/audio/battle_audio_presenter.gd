@@ -8,6 +8,7 @@ var _held: bool = false
 var _full: bool = false
 var _spawn_remaining: float = 0.0
 var _audio: Node
+var _flow_connections: Array[Dictionary] = []
 
 
 # 同一 HUD 复用本场输入源；重新绑定先解除旧订阅。
@@ -83,6 +84,66 @@ func _play(event_id: StringName) -> void:
 		_audio.call("play_event", event_id)
 
 
+# 根场景统一注入已创建的阶段对象；解绑不触碰这些对象的生命周期。
+func bind_flows(oracle_flow: ContradictionOracleFlow, divine_flow: DivineDescentFlow = null) -> void:
+	_disconnect_flows()
+	if oracle_flow != null:
+		_connect_fact(oracle_flow.entered, _on_contradiction_entered)
+		_connect_fact(oracle_flow.outcome_resolved, _on_contradiction_result)
+		_connect_fact(oracle_flow.oracle_opened, _on_oracle_opened.bind(oracle_flow))
+	if divine_flow != null:
+		_connect_fact(divine_flow.entered, _on_divine_entered)
+
+
+# 保存本组件建立的连接，重开绑定不会叠加回调。
+func _connect_fact(source: Signal, callback: Callable) -> void:
+	if source.is_connected(callback):
+		return
+	source.connect(callback)
+	_flow_connections.append({"signal": source, "callback": callback})
+
+
+# 只断开仍存活的业务来源。
+func _disconnect_flows() -> void:
+	for connection: Dictionary in _flow_connections:
+		var source: Signal = connection["signal"]
+		var callback: Callable = connection["callback"]
+		if is_instance_valid(source.get_object()) and source.is_connected(callback):
+			source.disconnect(callback)
+	_flow_connections.clear()
+
+
+# 进入可操作矛盾窗口才播放阶段音，不在提前 PK 满时播放。
+func _on_contradiction_entered(_system: ContradictionBreakSystem) -> void:
+	_play(&"contradiction_start")
+
+
+# 成功结果与业务点赞短增使用同一已锁定事实，失败分支保持原声音。
+func _on_contradiction_result(outcome: int) -> void:
+	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		_play(&"contradiction_break")
+		_play(&"live_like_burst")
+
+
+# 确认对象每场由 13 创建；只监听本场真正的提交成功通知。
+func _on_oracle_opened(_session: FinalOracleSession, flow: ContradictionOracleFlow) -> void:
+	var confirmation: FinalOracleConfirmationState = flow.get_confirmation_state()
+	if confirmation != null:
+		_connect_fact(confirmation.confirmation_committed, _on_oracle_confirmed)
+
+
+# 未确认的候选变化不播放确认音。
+func _on_oracle_confirmed(_run: SaveData, _level_id: String, _candidate: Dictionary) -> void:
+	_play(&"oracle_confirm")
+	_play(&"live_like_burst")
+
+
+# 成功建立终局会话后播放；锁句音继续由现有 DivineDescentSpread 负责。
+func _on_divine_entered(_session: DivineDescentSession) -> void:
+	_play(&"divine_descent_start")
+
+
 # 离树显式断开信号，避免旧 HUD 仍消费下一场输入。
 func _exit_tree() -> void:
+	_disconnect_flows()
 	bind_sources(null, null)

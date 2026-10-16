@@ -2,6 +2,7 @@ extends Node
 
 # 击破静音请求完成后通知调用方；中途被新音乐请求替代时不发送。
 signal music_silenced
+signal event_played(event_id: StringName, player: AudioStreamPlayer)
 
 const SFX_PLAYER_COUNT: int = 8
 const UI_PLAYER_COUNT: int = 4
@@ -252,6 +253,17 @@ func register_event(event: AudioEvent) -> bool:
 	return true
 
 
+# UI 拥有者在创建按钮时绑定稳定音效 ID；同一按钮重复绑定保持一次播放。
+func bind_ui_button(button: BaseButton, event_id: StringName = &"ui_click") -> bool:
+	var event: AudioEvent = _audio_config.find_event(event_id)
+	if button == null or event == null or event.stream == null or event.audio_type != AudioEvent.AudioType.UI:
+		return false
+	var callback: Callable = play_event.bind(event_id)
+	if not button.pressed.is_connected(callback):
+		button.pressed.connect(callback)
+	return true
+
+
 func _create_player(player_name: String, bus_name: StringName, bus_available: bool) -> AudioStreamPlayer:
 	# 创建单个播放器；Bus 缺失时保留空播放器，避免静默回落到 Master。
 	var player: AudioStreamPlayer = AudioStreamPlayer.new()
@@ -313,6 +325,7 @@ func _play_configured_event(
 		_loop_events[player.get_instance_id()] = event
 		if not player.finished.is_connected(_on_configured_event_finished):
 			player.finished.connect(_on_configured_event_finished)
+	event_played.emit(event.event_id, player)
 
 
 func _on_configured_event_finished() -> void:
