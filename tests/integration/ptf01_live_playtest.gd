@@ -105,6 +105,12 @@ func _checks() -> void:
 	sandbox.restart_current_attempt()
 	await get_tree().create_timer(0.3).timeout
 	_check(is_equal_approx(float(sandbox.get_node("%PlayerShare").value), 0.5), "同帧重开丢弃旧PK回调")
+	sandbox.debug_set_player_pk(0.0)
+	await get_tree().create_timer(0.6).timeout
+	_check(not flow.is_normal_combat_active(), "归零真实失败状态")
+	await _capture("failure")
+	sandbox.restart_current_attempt()
+	await get_tree().create_timer(0.3).timeout
 	var attack: AttackChargeInput = flow.get_attack_input()
 	var touch := InputEventScreenTouch.new()
 	touch.index = 0
@@ -180,11 +186,11 @@ func _frames() -> void:
 		await get_tree().process_frame
 
 
-## 使用真实游戏帧等待回调，最长30秒后记录失败。
+## 用游戏帧时间等待回调，MovieWriter慢编码不冒充阶段超时（KT-40）。
 func _wait(predicate: Callable) -> void:
-	var start := Time.get_ticks_msec()
+	var start := _elapsed
 	while not predicate.call():
-		if Time.get_ticks_msec() - start > 30000:
+		if _elapsed - start > 30.0:
 			_check(false, "阶段等待超时")
 			return
 		await get_tree().process_frame
