@@ -78,14 +78,13 @@ func configure_trait_set(trait_set: BarrageTraitSet) -> void:
 	trait_set.configure_definitions(definitions)
 
 
-## 多特性覆盖寿命取最短正值，避免装配顺序决定组合寿命。
+## 沿用现有生成器的装配顺序，首个有效寿命覆盖优先；不新增叠加规则。
 func get_lifetime_override(trait_ids: Array[StringName]) -> float:
-	var lifetime: float = INF
 	for trait_id: StringName in trait_ids:
 		var value: String = str(get_trait_definition(trait_id).get("lifetime_override_s", ""))
 		if value.is_valid_float() and float(value) > 0.0:
-			lifetime = minf(lifetime, float(value))
-	return 0.0 if is_inf(lifetime) else lifetime
+			return float(value)
+	return 0.0
 
 
 ## 通过 18 表原 ID 返回资产事实；缺行和目录占位保持显式缺失，供 E 补映射。

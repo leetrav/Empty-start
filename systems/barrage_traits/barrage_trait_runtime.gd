@@ -75,7 +75,7 @@ func _spawn_with_traits(profile: LevelProfile, speech: LevelSpeech, traits: Arra
 	return _area.spawn_normal_barrage(spawn_profile, speech, traits)
 
 
-## 实际生成时捕获 07 规则；多特性寿命取最短覆盖，复制/分裂稍后可继承母体截止。
+## 实际生成时捕获 07 规则；沿用首个寿命覆盖，分裂稍后继承母体截止。
 func _on_barrage_generated(view: BarrageView) -> void:
 	var facts: BarrageRuntimeRecord = view.runtime_record
 	if facts == null or facts.is_repeat or facts.is_contradiction:
