@@ -37,7 +37,7 @@ func configure_traits(
 		text_outline_size: int = 0, text_outline_color: Color = Color.TRANSPARENT
 	) -> void:
 	_main_material = &"glass"
-	for id: StringName in [&"reflect", &"occlusion", &"fake_card", &"retaliation_copy", &"split"]:
+	for id: StringName in [&"reflect", &"occlusion", &"fake_card", &"retaliation_copy", &"split", &"unselectable"]:
 		if traits.has(id):
 			_main_material = id
 			break
@@ -78,6 +78,12 @@ func _draw() -> void:
 			_draw_fake_repeat()
 		&"retaliation_copy":
 			_draw_retaliation_panel()
+		&"unselectable":
+			super._draw()
+			# 使用原生禁选符号，避免普通底板让玩家误以为可选；无需新素材。
+			var center := Vector2(size.x - 15.0, 13.0)
+			draw_circle(center, 8.0, Color(1.0, 0.7, 0.65), false, 2.0, true)
+			draw_line(center + Vector2(-5, 5), center + Vector2(5, -5), Color(1.0, 0.7, 0.65), 2.0, true)
 		&"split":
 			super._draw()
 			_draw_cracked_glass()

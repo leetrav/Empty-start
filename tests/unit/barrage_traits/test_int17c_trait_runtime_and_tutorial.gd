@@ -55,7 +55,7 @@ func _run() -> void:
 			var lifetime: float = catalog.get_lifetime_override(ids)
 			if lifetime > 0.0:
 				_expect(view.runtime_record.lifetime_duration_msec == roundi(lifetime * 1000.0), "07 lifetime consumed")
-			area.end_barrage(view.get_instance_id())
+			area.clear_current_barrages()
 			print("INT17C_SKILL id=", skill["skill_id"], " tier=", skill["tier"], " streamer=", profile.streamer_id)
 		_expect(profile.special_trait_ids == original_traits, "static profile stays unchanged")
 	_expect(generated.size() == 32, "all 32 enabled skills physically spawned")
@@ -71,7 +71,7 @@ func _run() -> void:
 				_expect(weighted_view != null, "weighted public spawn succeeds after Tier change")
 				if weighted_view != null:
 					seen[generated.back()] = true
-					area.end_barrage(weighted_view.get_instance_id())
+					area.clear_current_barrages()
 			_expect(seen.size() == 2, "both enabled weighted entries appear in each streamer/Tier pool")
 	print("INT17C_WEIGHTED_PASS pools=16 draws=256 all_candidates_observed=true")
 

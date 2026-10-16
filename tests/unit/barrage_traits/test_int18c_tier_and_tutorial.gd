@@ -92,7 +92,7 @@ func _verify_level(index: int) -> void:
 		_expect(stage.get_current_tier() == tier, "真实 PK 进入指定 Tier")
 		area.spawn_normal_batch_now()
 		var actual: Array[BarrageView] = _specials(area)
-		_expect(actual.size() == 1, "%s T%d 首次技能进入普通批次" % [profile.streamer_id, tier])
+		_expect(actual.size() == (2 if not actual.is_empty() and actual[0].runtime_record.trait_set.is_retaliation_copy() else 1), "%s T%d 首次技能进入普通批次" % [profile.streamer_id, tier])
 		if not actual.is_empty():
 			var ids: Array[StringName] = actual[0].runtime_record.trait_set.get_trait_ids()
 			var in_pool: bool = false
@@ -137,7 +137,7 @@ func _verify_level(index: int) -> void:
 	area.clear_current_barrages()
 	stage.update_tier_for_pk(PK[2])
 	area.spawn_normal_batch_now()
-	_expect(_specials(area).size() == 1, "回升后待技能实际补入")
+	_expect(_specials(area).size() in [1, 2], "回升后待技能实际补入，复制为一对")
 	area.stop_normal_generation()
 	for child: Node in area.get_children():
 		if child is BarrageView:
