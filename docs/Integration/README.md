@@ -1,5 +1,11 @@
 # Integration
 
+## INT-18E 正式资源出包修复（2026-10-16）
+
+正式CSV已用原生Keep File保存27份导入配置，解决源工程可读、包内全丢表的问题。双端排除TEST_ONLY/测试/演示及MCP编辑器服务；实包验证27CSV、两中文字体、23音频及1920×1080菜单。媒体只存D盘。
+
+现有构建脚本支持 `-ValidateOnly` 与 `-ExpectedCommit <完整SHA>`，并核验实际PCK/APK。A #251尚待合入，最终Windows ZIP与Android Debug APK须从含A和本修复的精确main重建。见[INT-18E日志](INT-18E_2026-10-16_log.md)及[真人素材缺口](INT-18E_asset_gaps_2026-10-16.md)。
+
 ## INT-17D 表现消费端交付（2026-10-16）
 
 正式 HUD 挂载 PA-17、正式音频提前注册、真实攻击/阶段声音、双侧对白时序和教学提示入口已交付。四关 Sandbox + 真实 CB 的独立组合验收通过；正式玩家根路径的 PA-17 等待、Flow 音频/教程绑定仍由 INT-16 接入。调用顺序、同步未击破 Rest 暂存要求、本机截图和录音见 [INT-17D 日志](生产集成_INT-17D_2026-10-16_log.md)。

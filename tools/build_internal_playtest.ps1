@@ -5,6 +5,8 @@ param(
     [string] $Platform = 'Windows',
     [string] $DestinationRoot = 'D:\tmp',
     [string] $GodotEditor = 'D:\Steam\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe',
+    [string] $ExpectedCommit = '',
+    [switch] $ValidateOnly,
     [switch] $SkipSmoke
 )
 
@@ -14,6 +16,17 @@ $project = Split-Path -Parent $PSScriptRoot
 if (!(Test-Path -LiteralPath $GodotEditor)) { throw "Godot editor not found: $GodotEditor" }
 if (!(Test-Path -LiteralPath (Join-Path $project 'export_presets.cfg'))) { throw 'Missing export_presets.cfg' }
 if (!(Test-Path -LiteralPath $DestinationRoot)) { New-Item -Path $DestinationRoot -ItemType Directory -Force | Out-Null }
+
+# 最终包绑定已合并SHA；开发预检仍可省略此参数，清单如实记录工作树差异。
+$commit = (& git -C $project rev-parse HEAD).Trim()
+$sourceChanges = @(& git -C $project diff --name-only HEAD)
+$untrackedResources = @(& git -C $project ls-files --others --exclude-standard -- core data systems ui scenes addons project.godot export_presets.cfg)
+if ($ExpectedCommit) {
+    if ($commit -ne $ExpectedCommit) { throw "Expected source $ExpectedCommit, actual $commit" }
+    if ($sourceChanges.Count -gt 0 -or $untrackedResources.Count -gt 0) {
+        throw 'Exact-commit export requires committed source/configuration and no untracked production resources'
+    }
+}
 
 # Godot writes non-fatal resource-cleanup notices to stderr even with export exit 0.
 # Capture stderr to a diagnostic file and decide success by the actual process exit code.
@@ -26,7 +39,7 @@ function Invoke-BuildProcess([string] $label, [string] $program, [string[]] $arg
     }) -join ' '
     $outPath = $transcript + '.stdout'
     $errPath = $transcript + '.stderr'
-    $proc = Start-Process -FilePath $program -ArgumentList $commandLine -Wait -PassThru -RedirectStandardOutput $outPath -RedirectStandardError $errPath -ErrorAction Stop
+    $proc = Start-Process -FilePath $program -ArgumentList $commandLine -WindowStyle Hidden -Wait -PassThru -RedirectStandardOutput $outPath -RedirectStandardError $errPath -ErrorAction Stop
     if ($proc.ExitCode -ne 0) {
         Write-Host ('FAILED ' + $label + ', exit=' + $proc.ExitCode)
         Get-Content -LiteralPath $errPath -Tail 20 -ErrorAction SilentlyContinue
@@ -61,13 +74,28 @@ if (!(Select-String -LiteralPath (Join-Path $preflightDirectory 'production_cata
     throw 'Production catalog preflight exited successfully without its PASS record'
 }
 
+# 等待根流程合入时可独立验资源；此模式不会把旧流程导出成最终试玩包。
+Invoke-BuildProcess 'production delivery resources' $GodotEditor @(
+    '--headless', '--path', $project,
+    '--script', 'res://tests/data_export/r26_e_importer_audit.gd'
+) (Join-Path $preflightDirectory 'delivery_resources.log')
+if (!(Select-String -LiteralPath (Join-Path $preflightDirectory 'delivery_resources.log.stdout') -SimpleMatch 'INT-17E RESOURCE SMOKE PASS' -Quiet)) {
+    throw 'Production delivery resources lack their PASS record'
+}
+if ($ValidateOnly) {
+    Write-Host ('VALIDATION_OK ' + $preflightDirectory)
+    Write-Host ('SOURCE_COMMIT ' + $commit)
+    return
+}
+
 $buildDir = Join-Path $DestinationRoot ('GameJam_InternalPlaytest_' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 New-Item -Path $buildDir -ItemType Directory -ErrorAction Stop | Out-Null
-$commit = (& git -C $project rev-parse HEAD).Trim()
 $report = [ordered]@{
     kind = 'internal-playtest'
     build_time = (Get-Date).ToString('o')
     git_commit = $commit
+    source_changes = $sourceChanges
+    untracked_production_resources = $untrackedResources
     engine = 'Godot 4.7.2'
     production_catalog_preflight = 'passed'
     artifacts = @{}
@@ -83,6 +111,25 @@ if ($Platform -in @('Windows', 'Both')) {
         $exe, '--log-file', $exportLog
     ) (Join-Path $buildDir 'windows_export_cli.log')
     if (!(Test-Path -LiteralPath $exe) -or !(Test-Path -LiteralPath $pck)) { throw 'Missing EXE/PCK after export' }
+
+    # 从构建目录挂载实际PCK；脚本在包外，证明通过不依赖被排除的tests资源。
+    $resourceSmoke = Join-Path $buildDir 'production_resource_smoke.gd'
+    Copy-Item -LiteralPath (Join-Path $project 'tests/data_export/r26_e_importer_audit.gd') -Destination $resourceSmoke
+    $previousResourceAppData = $env:APPDATA
+    try {
+        $env:APPDATA = Join-Path $buildDir 'resource_smoke_userdata'
+        New-Item -ItemType Directory -Path $env:APPDATA -Force | Out-Null
+        Push-Location $buildDir
+        try {
+            Invoke-BuildProcess 'exported PCK resources' $GodotEditor @(
+                '--headless', '--path', $buildDir, '--main-pack', $pck,
+                '--script', $resourceSmoke, '--', '--verify-pack'
+            ) (Join-Path $buildDir 'packed_resources.log')
+        } finally { Pop-Location }
+    } finally { $env:APPDATA = $previousResourceAppData }
+    if (!(Select-String -LiteralPath (Join-Path $buildDir 'packed_resources.log.stdout') -SimpleMatch 'INT-18E PACK CONTENTS PASS' -Quiet)) {
+        throw 'Exported PCK lacks its successful resource/content verification record'
+    }
 
     $smokeStatus = 'skipped'
     if (!$SkipSmoke) {
@@ -127,6 +174,7 @@ if ($Platform -in @('Windows', 'Both')) {
         exe = Get-ArtifactRecord $exe
         pck = Get-ArtifactRecord $pck
         smoke = $smokeStatus
+        packed_resources = 'passed'
     }
     $winInfo | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $stage 'manifest.json') -Encoding UTF8
     $zip = Join-Path $buildDir 'GameJam_InternalPlaytest_win64.zip'
@@ -150,6 +198,16 @@ if ($Platform -in @('Android', 'Both')) {
         if ($contents -notcontains 'AndroidManifest.xml') { throw 'APK missing AndroidManifest.xml' }
         if (@($contents | Where-Object { $_ -like 'lib/arm64-v8a/*' }).Count -eq 0) {
             throw 'APK missing ARM64 native libraries'
+        }
+        # APK内资源按assets目录交付；验证实际条目，避免只相信export_filter。
+        if (@($contents | Where-Object { $_ -match '^assets/(tests/|data/test_only/|scenes/demos/|docs/|tools/|addons/godot_mcp/(native_mcp|tools|ui|utils|translations)/)|^assets/.*/tests/|^assets/data/source_tables/.*\.translation$' }).Count -gt 0) {
+            throw 'APK includes TEST_ONLY or development resources'
+        }
+        if (@($contents | Where-Object { $_ -like 'assets/data/source_tables/*.csv' }).Count -ne 27) {
+            throw 'APK must include all 27 production CSV files'
+        }
+        if (@($contents | Where-Object { $_ -match '^lib/(armeabi-v7a|x86|x86_64)/' }).Count -gt 0) {
+            throw 'APK unexpectedly includes a non-ARM64 ABI'
         }
     } finally { $apkZip.Dispose() }
     $report.artifacts.android = [ordered]@{

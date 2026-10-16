@@ -1,5 +1,16 @@
 # 2026-10-15 内部试玩打包
 
+## INT-18E 更新（2026-10-16）
+
+已修复CSV默认翻译导入导致27原表包内缺失；业务表使用原生Keep File并跟踪27个.csv.import。双端排除测试、TEST_ONLY、演示和MCP编辑器服务资源。
+
+```powershell
+.\tools\build_internal_playtest.ps1 -ValidateOnly
+.\tools\build_internal_playtest.ps1 -Platform Both -ExpectedCommit <包含A与CSV修复的main完整SHA>
+```
+
+最终包等待A #251及本修复合入；当前PCK/Android资源ZIP仅验证资源边界。新增实际PCK原表/字体/音频检查、APK原表/ARM64检查与源SHA记录。真实证据及剩余阻断见[INT-18E日志](INT-18E_2026-10-16_log.md)。
+
 ## 目的
 
 面向四人团队和外部小范围内测，直接在 Windows 本机使用 Godot 4.7.2 导出 Windows x64 ZIP 与 Android ARM64 调试 APK；避免依赖当前受限的 GitHub Actions CI。
