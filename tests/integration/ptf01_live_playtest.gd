@@ -86,10 +86,13 @@ func _checks() -> void:
 	_check(expected_session != SaveManager.data.live_session, "两侧数据所有者独立")
 	# 正常命中与反弹分别走真实攻击/结算；此处仅清场隔离辅助断言。
 	var area := flow.get_barrage_area()
+	area.stop_normal_generation()
 	area.clear_current_barrages()
 	var profile := flow.get_current_level_profile()
 	var speech: LevelSpeech = profile.get_normal_speech_pool()[0]
 	var normal := area.spawn_normal_barrage(profile, speech)
+	normal.position = Vector2(200, 300)
+	normal.set_process(false)
 	var before := flow.get_hit_resolution().get_player_pk()
 	await _shoot_control(sandbox, normal)
 	_check(flow.get_hit_resolution().get_player_pk() > before, "实际普通命中推进PK")
@@ -98,6 +101,7 @@ func _checks() -> void:
 	var trap_profile: LevelProfile = profile.duplicate()
 	trap_profile.special_trait_ids = [BarrageTraitSet.REFLECT]
 	var trap := area.spawn_normal_barrage(trap_profile, speech, [BarrageTraitSet.REFLECT])
+	trap.position = Vector2(200, 300)
 	# 同发一个普通目标与一个反弹目标，复现原提示“PK +-0.60%”。
 	var mixed := area.spawn_normal_barrage(profile, speech)
 	mixed.position = trap.position
