@@ -5,6 +5,8 @@ signal shot_snapshot_created(snapshot: AttackTargetSnapshot)
 signal shot_arrival_resolved(snapshot: AttackTargetSnapshot, target_results: Array[Dictionary])
 signal shot_hit_resolution_submitted(snapshot: AttackTargetSnapshot, submission: Dictionary)
 signal selection_target_hit(target: Control)
+## 给移动端独立显示器读取实际蓄力/按住/阶段；不持有第二份进度。
+signal charge_state_changed(progress: float, held: bool, fully_charged: bool, phase: int)
 
 enum AttackPhase { READY, PROJECTILE_FLIGHT, RECOVERY }
 
@@ -24,6 +26,7 @@ var _selection_targets: Array[Control] = []
 var _new_attacks_locked: bool = false
 var _mobile_input_config: MobileAttackInputConfig
 var _touch_index: int = -1
+var _native_touch_input_enabled: bool = true
 
 
 # 按住输入且没有暂停或飞行 / 硬直时才推进蓄力。
@@ -35,6 +38,7 @@ func _process(delta: float) -> void:
 		return
 	if _attack_held:
 		_charge_progress.advance(delta, true)
+	_publish_charge_state()
 
 
 func _ready() -> void:
@@ -142,6 +146,65 @@ func set_combat_active(active: bool) -> void:
 		_phase_timer.stop()
 	if _attack_timing != null:
 		_charge_progress = AttackChargeProgress.new(_attack_timing.charge_time_s)
+	_publish_charge_state()
+
+
+## E 接入偏置触控后关闭原始触摸监听；鼠标仍由现有输入路径处理。
+func set_native_touch_input_enabled(enabled: bool) -> void:
+	if not enabled:
+		_cancel_touch_charge()
+	_native_touch_input_enabled = enabled
+
+
+## 输入适配器传 Viewport 坐标；硬直期间的新按住保留到 READY，避免吞掉下一次操作。
+func begin_pointer_attack(aim_viewport_position: Vector2, touch: bool = false) -> bool:
+	if not _combat_active or _new_attacks_locked or get_tree().paused or _charge_progress == null:
+		return false
+	if _attack_phase == AttackPhase.PROJECTILE_FLIGHT:
+		return false
+	move_pointer_aim(aim_viewport_position, touch)
+	_attack_held = true
+	_publish_charge_state()
+	return true
+
+
+## 命中中心与可见偏置由 E 提供，攻击组件只使用同一组 Viewport 位置。
+func move_pointer_aim(aim_viewport_position: Vector2, touch: bool = false) -> void:
+	if _aim_reticle == null or get_tree().paused:
+		return
+	if touch:
+		if _mobile_input_config == null:
+			return
+		_aim_reticle.move_touch_aim(aim_viewport_position, _mobile_input_config.touch_reticle_diameter)
+	else:
+		_aim_reticle.restore_mouse_aim(aim_viewport_position)
+
+
+## 抬手共用唯一释放/飞行/结算入口；返回本次是否实际发射。
+func end_pointer_attack(aim_viewport_position: Vector2, touch: bool = false) -> bool:
+	var was_held: bool = _attack_held
+	_attack_held = false
+	if was_held and get_tree().paused:
+		cancel_pointer_attack()
+	elif was_held:
+		move_pointer_aim(aim_viewport_position, touch)
+		_handle_attack_release()
+	_publish_charge_state()
+	return was_held and _attack_phase == AttackPhase.PROJECTILE_FLIGHT
+
+
+## 后台/手势取消丢弃当前蓄力，不生成言弹；已发射的言弹仍走既有生命周期。
+func cancel_pointer_attack() -> void:
+	_attack_held = false
+	_touch_index = -1
+	if _charge_progress != null:
+		_charge_progress = AttackChargeProgress.new(_attack_timing.charge_time_s)
+	_publish_charge_state()
+
+
+## 信号由真实进度派生，宿主无需把触摸 HUD 状态反写入攻击系统。
+func _publish_charge_state() -> void:
+	charge_state_changed.emit(get_charge_progress(), _attack_held, is_fully_charged(), int(_attack_phase))
 
 
 # 在松开输入事件上冻结当前候选，之后进入准心的弹幕不加入本发。
@@ -159,8 +222,7 @@ func _input(event: InputEvent) -> void:
 			else:
 				_aim_reticle.move_touch_aim(event.position, _mobile_input_config.touch_reticle_diameter)
 				_touch_index = -1
-				_attack_held = false
-				_handle_attack_release()
+				end_pointer_attack(event.position, true)
 			get_viewport().set_input_as_handled()
 			return
 		if event is InputEventMouseButton or event is InputEventMouseMotion:
@@ -174,29 +236,21 @@ func _input(event: InputEvent) -> void:
 	if mouse_event.button_index != MOUSE_BUTTON_LEFT:
 		return
 	if mouse_event.pressed:
-		if not get_tree().paused and can_start_charging():
-			if _aim_reticle != null:
-				_aim_reticle.restore_mouse_aim(mouse_event.position)
-			_attack_held = true
+		begin_pointer_attack(mouse_event.position)
 		return
 
-	var was_attack_held: bool = _attack_held
-	_attack_held = false
-	if was_attack_held and not get_tree().paused:
-		_handle_attack_release()
+	end_pointer_attack(mouse_event.position)
 
 
 # 只接管 UI 未消费的首次按下，避免暂停按钮或结果页触摸同时开始攻击。
 func _unhandled_input(event: InputEvent) -> void:
-	if not event is InputEventScreenTouch or not event.pressed or event.canceled:
+	if not _native_touch_input_enabled or not event is InputEventScreenTouch or not event.pressed or event.canceled:
 		return
 	if _touch_index >= 0 or _attack_held or _mobile_input_config == null or _aim_reticle == null:
 		return
-	if not can_start_charging():
+	if not begin_pointer_attack(event.position, true):
 		return
 	_touch_index = event.index
-	_aim_reticle.move_touch_aim(event.position, _mobile_input_config.touch_reticle_diameter)
-	_attack_held = true
 	get_viewport().set_input_as_handled()
 
 
@@ -204,16 +258,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func _cancel_touch_charge() -> void:
 	if _touch_index < 0:
 		return
-	_touch_index = -1
-	_attack_held = false
-	if _attack_timing != null:
-		_charge_progress = AttackChargeProgress.new(_attack_timing.charge_time_s)
+	cancel_pointer_attack()
 
 
 # Android 进入后台时抬指事件可能丢失，返回前清理当前手势。
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
-		_cancel_touch_charge()
+		cancel_pointer_attack()
 
 
 # 未满蓄释放只取消；满蓄释放发送快照事实，不在攻击系统改动 PK。
@@ -229,6 +280,7 @@ func _handle_attack_release() -> void:
 		_active_snapshot = snapshot
 		_attack_phase = AttackPhase.PROJECTILE_FLIGHT
 		_phase_timer.start(_attack_timing.projectile_flight_s)
+		_publish_charge_state()
 		shot_snapshot_created.emit(snapshot)
 
 
@@ -252,6 +304,7 @@ func _on_attack_phase_timer_timeout() -> void:
 			return
 		_attack_phase = AttackPhase.RECOVERY
 		_phase_timer.start(_attack_timing.recovery_time_s)
+		_publish_charge_state()
 		return
 
 	if _attack_phase == AttackPhase.RECOVERY:
@@ -412,7 +465,7 @@ func _capture_target_snapshot() -> AttackTargetSnapshot:
 		if not child is BarrageView:
 			continue
 		var barrage_view := child as BarrageView
-		if not barrage_view.is_inside_tree() or barrage_view.is_queued_for_deletion():
+		if not barrage_view.is_inside_tree() or barrage_view.is_queued_for_deletion() or not barrage_view.is_visible_in_tree():
 			continue
 		if barrage_view.runtime_record == null or barrage_view.runtime_record.trait_set == null:
 			continue
