@@ -212,3 +212,5 @@ R26-B 增加 `DivineDescentFlow.configure_formal_parameters(auto_repeat_min_seco
 现有 `DivineDescentDecayConfig` 同时保存 15 表新话衰减 12 秒、自动复读间隔 0.15–0.38 秒、收束比例 0.9 和强调总时长 1.8 秒，正式值位于 `data/divine_descent/divine_descent_decay_config.tres`。显式 `configure_formal_parameters(0.15, 0.38, 0.9, 1.8)` 仍须在 `start()` 前调用；旧 Sandbox 传入零演出参数时，Flow 自动读取同一正式 Resource，正常历史不再停在只有 entered 的状态。
 
 自动复读的 one-shot Timer 在 timeout 时已停止，现先安排下一次再调用公开生成入口；生成回调里的显式 stop 可取消下一次。配置或历史解析失败返回 false 并停止本场组件。真实非空历史已验证自然衰减、自动复读、锁句、0.9 收束、暂停中的强调 Tween 和 `completed(EndingSession)`；INT-16 继续拥有根场景路由。入口与本地 GPU 证据见 [INT-17B 日志](../Integration/生产集成_INT-17B_2026-10-16_log.md)。
+
+INT-18B 在合并 #239/#240/#241/#242/#249 的资源与后端上再次完成有效历史收束，正式 HUD 音频消费者实际请求并播放 `divine_descent_start`。原 smoke 的 `--with-presentation` 加载正式 HUD 和成败演出；`--divine-only` 可快速复播 DD 收束及强调暂停。实际截图和根场景尚待 A 接续的范围见 [INT-18B 日志](../Integration/INT-18B_2026-10-16_log.md)。
