@@ -2,6 +2,7 @@ extends SceneTree
 
 const CATALOG: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 
+## 真实四关目录验证房间重建后的进度，并拒绝缺少前序结果的跳关。
 func _initialize() -> void:
     var run_data := SaveData.new()
     var run_state := LevelRunState.new(CATALOG)
@@ -16,7 +17,7 @@ func _initialize() -> void:
         run_data.next_normal_level_order = pending.level_order
         if not run_data.completed_normal_level_ids.has(current.level_id):
             run_data.completed_normal_level_ids.append(current.level_id)
-        # Recreate the scene state after the room transition.
+        # 模拟房间返回时重新创建运行状态，保留已提交关卡集合。
         run_state = LevelRunState.new(CATALOG)
         assert(run_state.restore_progress(run_data.next_normal_level_order, run_data.completed_normal_level_ids))
         assert(run_state.get_current_level_profile().level_order == completed_order + 1)
