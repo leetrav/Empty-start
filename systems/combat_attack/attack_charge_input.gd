@@ -91,6 +91,8 @@ func configure_combat_aim_radii(config: CombatNumericsConfig) -> bool:
 	if config == null or _aim_reticle == null or config.pc_aim_radius_px <= 0.0 or config.touch_aim_radius_px <= 0.0:
 		return false
 	_aim_reticle.configure_hit_diameters(config.pc_aim_radius_px * 2.0, config.touch_aim_radius_px * 2.0)
+	_aim_reticle.visual_diameter = config.aim_visual_diameter_px
+	_aim_reticle.queue_redraw()
 	if _mobile_input_config == null:
 		_mobile_input_config = MobileAttackInputConfig.new()
 	_mobile_input_config.touch_reticle_diameter = config.touch_aim_radius_px * 2.0

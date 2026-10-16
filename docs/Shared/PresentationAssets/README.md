@@ -1,5 +1,15 @@
 # PresentationAssets 表现资产接入
 
+## INT-17D 正式 HUD 结果表现（2026-10-16）
+
+`SandboxBattleHud` 已实例化 PA-17 子场景，绑定既有右侧立绘与 PA-14 动效层，局部覆盖层 z=21，高于 PA-11 CRT 的 z=20。`configure_portrait_character()` 同时配置待机与 PA-15 角色特效，修复角色 ID 未传入 Tier 层的问题。
+
+- 每次 `reset_for_attempt()` 后调用 `configure_opponent_result(level: LevelProfile, presentation: Dictionary = {}) -> bool`。使用关卡 T5/过渡/击败纹理；正式映射来自 `FormalSheetRuntimeConsumer.get_level_presentation()` 的 `portrait_tiers`、`portrait_defeat`、`portrait_defeat_transition`。Fox 复用已交付的四张玫瑰图。
+- CB 结果锁定后调用 `play_opponent_result(broken: bool) -> bool`，成功启动后等待 `opponent_result_presentation_finished(broken)`。Alien/Fox/Kiwi 复用原动画，Frog 显示正式击败静帧。未击破保留 T5 并呈现局部离线；重开会清理演出。
+- **INT-16 根场景待接线**：先开启既有 `_result_feedback_active` 暂存、调用 Flow 的 `hold_oracle_for_result_feedback()`；PA-17 完成后播放原 PA-12 结果漫画，再由原漫画完成回调释放神谕/Rest。未击破 Rest 可能同步到达，必须在播放前开启暂存。
+
+可复播验收入口：`tests/presentation/int17d_production_presentation_smoke.tscn`。它实例化完整正式 Sandbox，并在验收层示范上述接线；生产 `sandbox.gd` 保持由 INT-16 拥有。当前正式根场景尚需采用这些调用。证据与精确验证结果见 [INT-17D 日志](../../Integration/生产集成_INT-17D_2026-10-16_log.md)。
+
 > **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../../开发计划_2026-10-09_任务卡依赖整合.md)。开发前核对该表、本卡现行版、main 实际实现及最新完成日志。
 
 

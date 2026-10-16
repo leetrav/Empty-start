@@ -1,6 +1,8 @@
 class_name ContradictionOracleFlow
 extends Node
 
+const FORMAL_COMBAT_NUMERICS: CombatNumericsConfig = preload("res://data/combat_stage/combat_numerics.tres")
+
 signal entered(system: ContradictionBreakSystem)
 signal outcome_resolved(outcome: int)
 signal oracle_opened(session: FinalOracleSession)

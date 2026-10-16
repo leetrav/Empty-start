@@ -58,9 +58,11 @@ func _on_attempt_started(
 	_idle_remaining.clear()
 	for side: int in [BubbleDialogueEntry.SpeakerSide.PLAYER, BubbleDialogueEntry.SpeakerSide.OPPONENT]:
 		_idle_remaining[side] = _roll_idle_interval(side)
-	var timed_entries: Array[BubbleDialogueEntry] = _bubble_dialogue_config.find_by_event(
-		TIMED_DIALOGUE_EVENT_ID, BubbleDialogueEntry.SpeakerSide.OPPONENT
-	)
+	# 正式表可配置双方 timed 行；保持整表顺序，不把玩家定时对白丢在对手筛选外。
+	var timed_entries: Array[BubbleDialogueEntry] = []
+	for entry: BubbleDialogueEntry in _bubble_dialogue_config.entries:
+		if entry != null and entry.event_id == TIMED_DIALOGUE_EVENT_ID:
+			timed_entries.append(entry)
 	for config_order: int in range(timed_entries.size()):
 		var source_entry: BubbleDialogueEntry = timed_entries[config_order]
 		if source_entry == null or source_entry.text.strip_edges().is_empty():
@@ -106,13 +108,12 @@ func _process(delta: float) -> void:
 
 # T0 时 HUD 会拒绝对手侧请求；保留尚未提交的到期句子并在下一次连线后继续提交。
 func _flush_due_entries() -> void:
-	if _due_entries.is_empty() or _battle_attempt_flow.get_current_tier() <= CombatStage.INITIAL_TIER:
-		return
-	while not _due_entries.is_empty():
-		var entry: BubbleDialogueEntry = _due_entries[0]
-		if not bool(_enqueue_dialogue_bubble.call(entry)):
-			return
-		_due_entries.pop_front()
+	# T0 只缓存离线的对手侧；玩家到期对白仍可进入自身队列。
+	for entry: BubbleDialogueEntry in _due_entries.duplicate():
+		if entry.side == BubbleDialogueEntry.SpeakerSide.OPPONENT and _battle_attempt_flow.get_current_tier() <= CombatStage.INITIAL_TIER:
+			continue
+		if bool(_enqueue_dialogue_bubble.call(entry)):
+			_due_entries.erase(entry)
 
 
 # 普通胜负结束计时，避免本场定时对白延续到 Paradox 或失败界面。
