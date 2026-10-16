@@ -91,6 +91,9 @@ func _on_barrage_generated(view: BarrageView) -> void:
 func spawn_retaliation_copy(source: BarrageView, profile: LevelProfile) -> BarrageView:
 	if not is_instance_valid(source) or source.runtime_record == null or not is_instance_valid(_area) or profile == null:
 		return null
+	# 已结束目标可能仍在同帧等待释放；复制仅接受当前区域内仍存活的源。
+	if source.is_queued_for_deletion() or source.get_parent() != _area:
+		return null
 	var facts: BarrageRuntimeRecord = source.runtime_record
 	if (facts.is_repeat or facts.is_contradiction or facts.expires_at_msec <= Time.get_ticks_msec()
 			or not facts.trait_set.can_trigger_copy() or not facts.trait_set.get_hit_result().receives_normal_reward):

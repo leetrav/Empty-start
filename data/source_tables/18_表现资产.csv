@@ -55,3 +55,5 @@ assimilation_gain_ui,ui,assimilation,新增词库/招式提示,PNG,assets/ui/,ve
 assimilation_conquered_mark,ui,assimilation,已击败主播征服标记,PNG,assets/ui/,verify_needed,系统案14｜征服标记｜2026-10-15以GitHub main 103d49d核对：Rest/吞并已有代码，但相应独立美术与程序展示位置尚需实景核对；据入库证据标记，待LC-10/使用方接线。
 assimilation_source_style,ui,assimilation,继承话语保留来源主播装饰,PNG,assets/ui/,verify_needed,系统案14｜来源外观｜2026-10-15以GitHub main 103d49d核对：Rest/吞并已有代码，但相应独立美术与程序展示位置尚需实景核对；据入库证据标记，待LC-10/使用方接线。
 ending_art_orthodox,environment,ending,正统结局主图,PNG,assets/environment/,needs_asset,现有后续系统占位；不来自本次系统案正文｜2026-10-15以GitHub main 103d49d核对：正统结局正式主图未发现入库；据入库证据标记，待LC-10/使用方接线。
+trait_retaliation,ui,traits,水军复制反击底板,Godot程序绘制,assets/ui/,implemented_code,INT-18E核实07表原ID；现有systems/barrage_generation/barrage_special_surface.gd::BarrageSpecialSurface._draw_retaliation_panel已实现；无独立PNG；人工视觉待验。
+trait_fake,ui,traits,假弹幕复读底板,Godot程序绘制,assets/ui/,implemented_code,INT-18E核实07表原ID；现有systems/barrage_generation/barrage_special_surface.gd::BarrageSpecialSurface._draw_fake_repeat已实现；无独立PNG；人工视觉待验。

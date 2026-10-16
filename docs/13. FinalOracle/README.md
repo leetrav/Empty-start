@@ -161,6 +161,8 @@ R26-B 增加 `ContradictionOracleFlow.configure_oracle_parameters(selection_time
 
 根场景在 `start()` 前调用 `configure_oracle_parameters(10.0, 3)`。候选开放后实际创建 10 秒计时器，并把最多 3 个冻结候选交给已有攻击输入。暂停不推进选择计时；正式攻击确认仍写入 Scripture 后在帧尾交付 Rest。
 
-结果演出使用 `hold_result_presentation()` / `complete_result_presentation(source_system)`，具体完成顺序见 12 系统 README。击破与神谕确认的直播上涨优先调用 A 提供的 `LiveSessionData.start_formal_short_boost(event)`；评论与重复事件处理归 LiveSessionData。#241 尚未合入该接口的独立分支保留原调用，合并后自动消费正式接口。
+结果演出使用 `hold_result_presentation()` / `complete_result_presentation(source_system)`，具体完成顺序见 12 系统 README。击破与神谕确认的直播上涨优先调用 A 提供的 `LiveSessionData.start_formal_short_boost(event)`；评论与重复事件处理归 LiveSessionData。#241 已合入 main，统一入口由正式开局数值配置驱动。
 
 实际 Godot 组件链、配置来源与 INT-16 调用顺序见 [INT-17B 日志](../Integration/生产集成_INT-17B_2026-10-16_log.md)。
+
+INT-18B 已用正式 PA-17 / PA-12 完成事实组合验证成功与未击破接续、三候选 / 10 秒选择、真实攻击确认与暂停；真实播放器收到 `oracle_confirm`。完整组合和已释放旧来源的拒绝行为见 [INT-18B 日志](../Integration/INT-18B_2026-10-16_log.md)；中央玩家路线由 A 最终接线。

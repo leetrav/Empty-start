@@ -7,7 +7,7 @@
 ### R26-D 表驱动后端（2026-10-16）
 
 - `BarrageTraitCatalog` 读取正式 `07_特性参数.csv` 与 `21_反击技能池.csv`；技能按 `streamer_id + tier + enabled` 筛选，并使用 `weight` 加权抽选。`BarrageArea.configure_trait_catalog()` 注入目录，`spawn_counter_skill_barrage(level_profile, speech, tier)` 把特性技能送入现有普通弹幕装配和特殊容量流程。
-- `07.lifetime_override_s` 可覆盖类别寿命；空值沿用 06 生命周期配置。其他列可通过 `get_trait_definition()` 查询。运行时目录尚需 Sandbox 所有者注入，特性技能仍需战斗流程决定何时触发。
+- `07.lifetime_override_s` 可覆盖类别寿命；空值沿用 06 生命周期配置。其他列可通过 `get_trait_definition()` 查询。A 已将目录与真实 CombatStage 首次升档抽取数接入普通批次，特殊容量满时保留待项，降档暂停高档待项，回升继续派发；Sandbox 所有者仍需注入目录。
 - `TutorialStepRunner` 读取正式 `24_新手教学配置.csv`，按 `step_order` 推进启用步骤，并以稳定事件 ID 发布提示和完成事实。`TutorialHintLabel.show_tutorial_hint()` 可连接 `hint_requested`。Sandbox 的输入/命中事实接线和周目完成记录归 INT-16 所有者。
 - INT-17C 已通过 `BarrageTraitRuntime` 组合现有 Area：`bind(area,catalog)` 在实际生成时绑定 07 规则，`begin_attempt(level)` 捕获本次真实关卡，`on_shot_resolved` 同步消费 Flow 结算事实并生成一次性分裂子体，子体保留原句和母体绝对截止。`spawn_counter_skill` / `spawn_skill` 支持带权与显式技能实际生成，所有实例继续走普通/特殊容量账本。
 - `BarrageTraitCatalog.configure_trait_set()` 将 07 的 `penalty_param_id` 交给命中结果；唯一 PK 拥有者 HitResolution 从现有 06 Resource 读取对应处罚并沿用整发上限。`get_lifetime_override()` 保留既有装配顺序中首个有效寿命覆盖；`split_child_count` 已有实际子体消费者。
@@ -15,7 +15,15 @@
 - `get_visual_asset_status()` 按 07 原 ID 查询 18 表，`visual_asset_requested` 向 E 提供原 ID 和映射事实。`trait_retaliation`、`trait_fake`、`trait_unselectable` 在 18 中缺少精确 ID；不自动替换为相似名称。现有程序绘制继续显示六种特性，正式素材与人工画面验收仍待 E。
 - 正式四关的 32 条技能、16 个带权池、分裂/复制/处罚/容量和三步教学已通过真实 Godot 组件运行；正式 Sandbox 的批次时机、Flow 信号与周目存储仍由 A / INT-16 组合。接口与完整证据见 [INT-17C 日志](../Integration/生产集成_INT-17C_2026-10-16_log.md)。
 
-**现有组件：** `BarrageTraitSet` 已支持一条普通话语挂多个兼容特性，且可查询本关/已继承可用特性。真实普通批次当前尚未随机装配特性，BG-41 负责按后续明确的反击池选择；BG-35 负责特殊实例同屏容量。遮挡特性展示的最高层与随机位置静止生成分别由 BT-14、BT-15 处理；共享随机静止落点能力由 BG-42 提供。
+### INT-18C 操作收口（2026-10-16）
+
+- `spawn_retaliation_copy()` 只接受当前绑定区域中仍存活的普通收益源，已结束待释放和其他区域的实例不能成为复制源；一代复制品仍禁止继续复制。
+- `observe_combat_frame()` 排除隐藏目标，隐藏阶段 UI/弹幕不再提供可见瞄准事实。`TutorialHintView.bind_runner()` 在视图 ready 后、runner.begin 前调用；重开只传已完成步骤 ID，暂停沿用 SceneTree。
+- 四关真实 `CombatStage` → `BarrageArea` 普通批次已验证 T2～T5 首次反击、降档回升不重抽、特殊满时普通生成与待技能补入；T5 split 实际为 2400ms，子体沿用母体绝对截止，兼容叠加每实例只占一个特殊名额。
+- 使用生产输入分发 `Input.parse_input_event()` 与真实帧计时、命中结算、D 的 `TutorialHintView` 完成三步；提前抬手/射空/实际复读命中、暂停、重开及全部完成后恢复均已验证。该场景组合验证通过，正式 Boot→Sandbox 输入/存档接线仍由 A 收口。
+- [INT-18C 日志](../Integration/INT-18C_2026-10-16_log.md) 提供最短调用序列、所需保存数据和本地截图/输出位置。本卡没有新增生产 Scene、Node 或修改其他 Lane 所有文件。
+
+**现有组件：** `BarrageTraitSet` 已支持一条普通话语挂多个兼容特性，且可查询本关/已继承可用特性。注入正式目录后，真实普通批次按 08 首次进入 Tier 的抽取数消费 21 的带权候选；BG-35 负责特殊实例同屏容量。遮挡特性展示的最高层与随机位置静止生成分别由 BT-14、BT-15 处理；共享随机静止落点能力由 BG-42 提供。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
