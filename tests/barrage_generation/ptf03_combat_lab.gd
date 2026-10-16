@@ -50,6 +50,10 @@ func _ready() -> void:
 		if arg == "--motion-v0": motion = true
 		if arg == "--motion-b": motion = true; compact_curve = true
 		if arg == "--film": film = true; max_seconds = 24.0 if not motion else 12.0
+	if legacy_input and not FileAccess.file_exists("res://.godot/ptf03_v0_attack.gd"):
+		push_error("V0回放需从9da23042提取原攻击脚本到.godot/ptf03_v0_attack.gd并移除class_name行。")
+		get_tree().quit(1)
+		return
 	area = AREA.instantiate()
 	add_child(area)
 	area.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
@@ -69,7 +73,7 @@ func _ready() -> void:
 	area.barrage_generated.connect(func(view: BarrageView) -> void:
 		var surface := view.get_glass_surface() as BarrageSpecialSurface
 		if surface != null:
-			surface.show_unselectable_marker = pressure > 0.15 or gallery_index >= 0
+			surface.show_unselectable_marker = true # 两套压力预览共用候选标记，正式默认仍关闭。
 			surface.queue_redraw())
 	var fx = IMPACT.new()
 	add_child(fx)
@@ -158,7 +162,7 @@ func _process(delta: float) -> void:
 		var view := instance_from_id(id) as BarrageView
 		if is_instance_valid(view):
 			# 运动对比只延长观察寿命，避免MovieMaker墙钟编码成本提前清空试件。
-			view.runtime_record.expires_at_msec = Time.get_ticks_msec()+1000
+			view.runtime_record.expires_at_msec = Time.get_ticks_msec()+60000
 			var line: Line2D = trails[id]
 			line.add_point(view.position+view.size*0.5)
 			if line.get_point_count()>600: line.remove_point(0)
