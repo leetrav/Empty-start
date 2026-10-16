@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="MobileTouchLayout" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/mobile/mobile_touch_layout.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+resource_name = "TEST_ONLY PTF-05 触摸布局B，待真人选择"
+aim_offset_mm = Vector2(-10, -9)
+feedback_anchor = Vector2(0.5, 0.88)
