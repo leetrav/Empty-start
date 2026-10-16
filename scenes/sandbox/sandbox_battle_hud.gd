@@ -242,7 +242,10 @@ func _fit_parent_size() -> void:
 	var parent_control: Control = get_parent() as Control
 	if parent_control == null or size.x <= 0.0 or size.y <= 0.0:
 		return
-	scale = parent_control.size / size
+	# 超宽窗口沿用 Scene 的 16:9 设计比例，避免人物、字体和圆形准心被横向拉宽。
+	var uniform_scale: float = minf(parent_control.size.x / size.x, parent_control.size.y / size.y)
+	scale = Vector2.ONE * uniform_scale
+	position = (parent_control.size - size * uniform_scale) * 0.5
 	# 准心继承同一设计缩放，布局更新后通过其公开入口重新对齐当前鼠标。
 	_aim_reticle.refresh_mouse_position()
 
