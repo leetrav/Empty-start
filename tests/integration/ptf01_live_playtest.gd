@@ -15,6 +15,11 @@ func _ready() -> void:
 	for argument: String in OS.get_cmdline_user_args():
 		if argument.begins_with("--ptf01="):
 			_scenario = argument.trim_prefix("--ptf01=")
+	_begin.call_deferred()
+
+
+## 初始场景注册完成后再移交根路由，保持复播观察节点存活。
+func _begin() -> void:
 	get_tree().current_scene = null
 	print("PTF01_USER_DIR=", OS.get_user_data_dir(), " scenario=", _scenario)
 	SaveManager.new_game()
