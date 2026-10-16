@@ -77,6 +77,24 @@ func _checks() -> void:
 	_check(sandbox.get_opponent_live_snapshot()["comment_count"] == 3, "首批三条对手评论")
 	var expected_session := SaveManager.data.get_opponent_live_session("alien")
 	_check(expected_session != SaveManager.data.live_session, "两侧数据所有者独立")
+	# 正常命中与反弹分别走真实攻击/结算；此处仅清场隔离辅助断言。
+	var area := flow.get_barrage_area()
+	area.clear_current_barrages()
+	var profile := flow.get_current_level_profile()
+	var speech: LevelSpeech = profile.get_normal_speech_pool()[0]
+	var normal := area.spawn_normal_barrage(profile, speech)
+	var before := flow.get_hit_resolution().get_player_pk()
+	await _shoot_control(sandbox, normal)
+	_check(flow.get_hit_resolution().get_player_pk() > before, "实际普通命中推进PK")
+	await _capture("normal_hit")
+	area.clear_current_barrages()
+	var trap_profile: LevelProfile = profile.duplicate()
+	trap_profile.special_trait_ids = [BarrageTraitSet.REFLECT]
+	var trap := area.spawn_normal_barrage(trap_profile, speech, [BarrageTraitSet.REFLECT])
+	before = flow.get_hit_resolution().get_player_pk()
+	await _shoot_control(sandbox, trap)
+	_check(flow.get_hit_resolution().get_player_pk() < before, "实际反弹扣分")
+	await _capture("trap_hit")
 	for sample: float in [0.50, 0.57, 0.65, 0.73, 0.81, 0.93, 0.60]:
 		sandbox.debug_set_player_pk(sample)
 		await get_tree().create_timer(0.45).timeout
@@ -132,6 +150,21 @@ func _send_escape() -> void:
 	event.pressed = true
 	Input.parse_input_event(event)
 	Input.flush_buffered_events()
+
+
+## 仅辅助回归使用合成鼠标；目标仍按生产运动与寿命运行。
+func _shoot_control(sandbox, target: Control) -> void:
+	var point := get_viewport().get_final_transform() * target.get_global_rect().get_center()
+	var attack: AttackChargeInput = sandbox.get_battle_attempt_flow().get_attack_input()
+	await _wait(func(): return attack.can_start_charging())
+	for pressed: bool in [true, false]:
+		var event := InputEventMouseButton.new()
+		event.position = point
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		Input.flush_buffered_events()
+		await get_tree().create_timer(0.9 if pressed else 0.45).timeout
 
 
 ## 核对结果失败时保留运行，汇总明确退出码。
