@@ -1,6 +1,8 @@
 extends SceneTree
 
 const RUNTIME = preload("res://systems/barrage_traits/barrage_trait_runtime.gd")
+const HINT = preload("res://ui/tutorial/tutorial_hint_view.tscn")
+const AIM = preload("res://systems/combat_attack/aim_reticle.tscn")
 const AREA = preload("res://systems/barrage_generation/barrage_area.tscn")
 const TIERS = preload("res://data/combat_stage/tier_catalog.tres")
 const NUMERICS = preload("res://data/combat_stage/combat_numerics.tres")
@@ -34,6 +36,7 @@ func _run() -> void:
 	for index: int in range(1, 5):
 		await _verify_level(index)
 	await _verify_lifecycle()
+	await _verify_tutorial()
 	print("INT18C_RUNTIME_PASS" if failures == 0 else "INT18C_RUNTIME_FAIL count=%d" % failures)
 	quit(0 if failures == 0 else 1)
 
@@ -191,6 +194,156 @@ func _verify_lifecycle() -> void:
 	runtime.unbind()
 	area.queue_free()
 	await process_frame
+
+
+## 用真实输入分发与帧计时走三步，提示只通过 D 的公开绑定接口显示。
+func _verify_tutorial() -> void:
+	var profile := load("res://data/level_configuration/level_001.tres") as LevelProfile
+	var speech: LevelSpeech = profile.get_normal_speech_pool()[0]
+	var area: BarrageArea = _new_area(Vector2(448, 72), Vector2(1024, 1008))
+	var aim := AIM.instantiate() as AimReticle
+	canvas.add_child(aim)
+	var attack := AttackChargeInput.new()
+	canvas.add_child(attack)
+	attack.configure_target_query(aim, area)
+	attack.configure_attack_timing(NUMERICS.create_attack_timing_config())
+	attack.configure_combat_aim_radii(NUMERICS)
+	var hit := HitResolution.new(0.5, 0.0, 1.0, 0.02, 0.02, NUMERICS)
+	attack.configure_hit_resolution(hit)
+	area.start_normal_generation(profile)
+	area.stop_normal_generation()
+	area.clear_current_barrages()
+	var runner := TutorialStepRunner.new()
+	var hint = HINT.instantiate()
+	canvas.add_child(hint)
+	hint.position = Vector2(500, 900)
+	hint.size = Vector2(920, 90)
+	hint.bind_runner(runner)
+	var completed: Array[String] = []
+	var submissions: Array[Dictionary] = []
+	runner.step_completed.connect(func(id: String) -> void: completed.append(id))
+	attack.shot_hit_resolution_submitted.connect(func(snapshot: AttackTargetSnapshot, submission: Dictionary) -> void:
+		submissions.append(submission)
+		# 与正式 Flow 一致：结束命中目标后，同步交出已结算事实；此处不替代 Flow 存档逻辑。
+		for target_result: Dictionary in submission.get("hit_resolution_result", {}).get("target_results", []):
+			area.end_barrage(int(target_result.get("target_instance_id", 0)))
+		runner.on_shot_resolved(snapshot, submission, 0, null))
+	var target: BarrageView = area.spawn_normal_barrage(profile, speech)
+	target.position = Vector2(150, 300)
+	target.set_process(false)
+	await process_frame
+	var point: Vector2 = target.get_global_rect().get_center()
+	runner.begin(profile.tutorial_config_id)
+	_mouse_motion(aim, point)
+	target.hide()
+	runner.observe_combat_frame(area, aim, attack)
+	_expect(runner.get_current_hint().is_empty(), "隐藏普通目标不触发教学")
+	hint.clear_hint()
+	runner.begin(profile.tutorial_config_id)
+	target.show()
+	paused = true
+	runner.observe_combat_frame(area, aim, attack)
+	_expect(runner.get_active_step_id() == "tutorial_001_aim", "暂停时几何观察不推进")
+	paused = false
+	runner.observe_combat_frame(area, aim, attack)
+	_expect(runner.get_active_step_id() == "tutorial_001_charge" and hint.visible, "真实准心重叠完成aim并显示charge提示")
+	# 提前抬手保持 charge，且不产生发射提交。
+	_mouse_button(aim, point, true)
+	await create_timer(0.08).timeout
+	_mouse_button(aim, point, false)
+	runner.observe_combat_frame(area, aim, attack)
+	_expect(not attack.is_charge_held() and submissions.is_empty() and runner.get_active_step_id() == "tutorial_001_charge", "提前松开保留charge")
+	# 失败重开只保留已完成的 aim；由组合方重置攻击对象并再次 begin。
+	var saved: Array[String] = runner.get_completed_step_ids()
+	attack.set_combat_active(false)
+	attack.set_combat_active(true)
+	hint.clear_hint()
+	runner.begin(profile.tutorial_config_id, saved)
+	_expect(runner.get_current_hint().get("step_id") == "tutorial_001_charge" and hint.visible, "重开恢复已完成aim后的提示")
+	_mouse_button(aim, point, true)
+	await create_timer(0.12).timeout
+	var before_pause: float = attack.get_charge_progress()
+	paused = true
+	await create_timer(0.15).timeout
+	runner.observe_combat_frame(area, aim, attack)
+	_expect(is_equal_approx(attack.get_charge_progress(), before_pause), "暂停中真实蓄力冻结")
+	_expect(runner.get_active_step_id() == "tutorial_001_charge", "暂停不完成charge")
+	paused = false
+	await create_timer(NUMERICS.charge_time_seconds).timeout
+	runner.observe_combat_frame(area, aim, attack)
+	_expect(attack.is_fully_charged() and runner.get_active_step_id() == "tutorial_001_fire", "真实帧满蓄完成charge")
+	aim.set_charge_visual_state(attack.get_charge_progress(), attack.is_charge_held(), attack.is_fully_charged())
+	_label(Vector2(448, 24), "INT-18C · 首关真实输入 / 满蓄 / 暂停 / 进度恢复")
+	await process_frame
+	await _capture("D:/tmp/INT18C_tutorial_fire_2026-10-16.png")
+	# 满蓄射空保持 fire；该目标移开，让既有扫描和 HitResolution 自己判落空。
+	_mouse_motion(aim, Vector2(100, 100))
+	_mouse_button(aim, Vector2(100, 100), false)
+	await create_timer(NUMERICS.projectile_flight_seconds + NUMERICS.recovery_time_seconds + 0.1).timeout
+	_expect(submissions.size() == 1 and runner.get_active_step_id() == "tutorial_001_fire", "射空保持fire")
+	area.end_barrage(target.get_instance_id())
+	# 真实复读命中不能完成教程，继续沿既有 RepeatPlan 与生成接口。
+	var plan := RepeatPlan.create_normal_hit_plan(StringName(speech.original_sentence_id), speech.text, 0, 1, 3.0, speech.tendency_id)
+	var repeat: BarrageView = area.spawn_repeat_barrage(plan, true)
+	_expect(repeat != null, "实际复读实例生成")
+	if repeat != null:
+		repeat.position = Vector2(150, 300)
+		repeat.set_process(false)
+		await _fire_at(aim, attack, repeat.get_global_rect().get_center())
+		_expect(submissions.size() == 2 and runner.get_active_step_id() == "tutorial_001_fire", "实际复读命中仍停留fire")
+		if submissions.size() == 2:
+			var results: Array = submissions.back().get("hit_resolution_result", {}).get("target_results", [])
+			_expect(not results.is_empty() and bool(results[0].get("is_repeat", false)), "复读实际进入结算而非落空")
+	# 新普通目标走真实扫描、飞行、HitResolution，最后一次性完成。
+	target = area.spawn_normal_barrage(profile, speech)
+	target.position = Vector2(150, 300)
+	target.set_process(false)
+	await _fire_at(aim, attack, target.get_global_rect().get_center())
+	_expect(submissions.size() == 3 and runner.get_active_step_id().is_empty() and not hint.visible, "真实普通命中完成并隐藏提示")
+	_expect(not runner.notify_event("tutorial_normal_hit"), "重复命中事实不重复完成")
+	var all_completed: Array[String] = runner.get_completed_step_ids()
+	_expect(all_completed.size() == 3, "只有正式三步被记入完成列表")
+	# UI/运行器重建模拟保存后恢复，不向存档对象发明字段。
+	var restored := TutorialStepRunner.new()
+	hint.bind_runner(restored)
+	_expect(not restored.begin(profile.tutorial_config_id, all_completed) and not hint.visible, "全部完成后重建不重播教学")
+	all_completed.clear()
+	_expect(restored.get_completed_step_ids().size() == 3, "恢复进度副本独立")
+	print("INT18C_TUTORIAL_PASS input=parse_input_event undercharge=retained pause=frozen restart=restored miss=retained repeat=excluded normal=completed ui=hidden")
+	attack.set_combat_active(false)
+	area.queue_free()
+	attack.queue_free()
+	aim.queue_free()
+	hint.queue_free()
+	await process_frame
+
+
+## 从画布位置换算窗口事件，沿已有 KT-30 / INT-17A 的输入路径。
+func _mouse_motion(aim: AimReticle, point: Vector2) -> void:
+	var event := InputEventMouseMotion.new()
+	event.position = root.get_final_transform() * (aim.get_canvas_transform() * point)
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
+
+
+## 发射仅注入真实按下/松开，不直接调用生产 _input 或推进生产 _process。
+func _mouse_button(aim: AimReticle, point: Vector2, pressed: bool) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = pressed
+	event.position = root.get_final_transform() * (aim.get_canvas_transform() * point)
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
+
+
+## 实际帧时序蓄力、飞行与硬直；不缩短正式数值配置。
+func _fire_at(aim: AimReticle, attack: AttackChargeInput, point: Vector2) -> void:
+	_mouse_motion(aim, point)
+	_mouse_button(aim, point, true)
+	await create_timer(NUMERICS.charge_time_seconds + 0.05).timeout
+	_expect(attack.is_fully_charged(), "输入驱动实际满蓄")
+	_mouse_button(aim, point, false)
+	await create_timer(NUMERICS.projectile_flight_seconds + NUMERICS.recovery_time_seconds + 0.1).timeout
 
 
 ## 图像只输出到本机 D 盘，headless 回归不等待绘制帧。
