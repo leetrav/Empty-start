@@ -268,6 +268,8 @@ func start(run_data: SaveData, catalog: LevelCatalog, current_level: LevelProfil
 		repeat_queue: RepeatDelayQueue, candidate_display: FinalOracleCandidateDisplay,
 		config: SandboxBattleConfig, card_catalog: LoserCardCatalog,
 		window_config: ContradictionWindowConfig, audio_manager: Node) -> bool:
+	if not is_finite(repeat_climax_duration_seconds) or repeat_climax_duration_seconds <= 0.0 or repeat_presentation_config == null:
+		return false
 	if not is_inside_tree() or not _stopped or run_data == null or catalog == null or current_level == null:
 		return false
 	if hit_resolution == null or combat_stage == null or repeat_queue == null or config == null or window_config == null:
@@ -381,7 +383,8 @@ func advance(delta: float) -> void:
 			if _climax_elapsed >= repeat_climax_duration_seconds:
 				_finish_repeat_climax()
 			else:
-				state_text_changed.emit("复读涌现 · %.1f 秒 · 点击/空格加速，回车结束" % maxf(repeat_climax_duration_seconds - _climax_elapsed, 0.0))
+				var suffix := " · 点击/空格加速，回车结束" if repeat_climax_interactive else " · 即将进入下一阶段"
+				state_text_changed.emit("复读涌现 · %.1f 秒%s" % [maxf(repeat_climax_duration_seconds - _climax_elapsed, 0.0), suffix])
 	if _oracle_selection_timer != null:
 		_oracle_selection_timer.advance(delta, false)
 	if not _contradiction_stage_active:
