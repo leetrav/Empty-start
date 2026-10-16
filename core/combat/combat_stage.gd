@@ -11,6 +11,7 @@ signal tier_state_changed(current_tier: int)
 signal audio_event_requested(event_id: StringName)
 ## 当前实际 Tier 请求对应音乐，与升档音效分开消费。
 signal music_event_requested(event_id: StringName)
+signal barrage_skill_tier_changed(current_tier: int, first_entry_draw_count: int)
 
 const INITIAL_TIER: int = 0
 
@@ -80,6 +81,9 @@ func bind_opponent_pk_bar(opponent_pk_bar: OpponentPKBar) -> void:
 func bind_barrage_area(barrage_area: BarrageArea) -> void:
 	# 复用弹幕生成系统现有的倍率入口，并在绑定时补发当前 Tier 配置。
 	var generation_callback: Callable = Callable(barrage_area, "set_generation_multipliers")
+	var skill_callback := Callable(barrage_area, "set_combat_tier")
+	if not barrage_skill_tier_changed.is_connected(skill_callback):
+		barrage_skill_tier_changed.connect(skill_callback)
 	if not barrage_generation_multipliers_changed.is_connected(generation_callback):
 		barrage_generation_multipliers_changed.connect(generation_callback)
 	var motion_weights_callback: Callable = Callable(barrage_area, "set_foreground_motion_weights")
@@ -188,6 +192,7 @@ func _publish_barrage_state() -> void:
 		current_config.generation_frequency_multiplier,
 		current_config.movement_speed_multiplier
 	)
+	barrage_skill_tier_changed.emit(_current_tier, current_config.retaliation_draw_count_first_entry)
 	barrage_foreground_motion_weights_changed.emit(
 		current_config.straight_motion_weight,
 		current_config.curved_motion_weight,

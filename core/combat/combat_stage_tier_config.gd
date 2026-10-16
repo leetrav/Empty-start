@@ -24,3 +24,5 @@ extends Resource
 @export var opponent_portrait_state_id: StringName = &""
 ## 08 表当前档位的音乐事件；素材路径由音频系统配置。
 @export var music_event_id: StringName = &""
+## 08 表本场首次到达本档时抽取的反击技能数。
+@export var retaliation_draw_count_first_entry: int = 0
