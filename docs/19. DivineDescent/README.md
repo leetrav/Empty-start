@@ -206,3 +206,9 @@ R26-B 增加 `DivineDescentFlow.configure_formal_parameters(auto_repeat_min_seco
 - **Lane A 精确交接（TO INTEGRATE）**：现有 `divine_descent_entered(session)` 后先做 DD-15 原始历史分流。空历史直接沿用 Ending 接收路径，跳过本演出。正常历史先连接同一 Spread 的 `completed`，再连接 `convergence_started` 调用 `begin_full_screen_emphasis()`，然后沿用 DD-05/08 启动顺序；收束通知已包含真实锁句，无需重算。演出时长未获正式批准，仅允许明确 TEST_ONLY 注入用于联调。输入仅经 DD-14 方法路由，切页时销毁终局节点 / 区域，普通输入及收益保持关闭。
 - **A / D 接收顺序**：在 `completed(final_session)` 处理器中，以同一已进入 Session 调用 D 已有 `EndingSession.receive_final_state(final_session, full_level_catalog)`，首次成功才将 `get_display_data()` 交给 `EndingPage.show_ending()`。目录必须包含全部普通关卡；默认配置沿用正式资源，空主图 / 教名 / 判词保持现状。SceneRouter 新顶层入口、结果保留与页面生命周期归 A；EndingSession / EndingPage 的接收与展示实现归 D。C 不调用路由或改写 D 文件。
 - **明确阻塞**：Sandbox 当前尚未组合正常历史扩散→收束→此演出→Ending；SceneRouter 尚无结局入口。独立真实场景已证明单次完成及 Ending 接收，生产完整转场 / Sandbox 全流程 **TO INTEGRATE / UNVERIFIED**，没有主路线 PASS。临时 TEST_ONLY 图形 smoke 和 DD-13 / DD-15 既有回归均 PASS、退出 0；新增持久自动测试 0，详见本卡日志与 evidence。
+
+## INT-17B 正式 Resource 与完成路径（2026-10-16）
+
+现有 `DivineDescentDecayConfig` 同时保存 15 表新话衰减 12 秒、自动复读间隔 0.15–0.38 秒、收束比例 0.9 和强调总时长 1.8 秒，正式值位于 `data/divine_descent/divine_descent_decay_config.tres`。显式 `configure_formal_parameters(0.15, 0.38, 0.9, 1.8)` 仍须在 `start()` 前调用；旧 Sandbox 传入零演出参数时，Flow 自动读取同一正式 Resource，正常历史不再停在只有 entered 的状态。
+
+自动复读的 one-shot Timer 在 timeout 时已停止，现先安排下一次再调用公开生成入口；生成回调里的显式 stop 可取消下一次。配置或历史解析失败返回 false 并停止本场组件。真实非空历史已验证自然衰减、自动复读、锁句、0.9 收束、暂停中的强调 Tween 和 `completed(EndingSession)`；INT-16 继续拥有根场景路由。入口与本地 GPU 证据见 [INT-17B 日志](../Integration/生产集成_INT-17B_2026-10-16_log.md)。
