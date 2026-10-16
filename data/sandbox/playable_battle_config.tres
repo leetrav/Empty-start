@@ -18,4 +18,4 @@ contradiction_repeat_count = 120
 contradiction_repeat_lifetime_seconds = 10.0
 maximum_pending_repeat_count = 96
 repeat_screen_cap = 24
-repeat_display_template = "复读 · {原句}"
+repeat_display_template = "{text}"

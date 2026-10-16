@@ -44,6 +44,14 @@ func play(sentence_text: String, fade_seconds: float, hold_seconds: float) -> vo
 	_tween.finished.connect(_on_tween_finished)
 
 
+# 15 表给出整段强调时长；保留既有淡入／停留／淡出比例并缩放到该总时长。
+func play_for_total_duration(sentence_text: String, total_seconds: float) -> bool:
+	if not is_finite(total_seconds) or total_seconds <= 0.0:
+		return false
+	play(sentence_text, total_seconds * 0.25, total_seconds * 0.5)
+	return true
+
+
 # 先收起遮罩再发出事实，组合方可以安全展示 Ending 页面。
 func _on_tween_finished() -> void:
 	_overlay.hide()

@@ -149,3 +149,11 @@ EN-06～09 完成页面数据和显示。
 - 零收藏与无有效行为分别判断；倾向直接沿用 19 Session 的冻结主次、并列、全零和开局依据，页面不重算倾向。
 - 正式教名、判词与主图尚为空时，显示数据仍完整生成，页面收起空资源区域。测试替代内容明确使用 `TEST_ONLY` 内存实例，正式 `.tres` 保持原状。
 - 仅新增 `tests/unit/ending/test_zero_collections.gd` 一个关键单元用例，保护所有收藏为空仍可接收和构建结局；真实页面验证另用临时实景 smoke。正式 DD-17 路由、Android 设备与最终视觉继续由对应集成任务验收。
+
+## INT-17E 正式16表同步（2026-10-16）
+
+现有 `ending_main_art_config.tres`、`ending_religion_name_config.tres`、`ending_judgement_text_config.tres` 由 `--approved-csv` 刷新，EndingSession继续预载同一资源。九个教名按有序主次倾向映射，四判词按既有四类字段映射；源表占位文案过滤为空，三张主图asset_id尚无实际文件，保持null。未新增正式文案或第二套分类器。
+
+独立通关漫画配置路径为 `data/ending/ending_comic.tres`，当前ComicSequence.frames为空；复导保留人工填入的正式帧。历史 `data/comics/ending.tres` 仍属开场P5/P6，不能据其非空宣称通关漫画已交付。INT-16在独立漫画未交付时继续 `SceneRouter.goto_ending(session)`；未来显式序列入口由流程Owner接线。
+
+Godot4.7.2实际加载确认九教名/四判词空值、三主图null和两类漫画隔离；整局转场未在本卡验收。见[INT-17E日志](../Integration/生产集成_INT-17E_2026-10-16_log.md)。

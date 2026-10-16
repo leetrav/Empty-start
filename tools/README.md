@@ -112,3 +112,16 @@ python tools/export_game_data.py --approved-csv
 ```
 
 Use `--csv-dir <path>` to select a different complete CSV set. This mode validates table headers, IDs, references, numeric fields, the enabled speech pool, and all six Tier rows before writing production Resources. It does not require `openpyxl`; the XLSX mode loads that dependency only when used.
+
+## INT-17E 批准CSV的正式资源刷新与字段审计
+
+```powershell
+python tools/export_game_data.py --approved-csv
+python tools/export_game_data.py --audit-csv
+```
+
+批准CSV模式依次校验27张表并刷新26个Resource，覆盖01身份、02～05/11四关、06战斗/生命周期/准心视觉、08Tier/音乐ID/首次入档抽取、09直播值、13/14启用过滤、16结局和已有表现素材。XLSX与TEST_ONLY模式继续保留原有隔离；未批准的表仍列缺口。`aim_visual_size`只允许正方形正数宽高，视觉直径独立于命中半径；PK百分点统一除100。
+
+审计复用相同生成函数，对比现存Resource文本列出旧值覆盖/未复导文件，并逐行逐字段记录源值与消费者证据。输出 `docs/Integration/R26-E_01-04-13-14-18-23_importer_audit.md`；源码读取证据与真实玩家联调状态分开记录。18台账状态字符串不会加载为路径，16占位文本过滤为空，独立通关漫画已有帧由人工配置保留。
+
+Resource smoke：完成Godot导入后运行 `--headless --path <本Lane项目> --script res://tests/data_export/r26_e_importer_audit.gd`。2026-10-16已通过Godot4.7.2及两个既有Python导表回归。Windows PATH上的uv Python启动器失效时，本机可直接用 `C:\Users\lvy\AppData\Local\Python\pythoncore-3.14-64\python.exe`；验证日志见INT-17E完成日志。

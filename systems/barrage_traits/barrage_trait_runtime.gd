@@ -81,9 +81,7 @@ func _on_barrage_generated(view: BarrageView) -> void:
 	if facts == null or facts.is_repeat or facts.is_contradiction:
 		return
 	_catalog.configure_trait_set(facts.trait_set)
-	var override_seconds: float = _catalog.get_lifetime_override(facts.trait_set.get_trait_ids())
-	if override_seconds > 0.0:
-		facts.capture_lifetime_at_spawn(Time.get_ticks_msec(), override_seconds, 1.0)
+	# 弹幕寿命由 BarrageArea 按 07 覆盖和 06 Tier 规则唯一计算，后续表现不重置截止时间。
 	for trait_id: StringName in facts.trait_set.get_trait_ids():
 		var status: Dictionary = _catalog.get_visual_asset_status(trait_id)
 		visual_asset_requested.emit(view, str(status.get("visual_asset_id", "")), status)

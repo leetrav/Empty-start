@@ -70,7 +70,73 @@ var _terminal_presentation_only: bool = false
 var _terminal_trait_ids: Array[StringName] = []
 var _terminal_trait_colors: Dictionary = {}
 var _combat_numerics: CombatNumericsConfig
-var _trait_catalog: BarrageTraitCatalog
+var _trait_catalog: RefCounted
+var _current_combat_tier: int = 0
+var _current_counter_draw_count: int = 0
+var _drawn_counter_tiers: Array[int] = []
+var _skill_traits_by_tier: Dictionary = {}
+var _pending_counter_skills: Array[Dictionary] = []
+
+
+## INT-16 注入 C 的 07/21 目录；不在本系统重做读表和抽选。
+func configure_trait_catalog(catalog: RefCounted) -> void:
+	_trait_catalog = catalog
+	_draw_counter_skills_for_current_tier()
+
+
+## 尝试重开时清除本场技能抽取，升降档清屏继续保留这些状态。
+func begin_combat_attempt() -> void:
+	_current_level_profile = null
+	_current_combat_tier = 0
+	_current_counter_draw_count = 0
+	_drawn_counter_tiers.clear()
+	_skill_traits_by_tier.clear()
+	_pending_counter_skills.clear()
+
+
+## 只消费 CombatStage 发布的实际档位和 08 首次抽取数。
+func set_combat_tier(tier: int, first_entry_draw_count: int) -> void:
+	_current_combat_tier = tier
+	_current_counter_draw_count = maxi(first_entry_draw_count, 0)
+	_draw_counter_skills_for_current_tier()
+
+
+## 本场各档只抽一次；抽选结果排入既有普通批次，容量满时保留待生成项。
+func _draw_counter_skills_for_current_tier() -> void:
+	if _trait_catalog == null or _current_level_profile == null or _terminal_presentation_only:
+		return
+	if _drawn_counter_tiers.has(_current_combat_tier) or _current_counter_draw_count <= 0:
+		return
+	_drawn_counter_tiers.append(_current_combat_tier)
+	for _index: int in range(_current_counter_draw_count):
+		var skill: Dictionary = _trait_catalog.call("choose_skill", _current_level_profile.streamer_id, _current_combat_tier)
+		var ids: Array[StringName] = _trait_catalog.call("get_skill_trait_ids", skill)
+		if ids.is_empty():
+			continue
+		var available: Array[StringName] = []
+		available.assign(_skill_traits_by_tier.get(_current_combat_tier, []))
+		for trait_id: StringName in ids:
+			if not available.has(trait_id):
+				available.append(trait_id)
+		_skill_traits_by_tier[_current_combat_tier] = available
+		_pending_counter_skills.append({"tier": _current_combat_tier, "trait_ids": ids.duplicate()})
+
+
+## 保留 C 已交付的显式生成入口，调用者需传入当前真实档位。
+func spawn_counter_skill_barrage(level_profile: LevelProfile, speech: LevelSpeech, tier: int, rng: RandomNumberGenerator = null) -> BarrageView:
+	if _trait_catalog == null or level_profile == null or tier != _current_combat_tier or _terminal_presentation_only:
+		return null
+	var skill: Dictionary = _trait_catalog.call("choose_skill", level_profile.streamer_id, tier, rng)
+	var ids: Array[StringName] = _trait_catalog.call("get_skill_trait_ids", skill)
+	if ids.is_empty():
+		return null
+	_skill_traits_by_tier[tier] = ids.duplicate()
+	return spawn_normal_barrage(level_profile, speech, ids)
+
+
+## 公开 07 参数快照，命中和表现消费者继续使用稳定特性 ID。
+func get_trait_definition(trait_id: StringName) -> Dictionary:
+	return _trait_catalog.call("get_trait_definition", trait_id) if _trait_catalog != null else {}
 
 ## 终局只保存表现 ID 和显式配色；不装配普通特性，不改动已在场实例。
 func enter_terminal_presentation(trait_ids: Array[StringName] = [], trait_colors: Dictionary = {}) -> void:
@@ -108,28 +174,13 @@ func configure_combat_numerics(config: CombatNumericsConfig) -> void:
 	random_straight_direction_spread_degrees = config.foreground_straight_spread_degrees
 
 
-## 由 Sandbox 协调方注入正式 07/21 表读取器；保留场景接线归属。
-func configure_trait_catalog(catalog: BarrageTraitCatalog) -> void:
-	_trait_catalog = catalog
-
-
-## 按关卡主播与本次 Tier 从 21 表加权抽选，并复用普通实例创建及容量账本。
-func spawn_counter_skill_barrage(
-	level_profile: LevelProfile, speech: LevelSpeech, tier: int,
-	rng: RandomNumberGenerator = null
-) -> BarrageView:
-	if _trait_catalog == null or level_profile == null:
-		return null
-	var skill: Dictionary = _trait_catalog.choose_skill(level_profile.streamer_id, tier, rng)
-	var selected_trait_ids: Array[StringName] = _trait_catalog.get_skill_trait_ids(skill)
-	if selected_trait_ids.is_empty():
-		return null
-	return spawn_normal_barrage(level_profile, speech, selected_trait_ids)
-
-
-## 命中系统可按稳定特性 ID 读取 07 表里的异常参数与寿命字段。
-func get_trait_definition(trait_id: StringName) -> Dictionary:
-	return _trait_catalog.get_trait_definition(trait_id) if _trait_catalog != null else {}
+## 在 setup 创建 Theme 覆盖前注入正式样式，普通、矛盾和复读共用同一配置。
+func _apply_view_numerics(view: BarrageView) -> void:
+	if _combat_numerics == null:
+		return
+	view.foreground_outline_size = _combat_numerics.foreground_outline_width_px
+	view.outline_color = _combat_numerics.foreground_outline_color
+	view.repeat_font_color = _combat_numerics.repeat_text_color
 
 ## 打开普通生成并立即生成第一批，之后按当前关卡间隔与频率倍率循环。
 func start_normal_generation(level_profile: LevelProfile) -> bool:
@@ -140,6 +191,7 @@ func start_normal_generation(level_profile: LevelProfile) -> bool:
 			return true
 		stop_normal_generation()
 	_current_level_profile = level_profile
+	_draw_counter_skills_for_current_tier()
 	_normal_generation_enabled = true
 	if _frequency_multiplier > 0.0:
 		_spawn_normal_batch()
@@ -426,9 +478,16 @@ func get_available_trait_ids(level_profile: LevelProfile) -> Array[StringName]:
 	# 通过已登记 Autoload 节点读取，单文件 CLI 检查也能解析；未入树时仅提供本关特性。
 	var save_manager: Node = get_node_or_null("/root/SaveManager") if is_inside_tree() else null
 	var run_data: SaveData = save_manager.get("data") as SaveData if save_manager != null else null
-	return BarrageTraitSet.get_available_for_level(
+	var available: Array[StringName] = BarrageTraitSet.get_available_for_level(
 		level_profile, run_data.assimilation_data if run_data != null else null
 	)
+	# 高档技能在降档时停止参与新实例装配，回升使用本场原抽选结果。
+	for tier: int in _skill_traits_by_tier:
+		if tier <= _current_combat_tier:
+			for trait_id: StringName in _skill_traits_by_tier[tier]:
+				if not available.has(trait_id):
+					available.append(trait_id)
+	return available
 
 
 ## 遮挡特性自动随机静止定位；其他普通话语仍可单次请求随机静止落点。
@@ -455,9 +514,11 @@ func spawn_normal_barrage(
 	# 终局忽略普通特性选择，只保留独立表现配置，避免反弹、分裂或不可选触发规则。
 	if not _terminal_presentation_only and not barrage_record.trait_set.add_available_traits(selected_trait_ids, get_available_trait_ids(level_profile)):
 		return null
+	if _trait_catalog != null and _trait_catalog.has_method("configure_trait_set"):
+		_trait_catalog.call("configure_trait_set", barrage_record.trait_set)
 	var has_selected_traits: bool = not barrage_record.trait_set.get_trait_ids().is_empty()
 	var special_capacity_limit: int = _get_special_foreground_capacity_limit(level_profile, capacity_limit)
-	if _combat_numerics != null:
+	if _combat_numerics != null and level_profile.special_instance_screen_cap < 0:
 		special_capacity_limit = _combat_numerics.special_foreground_instance_cap
 	if has_selected_traits and not _special_capacity_ledger.has_capacity(special_capacity_limit):
 		# 特殊名额用尽只拒绝当前带特性请求，不暂停未满的普通前景生成。
@@ -473,6 +534,8 @@ func spawn_normal_barrage(
 		strength_type = "fake"
 	elif barrage_record.trait_set.has_trait(BarrageTraitSet.RETALIATION_COPY):
 		strength_type = "retaliation"
+	elif barrage_record.trait_set.has_trait(BarrageTraitSet.REFLECT):
+		strength_type = "retaliation"
 	elif barrage_record.trait_set.has_trait(BarrageTraitSet.UNSELECTABLE):
 		strength_type = "unselectable"
 	elif barrage_record.trait_set.has_trait(BarrageTraitSet.SPLIT):
@@ -481,14 +544,12 @@ func spawn_normal_barrage(
 		_combat_numerics.get_lifetime_seconds(strength_type, _lifetime_multiplier)
 		if _combat_numerics != null else base_lifetime_seconds * _lifetime_multiplier
 	)
-	# 表 07 明示的寿命覆盖优先于通用类别寿命，空字段继续使用既有生命周期配置。
-	if _trait_catalog != null:
-		for trait_id: StringName in barrage_record.trait_set.get_trait_ids():
-			var trait_definition: Dictionary = _trait_catalog.get_trait_definition(trait_id)
-			var override_text: String = str(trait_definition.get("lifetime_override_s", ""))
-			if not override_text.is_empty():
-				spawn_lifetime = float(override_text)
-				break
+	if _trait_catalog != null and _trait_catalog.has_method("get_lifetime_override"):
+		var lifetime_override: float = _trait_catalog.call("get_lifetime_override", barrage_record.trait_set.get_trait_ids())
+		if lifetime_override > 0.0:
+			# 07 覆盖基础寿命，06 生命周期仍决定该类别是否受 Tier 倍率影响。
+			var affected: bool = _combat_numerics != null and bool(_combat_numerics.lifetime_tier_affected.get(strength_type, false))
+			spawn_lifetime = lifetime_override * (maxf(_lifetime_multiplier, 0.0) if affected else 1.0)
 	barrage_record.capture_lifetime_at_spawn(Time.get_ticks_msec(), spawn_lifetime, 1.0)
 
 	var view: BarrageView = barrage_view_scene.instantiate() as BarrageView
@@ -544,6 +605,7 @@ func spawn_normal_barrage(
 		if not should_use_random_static_placement
 		else 0.0
 	)
+	_apply_view_numerics(view)
 	view.setup(
 		barrage_record, effective_move_speed, self, should_use_random_static_placement,
 		curve_amplitude, speed_change_cycle, inward_move_direction, layer_change_interval, motion_mode
@@ -569,7 +631,10 @@ func spawn_normal_barrage(
 	if not speech.local_style_bbcode.is_empty():
 		view.set_visual_bbcode(speech.local_style_bbcode)
 	if not _terminal_presentation_only:
-		view.apply_random_local_text_animation(normal_foreground_local_text_animation_probability)
+		view.apply_random_local_text_animation(
+			normal_foreground_local_text_animation_probability,
+			_combat_numerics.foreground_local_animation_intensity if _combat_numerics != null else 1.0
+		)
 	var placement_succeeded: bool = false
 	if should_use_random_static_placement:
 		placement_succeeded = _place_barrage_for_spawn_request(view, true)
@@ -610,6 +675,7 @@ func spawn_contradiction_barrage(level_profile: LevelProfile, line: LevelContrad
 	var view := barrage_view_scene.instantiate() as BarrageView
 	if view == null:
 		return null
+	_apply_view_numerics(view)
 	view.setup(barrage_record, level_profile.base_move_speed_pixels_per_second * _contradiction_config.movement_speed_multiplier, self)
 	add_child(view)
 	if not _place_new_barrage(view):
@@ -653,6 +719,7 @@ func spawn_repeat_barrage(plan: RepeatPlan, random_static_placement: bool = fals
 		push_error("BarrageArea: 弹幕表现 Scene 根节点需要 BarrageView。")
 		return null
 	var effective_move_speed: float = _current_level_profile.base_move_speed_pixels_per_second * _movement_speed_multiplier
+	_apply_view_numerics(view)
 	view.setup(repeat_record, effective_move_speed, self, random_static_placement)
 	if _terminal_presentation_only:
 		view.apply_terminal_trait_presentation(_terminal_trait_ids, _terminal_trait_colors)
@@ -808,11 +875,25 @@ func _spawn_normal_batch(allow_when_stopped: bool = false) -> int:
 	if batch_count <= 0:
 		return 0
 	var generated_count: int = 0
+	_draw_counter_skills_for_current_tier()
 	for _index in range(batch_count):
 		var speech: LevelSpeech = _speech_selector.select_next_normal_speech(_current_level_profile, _neutral_weight_multiplier)
 		if speech == null:
 			return generated_count
-		var barrage_view: BarrageView = spawn_normal_barrage(_current_level_profile, speech)
+		var barrage_view: BarrageView
+		for pending_index: int in range(_pending_counter_skills.size()):
+			var pending: Dictionary = _pending_counter_skills[pending_index]
+			if int(pending["tier"]) > _current_combat_tier:
+				continue
+			var ids: Array[StringName] = []
+			ids.assign(pending["trait_ids"])
+			barrage_view = spawn_normal_barrage(_current_level_profile, speech, ids)
+			if barrage_view != null:
+				_pending_counter_skills.remove_at(pending_index)
+			break
+		# 特殊容量用尽仍允许本批普通话语生成，待生成技能保留到后续批次。
+		if barrage_view == null:
+			barrage_view = spawn_normal_barrage(_current_level_profile, speech)
 		if barrage_view == null:
 			return generated_count
 		generated_count += 1

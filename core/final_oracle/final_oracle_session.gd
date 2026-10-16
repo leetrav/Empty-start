@@ -15,13 +15,14 @@ func open_after_breakthrough(
 	level_id: String,
 	normal_hit_history: Array[Dictionary],
 	repeat_stats: RepeatGenerationStats,
-	confirmation_state: FinalOracleConfirmationState
+	confirmation_state: FinalOracleConfirmationState,
+	maximum_candidates: int = 3
 ) -> bool:
-	if _open or level_id.is_empty() or repeat_stats == null or confirmation_state == null:
+	if _open or level_id.is_empty() or repeat_stats == null or confirmation_state == null or maximum_candidates <= 0:
 		return false
 	var pool := FinalOracleCandidatePool.new()
 	var eligible: Array[Dictionary] = pool.build_from_normal_hit_history(normal_hit_history)
-	var candidates: Array[Dictionary] = pool.fill_missing_tendency_candidates(eligible, repeat_stats)
+	var candidates: Array[Dictionary] = pool.fill_missing_tendency_candidates(eligible, repeat_stats, maximum_candidates)
 	_display_candidates = pool.snapshot_for_display(candidates)
 	_level_id = level_id
 	_confirmation_state = confirmation_state

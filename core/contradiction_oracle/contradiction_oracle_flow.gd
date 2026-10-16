@@ -1,6 +1,8 @@
 class_name ContradictionOracleFlow
 extends Node
 
+const FORMAL_COMBAT_NUMERICS: CombatNumericsConfig = preload("res://data/combat_stage/combat_numerics.tres")
+
 signal entered(system: ContradictionBreakSystem)
 signal outcome_resolved(outcome: int)
 signal oracle_opened(session: FinalOracleSession)
@@ -37,6 +39,20 @@ var _commit_error: String = ""
 var _rest_handoff_pending: bool = false
 var _result_feedback_complete: bool = true
 var _oracle_silence_finished_pending: bool = false
+var _oracle_selection_duration_seconds: float = 10.0
+var _oracle_maximum_candidates: int = 3
+var _oracle_silence_transition_seconds: float = 1.0
+var _motion_elapsed_seconds: float = 0.0
+var _motion_attack_unlocked: bool = true
+
+
+# INT-16 根场景在 start 前传入 12 表正式神谕计时和候选上限。
+func configure_oracle_parameters(selection_time_seconds: float, maximum_candidates: int) -> bool:
+	if not _stopped or not is_finite(selection_time_seconds) or selection_time_seconds <= 0.0 or maximum_candidates <= 0:
+		return false
+	_oracle_selection_duration_seconds = selection_time_seconds
+	_oracle_maximum_candidates = maximum_candidates
+	return true
 
 
 # 查询流程当前持有的唯一业务对象；Rest 后仍可核对首次神谕结果。
@@ -44,19 +60,34 @@ func get_contradiction_system() -> ContradictionBreakSystem:
 	return _contradiction_break
 
 
-# PA-12 结果漫画期间冻结神谕开页与 10 秒计时，解锁后沿用既有静音与复读条件。
+# 结果通知回调中持有本场演出；击败和未击破离线都等待完成后交付后续页面。
+func hold_result_presentation() -> bool:
+	if _stopped or _rest_session != null or _final_oracle_session != null:
+		return false
+	_result_feedback_complete = false
+	return true
+
+
+# 只接受同一矛盾实例的动画完成，重试后的旧动画回调无法释放新尝试。
+func complete_result_presentation(source_system: ContradictionBreakSystem) -> bool:
+	if _stopped or source_system == null or source_system != _contradiction_break:
+		return false
+	_result_feedback_complete = true
+	if source_system.get_outcome() == ContradictionBreakSystem.Outcome.NOT_BROKEN:
+		_open_rest_after_unbroken()
+	elif _oracle_silence_finished_pending:
+		_oracle_silence_finished_pending = false
+		_on_oracle_silence_finished()
+	return true
+
+
+# 兼容现有 PA-12 调用；PA-17 接线优先使用带本场来源校验的公开入口。
 func hold_oracle_for_result_feedback() -> void:
-	if not _stopped:
-		_result_feedback_complete = false
+	hold_result_presentation()
 
 
 func release_oracle_after_result_feedback() -> void:
-	if _stopped:
-		return
-	_result_feedback_complete = true
-	if _oracle_silence_finished_pending:
-		_oracle_silence_finished_pending = false
-		_on_oracle_silence_finished()
+	complete_result_presentation(_contradiction_break)
 
 
 func get_oracle_session() -> FinalOracleSession:
@@ -151,6 +182,19 @@ func _fail_commit(reason: String) -> bool:
 	return false
 
 
+# 优先消费 A 的 09 表统一入口，首次评论与事件去重继续归 LiveSessionData。
+# #241 尚未合并的独立分支保留原调用，合并后自动使用正式数值接口。
+func _start_live_result_boost(event: LiveSessionData.BoostEvent) -> void:
+	if _run_data.live_session.has_method("start_formal_short_boost"):
+		_run_data.live_session.call("start_formal_short_boost", event)
+	elif event == LiveSessionData.BoostEvent.CONTRADICTION_BREAK:
+		_run_data.live_session.start_short_boost(event, battle_config.break_boost_viewer_gain,
+			battle_config.break_boost_like_gain, battle_config.break_boost_duration_seconds)
+	else:
+		_run_data.live_session.start_short_boost(event, battle_config.oracle_boost_viewer_gain,
+			battle_config.oracle_boost_like_gain, battle_config.oracle_boost_duration_seconds)
+
+
 # 只对真实确认提交奖励；按数据所有者返回值和保存事实区分拒绝、去重与成功。
 func commit_confirmed_rewards() -> bool:
 	if _stopped or not is_inside_tree() or _rest_handoff_pending or _rest_session != null or _final_oracle_session == null:
@@ -201,9 +245,7 @@ func commit_confirmed_rewards() -> bool:
 	_commit_error = ""
 	_rest_handoff_pending = true
 	if _confirmation_hit_resolution == _hit_resolution:
-		_run_data.live_session.start_short_boost(LiveSessionData.BoostEvent.ORACLE_CONFIRMATION,
-			battle_config.oracle_boost_viewer_gain, battle_config.oracle_boost_like_gain,
-			battle_config.oracle_boost_duration_seconds)
+		_start_live_result_boost(LiveSessionData.BoostEvent.ORACLE_CONFIRMATION)
 	# 同步确认与攻击回调先结束，帧尾再清候选并交付同一 Rest 对象。
 	_open_rest_after_oracle.call_deferred(_run_data, _final_oracle_session)
 	return true
@@ -257,24 +299,50 @@ func start(run_data: SaveData, catalog: LevelCatalog, current_level: LevelProfil
 	add_child(_oracle_transition_timer)
 	_attack_charge_input.shot_snapshot_created.connect(_on_contradiction_shot_created)
 	_attack_charge_input.selection_target_hit.connect(_on_oracle_selection_target_hit)
+	# 关卡配置是本场阶段数据；复制基础演出配置，避免改写共享 Resource。
+	var runtime_window_config := window_config.duplicate(true) as ContradictionWindowConfig
+	runtime_window_config.duration_seconds = current_level.paradox_window_seconds
+	runtime_window_config.max_shots = current_level.paradox_shot_limit
+	runtime_window_config.ease_out_motion_duration_seconds = current_level.paradox_motion_duration_seconds
+	runtime_window_config.shootable_during_motion = current_level.paradox_shootable_during_motion
+	_oracle_silence_transition_seconds = current_level.paradox_silence_transition_seconds
+	_motion_elapsed_seconds = 0.0
+	_motion_attack_unlocked = current_level.paradox_shootable_during_motion
+	if current_level.paradox_motion_mode != "ease_out_to_stop":
+		push_error("ContradictionOracleFlow: 未支持的 Paradox 运动模式：%s" % current_level.paradox_motion_mode)
+		stop()
+		return false
+	if current_level.paradox_motion_speed_curve_id == "smoothstep_to_zero_v0":
+		var speed_curve := Curve.new()
+		# CSV 指定的 v=1-3u²+2u³ 由两端零切线的 Bezier 曲线精确表达。
+		speed_curve.add_point(Vector2(0.0, 1.0), 0.0, 0.0, Curve.TANGENT_FREE, Curve.TANGENT_FREE)
+		speed_curve.add_point(Vector2(1.0, 0.0), 0.0, 0.0, Curve.TANGENT_FREE, Curve.TANGENT_FREE)
+		runtime_window_config.ease_out_motion_speed_curve = speed_curve
+	elif not current_level.paradox_motion_speed_curve_id.is_empty():
+		push_error("ContradictionOracleFlow: 未识别 Paradox 速度曲线 ID：%s" % current_level.paradox_motion_speed_curve_id)
+		stop()
+		return false
 	var contradiction_stage_ready: bool = _contradiction_break.load_level_content(current_level)
 	if contradiction_stage_ready:
-		# 候选数量和真假构成由 12 系统决定；弹幕区只负责显示本场固定集合。
-		var paradox_candidates: Array[LevelContradiction] = _contradiction_break.get_fixed_paradox_candidates()
-		if paradox_candidates.size() != ContradictionWindowConfig.PARADOX_CANDIDATE_COUNT:
+		# 仅使用关卡真实候选；配置数量与候选总数不符时拒绝启动。
+		var paradox_candidates: Array[LevelContradiction] = _contradiction_break.get_fixed_paradox_candidates(
+			current_level.paradox_true_count, current_level.paradox_fake_count)
+		if paradox_candidates.size() != current_level.paradox_candidate_count:
 			contradiction_stage_ready = false
 		else:
-			var true_lines: Array[LevelContradiction] = [paradox_candidates[0]]
+			var true_lines: Array[LevelContradiction] = []
 			var false_lines: Array[LevelContradiction] = []
-			for index: int in range(1, paradox_candidates.size()):
+			for index: int in range(current_level.paradox_true_count):
+				true_lines.append(paradox_candidates[index])
+			for index: int in range(current_level.paradox_true_count, paradox_candidates.size()):
 				false_lines.append(paradox_candidates[index])
-			contradiction_stage_ready = area.start_contradiction_generation(current_level, true_lines, false_lines, window_config)
-	if not contradiction_stage_ready or not _contradiction_break.start_window(window_config):
+			contradiction_stage_ready = area.start_contradiction_generation(current_level, true_lines, false_lines, runtime_window_config)
+	if not contradiction_stage_ready or not _contradiction_break.start_window(runtime_window_config):
 		stop()
 		return false
 	_contradiction_stage_active = true
 	attack_input.set_contradiction_mode(true)
-	attack_input.set_combat_active(true)
+	attack_input.set_combat_active(runtime_window_config.shootable_during_motion)
 	state_text_changed.emit("矛盾阶段：寻找真正的矛盾")
 	entered.emit(_contradiction_break)
 	return true
@@ -285,6 +353,11 @@ func advance(delta: float) -> void:
 	if _stopped or not is_inside_tree() or get_tree().paused or _rest_session != null:
 		return
 	if _contradiction_stage_active:
+		_motion_elapsed_seconds = minf(
+			_motion_elapsed_seconds + maxf(delta, 0.0), _current_level.paradox_motion_duration_seconds)
+		if not _motion_attack_unlocked and _motion_elapsed_seconds >= _current_level.paradox_motion_duration_seconds:
+			_attack_charge_input.set_combat_active(true)
+			_motion_attack_unlocked = true
 		_repeat_queue.advance_and_dispatch(delta, _barrage_area)
 	if _oracle_selection_timer != null:
 		_oracle_selection_timer.advance(delta, false)
@@ -307,7 +380,7 @@ func _try_start_oracle_transition() -> void:
 	_oracle_transition_started = true
 	_audio_manager.stop_music()
 	state_text_changed.emit("矛盾击破 · 静音过渡")
-	_oracle_transition_timer.start(0.5)
+	_oracle_transition_timer.start(_oracle_silence_transition_seconds)
 
 
 # 静音过渡结束才把本场普通历史与复读统计交给 13 系统的真实入口。
@@ -325,7 +398,8 @@ func _on_oracle_silence_finished() -> void:
 		current_level.level_id,
 		_get_oracle_history_with_sentence_text(current_level),
 		_repeat_queue.get_generation_stats(),
-		_oracle_confirmation_state
+		_oracle_confirmation_state,
+		_oracle_maximum_candidates
 	):
 		push_error("ContradictionOracleFlow: 终结神谕入口拒绝本场击破结果。")
 		return
@@ -358,8 +432,10 @@ func _on_oracle_silence_finished() -> void:
 	_oracle_selection_timer = FinalOracleSelectionTimer.new()
 	_oracle_selection_timer.remaining_time_changed.connect(_on_oracle_selection_time_changed)
 	_oracle_selection_timer.expired.connect(_on_oracle_selection_expired)
-	state_text_changed.emit("神谕选择 · 10.0 秒")
-	_oracle_selection_timer.start()
+	state_text_changed.emit("神谕选择 · %.1f 秒" % _oracle_selection_duration_seconds)
+	if not _oracle_selection_timer.start(_oracle_selection_duration_seconds):
+		push_error("ContradictionOracleFlow: 神谕选择时长无效。")
+		return
 	oracle_opened.emit(_final_oracle_session)
 
 
@@ -513,11 +589,7 @@ func _on_contradiction_outcome_locked(outcome: int) -> void:
 	outcome_resolved.emit(outcome)
 	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		# 只消费成功结果；未击破分支继续沿用既有休息流程。
-		_run_data.live_session.start_short_boost(
-			LiveSessionData.BoostEvent.CONTRADICTION_BREAK,
-			battle_config.break_boost_viewer_gain, battle_config.break_boost_like_gain,
-			battle_config.break_boost_duration_seconds
-		)
+		_start_live_result_boost(LiveSessionData.BoostEvent.CONTRADICTION_BREAK)
 		state_text_changed.emit("矛盾击破成功 · 等待复读展示")
 	else:
 		state_text_changed.emit("未击破矛盾 · 等待复读展示")
@@ -526,6 +598,8 @@ func _on_contradiction_outcome_locked(outcome: int) -> void:
 
 # 未击破结果立即固定；本发有限复读全部生成并离场后，将无神谕奖励的 PK 胜利交给休息。
 func _open_rest_after_unbroken() -> void:
+	if not _result_feedback_complete:
+		return
 	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.NOT_BROKEN:
 		return
 	if not _contradiction_stage_active or (_rest_session != null and _rest_session.is_open()):

@@ -22,3 +22,8 @@ extends Resource
 # 0 表示本档前景名额尚未由策划填写。
 @export var foreground_slot_count: int = 0
 @export var opponent_portrait_state_id: StringName = &""
+## 08 表的稳定音频事件 ID；由 CombatStage 运行流程发出请求。
+@export var music_event_id: StringName = &""
+
+## 08 表首次入档反击抽取次数，实际抽取由 A/C 联调消费。
+@export var retaliation_draw_count_first_entry: int = 0

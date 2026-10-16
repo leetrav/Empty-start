@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" path="res://assets/characters/opponents/kiwi/kiwi_tier_02.png" id="6_portrait_t2"]
 [ext_resource type="Texture2D" path="res://assets/characters/opponents/kiwi/kiwi_tier_03.png" id="7_portrait_t3"]
 [ext_resource type="Texture2D" path="res://assets/characters/opponents/kiwi/kiwi_defeat.png" id="8_portrait_defeat"]
+[ext_resource type="Texture2D" path="res://assets/environment/live/kiwi/background.png" id="10_background"]
 [sub_resource type="Resource" script_class="LevelContradiction" id="Contradiction_1"]
 script = ExtResource("2_contradiction")
 original_sentence_id = "contra_kiwi_true"
@@ -45,12 +46,18 @@ story_config_id = "story_level_002"
 contradiction_set_id = "contradiction_kiwi"
 background_asset_id = ""
 fan_badge_asset_id = ""
+opponent_defeat_effect_id = &"kiwi_wobble"
 normal_speech_pool_source = ExtResource("3_pool")
+assimilation_reward_ids = Array[String]([])
+assimilation_content_ids = Array[String]([])
+assimilation_inherited_weights = Array[float]([])
+assimilation_rewards = Array[Dictionary]([])
 streamer_portrait = ExtResource("4_portrait")
 opponent_tier_01_portrait = ExtResource("5_portrait_t1")
 opponent_tier_02_portrait = ExtResource("6_portrait_t2")
 opponent_tier_03_portrait = ExtResource("7_portrait_t3")
 opponent_defeat_portrait = ExtResource("8_portrait_defeat")
+streamer_live_background = ExtResource("10_background")
 orthodox_ratio = 36
 heretical_ratio = 41
 absurd_ratio = 46

@@ -122,6 +122,7 @@ func _run() -> void:
 
 	numerics.special_foreground_instance_cap = 1
 	var stacked_profile := alien.duplicate() as LevelProfile
+	stacked_profile.special_instance_screen_cap = 1
 	stacked_profile.special_trait_ids = ["reflect", "fake_card"]
 	var stacked_traits: Array[StringName] = [BarrageTraitSet.REFLECT, BarrageTraitSet.FAKE_CARD]
 	var first: BarrageView = area.spawn_normal_barrage(stacked_profile, speech, stacked_traits)

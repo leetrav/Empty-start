@@ -2,8 +2,6 @@ class_name FinalOracleCandidatePool
 extends RefCounted
 
 const _TENDENCY_ORDER: Array[String] = ["orthodox", "heretical", "absurd"]
-const _MAX_CANDIDATE_COUNT: int = 3
-
 
 # 从 HR-14 的普通命中快照按原句 ID 去重，保留首次出现的历史记录顺序。
 func build_from_normal_hit_history(normal_hit_history: Array[Dictionary]) -> Array[Dictionary]:
@@ -101,16 +99,20 @@ func _is_better_repeat_ranked_candidate(
 
 # 倾向领头候选不足三句时，按普通复读次数、最近命中顺序和原句 ID 补位。
 func fill_missing_tendency_candidates(
-		candidates: Array[Dictionary], repeat_stats: RepeatGenerationStats
+		candidates: Array[Dictionary], repeat_stats: RepeatGenerationStats, maximum_count: int = 3
 	) -> Array[Dictionary]:
+	if maximum_count <= 0:
+		return []
 	var final_candidates: Array[Dictionary] = select_most_repeated_per_tendency(
 		candidates, repeat_stats
 	)
+	while final_candidates.size() > maximum_count:
+		final_candidates.pop_back()
 	var selected_sentence_ids: Dictionary = {}
 	for candidate: Dictionary in final_candidates:
 		selected_sentence_ids[str(candidate.get("original_sentence_id", ""))] = true
 
-	while final_candidates.size() < _MAX_CANDIDATE_COUNT:
+	while final_candidates.size() < maximum_count:
 		var best_fallback_candidate: Dictionary = {}
 		var best_repeat_count: int = -1
 		for candidate: Dictionary in candidates:
