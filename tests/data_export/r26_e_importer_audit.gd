@@ -139,5 +139,5 @@ func _check_delivery_resources() -> void:
 func _check_pack_directory(path: String) -> void:
 	for folder: String in DirAccess.get_directories_at(path):
 		var child_path: String = path.path_join(folder)
-		_expect(folder != "tests" and child_path not in ["res://data/test_only", "res://scenes/demos", "res://docs", "res://tools"], "包内混入开发目录：" + child_path)
+		_expect(folder != "tests" and child_path not in ["res://data/test_only", "res://scenes/demos", "res://docs", "res://tools", "res://addons/godot_mcp/native_mcp", "res://addons/godot_mcp/tools", "res://addons/godot_mcp/ui", "res://addons/godot_mcp/utils", "res://addons/godot_mcp/translations"], "包内混入开发目录：" + child_path)
 		_check_pack_directory(child_path)
