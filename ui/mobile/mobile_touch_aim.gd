@@ -56,6 +56,8 @@ func configure_regions(aim_viewport_rect: Rect2, touch_viewport_rect: Rect2 = Re
 func set_enabled(active: bool) -> bool:
 	if active and (layout == null or layout.aim_offset_mm.is_zero_approx() or not is_instance_valid(_attack)):
 		return false
+	if _enabled == active:
+		return true
 	if not active:
 		cancel_gesture(&"disabled")
 	_enabled = active
@@ -200,6 +202,7 @@ func _layout_feedback() -> void:
 	if not is_node_ready() or layout == null:
 		return
 	var safe_rect: Rect2 = get_safe_viewport_rect()
+	var changed: bool = safe_rect != _last_safe_rect
 	_last_safe_rect = safe_rect
 	var inverse: Transform2D = get_global_transform_with_canvas().affine_inverse()
 	var local_safe: Rect2 = inverse * safe_rect
@@ -207,7 +210,8 @@ func _layout_feedback() -> void:
 	_status.add_theme_font_size_override("font_size", maxi(18, roundi(layout.feedback_font_mm * units_per_mm)))
 	_feedback.size = Vector2(minf(layout.feedback_width_mm * units_per_mm, local_safe.size.x * 0.8), maxf(64.0, 8.0 * units_per_mm))
 	_feedback.position = (local_safe.position + local_safe.size * layout.feedback_anchor - _feedback.size * 0.5).clamp(local_safe.position, local_safe.end - _feedback.size)
-	safe_area_changed.emit(safe_rect)
+	if changed:
+		safe_area_changed.emit(safe_rect)
 
 
 ## 旋转/窗口变化取消当前手势，让下一次按下采用新坐标系。
