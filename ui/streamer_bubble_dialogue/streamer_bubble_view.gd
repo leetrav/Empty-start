@@ -19,7 +19,8 @@ enum TailDirection { LEFT, RIGHT }
 @export_range(0.01, 0.8, 0.01) var popup_duration_seconds: float = 0.14
 @export_range(0.0, 120.0, 1.0) var float_distance_px: float = 18.0
 @export_range(0.01, 1.0, 0.01) var fade_duration_seconds: float = 0.24
-@export_range(10, 22, 1) var minimum_readable_font_size: int = 12
+# 沿用原历史气泡最小字号，超长内容宁可滚动也不缩成手机上难辨的文字。
+@export_range(10, 22, 1) var minimum_readable_font_size: int = 18
 var _available_size: Vector2 = Vector2(448.0, 432.0)
 
 @onready var _text_label: RichTextLabel = $Text
