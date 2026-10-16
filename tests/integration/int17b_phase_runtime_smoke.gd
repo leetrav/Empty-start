@@ -27,6 +27,15 @@ var _status: Label
 var _preview_directory: String = ""
 var _config_only: bool = false
 var _retry_only: bool = false
+var _divine_only: bool = false
+var _with_presentation: bool = false
+var _visual_sandbox: Control
+var _hud: Control
+var _comic: ParadoxComicTransition
+var _pa17_done: bool = false
+var _comic_done: bool = false
+var _result_release_done: bool = false
+var _phase_audio_events: Dictionary = {}
 var _active_seconds: float = 0.0
 var _repeat_times: Array[float] = []
 
@@ -39,17 +48,39 @@ func _ready() -> void:
 			_config_only = true
 		if arg == "--retry-only":
 			_retry_only = true
+		if arg == "--divine-only":
+			_divine_only = true
+		if arg == "--with-presentation":
+			_with_presentation = true
 		if arg.begins_with("--preview-dir="):
 			_preview_directory = arg.trim_prefix("--preview-dir=")
-	_area = preload("res://systems/barrage_generation/barrage_area.tscn").instantiate()
+	if _with_presentation:
+		if DisplayServer.get_name() != "headless":
+			DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true)
+			DisplayServer.window_set_size(Vector2i(1920, 1080))
+		get_node("/root/AudioManager").event_played.connect(
+			func(event_id: StringName, _player: AudioStreamPlayer) -> void: _phase_audio_events[event_id] = true)
+		# 复用正式 Sandbox 节点和 HUD，关闭根业务脚本，避免替 A 接线或写玩家存档。
+		_visual_sandbox = preload("res://scenes/sandbox/sandbox.tscn").instantiate()
+		_visual_sandbox.set_script(null)
+		_visual_sandbox.process_mode = Node.PROCESS_MODE_PAUSABLE
+		_visual_sandbox.get_node("AttackChargeInput").set_script(null)
+		add_child(_visual_sandbox)
+		_area = _visual_sandbox.get_node("%BarrageArea")
+		_aim = _visual_sandbox.get_node("%AimReticle")
+		_hud = _visual_sandbox.get_node("BattleHud")
+		_comic = preload("res://systems/presentation/paradox_comic_transition.tscn").instantiate()
+		add_child(_comic)
+	else:
+		_area = preload("res://systems/barrage_generation/barrage_area.tscn").instantiate()
+		add_child(_area)
+		_area.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		_area.position = Vector2(300, 160)
+		_area.size = Vector2(1320, 760)
+		_aim = preload("res://systems/combat_attack/aim_reticle.tscn").instantiate()
+		add_child(_aim)
 	_area.process_mode = Node.PROCESS_MODE_PAUSABLE
-	add_child(_area)
-	_area.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	_area.position = Vector2(300, 160)
-	_area.size = Vector2(1320, 760)
 	_area.repeat_barrage_screen_cap = CONFIG.repeat_screen_cap
-	_aim = preload("res://systems/combat_attack/aim_reticle.tscn").instantiate()
-	add_child(_aim)
 	_attack = AttackChargeInput.new()
 	add_child(_attack)
 	_attack.configure_attack_timing(CONFIG.attack_timing)
@@ -58,12 +89,15 @@ func _ready() -> void:
 	add_child(_opponent)
 	_display = preload("res://ui/final_oracle/final_oracle_candidate_display.tscn").instantiate()
 	add_child(_display)
-	_display.position = _area.position
+	_display.position = _area.global_position
 	_display.size = _area.size
 	_status = Label.new()
 	add_child(_status)
 	_status.position = Vector2(100, 60)
 	_status.add_theme_font_size_override("font_size", 28)
+	_status.visible = not _with_presentation
+	if _with_presentation:
+		_hud.bind_portrait_attack(_attack)
 	_run_checks.call_deferred()
 
 
@@ -75,12 +109,20 @@ func _process(delta: float) -> void:
 		_flow.advance(delta)
 	if is_instance_valid(_divine):
 		_divine.advance(delta)
+	if is_instance_valid(_hud) and _status != null:
+		_hud.show_battle_state(_status.text)
 
 
 # 使用正式模板、容量和延时检查，然后运行四关真实 Paradox 消费者。
 func _run_checks() -> void:
 	if _retry_only:
 		await _verify_timeout_and_retry()
+		_finish()
+		return
+	if _divine_only:
+		_hit = HitResolution.new(0.5, 0.0, 1.0)
+		_stage = CombatStage.new(TIERS)
+		await _verify_divine_completion()
 		_finish()
 		return
 	var plan := RepeatPlan.create_normal_hit_plan(&"smoke", "原句保留", 0, 110, CONFIG.repeat_lifetime_seconds)
@@ -136,6 +178,7 @@ func _start_paradox(level: LevelProfile) -> bool:
 	_area.clear_barrages()
 	_run = SaveData.new()
 	_run.streamer_name = "INT-17B 组件验证"
+	_run.live_session.configure_formal_rules(preload("res://data/combat_stage/combat_numerics.tres"))
 	_hit = HitResolution.new(1.0, 0.0, 1.0)
 	var count := 0
 	for speech: LevelSpeech in level.get_normal_speech_pool():
@@ -155,13 +198,97 @@ func _start_paradox(level: LevelProfile) -> bool:
 	var started := _flow.start(_run, CATALOG, level, _hit, _stage, _area, _opponent,
 		_attack, _queue, _display, CONFIG, CARDS, WINDOW, get_node("/root/AudioManager"))
 	_held_system = _flow.get_contradiction_system()
+	if _with_presentation:
+		_configure_result_visuals(level)
 	return started
 
 
 # 在同步结果回调里持有演出，模拟 PA-17 真实完成信号交接。
-func _hold_result(_outcome: int) -> void:
+func _hold_result(outcome: int) -> void:
 	_check(_flow.hold_result_presentation(), "PA-17 成败结果持有")
 	_held_system = _flow.get_contradiction_system()
+	if _with_presentation:
+		_play_result_sequence.call_deferred(outcome, _held_system)
+
+
+# 正式表、HUD 及 PA-17 公开入口与 A 根场景需要的组合相同。
+func _configure_result_visuals(level: LevelProfile) -> void:
+	var consumer = preload("res://data/shared/formal_sheet_runtime_consumer.gd").new()
+	var presentation: Dictionary = consumer.get_level_presentation(level.level_id)
+	var assets: PresentationAssetConfig = preload("res://data/shared/presentation_asset_config.tres")
+	_hud.reset_for_attempt(5)
+	_hud.configure_streamers(_run.streamer_name, level.streamer_name)
+	_hud.configure_portrait_character(str(presentation.get("streamer_id", level.streamer_id)))
+	_hud.configure_streamer_assets(assets.player_streamer_portrait, assets.player_live_background,
+		assets.player_fan_badge, presentation["portrait_idle"], presentation["background"], null)
+	var tiers: Array = presentation["portrait_tiers"]
+	_hud.configure_opponent_tier_textures(tiers[0], tiers[1], tiers[2], tiers[3])
+	_check(_hud.configure_opponent_result(level, presentation), "正式 PA-17 资源配置")
+	_hud.refresh_pk(1.0, 5)
+	_hud.set_opponent_portrait_connected(true)
+	_hud.set_paradox_stage_active(true, 5)
+	_hud.bind_audio_flows(_flow)
+	_pa17_done = false
+	_comic_done = false
+	_result_release_done = false
+
+
+# 真实 PA-12 完成后才启动十秒窗口，暂停期间同样保持转场。
+func _play_entry_comic() -> void:
+	if not _with_presentation:
+		return
+	_attack.set_combat_active(false)
+	_comic.play_transition()
+	await _wait(0.25)
+	await _capture("pa12_entry")
+	get_tree().paused = true
+	await _wait(0.25)
+	_check(_comic.visible and not _attack.can_start_charging(), "暂停期间 PA-12 转场未开放攻击")
+	get_tree().paused = false
+	await _comic.transition_finished
+	_check(not _comic.visible, "真实 PA-12 入场完成")
+
+
+# 验收层串接正式 PA-17 和 PA-12；生产根脚本仍由 A 采用此完成顺序。
+func _play_result_sequence(outcome: int, source: Variant) -> void:
+	var source_flow := _flow
+	var broken := outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH
+	var pa17_state := {"done": false}
+	_hud.opponent_result_presentation_finished.connect(
+		func(_broken: bool) -> void: pa17_state["done"] = true, CONNECT_ONE_SHOT)
+	_check(_hud.play_opponent_result(broken), "真实 PA-17 结果演出启动")
+	await _wait(0.25)
+	await _capture("pa17_%s_mid" % ("defeat" if broken else "offline"))
+	get_tree().paused = true
+	await _wait(2.0)
+	_check(not pa17_state["done"] and source_flow.get_result() == null, "暂停 2 秒冻结 PA-17，Rest 尚未交付")
+	get_tree().paused = false
+	var deadline := Time.get_ticks_msec() + 6000
+	while not pa17_state["done"] and Time.get_ticks_msec() < deadline:
+		await get_tree().process_frame
+	_check(pa17_state["done"], "真实 PA-17 完成信号")
+	if not is_instance_valid(source) or source != source_flow.get_contradiction_system():
+		return
+	_pa17_done = true
+	await _capture("pa17_%s_finished" % ("defeat" if broken else "offline"))
+	var comic_state := {"done": false}
+	_comic.result_feedback_finished.connect(
+		func(_success: bool) -> void: comic_state["done"] = true, CONNECT_ONE_SHOT)
+	_comic.play_result_feedback(broken)
+	await _wait(0.15)
+	await _capture("pa12_%s_result" % ("defeat" if broken else "offline"))
+	get_tree().paused = true
+	await _wait(1.0)
+	_check(not comic_state["done"] and source_flow.get_result() == null, "暂停 1 秒冻结 PA-12 结果漫画，Rest 尚未交付")
+	get_tree().paused = false
+	deadline = Time.get_ticks_msec() + 3000
+	while not comic_state["done"] and Time.get_ticks_msec() < deadline:
+		await get_tree().process_frame
+	_check(comic_state["done"] and _pa17_done, "PA-17 完成后 PA-12 才完成")
+	_comic_done = true
+	if is_instance_valid(source) and source == source_flow.get_contradiction_system():
+		_check(source_flow.complete_result_presentation(source), "两段演出结束释放本场结果")
+		_result_release_done = true
 
 
 # 鼠标通过 Godot 输入管线蓄力，释放前重新跟随仍在减速运动的真实目标。
@@ -185,6 +312,7 @@ func _fire(target: Control, aim_offset: Vector2 = Vector2.ZERO) -> void:
 
 # 真实一发、120 复读自然离场、静音、10 秒候选及正式确认写入同一会话。
 func _verify_attack_and_oracle() -> void:
+	await _play_entry_comic()
 	_check(_start_paradox(CATALOG.profiles[0]), "攻击尝试启动")
 	await get_tree().process_frame
 	var target: BarrageView
@@ -207,9 +335,13 @@ func _verify_attack_and_oracle() -> void:
 	while (_queue.get_pending_contradiction_count() > 0 or _area.has_visible_contradiction_repeats()) and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 	await _wait(1.15)
-	_check(_flow.get_oracle_session() == null, "击败动画完成前 Oracle 保持关闭")
+	if _with_presentation:
+		_check(_pa17_done and _comic_done and _result_release_done, "Oracle 前两段正式结果演出均完成")
+	else:
+		_check(_flow.get_oracle_session() == null, "击败动画完成前 Oracle 保持关闭")
 	_check(_queue.get_generation_stats().get_contradiction_count(true_id) == 120, "真实生成 120 条矛盾复读")
-	_flow.complete_result_presentation(_held_system)
+	if not _with_presentation:
+		_flow.complete_result_presentation(_held_system)
 	await get_tree().process_frame
 	var oracle := _flow.get_oracle_session()
 	_check(oracle != null and oracle.get_display_candidates().size() == 3, "12 表最多三个候选")
@@ -235,6 +367,7 @@ func _verify_attack_and_oracle() -> void:
 
 # 超时沿用十秒 Timer，离线完成后才交付 Rest；旧尝试完成通知须被拒绝。
 func _verify_timeout_and_retry() -> void:
+	await _play_entry_comic()
 	_check(_start_paradox(CATALOG.profiles[1]), "超时尝试启动")
 	var old_system := _held_system
 	var remaining := old_system.get_remaining_seconds()
@@ -244,7 +377,13 @@ func _verify_timeout_and_retry() -> void:
 	get_tree().paused = false
 	await _wait(10.15)
 	_check(old_system.get_outcome() == ContradictionBreakSystem.Outcome.NOT_BROKEN and _flow.get_result() == null, "超时锁定未击破并等待离线")
-	_check(_flow.complete_result_presentation(old_system), "离线完成释放同场结果")
+	if _with_presentation:
+		var deadline := Time.get_ticks_msec() + 7000
+		while not _result_release_done and Time.get_ticks_msec() < deadline:
+			await get_tree().process_frame
+		_check(_pa17_done and _comic_done and _result_release_done, "离线及漫画完成才释放未击破结果")
+	else:
+		_check(_flow.complete_result_presentation(old_system), "离线完成释放同场结果")
 	_check(_flow.get_result() != null, "未击破 Rest 接续")
 	_flow.stop()
 	_check(_flow.start(_run, CATALOG, CATALOG.profiles[1], _hit, _stage, _area, _opponent,
@@ -272,6 +411,8 @@ func _verify_divine_completion() -> void:
 	_divine.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(_divine)
 	_divine.completed.connect(func(result: EndingSession) -> void: _ending = result; _ending_count += 1)
+	if _with_presentation:
+		_hud.bind_audio_flows(null, _divine)
 	_check(_divine.start(_run, CATALOG, CATALOG.profiles[0], TIERS, _hit, _stage, null,
 		_area, _opponent, _attack, CONFIG, DECAY,
 		{"repeat_interval_seconds": 0.0, "fade_seconds": 0.0, "hold_seconds": 0.0}), "15 表兜住 Sandbox 零参数并启动")
@@ -305,8 +446,8 @@ func _on_convergence(_candidate: Dictionary) -> void:
 	await _wait(0.25)
 	await _capture("divine_emphasis")
 	get_tree().paused = true
-	await _wait(0.25)
-	_check(_ending == null, "暂停冻结 1.8 秒强调 Tween")
+	await _wait(2.0)
+	_check(_ending == null, "暂停 2 秒仍未完成 1.8 秒强调 Tween")
 	get_tree().paused = false
 
 
@@ -342,5 +483,7 @@ func _check(passed: bool, label: String) -> void:
 
 # 完成后退出临时运行，结果不写入玩家存档。
 func _finish() -> void:
+	if _with_presentation:
+		print("INT18B_AUDIO played=%s" % str(_phase_audio_events.keys()))
 	print("INT17B_RESULT checks=%d failures=%d" % [_checks, _failures.size()])
 	get_tree().quit(0 if _failures.is_empty() else 1)
