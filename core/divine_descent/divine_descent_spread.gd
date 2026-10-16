@@ -7,6 +7,8 @@ signal convergence_started(candidate: Dictionary)
 signal locked_sentence_emphasized(original_sentence_id: StringName, affected_view_count: int)
 signal completed(session: DivineDescentSession)
 
+var presentation_config: Resource = preload("res://data/repeat/repeat_presentation_config.tres")
+
 var _candidates: Array[Dictionary] = []
 var _barrage_area: BarrageArea
 var _random_generator: RandomNumberGenerator
@@ -129,6 +131,21 @@ func emphasize_locked_sentence(scale_multiplier: float, return_seconds: float) -
 	return true
 
 
+# 锁句前同样允许表现回应；仅对当前真实可见视图缩放，保持历史与收益不变。
+func respond_to_player(scale_multiplier: float, return_seconds: float) -> bool:
+	if is_sentence_locked():
+		var accepted := emphasize_locked_sentence(scale_multiplier, return_seconds)
+		if accepted and is_instance_valid(_full_screen_emphasis):
+			_full_screen_emphasis.respond_to_player(scale_multiplier, return_seconds)
+		return accepted
+	if not is_inside_tree() or get_tree().paused or _completed or not is_instance_valid(_barrage_area):
+		return false
+	for child: Node in _barrage_area.get_children():
+		if child is BarrageView and not child.is_queued_for_deletion():
+			child.pulse_presentation(scale_multiplier, return_seconds)
+	return true
+
+
 # 即时读取当前区域；空可见集合返回零，占比不缓存。
 func get_locked_visible_ratio() -> float:
 	if not is_sentence_locked() or not is_instance_valid(_barrage_area) or not _barrage_area.is_inside_tree():
@@ -238,6 +255,8 @@ func generate_next_repeat() -> BarrageView:
 	_generation_blocked = view == null
 	if view == null:
 		return null
+	if presentation_config != null:
+		presentation_config.attach_to_view(view, &"terminal")
 	# 只有真实生成成功才更新本原句，冻结历史、基础权重和其他候选均保持原值。
 	selected["weight"] = int(selected["weight"]) + 1
 	repeat_generated.emit(plan.original_line_id, view, int(selected["weight"]))

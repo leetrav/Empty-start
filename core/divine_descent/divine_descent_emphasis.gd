@@ -5,12 +5,14 @@ signal finished
 
 var _overlay: Control
 var _tween: Tween
+var _response_tween: Tween
 
 
 # 最小本地全屏表现：遮罩与居中锁句沿用现有主题，没有正式素材时保留基础排版。
 func _ready() -> void:
 	layer = 20
 	_overlay = Control.new()
+	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_overlay.theme = preload("res://ui/theme/base_theme.tres")
 	add_child(_overlay)
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -50,6 +52,19 @@ func play_for_total_duration(sentence_text: String, total_seconds: float) -> boo
 		return false
 	play(sentence_text, total_seconds * 0.25, total_seconds * 0.5)
 	return true
+
+
+# 输入只强化强调中的正文，原完成 Tween 的时序和单次 finished 保持原样。
+func respond_to_player(scale_value: float, return_seconds: float) -> void:
+	if not _overlay.visible or get_tree().paused:
+		return
+	var sentence := _overlay.get_node("Sentence") as Label
+	sentence.pivot_offset = sentence.size * 0.5
+	if _response_tween != null:
+		_response_tween.kill()
+	sentence.scale = Vector2.ONE * scale_value
+	_response_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	_response_tween.tween_property(sentence, "scale", Vector2.ONE, return_seconds)
 
 
 # 先收起遮罩再发出事实，组合方可以安全展示 Ending 页面。

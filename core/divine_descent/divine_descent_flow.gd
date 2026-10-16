@@ -3,6 +3,19 @@ extends Node
 
 signal entered(session: DivineDescentSession)
 signal completed(result: EndingSession)
+signal phase_changed(phase: StringName, prompt: String, progress: float)
+signal interaction_received(phase: StringName)
+
+# A/B 演示参数；自动路径仍按 15 表完成，玩家输入可显式注入衰减推进量。
+@export var interaction_decay_step_seconds: float = 0.0
+@export var interaction_repeat_enabled: bool = false
+@export var interaction_scale: float = 1.12
+@export var interaction_return_seconds: float = 0.25
+@export var repeat_presentation_config: Resource = preload("res://data/repeat/repeat_presentation_config.tres")
+var _feedback: Control
+var _feedback_layer: CanvasLayer
+var _input_cooldown: float = 0.0
+var _phase: StringName = &"spreading"
 
 var _session: DivineDescentSession
 var _mode: DivineDescentCombatMode
@@ -85,11 +98,12 @@ func start(
 	add_child(_spread)
 	_spread.completed.connect(_complete)
 	_spread.convergence_started.connect(_on_convergence)
+	_spread.presentation_config = repeat_presentation_config
 	_spread.bind_new_word_decay(mode)
 	var repeat_min := _auto_repeat_min_seconds if _auto_repeat_min_seconds > 0.0 else float(_presentation["repeat_interval_seconds"])
 	var repeat_max := _auto_repeat_max_seconds if _auto_repeat_max_seconds > 0.0 else repeat_min
 	if not _spread.start(session, area, catalog, repeat_min,
-			battle_config.repeat_lifetime_seconds, battle_config.repeat_display_template,
+			repeat_presentation_config.terminal_lifetime_seconds, battle_config.repeat_display_template,
 			null, _presentation.get("trait_colors", {}), repeat_min, repeat_max,
 			_converge_ratio if _converge_ratio > 0.0 else 0.9):
 		push_error("DivineDescentFlow: 神降临扩散无法读取冻结历史候选。")
@@ -100,6 +114,12 @@ func start(
 		push_error("DivineDescentFlow: 神降临新话衰减启动失败。")
 		stop()
 		return false
+	_feedback_layer = CanvasLayer.new()
+	_feedback_layer.layer = 21
+	add_child(_feedback_layer)
+	_feedback = preload("res://core/divine_descent/divine_descent_interaction_view.gd").new()
+	_feedback_layer.add_child(_feedback)
+	_refresh_interaction_phase()
 	return true
 
 
@@ -107,17 +127,59 @@ func start(
 func advance(delta: float) -> void:
 	if _stopped or _result != null or _spread == null or not is_inside_tree() or get_tree().paused:
 		return
+	_input_cooldown = maxf(_input_cooldown - delta, 0.0)
 	_mode.advance_new_word_decay(delta)
+	_refresh_interaction_phase()
 
 
-# 只处理左键和非重复空格；返回值让调用方只消费实际接受的表现输入。
+# 根输入入口覆盖触摸、左键与空格；零旧强化参数改用可编辑反馈值。
 func handle_input(event: InputEvent) -> bool:
 	if _stopped or _result != null or _spread == null or not is_inside_tree() or get_tree().paused:
 		return false
 	var requested: bool = event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed
+	requested = requested or (event is InputEventScreenTouch and event.pressed)
 	requested = requested or (event is InputEventKey and event.keycode == KEY_SPACE and event.pressed and not event.echo)
-	return requested and _spread.emphasize_locked_sentence(
-		float(_presentation.get("input_scale", 0.0)), float(_presentation.get("input_return_seconds", 0.0)))
+	if not requested:
+		return false
+	# 触摸仿真鼠标和持续连点共用冷却，避免同一次操作增加两次权重。
+	if _input_cooldown > 0.0:
+		return true
+	_input_cooldown = 0.12
+	if is_instance_valid(_feedback):
+		var point := _feedback.size * 0.5
+		if event is InputEventMouseButton or event is InputEventScreenTouch:
+			point = event.position
+		_feedback.respond(point)
+	if not _spread.is_converging():
+		if interaction_repeat_enabled:
+			_spread.generate_next_repeat()
+		if interaction_decay_step_seconds > 0.0 and not _mode.is_new_word_decay_complete():
+			_mode.advance_new_word_decay(interaction_decay_step_seconds)
+	var scale_value := float(_presentation.get("input_scale", 0.0))
+	var return_value := float(_presentation.get("input_return_seconds", 0.0))
+	_spread.respond_to_player(scale_value if scale_value > 1.0 else interaction_scale,
+		return_value if return_value > 0.0 else interaction_return_seconds)
+	_refresh_interaction_phase()
+	interaction_received.emit(_phase)
+	return true
+
+
+# 可读阶段以真实衰减、锁句和收束状态为依据，状态通知供根场景复用。
+func _refresh_interaction_phase() -> void:
+	var progress := _mode.get_new_word_decay_progress()
+	var prompt := "神降临 · 点击 / 触摸 / 空格，让话语回应你"
+	_phase = &"spreading"
+	if _spread.is_sentence_locked():
+		_phase = &"locked"
+		progress = _spread.get_locked_visible_ratio()
+		prompt = "话语已锁定 · 点击强化 · 正在汇聚"
+	if _spread.is_converging():
+		_phase = &"emphasis"
+		progress = 1.0
+		prompt = "神谕显现 · 点击回应 · 即将进入结局"
+	if is_instance_valid(_feedback):
+		_feedback.show_phase(prompt, progress)
+	phase_changed.emit(_phase, prompt, progress)
 
 
 # 真实可见占比收束后沿用 DD-17 时长，完成仍由 Tween 通知。
@@ -142,6 +204,9 @@ func _complete(session: DivineDescentSession) -> void:
 		push_error("DivineDescentFlow: Ending 拒绝终局固定结果。")
 		return
 	_result = result
+	if is_instance_valid(_feedback_layer):
+		_feedback_layer.queue_free()
+	phase_changed.emit(&"completed", "神降临完成 · 进入结局", 1.0)
 	_attack_input.set_combat_active(false)
 	_area.stop_normal_generation()
 	if _spread != null:
@@ -152,6 +217,8 @@ func _complete(session: DivineDescentSession) -> void:
 # 显式中止取消 Timer、Tween 和输入；中断及离树均不产生完成事实。
 func stop() -> void:
 	_stopped = true
+	if is_instance_valid(_feedback_layer):
+		_feedback_layer.queue_free()
 	if is_instance_valid(_attack_input):
 		_attack_input.set_combat_active(false)
 	if is_instance_valid(_area):
