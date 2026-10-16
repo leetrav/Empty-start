@@ -78,6 +78,12 @@ func _ready() -> void:
 	# 敌方尚无数据所有者，本卡仅显式提供四个显示占位值。
 	%OpponentLiveDataHud.set_values(0, 0, 0, 0)
 	_run_state = LevelRunState.new(level_catalog)
+	# 房间开播使用已保存的下一关，场景重建保留周目进度。
+	if not _run_state.restore_progress(
+			SaveManager.data.next_normal_level_order,
+			SaveManager.data.completed_normal_level_ids):
+		push_error("Campaign: invalid saved level order %d" % SaveManager.data.next_normal_level_order)
+		return
 	_contradiction_oracle_flow = ContradictionOracleFlow.new()
 	add_child(_contradiction_oracle_flow)
 	_contradiction_oracle_flow.state_text_changed.connect(_battle_hud.show_battle_state)
@@ -501,11 +507,23 @@ func _on_rest_continue_requested() -> void:
 	var finished_session: RestSession = _rest_session
 	var completion: LevelRunState.CompletionResult = finished_session.continue_to_next_level(_run_state)
 	if completion == LevelRunState.CompletionResult.ADVANCED:
-		# 撤回旧关未提交暂存，已保存经文、卡片、吞并和粉丝继续使用同一 SaveData。
-		var finished_level_id := StringName(str(finished_session.get_result_snapshot().get("level_id", "")))
-		SaveManager.data.scripture_data.rollback_uncommitted(finished_level_id)
+		# 结算后先保存下一关并回房间，由玩家主动再次开播。
+		var finished_level_id := str(finished_session.get_result_snapshot().get("level_id", ""))
+		SaveManager.data.scripture_data.rollback_uncommitted(StringName(finished_level_id))
 		_battle_attempt_flow.complete_current_level()
-		restart_current_attempt()
+		var next_profile: LevelProfile = _run_state.get_current_level_profile()
+		if next_profile == null:
+			push_error("Campaign: advanced but next level is missing.")
+			return
+		SaveManager.data.next_normal_level_order = next_profile.level_order
+		if not SaveManager.data.completed_normal_level_ids.has(finished_level_id):
+			SaveManager.data.completed_normal_level_ids.append(finished_level_id)
+		if SaveManager.save_game() != OK:
+			push_error("Campaign: failed to save progress before returning to room.")
+			return
+		var route_error: Error = SceneRouter.goto_opening_room()
+		if route_error != OK:
+			push_error("Campaign: cannot return to room: %s" % error_string(route_error))
 	elif completion == LevelRunState.CompletionResult.ALL_NORMAL_LEVELS_COMPLETED:
 		_enter_divine_descent()
 	else:

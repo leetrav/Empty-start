@@ -8,6 +8,10 @@ const CURRENT_VERSION: int = 1
 @export var current_scene: String = ""
 @export var checkpoint_id: String = ""
 
+# 离开战斗回到独立房间时保留普通关卡进度。
+@export var next_normal_level_order: int = 1
+@export var completed_normal_level_ids: Array[String] = []
+
 # 新周目尚未完成身份确认时留空；确认后由 SaveManager 一次写入玩家侧身份数据。
 @export var streamer_name: String = ""
 @export var fan_group_name: String = ""
