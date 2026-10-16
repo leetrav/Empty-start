@@ -9,6 +9,8 @@ signal barrage_foreground_slot_count_changed(foreground_slot_count: int)
 signal neutral_weight_multiplier_changed(multiplier: float)
 signal tier_state_changed(current_tier: int)
 signal audio_event_requested(event_id: StringName)
+## 当前实际 Tier 请求对应音乐，与升档音效分开消费。
+signal music_event_requested(event_id: StringName)
 
 const INITIAL_TIER: int = 0
 
@@ -100,6 +102,9 @@ func bind_audio_manager(audio_manager: Node) -> void:
 	var callback: Callable = Callable(audio_manager, "play_event")
 	if not audio_event_requested.is_connected(callback):
 		audio_event_requested.connect(callback)
+	var music_callback := Callable(audio_manager, "change_music")
+	if audio_manager.has_method("change_music") and not music_event_requested.is_connected(music_callback):
+		music_event_requested.connect(music_callback)
 
 
 func _on_final_player_pk_updated(final_player_pk: float) -> void:
@@ -155,6 +160,15 @@ func _publish_current_tier_state() -> void:
 	_publish_opponent_tier_state()
 	_publish_barrage_state()
 	tier_state_changed.emit(_current_tier)
+	var music_event: StringName = get_current_music_event_id()
+	if not music_event.is_empty():
+		music_event_requested.emit(music_event)
+
+
+## 公开读取当前 Tier 的表驱动音乐事件，空配置保持静默。
+func get_current_music_event_id() -> StringName:
+	var current_config: CombatStageTierConfig = _tier_catalog.get_tier_config(_current_tier)
+	return current_config.music_event_id
 
 
 func _publish_opponent_tier_state() -> void:

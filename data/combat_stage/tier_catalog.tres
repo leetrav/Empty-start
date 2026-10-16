@@ -5,6 +5,7 @@
 
 [sub_resource type="Resource" id="Tier0"]
 script = ExtResource("2_tier_config")
+music_event_id = &"music_battle_t0"
 neutral_weight_multiplier = 1.0
 upgrade_threshold = 0.56
 downgrade_threshold = 0
@@ -23,6 +24,7 @@ wandering_motion_weight = 5
 
 [sub_resource type="Resource" id="Tier1"]
 script = ExtResource("2_tier_config")
+music_event_id = &"music_battle_t1"
 neutral_weight_multiplier = 0.99
 upgrade_threshold = 0.64
 downgrade_threshold = 0.53
@@ -41,6 +43,7 @@ wandering_motion_weight = 5
 
 [sub_resource type="Resource" id="Tier2"]
 script = ExtResource("2_tier_config")
+music_event_id = &"music_battle_t2"
 neutral_weight_multiplier = 0.7
 upgrade_threshold = 0.71
 downgrade_threshold = 0.61
@@ -59,6 +62,7 @@ wandering_motion_weight = 10
 
 [sub_resource type="Resource" id="Tier3"]
 script = ExtResource("2_tier_config")
+music_event_id = &"music_battle_t3"
 neutral_weight_multiplier = 0.4
 upgrade_threshold = 0.79
 downgrade_threshold = 0.68
@@ -77,6 +81,7 @@ wandering_motion_weight = 10
 
 [sub_resource type="Resource" id="Tier4"]
 script = ExtResource("2_tier_config")
+music_event_id = &"music_battle_t4"
 neutral_weight_multiplier = 0.15
 upgrade_threshold = 0.9
 downgrade_threshold = 0.76
@@ -95,6 +100,7 @@ wandering_motion_weight = 10
 
 [sub_resource type="Resource" id="Tier5"]
 script = ExtResource("2_tier_config")
+music_event_id = &"music_battle_t5"
 neutral_weight_multiplier = 0.0
 upgrade_threshold = 1
 downgrade_threshold = 0.87

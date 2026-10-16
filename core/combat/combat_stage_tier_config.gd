@@ -22,3 +22,5 @@ extends Resource
 # 0 表示本档前景名额尚未由策划填写。
 @export var foreground_slot_count: int = 0
 @export var opponent_portrait_state_id: StringName = &""
+## 08 表当前档位的音乐事件；素材路径由音频系统配置。
+@export var music_event_id: StringName = &""
