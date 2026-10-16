@@ -9,6 +9,8 @@ var _full: bool = false
 var _spawn_remaining: float = 0.0
 var _audio: Node
 var _flow_connections: Array[Dictionary] = []
+var _trait_runtime: BarrageTraitRuntime
+var _numerics: CombatNumericsConfig = preload("res://data/combat_stage/combat_numerics.tres")
 
 
 # 同一 HUD 复用本场输入源；重新绑定先解除旧订阅。
@@ -76,6 +78,27 @@ func _on_resolved(_snapshot: AttackTargetSnapshot, submission: Dictionary) -> vo
 		_play(&"hit_trap")
 	elif normal_count > 0:
 		_play(&"hit_normal")
+		# 达到正式单发正收益上限才算大幅推进，复用 06 表，不新增音效阈值。
+		var gain: float = float(result.get("total_pk_delta", 0.0))
+		if _numerics.positive_pk_shot_cap > 0.0 and (gain >= _numerics.positive_pk_shot_cap or is_equal_approx(gain, _numerics.positive_pk_shot_cap)):
+			_play(&"pk_push_big")
+
+
+# 接 C 的实际子体生成事实；容量失败或零子体不会播放分裂成功音。
+func bind_trait_runtime(runtime: BarrageTraitRuntime) -> void:
+	if is_instance_valid(_trait_runtime) and _trait_runtime.split_children_spawned.is_connected(_on_split_children):
+		_trait_runtime.split_children_spawned.disconnect(_on_split_children)
+	_trait_runtime = runtime
+	if _trait_runtime != null:
+		_trait_runtime.split_children_spawned.connect(_on_split_children)
+
+
+# 多个子体来自同一次分裂，整次仅播放一次已批准声音。
+func _on_split_children(_parent_id: int, children: Array[BarrageView], _requested_count: int) -> void:
+	for child: BarrageView in children:
+		if is_instance_valid(child) and child.is_inside_tree():
+			_play(&"trait_split")
+			return
 
 
 # 调用既有 Autoload 入口，解析检查与独立 HUD 加载无需全局标识符注入。
@@ -92,7 +115,7 @@ func bind_flows(oracle_flow: ContradictionOracleFlow, divine_flow: DivineDescent
 		_connect_fact(oracle_flow.outcome_resolved, _on_contradiction_result)
 		_connect_fact(oracle_flow.oracle_opened, _on_oracle_opened.bind(oracle_flow))
 	if divine_flow != null:
-		_connect_fact(divine_flow.entered, _on_divine_entered)
+		_connect_fact(divine_flow.entered, _on_divine_entered.bind(divine_flow))
 
 
 # 保存本组件建立的连接，重开绑定不会叠加回调。
@@ -138,12 +161,26 @@ func _on_oracle_confirmed(_run: SaveData, _level_id: String, _candidate: Diction
 	_play(&"live_like_burst")
 
 
-# 成功建立终局会话后播放；锁句音继续由现有 DivineDescentSpread 负责。
-func _on_divine_entered(_session: DivineDescentSession) -> void:
+# 成功建立终局会话后播放；玩家强调反馈继续由现有 Spread 负责。
+func _on_divine_entered(_session: DivineDescentSession, flow: DivineDescentFlow) -> void:
 	_play(&"divine_descent_start")
+	# entered 先于 Spread 创建，延后一帧接真实锁句事实，声音不依赖未配置的输入缩放。
+	_bind_divine_lock.call_deferred(flow)
+
+
+# 生命周期仍归 19；空历史分支没有 Spread，也没有锁句声音。
+func _bind_divine_lock(flow: DivineDescentFlow) -> void:
+	if is_instance_valid(flow) and flow.get_spread() != null:
+		_connect_fact(flow.get_spread().sentence_locked, _on_sentence_locked)
+
+
+# 一次锁句一次声音，现有玩家强调输入仍可重播其独立反馈。
+func _on_sentence_locked(_candidate: Dictionary) -> void:
+	_play(&"divine_descent_lock")
 
 
 # 离树显式断开信号，避免旧 HUD 仍消费下一场输入。
 func _exit_tree() -> void:
+	bind_trait_runtime(null)
 	_disconnect_flows()
 	bind_sources(null, null)

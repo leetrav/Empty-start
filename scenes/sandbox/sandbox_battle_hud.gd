@@ -79,6 +79,7 @@ var _result_character_id: StringName
 var _result_defeat_texture: Texture2D
 var _opponent_result_active: bool = false
 var _opponent_result_configured: bool = false
+var _opponent_live_foreground: TextureRect
 var _battle_audio: Node
 var _tutorial_hint: PanelContainer
 var _portrait_attack: AttackChargeInput
@@ -131,8 +132,11 @@ var attack_phase: int = AttackChargeInput.AttackPhase.READY
 # 保留 Scene 的全部设计矩形，只订阅窗口变化并初始化显示。
 func _ready() -> void:
 	# 正式匹配文案读取现有 06 表；表缺项时保留 Scene/Inspector 配置。
-	var texts: Dictionary = FormalSheetRuntimeConsumer.new().get_feedback_texts()
+	var consumer := FormalSheetRuntimeConsumer.new()
+	var texts: Dictionary = consumer.get_feedback_texts()
 	t0_matching_status_text = str(texts.get("pk_tier0_matching_text", t0_matching_status_text))
+	tier_down_shake_amplitude = maxf(0.0, consumer.get_base_number("tier_down_shake_amplitude_px", tier_down_shake_amplitude))
+	tier_down_shake_duration_seconds = maxf(0.0, consumer.get_base_number("tier_down_shake_duration_s", tier_down_shake_duration_seconds))
 	player_portrait_motion = PortraitMotion.new()
 	player_portrait_motion.attach_portrait(_player_portrait)
 	opponent_portrait_motion = PortraitMotion.new()
@@ -140,6 +144,15 @@ func _ready() -> void:
 	opponent_portrait_motion.attach_portrait(_opponent_portrait)
 	opponent_tier_portrait = TierPortrait.new()
 	opponent_tier_portrait.attach_portrait(_opponent_portrait)
+	# 正式前景位于角色之后、对白之前；CRT 和 PA-17 继续覆盖整个直播槽。
+	_opponent_live_foreground = TextureRect.new()
+	_opponent_live_foreground.name = "OpponentLiveForeground"
+	_opponent_live_foreground.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var opponent_slot: Control = _opponent_live_background.get_parent() as Control
+	opponent_slot.add_child(_opponent_live_foreground)
+	opponent_slot.move_child(_opponent_live_foreground, opponent_portrait_motion.get_index() + 1)
+	_opponent_live_foreground.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	configure_opponent_foreground(null)
 	# PA-17 覆盖整个右侧直播槽，复用现有立绘和待机层，不新增业务状态。
 	_opponent_breakthrough = BREAKTHROUGH_SCENE.instantiate() as OpponentBreakthroughPresentation
 	_opponent_live_background.get_parent().add_child(_opponent_breakthrough)
@@ -204,7 +217,7 @@ func _ready() -> void:
 	_crt_connection.z_index = 20
 	_opponent_live_background.get_parent().add_child(_crt_connection)
 	_crt_connection.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_crt_connection.bind_video_layers([_opponent_live_background, _opponent_portrait])
+	_crt_connection.bind_video_layers([_opponent_live_background, _opponent_portrait, _opponent_live_foreground])
 	_crt_connection.connection_finished.connect(_finish_tier_breakthrough)
 	# 左侧实例与右侧开机实例独立，收屏范围读取直播容器实际尺寸。
 	_player_crt = CrtConnection.new() as CrtConnectionFx
@@ -307,6 +320,11 @@ func configure_opponent_tier_textures(idle: Texture2D, tier_01: Texture2D, tier_
 	set_opponent_portrait_connected(_opponent_connected)
 
 
+# 直接消费 #249 的正式关卡前景；空纹理隐藏，换关不残留青蛙餐桌。
+func configure_opponent_foreground(texture: Texture2D) -> void:
+	_set_texture_rect(_opponent_live_foreground, texture, TextureRect.STRETCH_KEEP_ASPECT_COVERED)
+
+
 # 集成方显式绑定正式发射通知；重复绑定不会叠加回调，null 可解除旧来源。
 func bind_portrait_attack(attack: AttackChargeInput) -> void:
 	if is_instance_valid(_portrait_attack) and _portrait_attack.shot_snapshot_created.is_connected(play_player_shot):
@@ -361,11 +379,17 @@ func bind_audio_flows(oracle_flow: ContradictionOracleFlow, divine_flow: DivineD
 	_battle_audio.bind_flows(oracle_flow, divine_flow)
 
 
+# INT-18C 的 Runtime 实际生成子体后再出声，根场景只需绑定一次。
+func bind_trait_audio(runtime: BarrageTraitRuntime) -> void:
+	_battle_audio.bind_trait_runtime(runtime)
+
+
 # 当前关 Resource 为素材依据，正式导表映射可覆盖同名字段；不在 HUD 推导关卡。
 func configure_opponent_result(level: LevelProfile, presentation: Dictionary = {}) -> bool:
 	_opponent_result_configured = false
 	if level == null:
 		return false
+	configure_opponent_foreground(level.streamer_live_foreground)
 	_result_character_id = StringName(presentation.get("streamer_id", level.streamer_id))
 	_result_defeat_texture = presentation.get("portrait_defeat", level.opponent_defeat_portrait) as Texture2D
 	var tier_three: Texture2D = level.opponent_tier_03_portrait
@@ -668,6 +692,7 @@ func show_failure() -> void:
 
 # 重开复位本场 HUD 提示并读取当前 T0 等待文案，各系统状态仍由所属对象初始化。
 func reset_for_attempt(current_tier: int = 0) -> void:
+	configure_opponent_foreground(null)
 	if _tutorial_hint != null:
 		_tutorial_hint.clear_hint()
 	_opponent_result_active = false

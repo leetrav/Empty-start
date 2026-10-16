@@ -2,7 +2,7 @@ extends Node
 
 # 击破静音请求完成后通知调用方；中途被新音乐请求替代时不发送。
 signal music_silenced
-# 只报告池播放器已经开始播放的事实，供表现验收和调用者观察。
+# 只报告池播放器或场景独占播放器已开始播放的事实。
 signal event_played(event_id: StringName, player: AudioStreamPlayer)
 
 const SFX_PLAYER_COUNT: int = 8
@@ -376,5 +376,21 @@ func create_event_player(event_id: StringName, owner_node: Node) -> AudioStreamP
 	player.stream = event.stream
 	player.volume_db = event.volume_db
 	player.pitch_scale = randf_range(minf(event.pitch_min, event.pitch_max), maxf(event.pitch_min, event.pitch_max))
+	player.set_meta("audio_event_id", event_id)
 	owner_node.add_child(player)
 	return player
+
+
+# 播放场景独占的正式事件，同时发布实际开始事实；退出仍由原 UI 停止/释放。
+func play_event_player(player: AudioStreamPlayer) -> bool:
+	if not is_instance_valid(player) or not player.is_inside_tree():
+		return false
+	var event_id: StringName = StringName(player.get_meta("audio_event_id", &""))
+	var event: AudioEvent = _audio_config.find_event(event_id)
+	if event == null or event.stream == null or player.stream != event.stream:
+		return false
+	player.volume_db = event.volume_db
+	player.pitch_scale = randf_range(minf(event.pitch_min, event.pitch_max), maxf(event.pitch_min, event.pitch_max))
+	player.play()
+	event_played.emit(event_id, player)
+	return true

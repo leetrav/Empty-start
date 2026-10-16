@@ -262,6 +262,7 @@ func _advance_streamer() -> void:
 	if _step != Step.STREAMER or _busy or _run_data == null:
 		return
 	_streamer_name_input.text = IdentityNameRules.confirm_streamer_name(_streamer_name_input.text)
+	AudioManager.play_event(&"ui_name_confirm")
 	_player_presentation_is_completed = false
 	_player_presentation_status.text = "欢迎，%s。" % _streamer_name_input.text
 	_show_step(Step.PLAYER_PRESENTATION)
@@ -284,6 +285,7 @@ func _advance_identity(option: IdentityOption) -> void:
 		return
 	_selected_option = option
 	_room_transition_is_completed = false
+	AudioManager.play_event(&"ui_identity_confirm")
 	_room_transition_status.text = "身份已选定：%s" % option.display_name
 	_room_transition_action.text = "继续粉丝团命名"
 	_show_step(Step.ROOM_TRANSITION)
