@@ -48,6 +48,7 @@ var _tier_transition_previous_tier: int = CombatStage.INITIAL_TIER
 var _tier_transition_current_tier: int = CombatStage.INITIAL_TIER
 var _shot_tier_at_arrival: int = CombatStage.INITIAL_TIER
 var _has_shot_tier_at_arrival: bool = false
+var _previous_live_tier: int = CombatStage.INITIAL_TIER
 
 
 # 组合本场已有系统；PK、Tier、复读统计继续由各自对象持有。
@@ -137,6 +138,7 @@ func _start_attempt(is_restart: bool) -> bool:
 	_tier1_dialogue_pending = false
 	_tier_transition_hit_resolution = null
 	_has_shot_tier_at_arrival = false
+	_previous_live_tier = CombatStage.INITIAL_TIER
 
 	_hit_resolution = HitResolution.new(
 		FORMAL_COMBAT_NUMERICS.initial_player_pk,
@@ -147,6 +149,7 @@ func _start_attempt(is_restart: bool) -> bool:
 		FORMAL_COMBAT_NUMERICS
 	)
 	_repeat_queue = RepeatDelayQueue.new(_battle_config.maximum_pending_repeat_count)
+	_barrage_area.begin_combat_attempt()
 	_combat_stage = CombatStage.new(_tier_catalog)
 	# Tier 先绑定 PK，再连接本流程；本发回调会读到已经更新的 Tier。
 	_combat_stage.bind_hit_resolution(_hit_resolution)
@@ -411,8 +414,10 @@ func _on_final_player_pk_updated(player_pk: float, source_hit_resolution: HitRes
 func _on_tier_state_changed(current_tier: int, source_stage: CombatStage) -> void:
 	if source_stage != _combat_stage:
 		return
-	if _normal_combat_active and current_tier > 0:
-		_run_data.live_session.record_tier_up_live_rule()
+	if _normal_combat_active:
+		_run_data.live_session.record_tier_transition(_previous_live_tier, current_tier)
+	# 降档也刷新已观察档位，使下一次真实升档可正确触发。
+	_previous_live_tier = current_tier
 	_refresh_pk_feedback()
 	tier_changed.emit(current_tier, _hit_resolution.get_player_pk())
 

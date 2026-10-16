@@ -8,6 +8,8 @@ extends Resource
 @export var base_pullback_speed_pk_per_second: float = 0.0008
 @export var pc_aim_radius_px: float = 72.0
 @export var touch_aim_radius_px: float = 90.0
+## 06 基础参数 aim_visual_size 的圆形视觉直径，不改变判定半径。
+@export var aim_visual_diameter_px: float = 96.0
 @export var charge_time_seconds: float = 0.8
 @export var projectile_flight_seconds: float = 0.2
 @export var recovery_time_seconds: float = 0.15
@@ -59,9 +61,11 @@ extends Resource
 @export var contradiction_break_viewer_gain: int = 80
 @export var contradiction_break_like_gain: int = 40
 @export var contradiction_break_boost_duration_seconds: float = 2.0
+@export var contradiction_break_comment_delta: int = 1
 @export var oracle_confirmation_viewer_gain: int = 40
 @export var oracle_confirmation_like_gain: int = 20
 @export var oracle_confirmation_boost_duration_seconds: float = 2.0
+@export var oracle_confirmation_comment_delta: int = 1
 
 
 ## 按“PK 百分点”转换为运行时 0–1 比例；源 CSV 数值保留原单位。
