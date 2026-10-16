@@ -180,6 +180,19 @@ func _fail_commit(reason: String) -> bool:
 	return false
 
 
+# 优先消费 A 的 09 表统一入口，首次评论与事件去重继续归 LiveSessionData。
+# #241 尚未合并的独立分支保留原调用，合并后自动使用正式数值接口。
+func _start_live_result_boost(event: LiveSessionData.BoostEvent) -> void:
+	if _run_data.live_session.has_method("start_formal_short_boost"):
+		_run_data.live_session.call("start_formal_short_boost", event)
+	elif event == LiveSessionData.BoostEvent.CONTRADICTION_BREAK:
+		_run_data.live_session.start_short_boost(event, battle_config.break_boost_viewer_gain,
+			battle_config.break_boost_like_gain, battle_config.break_boost_duration_seconds)
+	else:
+		_run_data.live_session.start_short_boost(event, battle_config.oracle_boost_viewer_gain,
+			battle_config.oracle_boost_like_gain, battle_config.oracle_boost_duration_seconds)
+
+
 # 只对真实确认提交奖励；按数据所有者返回值和保存事实区分拒绝、去重与成功。
 func commit_confirmed_rewards() -> bool:
 	if _stopped or not is_inside_tree() or _rest_handoff_pending or _rest_session != null or _final_oracle_session == null:
@@ -230,9 +243,7 @@ func commit_confirmed_rewards() -> bool:
 	_commit_error = ""
 	_rest_handoff_pending = true
 	if _confirmation_hit_resolution == _hit_resolution:
-		_run_data.live_session.start_short_boost(LiveSessionData.BoostEvent.ORACLE_CONFIRMATION,
-			battle_config.oracle_boost_viewer_gain, battle_config.oracle_boost_like_gain,
-			battle_config.oracle_boost_duration_seconds)
+		_start_live_result_boost(LiveSessionData.BoostEvent.ORACLE_CONFIRMATION)
 	# 同步确认与攻击回调先结束，帧尾再清候选并交付同一 Rest 对象。
 	_open_rest_after_oracle.call_deferred(_run_data, _final_oracle_session)
 	return true
@@ -576,11 +587,7 @@ func _on_contradiction_outcome_locked(outcome: int) -> void:
 	outcome_resolved.emit(outcome)
 	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		# 只消费成功结果；未击破分支继续沿用既有休息流程。
-		_run_data.live_session.start_short_boost(
-			LiveSessionData.BoostEvent.CONTRADICTION_BREAK,
-			battle_config.break_boost_viewer_gain, battle_config.break_boost_like_gain,
-			battle_config.break_boost_duration_seconds
-		)
+		_start_live_result_boost(LiveSessionData.BoostEvent.CONTRADICTION_BREAK)
 		state_text_changed.emit("矛盾击破成功 · 等待复读展示")
 	else:
 		state_text_changed.emit("未击破矛盾 · 等待复读展示")
