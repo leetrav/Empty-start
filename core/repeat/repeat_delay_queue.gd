@@ -3,9 +3,15 @@ extends RefCounted
 
 const DELAY_CONFIG: RepeatDelayConfig = preload("res://data/repeat/repeat_delay_config.tres")
 
+# 当前为 PTF-02 可编辑候选参数，最终节奏等待真人 A/B 选择。
+var presentation_config: Resource = preload("res://data/repeat/repeat_presentation_config.tres")
+
 var _random_generator: RandomNumberGenerator = RandomNumberGenerator.new()
 var _pending_items: Array[Dictionary] = []
 var _maximum_pending_normal_count: int
+var _climax_spawn_seconds: float = 0.0
+var _climax_lifetime_seconds: float = 0.0
+
 var _generation_stats: RepeatGenerationStats = RepeatGenerationStats.new()
 
 
@@ -13,6 +19,15 @@ func _init(maximum_pending_normal_count: int) -> void:
 	# 容量由调用方读取数值配置后传入；随机源只在普通计划入队时抽取等待时间。
 	_maximum_pending_normal_count = maxi(maximum_pending_normal_count, 0)
 	_random_generator.randomize()
+
+
+# 只压缩矛盾表现的排期和寿命；普通复读及实际生成统计保持原规则。
+func configure_contradiction_climax(spawn_seconds: float, lifetime_seconds: float) -> bool:
+	if not is_finite(spawn_seconds) or not is_finite(lifetime_seconds) or spawn_seconds <= 0.0 or lifetime_seconds <= 0.0:
+		return false
+	_climax_spawn_seconds = spawn_seconds
+	_climax_lifetime_seconds = lifetime_seconds
+	return true
 
 
 # 把普通或矛盾复读计划拆成各自等待的单条请求；普通等待容量独立限制。
@@ -32,16 +47,24 @@ func enqueue_plan(plan: RepeatPlan) -> int:
 			if (pending_item["plan"] as RepeatPlan).repeat_type == RepeatPlan.RepeatType.NORMAL:
 				pending_normal_count += 1
 		accepted_count = mini(accepted_count, maxi(_maximum_pending_normal_count - pending_normal_count, 0))
+	if plan.repeat_type == RepeatPlan.RepeatType.CONTRADICTION:
+		_generation_stats.record_contradiction_requested(plan, accepted_count)
 	var wait_offsets: PackedFloat32Array = PackedFloat32Array()
 	for _index in range(accepted_count):
 		var delay_seconds: float = _random_generator.randf_range(
 			DELAY_CONFIG.minimum_delay_seconds,
 			DELAY_CONFIG.maximum_delay_seconds
 		)
+		if plan.repeat_type == RepeatPlan.RepeatType.CONTRADICTION and _climax_spawn_seconds > 0.0:
+			delay_seconds = _climax_spawn_seconds * float(_index) / float(maxi(accepted_count - 1, 1))
 		wait_offsets.append(delay_seconds)
 
 		var request_plan: RepeatPlan = plan.duplicate(true) as RepeatPlan
 		request_plan.planned_repeat_count = 1
+		if plan.repeat_type == RepeatPlan.RepeatType.NORMAL and presentation_config != null:
+			request_plan.lifetime_seconds = presentation_config.normal_lifetime_seconds
+		if plan.repeat_type == RepeatPlan.RepeatType.CONTRADICTION and _climax_lifetime_seconds > 0.0:
+			request_plan.lifetime_seconds = _climax_lifetime_seconds
 		request_plan.wait_offsets_seconds = PackedFloat32Array([delay_seconds])
 		_pending_items.append({"remaining_seconds": delay_seconds, "plan": request_plan})
 
@@ -80,6 +103,8 @@ func advance_and_dispatch(delta_seconds: float, barrage_area: BarrageArea) -> in
 		if repeat_view == null:
 			retry_requests.append(plan)
 			continue
+		if presentation_config != null:
+			presentation_config.attach_to_view(repeat_view, &"contradiction" if plan.repeat_type == RepeatPlan.RepeatType.CONTRADICTION else &"normal")
 		_generation_stats.record_generated(plan, 1)
 		generated_count += 1
 

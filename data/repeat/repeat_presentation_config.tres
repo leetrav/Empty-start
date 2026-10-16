@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/repeat/repeat_presentation_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+normal_lifetime_seconds = 6.0
+contradiction_lifetime_seconds = 0.7
+terminal_lifetime_seconds = 3.2
+normal_opacity = 0.85
+contradiction_opacity = 1.0
+terminal_opacity = 1.0
+normal_hold_fraction = 0.55
+contradiction_hold_fraction = 0.65
+terminal_hold_fraction = 0.8
