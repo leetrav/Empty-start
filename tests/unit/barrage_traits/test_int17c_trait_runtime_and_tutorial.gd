@@ -3,6 +3,7 @@ extends SceneTree
 const AREA = preload("res://systems/barrage_generation/barrage_area.tscn")
 const RUNTIME = preload("res://systems/barrage_traits/barrage_trait_runtime.gd")
 const NUMERICS = preload("res://data/combat_stage/combat_numerics.tres")
+const HINT = preload("res://ui/tutorial/tutorial_hint_label.gd")
 var failures: int = 0
 
 
@@ -131,6 +132,13 @@ func _run() -> void:
 	numerics.special_foreground_instance_cap = NUMERICS.special_foreground_instance_cap
 
 	var runner := TutorialStepRunner.new()
+	var hint = HINT.new()
+	root.add_child(hint)
+	hint.position = Vector2(500, 940)
+	hint.z_index = RenderingServer.CANVAS_ITEM_Z_MAX
+	hint.add_theme_font_size_override("font_size", 28)
+	runner.hint_requested.connect(hint.show_tutorial_hint)
+	runner.tutorial_completed.connect(func(_id: String) -> void: hint.clear_tutorial_hint())
 	var completed_events: Array[String] = []
 	runner.step_completed.connect(func(id: String) -> void: completed_events.append(id))
 	_expect(runner.begin(alien.tutorial_config_id), "formal tutorial begins")
@@ -162,6 +170,9 @@ func _run() -> void:
 	attack._process(numerics.charge_time_seconds)
 	runner.observe_combat_frame(area, aim, attack)
 	_expect(runner.get_active_step_id() == "tutorial_001_fire", "actual charge state completes charge")
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("D:/tmp/INT17C_tutorial_fire_2026-10-16.png")
 	var repeat_submission: Dictionary = {"hit_resolution_result": {"target_results": [{"is_valid_hit": true, "is_repeat": true, "trait_result": BarrageTraitResult.new()}]}}
 	runner.on_shot_resolved(null, repeat_submission, 0, null)
 	_expect(runner.get_active_step_id() == "tutorial_001_fire", "repeat hit cannot complete fire")
@@ -180,6 +191,7 @@ func _run() -> void:
 	area.clear_current_barrages()
 	attack.queue_free()
 	aim.queue_free()
+	hint.queue_free()
 	for trait_id: StringName in [&"occlusion", &"retaliation_copy", &"fake_card", &"unselectable", &"split", &"reflect"]:
 		var status: Dictionary = catalog.get_visual_asset_status(trait_id)
 		if bool(status["missing_mapping"]):
