@@ -5,10 +5,18 @@ signal failure_presentation_finished()
 
 signal dialogue_sequence_completed(sequence_id: StringName, side: int)
 signal tier_breakthrough_finished(previous_tier: int, current_tier: int, completed: bool)
+signal opponent_result_presentation_finished(broken: bool)
 
 const PortraitMotion = preload("res://systems/presentation/streamer_portrait_motion.gd")
 const TierPortrait = preload("res://systems/presentation/opponent_tier_portrait.gd")
 const PK_BAR_SKIN_SCENE: PackedScene = preload("res://systems/presentation/pk_bar_skin.tscn")
+const BREAKTHROUGH_SCENE: PackedScene = preload("res://systems/presentation/opponent_breakthrough_presentation.tscn")
+const FOX_PETALS: Array[Texture2D] = [
+	preload("res://assets/characters/opponents/fox/effects/fox_rose_01.png"),
+	preload("res://assets/characters/opponents/fox/effects/fox_rose_02.png"),
+	preload("res://assets/characters/opponents/fox/effects/fox_rose_03.png"),
+	preload("res://assets/characters/opponents/fox/effects/fox_rose_04.png"),
+]
 const DialogueQueueScript = preload("res://ui/streamer_bubble_dialogue/streamer_bubble_dialogue_queue.gd")
 const StageArrow = preload("res://systems/presentation/stage_arrow_fx.gd")
 const CrtConnection = preload("res://systems/presentation/crt_connection_fx.gd")
@@ -64,6 +72,11 @@ const FAN_GROUP_NAME_PLACEHOLDER: String = "粉丝团"
 var player_portrait_motion: StreamerPortraitMotion
 var opponent_portrait_motion: StreamerPortraitMotion
 var opponent_tier_portrait: OpponentTierPortrait
+var _opponent_breakthrough: OpponentBreakthroughPresentation
+var _result_character_id: StringName
+var _result_defeat_texture: Texture2D
+var _opponent_result_active: bool = false
+var _opponent_result_configured: bool = false
 var _portrait_attack: AttackChargeInput
 var _opponent_connected: bool = false
 var _paradox_stage_active: bool = false
@@ -120,6 +133,14 @@ func _ready() -> void:
 	opponent_portrait_motion.attach_portrait(_opponent_portrait)
 	opponent_tier_portrait = TierPortrait.new()
 	opponent_tier_portrait.attach_portrait(_opponent_portrait)
+	# PA-17 覆盖整个右侧直播槽，复用现有立绘和待机层，不新增业务状态。
+	_opponent_breakthrough = BREAKTHROUGH_SCENE.instantiate() as OpponentBreakthroughPresentation
+	_opponent_live_background.get_parent().add_child(_opponent_breakthrough)
+	_opponent_breakthrough.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_opponent_breakthrough.z_index = 21
+	_opponent_breakthrough.bind_targets(_opponent_portrait, opponent_portrait_motion)
+	_opponent_breakthrough.defeat_animation_finished.connect(_on_opponent_defeat_finished)
+	_opponent_breakthrough.unbroken_offline_finished.connect(_on_opponent_offline_finished)
 	_pk_bar_skin = PK_BAR_SKIN_SCENE.instantiate() as PkBarSkin
 	_pk_bar_skin.name = "PkBarSkin"
 	_pk_progress.add_child(_pk_bar_skin)
@@ -313,6 +334,65 @@ func set_opponent_portrait_connected(connected: bool) -> void:
 # 当前关角色 ID 由集成方传入；后续换阶段 PNG 无需重建动画层。
 func configure_portrait_character(opponent_character_id: String) -> void:
 	opponent_portrait_motion.configure_character(opponent_character_id)
+	opponent_tier_portrait.configure_character(opponent_character_id)
+
+
+# 当前关 Resource 为素材依据，正式导表映射可覆盖同名字段；不在 HUD 推导关卡。
+func configure_opponent_result(level: LevelProfile, presentation: Dictionary = {}) -> bool:
+	_opponent_result_configured = false
+	if level == null:
+		return false
+	_result_character_id = StringName(presentation.get("streamer_id", level.streamer_id))
+	_result_defeat_texture = presentation.get("portrait_defeat", level.opponent_defeat_portrait) as Texture2D
+	var tier_three: Texture2D = level.opponent_tier_03_portrait
+	var tiers: Array = presentation.get("portrait_tiers", [])
+	if tiers.size() == 4:
+		tier_three = tiers[3] as Texture2D
+	var transition: Texture2D = presentation.get("portrait_defeat_transition", level.opponent_defeat_transition_portrait) as Texture2D
+	_opponent_result_configured = _opponent_breakthrough.configure_visuals(
+		tier_three, transition, _result_defeat_texture, FOX_PETALS if _result_character_id == &"fox" else [])
+	# 配置演出不能提前把普通战斗的待机图替换成 T5。
+	opponent_tier_portrait.reset_for_tier(opponent_tier_portrait.current_tier)
+	return _opponent_result_configured
+
+
+# 真实 CB 结果交入；返回 true 后等待完成信号，再由根流程推进漫画/神谕。
+func play_opponent_result(broken: bool) -> bool:
+	if _opponent_result_active or not _opponent_result_configured:
+		return false
+	cancel_tier_breakthrough()
+	opponent_tier_portrait.reset_for_tier(5)
+	opponent_tier_portrait.fx.reset_fx()
+	clear_dialogue_bubbles(BubbleDialogueEntry.SpeakerSide.OPPONENT)
+	set_opponent_portrait_connected(true)
+	_opponent_result_active = true
+	if not broken:
+		_opponent_breakthrough.play_unbroken_offline()
+	elif _result_character_id == &"frog":
+		# Frog 仅使用已交付的击败静帧，专属特效等待美术确认。
+		_opponent_portrait.texture = _result_defeat_texture
+		opponent_portrait_motion.set_idle_strength(0.0)
+		_on_opponent_defeat_finished.call_deferred(_result_character_id)
+	elif not _opponent_breakthrough.play_defeat(_result_character_id):
+		_opponent_result_active = false
+		return false
+	return true
+
+
+# 转发组件完成事实，根场景继续拥有流程等待与恢复。
+func _on_opponent_defeat_finished(_character_id: StringName) -> void:
+	if not _opponent_result_active:
+		return
+	_opponent_result_active = false
+	opponent_result_presentation_finished.emit(true)
+
+
+# 保留离线遮罩和提示，直到下一场显式复位。
+func _on_opponent_offline_finished() -> void:
+	if not _opponent_result_active:
+		return
+	_opponent_result_active = false
+	opponent_result_presentation_finished.emit(false)
 
 
 # 组合方提交 SD-01 条目；HUD 只按发言侧转发给对应立绘区，不判断触发规则。
@@ -561,6 +641,10 @@ func show_failure() -> void:
 
 # 重开复位本场 HUD 提示并读取当前 T0 等待文案，各系统状态仍由所属对象初始化。
 func reset_for_attempt(current_tier: int = 0) -> void:
+	_opponent_result_active = false
+	_opponent_result_configured = false
+	if _opponent_breakthrough != null:
+		_opponent_breakthrough.reset_to_tier_three()
 	_failure_presentation_active = false
 	if _failure_delay_tween != null:
 		_failure_delay_tween.kill()
