@@ -26,6 +26,7 @@ var _checks: int = 0
 var _status: Label
 var _preview_directory: String = ""
 var _config_only: bool = false
+var _retry_only: bool = false
 var _active_seconds: float = 0.0
 var _repeat_times: Array[float] = []
 
@@ -36,6 +37,8 @@ func _ready() -> void:
 	for arg: String in OS.get_cmdline_user_args():
 		if arg == "--config-only":
 			_config_only = true
+		if arg == "--retry-only":
+			_retry_only = true
 		if arg.begins_with("--preview-dir="):
 			_preview_directory = arg.trim_prefix("--preview-dir=")
 	_area = preload("res://systems/barrage_generation/barrage_area.tscn").instantiate()
@@ -76,6 +79,10 @@ func _process(delta: float) -> void:
 
 # 使用正式模板、容量和延时检查，然后运行四关真实 Paradox 消费者。
 func _run_checks() -> void:
+	if _retry_only:
+		await _verify_timeout_and_retry()
+		_finish()
+		return
 	var plan := RepeatPlan.create_normal_hit_plan(&"smoke", "原句保留", 0, 110, CONFIG.repeat_lifetime_seconds)
 	_check(plan.apply_display_template(CONFIG.repeat_display_template) == "原句保留", "10 表原句模板")
 	var queue := RepeatDelayQueue.new(CONFIG.maximum_pending_repeat_count)
@@ -242,6 +249,8 @@ func _verify_timeout_and_retry() -> void:
 	_flow.stop()
 	_check(_flow.start(_run, CATALOG, CATALOG.profiles[1], _hit, _stage, _area, _opponent,
 		_attack, _queue, _display, CONFIG, CARDS, WINDOW, get_node("/root/AudioManager")), "同 Flow 重试重建阶段")
+	await get_tree().process_frame
+	_check(not is_instance_valid(old_system), "旧矛盾实例已经真正释放")
 	_check(not _flow.complete_result_presentation(old_system), "旧演出完成不能释放新尝试")
 	_flow.stop()
 	_flow.queue_free()
