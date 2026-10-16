@@ -14,6 +14,8 @@ var _paused: bool = false
 
 ## 独立结束序列只呈现注入资源；A决定完成后路由，不读取开场P5/P6。
 func _ready() -> void:
+	# 即使宿主为常驻输入节点，序列Timer/Tween也跟随全局暂停。
+	process_mode = Node.PROCESS_MODE_PAUSABLE
 	resized.connect(_fit_canvas)
 	_fit_canvas()
 
