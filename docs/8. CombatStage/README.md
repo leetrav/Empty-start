@@ -1,5 +1,11 @@
 # 8. CombatStage 战斗阶段系统任务拆分
 
+## INT-17A 正式 Tier 事件（2026-10-16）
+
+Tier Resource 新增 `music_event_id: StringName` 和 `retaliation_draw_count_first_entry: int`，保留 08 源字段语义。T0～T5 分别请求 `music_battle_t0`～`music_battle_t5`；`bind_audio_manager()` 将 `music_event_requested` 接到现有 `change_music()`，重复绑定保持一次，档位未变化时不重复请求。六行 17 音频源路径均为空，本次验证请求链，实际分层音乐听感等待素材。
+
+`bind_barrage_area()` 同时发布 `barrage_skill_tier_changed(tier, first_entry_draw_count)`；抽选与生成由 BarrageArea/C 目录组合完成。08 当前 T0/T1 为 0 次，T2～T5 为 1 次。四关真实组件验证和 INT-16 接线顺序见 [INT-17A 日志](../Integration/生产集成_INT-17A_2026-10-16_log.md)。
+
 > **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。开发前核对该表、本卡现行版、main 实际实现及最新完成日志。
 
 
