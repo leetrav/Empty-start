@@ -52,6 +52,15 @@ func start(
 		return false
 	if catalog == null or current_level == null or battle_config == null or not is_instance_valid(area) or not is_instance_valid(attack_input):
 		return false
+	if decay_config == null or not is_finite(decay_config.new_word_decay_duration_seconds) or decay_config.new_word_decay_duration_seconds <= 0.0:
+		return false
+	# 正式 Resource 兜住旧 Sandbox 的零演出参数；显式配置仍可覆盖本次时序。
+	if _auto_repeat_min_seconds <= 0.0:
+		var legacy_interval := float(presentation.get("repeat_interval_seconds", 0.0))
+		var configured_min := legacy_interval if legacy_interval > 0.0 else decay_config.auto_repeat_interval_min_seconds
+		var configured_max := legacy_interval if legacy_interval > 0.0 else decay_config.auto_repeat_interval_max_seconds
+		if not configure_formal_parameters(configured_min, configured_max, decay_config.converge_ratio, decay_config.final_emphasis_duration_seconds):
+			return false
 	var session := DivineDescentSession.new()
 	if not session.enter(run_data):
 		return false
@@ -72,15 +81,6 @@ func start(
 	if session.should_enter_empty_ending():
 		_complete.call_deferred(session)
 		return true
-	var has_repeat_interval := _auto_repeat_min_seconds > 0.0 and _auto_repeat_max_seconds >= _auto_repeat_min_seconds
-	if not has_repeat_interval:
-		has_repeat_interval = float(_presentation.get("repeat_interval_seconds", 0.0)) > 0.0
-	var has_emphasis_duration := _final_emphasis_duration_seconds > 0.0
-	if not has_emphasis_duration:
-		has_emphasis_duration = float(_presentation.get("fade_seconds", 0.0)) > 0.0 and float(_presentation.get("hold_seconds", 0.0)) > 0.0
-	if not has_repeat_interval or not has_emphasis_duration:
-		push_warning("DivineDescentFlow: 终局演出参数待交付，请显式注入配置。")
-		return true
 	_spread = DivineDescentSpread.new()
 	add_child(_spread)
 	_spread.completed.connect(_complete)
@@ -93,10 +93,13 @@ func start(
 			null, _presentation.get("trait_colors", {}), repeat_min, repeat_max,
 			_converge_ratio if _converge_ratio > 0.0 else 0.9):
 		push_error("DivineDescentFlow: 神降临扩散无法读取冻结历史候选。")
-		return true
+		stop()
+		return false
 	if not area.start_normal_generation(current_level) or not mode.start_new_word_decay(decay_config):
 		_spread.stop()
 		push_error("DivineDescentFlow: 神降临新话衰减启动失败。")
+		stop()
+		return false
 	return true
 
 

@@ -5,3 +5,7 @@
 [resource]
 script = ExtResource("1_config")
 new_word_decay_duration_seconds = 12.0
+auto_repeat_interval_min_seconds = 0.15
+auto_repeat_interval_max_seconds = 0.38
+converge_ratio = 0.9
+final_emphasis_duration_seconds = 1.8

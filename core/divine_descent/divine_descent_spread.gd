@@ -271,9 +271,12 @@ func is_generation_blocked() -> bool:
 
 # 唯一自动触发来源是计时；不订阅攻击、复读命中或弹幕移除事件。
 func _on_generation_timeout() -> void:
+	if _converging or _timer == null or _candidates.is_empty():
+		return
+	# one_shot 在 timeout 时已停止；先安排下一次，公开生成入口才能读取真实运行态。
+	# 生成通知里的显式 stop 仍会取消刚安排的 Timer，不会被回调尾部重新开启。
+	_timer.start(_next_repeat_interval())
 	generate_next_repeat()
-	if not _converging and _timer != null and not _candidates.is_empty():
-		_timer.start(_next_repeat_interval())
 
 
 # 15 表的自动复读区间使用本组件随机源，便于复现同一局的候选行为。
