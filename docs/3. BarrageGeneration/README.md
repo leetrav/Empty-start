@@ -2,6 +2,14 @@
 
 > **派工入口**：[2026-10-09 当前任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。本系统的已完成旧卡保留作功能实现依据；下方历史讨论章节的旧数值以现行派工入口覆盖。
 
+## INT-17A 正式生成消费者（2026-10-16）
+
+`configure_combat_numerics()` 将 06 的动画强度、描边与复读色应用于新实例；样式在 `BarrageView.setup()` 前设置，普通、特殊、矛盾、复读共用配置。05 每关显式特殊容量优先，空值才回退到 06 全局值 3。06 曲线使用明确像素字段 72px，比例参考 0.2 尚无换算规则。
+
+根场景组合时通过 `configure_trait_catalog(catalog: RefCounted)` 注入 C 的 `BarrageTraitCatalog`。`BattleAttemptFlow` 每次尝试调用 `begin_combat_attempt()`；`CombatStage.bind_barrage_area()` 将真实 Tier 与 08 首次抽取数交给 `set_combat_tier()`。首次抽选放入现有普通生成批次，特殊满容量时保留待项并继续普通生成；降档暂停高档待项，回升沿用本场抽选。07 寿命覆盖仍遵守 06 的 Tier 影响标记，既有目标判定继续读取实例 TraitSet。调用方无需额外调用反击生成。
+
+独立验证入口：`res://tests/integration/int17a_formal_consumers_smoke.gd`。四关生产资源、真实蓄力释放及生成样式已实跑；C 目录在此分支尚未合入，07/21 注入用确定性 Probe 验证，完整目录联调由 INT-16 合入后执行。录屏与截图仅在本机 `D:\Godot\lane-r26-a-numerics-20261016\.godot\int17a\`，未纳入 Git。详见 [INT-17A 日志](../Integration/生产集成_INT-17A_2026-10-16_log.md)。
+
 
 ## 2026-10-12 现行实现核对与任务状态
 
