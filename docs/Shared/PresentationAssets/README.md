@@ -234,3 +234,9 @@ PA-16 交付时没有修改 PA-11 / PA-13 / PA-15 / PA-18，也没有复用旧 #
 Sandbox 接收 `BattleAttemptFlow.attempt_failed` 后调用 HUD 的 `play_failure_presentation()`；HUD 在同一 PA-13 仓鼠球跌落、左侧 CRT 断流与 UI 延迟结束后发出 `failure_presentation_finished`，Sandbox 再调用原 `show_failure()`。战斗停止、数值和失败路由仍由原 Flow / Sandbox 负责。
 
 `PKHamsterBallIndicator.play_failure_fall(direction, height, rotations, seconds)` 只负责局部跌落并发出 `failure_fall_finished`。`CrtConnectionFx.play_shutdown()` 与 `shutdown_finished` 为 PA-18 复用入口；左侧独立实例，不改变 PA-11 右侧开机参数与回调。HUD Inspector 的「PA-18 战败」组可调整方向、距离、转数、掉落与关机时长及失败 UI 延迟。重开取消旧 Tween、恢复球和左侧原材质；正常降档不进入战败演出。
+
+## INT-17E 正式素材资源绑定（2026-10-16）
+
+四位对手的idle、Tier1～3与击败图、Alien过渡图由23表进入现有LevelProfile字段；Frog前景进入 `streamer_live_foreground`，程序演出读取 `opponent_defeat_effect_id`。玩家直播桌面已进入 `PresentationAssetConfig.player_live_foreground`。Fox背景、Frog特效ID、结局三主图保留真实缺失；18表状态台账不作路径。
+
+Godot4.7.2实际渲染了生产Resource素材检查图，1920×1080；本机 `D:\tmp\int17e-media-20261016\production-resources-1920x1080.png`，媒体未入Git。该图用于确认贴图加载和空缺，正式HUD布局/击败动画仍由D与INT-16验收。[素材逐项对照](../../Integration/INT-17E_asset_usage_2026-10-16.md)与[日志](../../Integration/生产集成_INT-17E_2026-10-16_log.md)列出真实边界。
