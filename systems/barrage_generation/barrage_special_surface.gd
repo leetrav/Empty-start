@@ -1,6 +1,9 @@
 class_name BarrageSpecialSurface
 extends "res://systems/barrage_generation/barrage_glass_surface.gd"
 
+## 只由人工选型预览开启，正式实例继续原外观直到视觉批准。
+@export var show_unselectable_marker: bool = false
+
 @export_group("遮挡 / 铁质")
 @export var metal_base: Color = Color("#394450")
 @export var metal_edge: Color = Color("#B7CBD4")
@@ -80,7 +83,9 @@ func _draw() -> void:
 			_draw_retaliation_panel()
 		&"unselectable":
 			super._draw()
-			# 使用原生禁选符号，避免普通底板让玩家误以为可选；无需新素材。
+			# 候选标识不需要新素材；默认关闭，由真人对比后再决定正式接入。
+			if not show_unselectable_marker:
+				return
 			var center := Vector2(size.x - 15.0, 13.0)
 			draw_circle(center, 8.0, Color(1.0, 0.7, 0.65), false, 2.0, true)
 			draw_line(center + Vector2(-5, 5), center + Vector2(5, -5), Color(1.0, 0.7, 0.65), 2.0, true)

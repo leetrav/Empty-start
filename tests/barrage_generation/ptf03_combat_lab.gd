@@ -66,6 +66,11 @@ func _ready() -> void:
 	attack.configure_combat_aim_radii(NUMERICS)
 	catalog.load_production_tables()
 	runtime.bind(area, catalog)
+	area.barrage_generated.connect(func(view: BarrageView) -> void:
+		var surface := view.get_glass_surface() as BarrageSpecialSurface
+		if surface != null:
+			surface.show_unselectable_marker = pressure > 0.15 or gallery_index >= 0
+			surface.queue_redraw())
 	var fx = IMPACT.new()
 	add_child(fx)
 	if not legacy_input: fx.bind_attack(attack)
