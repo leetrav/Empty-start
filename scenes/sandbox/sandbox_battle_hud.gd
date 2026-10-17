@@ -4,6 +4,7 @@ extends Control
 signal failure_presentation_finished()
 
 signal dialogue_sequence_completed(sequence_id: StringName, side: int)
+signal dialogue_bubble_presented(side: int, event_id: StringName, text: String)
 signal tier_breakthrough_finished(previous_tier: int, current_tier: int, completed: bool)
 signal opponent_result_presentation_finished(broken: bool)
 
@@ -158,7 +159,7 @@ func _ready() -> void:
 	_opponent_live_background.get_parent().add_child(_opponent_breakthrough)
 	_opponent_breakthrough.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_opponent_breakthrough.z_index = 21
-	_opponent_breakthrough.bind_targets(_opponent_portrait, opponent_portrait_motion)
+	_opponent_breakthrough.bind_targets(_opponent_portrait, opponent_portrait_motion, opponent_tier_portrait.fit_current_texture)
 	_opponent_breakthrough.defeat_animation_finished.connect(_on_opponent_defeat_finished)
 	_opponent_breakthrough.unbroken_offline_finished.connect(_on_opponent_offline_finished)
 	_pk_bar_skin = PK_BAR_SKIN_SCENE.instantiate() as PkBarSkin
@@ -241,7 +242,10 @@ func _fit_parent_size() -> void:
 	var parent_control: Control = get_parent() as Control
 	if parent_control == null or size.x <= 0.0 or size.y <= 0.0:
 		return
-	scale = parent_control.size / size
+	# 超宽窗口沿用 Scene 的 16:9 设计比例，避免人物、字体和圆形准心被横向拉宽。
+	var uniform_scale: float = minf(parent_control.size.x / size.x, parent_control.size.y / size.y)
+	scale = Vector2.ONE * uniform_scale
+	position = (parent_control.size - size * uniform_scale) * 0.5
 	# 准心继承同一设计缩放，布局更新后通过其公开入口重新对齐当前鼠标。
 	_aim_reticle.refresh_mouse_position()
 
@@ -325,6 +329,19 @@ func configure_opponent_foreground(texture: Texture2D) -> void:
 	_set_texture_rect(_opponent_live_foreground, texture, TextureRect.STRETCH_KEEP_ASPECT_COVERED)
 
 
+# A 注入独立的对手事实 Resource；未配置指标显示破折号，模型更新仍归 A。
+func bind_opponent_live_session(session: LiveSessionData, unknown_metrics: Array = []) -> void:
+	%OpponentLiveDataHud.bind_live_session(session)
+	%OpponentLiveDataHud.set_unknown_metrics(unknown_metrics)
+
+
+# 只读提供真实输入值、动画显示值和皮肤/文字，便于定位延迟覆盖。
+func get_pk_display_snapshot() -> Dictionary:
+	return {"actual_player_pk": _actual_player_pk, "display_player_pk": _pk_progress.value,
+		"skin_key": _pk_bar_skin.get("_selected_skin_key"), "player_text": _player_pk_label.text,
+		"opponent_text": _opponent_pk_label.text}
+
+
 # 集成方显式绑定正式发射通知；重复绑定不会叠加回调，null 可解除旧来源。
 func bind_portrait_attack(attack: AttackChargeInput) -> void:
 	if is_instance_valid(_portrait_attack) and _portrait_attack.shot_snapshot_created.is_connected(play_player_shot):
@@ -397,6 +414,7 @@ func configure_opponent_result(level: LevelProfile, presentation: Dictionary = {
 	if tiers.size() == 4:
 		tier_three = tiers[3] as Texture2D
 	var transition: Texture2D = presentation.get("portrait_defeat_transition", level.opponent_defeat_transition_portrait) as Texture2D
+	opponent_tier_portrait.configure_result_bounds(transition, _result_defeat_texture)
 	var petals: Array[Texture2D] = []
 	if _result_character_id == &"fox":
 		petals.assign(FOX_PETALS)
@@ -422,6 +440,7 @@ func play_opponent_result(broken: bool) -> bool:
 	elif _result_character_id == &"frog":
 		# Frog 仅使用已交付的击败静帧，专属特效等待美术确认。
 		_opponent_portrait.texture = _result_defeat_texture
+		opponent_tier_portrait.fit_current_texture()
 		opponent_portrait_motion.set_idle_strength(0.0)
 		_on_opponent_defeat_finished.call_deferred(_result_character_id)
 	elif not _opponent_breakthrough.play_defeat(_result_character_id):
@@ -450,12 +469,15 @@ func _on_opponent_offline_finished() -> void:
 func show_dialogue_bubble(entry: BubbleDialogueEntry) -> StreamerBubbleView:
 	if entry == null or entry.text.strip_edges().is_empty():
 		return null
+	var view: StreamerBubbleView
 	match entry.side:
 		BubbleDialogueEntry.SpeakerSide.PLAYER:
-			return _player_bubble_stack.show_bubble(entry)
+			view = _player_bubble_stack.show_bubble(entry)
 		BubbleDialogueEntry.SpeakerSide.OPPONENT:
-			return _opponent_bubble_stack.show_bubble(entry)
-	return null
+			view = _opponent_bubble_stack.show_bubble(entry)
+	if view != null:
+		dialogue_bubble_presented.emit(entry.side, entry.event_id, entry.text)
+	return view
 
 
 func enqueue_dialogue_bubble(entry: BubbleDialogueEntry) -> bool:
@@ -531,8 +553,8 @@ func _refresh_pk_percentage(player_share: float) -> void:
 
 
 # 只消费 CombatStage 的实际档位变化通知；PK 百分比回落本身不会触发降档表情。
-func on_tier_changed(current_tier: int, player_pk: float) -> void:
-	_pk_hamster_ball.set_player_pk(player_pk)
+func on_tier_changed(current_tier: int, _player_pk: float) -> void:
+	# PK 只由 refresh_pk 输入；延迟的档位动作不能把旧 PK 再写回球/进度动画。
 	_pk_hamster_ball.on_tier_changed(current_tier)
 
 

@@ -19,6 +19,9 @@ enum TailDirection { LEFT, RIGHT }
 @export_range(0.01, 0.8, 0.01) var popup_duration_seconds: float = 0.14
 @export_range(0.0, 120.0, 1.0) var float_distance_px: float = 18.0
 @export_range(0.01, 1.0, 0.01) var fade_duration_seconds: float = 0.24
+# 沿用原历史气泡最小字号，超长内容宁可滚动也不缩成手机上难辨的文字。
+@export_range(10, 22, 1) var minimum_readable_font_size: int = 18
+var _available_size: Vector2 = Vector2(448.0, 432.0)
 
 @onready var _text_label: RichTextLabel = $Text
 @onready var _base_font_size: int = _text_label.get_theme_font_size("normal_font_size")
@@ -41,6 +44,24 @@ var _layout_tween: Tween
 var _finished: bool = false
 
 
+# 超长文本滚动阅读时暂停本气泡寿命；离开后恢复，不修改剧情配置时长。
+func _ready() -> void:
+	_text_label.mouse_entered.connect(_pause_overflow_reading)
+	_text_label.mouse_exited.connect(_resume_reading)
+
+
+# 只有溢出文本接管阅读，普通气泡仍按原时长飘走。
+func _pause_overflow_reading() -> void:
+	if _text_label.scroll_active and is_instance_valid(_lifetime_tween) and _lifetime_tween.is_valid():
+		_lifetime_tween.pause()
+
+
+# 窗口外点击和剧情状态仍归组合方，这里只恢复同一个 Tween。
+func _resume_reading() -> void:
+	if not _finished and is_instance_valid(_lifetime_tween) and _lifetime_tween.is_valid():
+		_lifetime_tween.play()
+
+
 # 文字保留在原 RichTextLabel 中，历史状态只调整排版层级，不截断原文。
 func configure(message: String, display_duration_seconds: float) -> void:
 	_message = message
@@ -57,6 +78,13 @@ func set_history_depth(depth: int) -> void:
 	_reflow()
 
 
+# 栈提供真实可用矩形，字号和滚动由同一 RichTextLabel 的实际排版决定。
+func configure_available_size(available_size: Vector2) -> void:
+	_available_size = available_size.max(Vector2(80.0, 64.0))
+	_reflow()
+
+
+# 用真实控件排版适配当前栈预算；原文始终完整保留。
 func _reflow() -> void:
 	if _text_label == null:
 		return
@@ -67,17 +95,27 @@ func _reflow() -> void:
 	var horizontal_padding: float = text_margin.x if is_current else text_margin.x - 5.0
 	var vertical_padding: float = text_margin.y if is_current else 14.0
 	var tail_reserved: float = tail_length if is_current else 0.0
-	var maximum_text: float = maxf(30.0, max_bubble_width - 2.0 * horizontal_padding - tail_reserved - 5.0)
+	var width_limit: float = minf(max_bubble_width, _available_size.x)
+	var maximum_text: float = maxf(30.0, width_limit - 2.0 * horizontal_padding - tail_reserved - 5.0)
 	var widest: float = 0.0
 	for line: String in _message.split("\n", true):
 		widest = maxf(widest, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
 	var minimum_text: float = maxf(32.0, min_bubble_width - horizontal_padding * 2.0 - tail_reserved)
 	var available: float = clampf(widest + 4.0, minf(minimum_text, maximum_text), maximum_text)
-	var measured: Vector2 = font.get_multiline_string_size(
-		_message, HORIZONTAL_ALIGNMENT_LEFT, available, font_size
-	)
-	# RichTextLabel 与 Font 的行距测量略有差异，留少量额外高度。
-	var text_height: float = maxf(measured.y + 6.0, font.get_height(font_size) + 4.0)
+	var height_limit: float = maxf(24.0, _available_size.y - vertical_padding * 2.0 - 3.0)
+	_text_label.text = _message
+	_text_label.scroll_active = false
+	_text_label.size.x = available
+	_text_label.add_theme_font_size_override("normal_font_size", font_size)
+	# 使用最终控件自己的内容高度，避免 Font 与 RichTextLabel 的换行规则不一致。
+	while _text_label.get_content_height() + 6.0 > height_limit and font_size > minimum_readable_font_size:
+		font_size -= 1
+		_text_label.add_theme_font_size_override("normal_font_size", font_size)
+	var full_text_height: float = maxf(float(_text_label.get_content_height()) + 6.0, font.get_height(font_size) + 4.0)
+	var text_height: float = minf(full_text_height, height_limit)
+	# 超出可读最小字号仍放不下时保留完整原文，开放原生滚动，不裁掉字符串。
+	_text_label.scroll_active = full_text_height > height_limit
+	_text_label.mouse_filter = Control.MOUSE_FILTER_PASS if _text_label.scroll_active else Control.MOUSE_FILTER_IGNORE
 	var body_width: float = available + horizontal_padding * 2.0 + 5.0
 	var body_height: float = text_height + vertical_padding * 2.0 + 3.0
 	var body_left: float = tail_length if is_current and tail_direction == TailDirection.LEFT else 0.0
@@ -127,7 +165,7 @@ func set_stack_position(target: Vector2, animate: bool) -> void:
 
 
 func cancel_lifecycle() -> void:
-	if is_instance_valid(_lifetime_tween) and _lifetime_tween.is_running():
+	if is_instance_valid(_lifetime_tween) and _lifetime_tween.is_valid():
 		_lifetime_tween.kill()
 	if is_instance_valid(_layout_tween):
 		_layout_tween.kill()
@@ -136,7 +174,7 @@ func cancel_lifecycle() -> void:
 func finish_early() -> void:
 	if _finished:
 		return
-	if is_instance_valid(_lifetime_tween) and _lifetime_tween.is_running():
+	if is_instance_valid(_lifetime_tween) and _lifetime_tween.is_valid():
 		_lifetime_tween.kill()
 	_lifetime_tween = create_tween()
 	_lifetime_tween.tween_property(self, "modulate:a", 0.0, maxf(fade_duration_seconds, 0.01))

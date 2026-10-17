@@ -1,5 +1,11 @@
 # 9. LiveDataPresentation 直播数据表现系统任务拆分
 
+## PTF-04 显示事实接口（2026-10-16）
+
+`LiveDataHud.set_unknown_metrics(["viewer_count", "like_count", "fan_count"])` 将尚未配置来源的指标显示为“—”，不改模型；`get_display_snapshot()` 对未知字段返回 null。绑定 LiveSessionData 后，旧 `set_values(0,0,0,0)` 占位调用不能覆盖当前 Resource。A 可直接使用原 `bind_live_session()`，或调用 `SandboxBattleHud.bind_opponent_live_session(session, unknown_metrics)`。
+
+本卡只修显示和交接接口；当前主线对手仍为根场景显式零占位，正式独立数据源和业务增长规则由 A 接入。控件回归中的 comment=17 是测试 Resource，不能冒充玩家场景对手统计已验收。详见 [PTF-04 日志](../Integration/直播表现_PTF-04_2026-10-16_log.md)。
+
 ## INT-17D 正式评论核实（2026-10-16）
 
 正式 19/25 表由现有消费者按 viewer_id、enabled、侧与主播范围关联，22 表控制间隔、滚速、行数和暂停。真实 Sandbox 验收分别停止业务生成并保留评论显示，核对显示刷新不增加 `LiveSessionData.comment_count`；暂停冻结本侧评论计时。当前没有更改四项业务数据的拥有者。具体结果和本机预览见 [INT-17D 日志](../Integration/生产集成_INT-17D_2026-10-16_log.md)。

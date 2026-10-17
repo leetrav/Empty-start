@@ -1,5 +1,13 @@
 # PresentationAssets 表现资产接入
 
+## PTF-04 立绘与 PK 视图修复（2026-10-16）
+
+`OpponentTierPortrait` 从原 Texture 的 alpha 可见边界计算同角色全套贴图的共同缩放，统一可见锚点；PA-17 每次换待机/过渡/击败图通过注入的 `fit_current_texture` 回调复用排版。没有改 PNG 或表 23。默认延续居中意图，`visible_anchor_ratio=(0.5,1)` 的贴底仅作为人工对照预览，不能把几何锚点误差 0px 当作艺术验收通过。
+
+HUD 的 PK 输入统一走 `refresh_pk()`；`on_tier_changed()` 只播放档位动作，避免晚到旧 PK 再写入进度动画。`get_pk_display_snapshot()` 同时提供真实输入、平滑显示、皮肤和百分比文本；原 0.16 秒显示动画保留。超宽父框改为等比缩放/居中，人物、字体和准心保持比例，Android 物理安全区仍由 A/E 提供。
+
+截图、两种对白策略视频及真实输入限制见 [PTF-04 日志](../../Integration/直播表现_PTF-04_2026-10-16_log.md)。
+
 ## INT-18D 两档实际分辨率验收（2026-10-16）
 
 HUD 在 `configure_opponent_result(level, presentation)` 中消费正式 `LevelProfile.streamer_live_foreground`；新前景层位于角色之后、对白之前，同属右侧 CRT 覆盖范围。`configure_opponent_foreground(texture)` 可独立替换，`reset_for_attempt()` 清理旧前景。降档震动幅度/时长现在读取 06 表，缺项保留 Inspector 配置。

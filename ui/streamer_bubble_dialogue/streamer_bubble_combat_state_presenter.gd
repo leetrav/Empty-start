@@ -84,8 +84,11 @@ func _on_tier_changed(current_tier: int, _player_pk: float) -> void:
 		# T0 表示对手离线；HUD 已清理对手侧队列，这里丢弃对应完成映射。
 		_forget_sequences_for_side(BubbleDialogueEntry.SpeakerSide.OPPONENT)
 	elif current_tier == 1 and previous_tier > 1:
-		# 降到 T1 使用独立语义 ID，供 CS-27 精确配置嘲讽内容。
-		_submit_event(EVENT_TIER1_TAUNT)
+		# 正式 20 表目前只有通用 tier_down；专属嘲讽未配置时消费已存在的降档台词。
+		if _bubble_dialogue_config.find_by_event(EVENT_TIER1_TAUNT).is_empty():
+			_submit_event(EVENT_TIER_DOWN)
+		else:
+			_submit_event(EVENT_TIER1_TAUNT)
 	else:
 		_submit_event(EVENT_TIER_DOWN)
 

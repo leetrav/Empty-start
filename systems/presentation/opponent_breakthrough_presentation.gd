@@ -65,16 +65,18 @@ var _mode: PresentationMode = PresentationMode.IDLE
 var _motion_origin_position: Vector2 = Vector2.ZERO
 var _motion_origin_scale: Vector2 = Vector2.ONE
 var _motion_origin_rotation: float = 0.0
+var _fit_portrait: Callable
 
 @onready var _status_label: Label = $StatusLabel
 
 
 ## 接收现有 HUD 立绘和动效层，保持动画目标由调用方所有。
-func bind_targets(portrait: TextureRect, motion_layer: StreamerPortraitMotion) -> bool:
+func bind_targets(portrait: TextureRect, motion_layer: StreamerPortraitMotion, fit_portrait: Callable = Callable()) -> bool:
 	if portrait == null or motion_layer == null:
 		return false
 	_portrait = portrait
 	_motion_layer = motion_layer
+	_fit_portrait = fit_portrait
 	_saved_portrait_material = _portrait.material
 	_motion_origin_position = _motion_layer.position
 	_motion_origin_scale = _motion_layer.scale
@@ -171,7 +173,7 @@ func reset_to_tier_three() -> void:
 	_offline_label_changed = false
 	visible = false
 	if _portrait != null:
-		_portrait.texture = _tier_three_texture
+		_apply_portrait_texture(_tier_three_texture)
 		_portrait.material = _saved_portrait_material
 	if _motion_layer != null:
 		_motion_layer.position = _motion_origin_position
@@ -200,7 +202,7 @@ func _process(delta: float) -> void:
 	_elapsed += delta
 	if _mode == PresentationMode.FOX_PETALS and not _fox_defeat_revealed and _elapsed >= fox_defeat_reveal_seconds:
 		_fox_defeat_revealed = true
-		_portrait.texture = _defeat_texture
+		_apply_portrait_texture(_defeat_texture)
 	if _mode == PresentationMode.OFFLINE and not _offline_label_changed and _elapsed >= unbroken_hold_seconds + 0.14:
 		_show_offline_text()
 	if _warp_material != null:
@@ -366,12 +368,12 @@ func _draw_kiwi_speed_lines() -> void:
 ## 切换到融化过渡图，明确展示现有美术帧。
 func _show_alien_transition() -> void:
 	if _defeat_transition_texture != null:
-		_portrait.texture = _defeat_transition_texture
+		_apply_portrait_texture(_defeat_transition_texture)
 
 
 ## 显示花瓣密集时切入狐狸击败图。
 func _show_fox_defeat() -> void:
-	_portrait.texture = _defeat_texture
+	_apply_portrait_texture(_defeat_texture)
 	_fox_defeat_revealed = true
 
 
@@ -393,7 +395,7 @@ func _finish_defeat(character_id: StringName, sequence_id: int) -> void:
 		return
 	_active_tween = null
 	_clear_petals()
-	_portrait.texture = _defeat_texture
+	_apply_portrait_texture(_defeat_texture)
 	_portrait.material = _saved_portrait_material
 	_restore_motion_transform()
 	_mode = PresentationMode.IDLE
@@ -457,3 +459,10 @@ func _layout_status_label() -> void:
 		return
 	_status_label.position = Vector2(16.0, size.y * 0.5 - 30.0)
 	_status_label.size = Vector2(maxf(size.x - 32.0, 0.0), 60.0)
+
+
+# 仅切纹理与统一排版，具体 Tween 和阶段事实仍归原组件。
+func _apply_portrait_texture(texture: Texture2D) -> void:
+	_portrait.texture = texture
+	if _fit_portrait.is_valid():
+		_fit_portrait.call()

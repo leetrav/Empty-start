@@ -40,6 +40,9 @@ func configure(
 	_battle_attempt_flow.normal_combat_completed.connect(_on_normal_combat_completed)
 	_battle_attempt_flow.attempt_failed.connect(_on_attempt_failed)
 	_is_configured = true
+	# 支持组合方在已开始的真实尝试中绑定配置，不要求再次伪造 attempt_started 信号。
+	if _battle_attempt_flow.is_normal_combat_active():
+		_on_attempt_started(_battle_attempt_flow.get_current_level_profile(), _battle_attempt_flow.get_hit_resolution(), _battle_attempt_flow.get_combat_stage(), _battle_attempt_flow.get_repeat_queue())
 	return true
 
 
@@ -73,7 +76,8 @@ func _on_attempt_started(
 			push_warning("SD-07: 定时对白触发时间不能小于 0 秒。")
 			continue
 		var timed_entry: BubbleDialogueEntry = source_entry.duplicate(true) as BubbleDialogueEntry
-		timed_entry.priority = BubbleDialogueEntry.Priority.TIMED_IDLE
+		# 尊重配置的剧情优先级；random_idle 仍在独立低优先级路径处理。
+		timed_entry.priority = source_entry.priority
 		_scheduled_entries.append({
 			"trigger_time_seconds": source_entry.trigger_time_seconds,
 			"config_order": config_order,

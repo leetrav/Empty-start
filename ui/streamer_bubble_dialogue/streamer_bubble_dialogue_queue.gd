@@ -35,6 +35,13 @@ func enqueue_entry(entry: BubbleDialogueEntry) -> bool:
 		return false
 	if entry.priority == BubbleDialogueEntry.Priority.PLOT:
 		return not String(enqueue_sequence([entry])).is_empty()
+	# 未显示的普通命中只保留最新一条，避免枪数形成几分钟旧复述积压；剧情顺序保持原样。
+	if entry.event_id == &"actual_hit" and entry.priority == BubbleDialogueEntry.Priority.HIT:
+		var pending: Array = _pending_by_side[entry.side]
+		for index: int in range(pending.size() - 1, -1, -1):
+			var older: BubbleDialogueEntry = pending[index].get("entry") as BubbleDialogueEntry
+			if older != null and older.event_id == entry.event_id:
+				pending.remove_at(index)
 	_enqueue_request({
 		"entry": entry,
 		"priority": int(entry.priority),

@@ -48,6 +48,26 @@ var _comment_timer: float = 0.0
 var _comment_scroll_speed: float = 24.0
 var _comment_scroll_remainder: float = 0.0
 var _comment_row_cap: int = 5
+var _unknown_metrics: Dictionary = {}
+
+
+# A 提交未配置事实的指标 ID；这里只显示未知，不生成对手业务数值。
+func set_unknown_metrics(metric_ids: Array) -> void:
+	_unknown_metrics.clear()
+	for metric_id: Variant in metric_ids:
+		var key: String = str(metric_id)
+		if key in ["viewer_count", "like_count", "comment_count", "fan_count"]:
+			_unknown_metrics[key] = true
+	_refresh_values()
+
+
+# 交接/诊断只读当前显示值，未知字段保持 null，避免把占位零值报告成真实人数。
+func get_display_snapshot() -> Dictionary:
+	var result: Dictionary = {"has_live_session": _live_session != null}
+	var keys: Array[String] = ["viewer_count", "like_count", "comment_count", "fan_count"]
+	for index: int in keys.size():
+		result[keys[index]] = null if _unknown_metrics.has(keys[index]) else _display_values[index]
+	return result
 
 
 # 编辑器只预览展示方向；运行时按独立绑定配置读取当前周目。
@@ -175,13 +195,19 @@ func bind_live_session(session: LiveSessionData) -> void:
 
 # 保留调用方的原始展示输入；业务状态仍由数据源持有。
 func set_values(viewer_count: int, like_count: int, comment_count: int, fan_count: int) -> void:
+	# 绑定后由唯一 Resource 优先，旧零占位调用不能覆盖当前事实。
+	if _live_session != null:
+		viewer_count = _live_session.viewer_count
+		like_count = _live_session.like_count
+		comment_count = _live_session.comment_count
+		fan_count = _live_session.fan_count
 	_display_values = [viewer_count, like_count, comment_count, fan_count]
 	if not is_node_ready():
 		return
-	_render_metric(_viewer_metric, viewer_icon, viewer_count)
-	_render_metric(_like_metric, like_icon, like_count)
-	_render_metric(_comment_metric, comment_icon, comment_count)
-	_render_metric(_fan_metric, fan_icon, fan_count)
+	_render_metric(_viewer_metric, viewer_icon, viewer_count, "viewer_count")
+	_render_metric(_like_metric, like_icon, like_count, "like_count")
+	_render_metric(_comment_metric, comment_icon, comment_count, "comment_count")
+	_render_metric(_fan_metric, fan_icon, fan_count, "fan_count")
 
 
 # 绑定时读取数据源；未绑定时按最近的原始展示输入重新排版。
@@ -196,9 +222,14 @@ func _refresh_values() -> void:
 
 
 # 四项标签独立渲染，后续单项变色或 Tween 可在此接入。
-func _render_metric(metric: RichTextLabel, icon: String, value: int) -> void:
+func _render_metric(metric: RichTextLabel, icon: String, value: int, metric_id: String = "") -> void:
 	# 千以下沿用整数；从 1000 起按千显示一位小数，只转换可见文字。
 	var number_text: String = "%.1fk" % (value / 1000.0) if value >= 1000 else str(value)
+	if _unknown_metrics.has(metric_id):
+		number_text = "—"
+		metric.tooltip_text = "暂无该项数据"
+	else:
+		metric.tooltip_text = ""
 	if display_side == DisplaySide.OPPONENT_RIGHT:
 		metric.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		metric.text = number_text + icon

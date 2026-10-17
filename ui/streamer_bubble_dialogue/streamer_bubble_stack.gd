@@ -79,9 +79,13 @@ func _layout_active_bubbles() -> void:
 	if size.x <= 0.0 or size.y <= 0.0:
 		return
 	var count: int = _active_bubbles.size()
+	# 为向上浮动、尖尾和阴影留空间，各气泡共享真实直播框高度预算。
+	var top_margin: float = edge_margin + float_distance_px + 26.0
+	var height_budget: float = maxf(64.0, (size.y - top_margin - edge_margin - vertical_gap * maxf(count - 1, 0)) / maxf(count, 1))
 	for index in range(count):
 		var bubble: StreamerBubbleView = _active_bubbles[index]
 		if is_instance_valid(bubble):
+			bubble.configure_available_size(Vector2(size.x - edge_margin * 2.0, height_budget))
 			bubble.set_history_depth(count - 1 - index)
 	var bottom: float = size.y - edge_margin
 	for index in range(count - 1, -1, -1):
@@ -91,7 +95,7 @@ func _layout_active_bubbles() -> void:
 		var x: float = edge_margin
 		if tail_direction == StreamerBubbleView.TailDirection.LEFT:
 			x = size.x - edge_margin - bubble.size.x
-		var y: float = maxf(edge_margin, bottom - bubble.size.y)
+		var y: float = maxf(top_margin, bottom - bubble.size.y)
 		bubble.set_stack_position(Vector2(x, y), index < count - 1)
 		bottom = y - vertical_gap
 
