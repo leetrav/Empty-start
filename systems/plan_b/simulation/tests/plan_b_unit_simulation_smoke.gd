@@ -54,6 +54,9 @@ func _run_smoke() -> void:
 	await _test_neutral_infection()
 	if _failed:
 		return
+	await _test_counterattack_split()
+	if _failed:
+		return
 	await _test_neutral_replenishment()
 	if _failed:
 		return
@@ -175,6 +178,47 @@ func _test_neutral_infection() -> void:
 	var neutral_snapshot: Dictionary = _find_snapshot(ids[1])
 	_check(outcome == "converted", "faction unit infects neutral on a successful strength roll")
 	_check(neutral_snapshot.get("team") == "player" and neutral_snapshot.get("word_id") == "roadside", "neutral receives complete infecting word snapshot")
+
+
+## C 的 alien_t3_split 请求由 B 创建两个新对手棋子，并继承目标的完整当前话语快照。
+func _test_counterattack_split() -> void:
+	await _reset_simulation(175)
+	_simulation.maximum_population = 4
+	_simulation.neutral_spawn_interval_seconds = 100.0
+	var ids: Array[int] = _simulation.create_population(2, 0)
+	_simulation.seed_unit(ids[0], &"opponent", _word("split-source", "费米分裂话", "type_b", 2), 7)
+	_simulation.start_simulation()
+	var source_snapshot: Dictionary = _simulation.get_unit_snapshot(ids[0])
+	var spawned_before: int = _spawned_count
+	var request: Dictionary = {
+		"skill_id": "alien_t3_split",
+		"target_unit_id": str(ids[0]),
+		"effect_id": &"split",
+		"effect_parameters": {"child_count": 2},
+	}
+	_check(_simulation.apply_counterattack_effect(request), "C split request applies through B public effect API")
+	var faction_counts: Dictionary = _simulation.get_faction_counts()
+	var snapshots: Array[Dictionary] = _simulation.get_unit_snapshots()
+	var copied_children: Array[Dictionary] = []
+	for snapshot: Dictionary in snapshots:
+		if snapshot.get("team") == "opponent" and int(snapshot.get("unit_id", -1)) != ids[0]:
+			copied_children.append(snapshot)
+	_check(copied_children.size() == 2, "split effect creates two additional opponent units")
+	_check(int(faction_counts.get("opponent", 0)) == 3 and int(faction_counts.get("neutral", 0)) == 1, "split updates only real unit counts")
+	_check(_spawned_count == spawned_before + 2, "split reports both children through unit_spawned")
+	for child_snapshot: Dictionary in copied_children:
+		_check(
+			child_snapshot.get("word_id") == source_snapshot.get("word_id")
+			and child_snapshot.get("text") == source_snapshot.get("text")
+			and child_snapshot.get("word_order") == source_snapshot.get("word_order")
+			and child_snapshot.get("battle_type") == source_snapshot.get("battle_type")
+			and child_snapshot.get("strength") == source_snapshot.get("strength")
+			and child_snapshot.get("traits") == source_snapshot.get("traits")
+			and child_snapshot.get("tendency") == source_snapshot.get("tendency")
+			and child_snapshot.get("position") != source_snapshot.get("position"),
+			"split child inherits complete opponent word state"
+		)
+	_check(not _simulation.apply_counterattack_effect(request), "split refuses when the configured population ceiling is full")
 
 
 ## 在上限 96 的密度下连续推进固定物理帧，日志记录实际帧时长供原型调参。

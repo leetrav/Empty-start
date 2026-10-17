@@ -116,6 +116,37 @@ func seed_unit(neutral_unit_id: int, team_value: StringName, word_definition: Di
 	return true
 
 
+## 执行 C 的原型反击请求；split 子体完整继承对手目标快照并受人口上限约束。
+func apply_counterattack_effect(request: Dictionary) -> bool:
+	if not _is_running or request.is_empty() or str(request.get("effect_id", "")) != "split":
+		return false
+	var target_id: int = _normalize_unit_id(request.get("target_unit_id", -1))
+	var target_unit := _units_by_id.get(target_id) as PlanBUnit
+	if target_unit == null or target_unit.team != OPPONENT_TEAM or not target_unit.has_word():
+		return false
+	var parameters_value: Variant = request.get("effect_parameters", {})
+	if not (parameters_value is Dictionary):
+		return false
+	var effect_parameters: Dictionary = parameters_value
+	var requested_child_count: int = maxi(int(effect_parameters.get("child_count", 0)), 0)
+	var available_slots: int = maxi(maximum_population - _units_by_id.size(), 0)
+	var spawned_count: int = mini(requested_child_count, available_slots)
+	if spawned_count <= 0:
+		return false
+	var source_definition: Dictionary = target_unit.get_word_snapshot()
+	var source_team: StringName = target_unit.team
+	var source_word_order: int = target_unit.word_order
+	var spawned_any: bool = false
+	for child_index: int in spawned_count:
+		var spawn_position: Vector2 = _get_split_child_position(target_unit, child_index, spawned_count)
+		var child_unit: PlanBUnit = _spawn_unit(
+			source_team, source_definition, source_word_order, spawn_position
+		)
+		if child_unit != null:
+			spawned_any = true
+	return spawned_any
+
+
 ## 启动或恢复本地物理帧推进；棋子移动和碰撞由模块自身驱动。
 func start_simulation() -> void:
 	if _is_running:
@@ -519,6 +550,15 @@ func _random_spawn_position() -> Vector2:
 	return Vector2(_rng.randf_range(left, right), _rng.randf_range(top, bottom))
 
 
+## 让分裂子体从目标周围展开；每个方向按请求次序稳定计算，且限制在实际战场内。
+func _get_split_child_position(target_unit: PlanBUnit, child_index: int, child_count: int) -> Vector2:
+	var angle: float = TAU * float(child_index) / float(maxi(child_count, 1))
+	var spawn_offset: Vector2 = Vector2.from_angle(angle) * unit_collision_radius * 2.6
+	var minimum: Vector2 = play_area.position + Vector2.ONE * unit_collision_radius
+	var maximum: Vector2 = play_area.end - Vector2.ONE * unit_collision_radius
+	return (target_unit.position + spawn_offset).clamp(minimum, maximum)
+
+
 ## 校验 C 提供的最小静态字段并深拷贝，运行时不持有词库可变引用。
 func _copy_valid_word_definition(definition: Dictionary) -> Dictionary:
 	var word_id: String = str(definition.get("word_id", "")).strip_edges()
@@ -553,6 +593,14 @@ func _counters(source_unit: PlanBUnit, target_unit: PlanBUnit) -> bool:
 ## 当前只允许玩家和对手作为可播种阵营。
 func _is_faction(team_value: StringName) -> bool:
 	return team_value == PLAYER_TEAM or team_value == OPPONENT_TEAM
+
+
+## C 当前发送字符串 ID，A/B 内部使用 int；拒绝空值和非数字字符串。
+func _normalize_unit_id(unit_id_value: Variant) -> int:
+	if unit_id_value is int:
+		return int(unit_id_value)
+	var unit_id_text: String = str(unit_id_value).strip_edges()
+	return unit_id_text.to_int() if unit_id_text.is_valid_int() else -1
 
 
 ## 所有对外快照和接触裁决复用稳定 ID 顺序。
