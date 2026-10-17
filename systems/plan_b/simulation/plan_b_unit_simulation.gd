@@ -42,6 +42,7 @@ const INFECTION_CHANCES_BY_STRENGTH: Dictionary = {
 @export_range(0.0, 3.0, 0.05) var flee_weight: float = 1.35
 @export_range(0.0, 2.0, 0.05) var chase_speed_scale: float = 1.05
 @export_range(0.0, 2.0, 0.05) var flee_speed_scale: float = 1.15
+## 模拟器内部本地边界；外部应通过 set_play_area() 注入棋盘全局 Rect2。
 @export var play_area: Rect2 = Rect2()
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -81,11 +82,25 @@ func set_random_seed(seed_value: int) -> void:
 	_rng.seed = seed_value
 
 
-## 设置模拟区相对本节点的实际场景坐标，所有棋子和碰撞均在这块区域中运行。
-func set_play_area(area: Rect2) -> bool:
-	if area.size.x <= unit_collision_radius * 2.0 or area.size.y <= unit_collision_radius * 2.0:
+## A 传入棋盘的全局场景 Rect2；转成本节点局部边界供运动和碰撞共同使用。
+func set_play_area(scene_area: Rect2) -> bool:
+	if scene_area.size.x <= unit_collision_radius * 2.0 or scene_area.size.y <= unit_collision_radius * 2.0:
 		return false
-	play_area = area
+	# A 传入棋盘的场景全局 Rect2；这里转换一次，运动和边界碰撞都使用本节点局部坐标。
+	var local_corner_a: Vector2 = to_local(scene_area.position)
+	var local_corner_b: Vector2 = to_local(scene_area.end)
+	var local_minimum := Vector2(
+		minf(local_corner_a.x, local_corner_b.x),
+		minf(local_corner_a.y, local_corner_b.y)
+	)
+	var local_maximum := Vector2(
+		maxf(local_corner_a.x, local_corner_b.x),
+		maxf(local_corner_a.y, local_corner_b.y)
+	)
+	var local_area := Rect2(local_minimum, local_maximum - local_minimum)
+	if local_area.size.x <= unit_collision_radius * 2.0 or local_area.size.y <= unit_collision_radius * 2.0:
+		return false
+	play_area = local_area
 	return true
 
 

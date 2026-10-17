@@ -83,6 +83,8 @@ func get_public_snapshot() -> Dictionary:
 	snapshot["tendency"] = str(_word_definition.get("tendency", ""))
 	snapshot["position"] = global_position
 	snapshot["velocity"] = velocity
+	var collision_edge: Vector2 = to_global(Vector2(_collision_radius, 0.0))
+	snapshot["collision_radius"] = global_position.distance_to(collision_edge)
 	snapshot["age"] = age_seconds
 	snapshot["lifespan"] = lifespan_seconds
 	snapshot["collision_cooldown"] = contact_cooldown_remaining
