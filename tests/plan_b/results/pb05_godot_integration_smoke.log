@@ -1,0 +1,184 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+TextServer: Added interface "Dummy"
+TextServer: Added interface "ICU / HarfBuzz / Graphite (Built-in)"
+Using "default" pen tablet driver...
+
+TextServer: Primary interface set to: "ICU / HarfBuzz / Graphite (Built-in)".
+Loading resource: res://ui/theme/base_theme.tres remapped: res://ui/theme/base_theme.tres
+Loading resource: res://assets/fonts/NotoSansSC-VF.ttf remapped: res://assets/fonts/NotoSansSC-VF.ttf
+Loading resource: res://.godot/imported/NotoSansSC-VF.ttf-6f6c10a665e6d636cc7d2ac644ca224b.fontdata remapped: res://.godot/imported/NotoSansSC-VF.ttf-6f6c10a665e6d636cc7d2ac644ca224b.fontdata
+Completed load for: 'res://assets/fonts/NotoSansSC-VF.ttf' remapped 'res://assets/fonts/NotoSansSC-VF.ttf' at thread -1
+Loading resource: res://assets/fonts/ZCOOLKuaiLe-Regular.ttf remapped: res://assets/fonts/ZCOOLKuaiLe-Regular.ttf
+Loading resource: res://.godot/imported/ZCOOLKuaiLe-Regular.ttf-514cd62e906f01188e726a933201eba0.fontdata remapped: res://.godot/imported/ZCOOLKuaiLe-Regular.ttf-514cd62e906f01188e726a933201eba0.fontdata
+Completed load for: 'res://assets/fonts/ZCOOLKuaiLe-Regular.ttf' remapped 'res://assets/fonts/ZCOOLKuaiLe-Regular.ttf' at thread -1
+Completed load for: 'res://ui/theme/base_theme.tres' remapped 'res://ui/theme/base_theme.tres' at thread -1
+Loading resource: res://default_bus_layout.tres remapped: res://default_bus_layout.tres
+Completed load for: 'res://default_bus_layout.tres' remapped 'res://default_bus_layout.tres' at thread -1
+CORE API HASH: 2004498165
+EDITOR API HASH: 1696660745
+SceneTreeFTI: traversal method DEFAULT
+Loading resource: res://core/autoload/scene_router.gd remapped: res://core/autoload/scene_router.gd
+Loading resource: res://data/ending/ending_main_art_config.tres remapped: res://data/ending/ending_main_art_config.tres
+Loading resource: res://data/ending/ending_main_art_config.gd remapped: res://data/ending/ending_main_art_config.gd
+Completed load for: 'res://data/ending/ending_main_art_config.gd' remapped 'res://data/ending/ending_main_art_config.gd' at thread -1
+Completed load for: 'res://data/ending/ending_main_art_config.tres' remapped 'res://data/ending/ending_main_art_config.tres' at thread -1
+Loading resource: res://data/ending/ending_religion_name_config.tres remapped: res://data/ending/ending_religion_name_config.tres
+Loading resource: res://data/ending/ending_religion_name_config.gd remapped: res://data/ending/ending_religion_name_config.gd
+Completed load for: 'res://data/ending/ending_religion_name_config.gd' remapped 'res://data/ending/ending_religion_name_config.gd' at thread -1
+Completed load for: 'res://data/ending/ending_religion_name_config.tres' remapped 'res://data/ending/ending_religion_name_config.tres' at thread -1
+Loading resource: res://data/ending/ending_judgement_text_config.tres remapped: res://data/ending/ending_judgement_text_config.tres
+Loading resource: res://data/ending/ending_judgement_text_config.gd remapped: res://data/ending/ending_judgement_text_config.gd
+Completed load for: 'res://data/ending/ending_judgement_text_config.gd' remapped 'res://data/ending/ending_judgement_text_config.gd' at thread -1
+Completed load for: 'res://data/ending/ending_judgement_text_config.tres' remapped 'res://data/ending/ending_judgement_text_config.tres' at thread -1
+Loading resource: res://data/scripture/verse_number_config.tres remapped: res://data/scripture/verse_number_config.tres
+Loading resource: res://core/scripture/scripture_verse_config.gd remapped: res://core/scripture/scripture_verse_config.gd
+Completed load for: 'res://core/scripture/scripture_verse_config.gd' remapped 'res://core/scripture/scripture_verse_config.gd' at thread -1
+Completed load for: 'res://data/scripture/verse_number_config.tres' remapped 'res://data/scripture/verse_number_config.tres' at thread -1
+Loading resource: res://ui/ending/ending_scripture_row.tscn remapped: res://ui/ending/ending_scripture_row.tscn
+Loading resource: res://ui/ending/ending_scripture_row.gd remapped: res://ui/ending/ending_scripture_row.gd
+Completed load for: 'res://ui/ending/ending_scripture_row.gd' remapped 'res://ui/ending/ending_scripture_row.gd' at thread -1
+Completed load for: 'res://ui/ending/ending_scripture_row.tscn' remapped 'res://ui/ending/ending_scripture_row.tscn' at thread -1
+Completed load for: 'res://core/autoload/scene_router.gd' remapped 'res://core/autoload/scene_router.gd' at thread -1
+Loading resource: res://core/autoload/settings_manager.gd remapped: res://core/autoload/settings_manager.gd
+Completed load for: 'res://core/autoload/settings_manager.gd' remapped 'res://core/autoload/settings_manager.gd' at thread -1
+Loading resource: res://core/autoload/audio_manager.gd remapped: res://core/autoload/audio_manager.gd
+Loading resource: res://data/shared/audio_event_config.tres remapped: res://data/shared/audio_event_config.tres
+Loading resource: res://core/audio/audio_event_config.gd remapped: res://core/audio/audio_event_config.gd
+Completed load for: 'res://core/audio/audio_event_config.gd' remapped 'res://core/audio/audio_event_config.gd' at thread -1
+Loading resource: res://assets/audio/sfx/magical/magical_1.ogg remapped: res://assets/audio/sfx/magical/magical_1.ogg
+Loading resource: res://.godot/imported/magical_1.ogg-b398a6e35f2607dd5a5e819bce7f7f8c.oggvorbisstr remapped: res://.godot/imported/magical_1.ogg-b398a6e35f2607dd5a5e819bce7f7f8c.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/magical/magical_1.ogg' remapped 'res://assets/audio/sfx/magical/magical_1.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/magical/magical_2.ogg remapped: res://assets/audio/sfx/magical/magical_2.ogg
+Loading resource: res://.godot/imported/magical_2.ogg-02faa8042eaa90fd1de101a0b3a92c6b.oggvorbisstr remapped: res://.godot/imported/magical_2.ogg-02faa8042eaa90fd1de101a0b3a92c6b.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/magical/magical_2.ogg' remapped 'res://assets/audio/sfx/magical/magical_2.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/magical/magical_3.ogg remapped: res://assets/audio/sfx/magical/magical_3.ogg
+Loading resource: res://.godot/imported/magical_3.ogg-6277e6eeb0fd3b2d83205c956e85a411.oggvorbisstr remapped: res://.godot/imported/magical_3.ogg-6277e6eeb0fd3b2d83205c956e85a411.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/magical/magical_3.ogg' remapped 'res://assets/audio/sfx/magical/magical_3.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/magical/magical_4.ogg remapped: res://assets/audio/sfx/magical/magical_4.ogg
+Loading resource: res://.godot/imported/magical_4.ogg-5c16ebd4e6a4312ab3585ce36f3ca9d1.oggvorbisstr remapped: res://.godot/imported/magical_4.ogg-5c16ebd4e6a4312ab3585ce36f3ca9d1.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/magical/magical_4.ogg' remapped 'res://assets/audio/sfx/magical/magical_4.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/magical/magical_5.ogg remapped: res://assets/audio/sfx/magical/magical_5.ogg
+Loading resource: res://.godot/imported/magical_5.ogg-a1b03eebea456671f2be4248855a3d7e.oggvorbisstr remapped: res://.godot/imported/magical_5.ogg-a1b03eebea456671f2be4248855a3d7e.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/magical/magical_5.ogg' remapped 'res://assets/audio/sfx/magical/magical_5.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/magical/magical_6.ogg remapped: res://assets/audio/sfx/magical/magical_6.ogg
+Loading resource: res://.godot/imported/magical_6.ogg-a4300858ddd7ecab53b86d3c82a6065f.oggvorbisstr remapped: res://.godot/imported/magical_6.ogg-a4300858ddd7ecab53b86d3c82a6065f.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/magical/magical_6.ogg' remapped 'res://assets/audio/sfx/magical/magical_6.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/magical/magical_7.ogg remapped: res://assets/audio/sfx/magical/magical_7.ogg
+Loading resource: res://.godot/imported/magical_7.ogg-960b630719c86d5b3fd0789543dc3d65.oggvorbisstr remapped: res://.godot/imported/magical_7.ogg-960b630719c86d5b3fd0789543dc3d65.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/magical/magical_7.ogg' remapped 'res://assets/audio/sfx/magical/magical_7.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/interface/confirmation_001.ogg remapped: res://assets/audio/sfx/interface/confirmation_001.ogg
+Loading resource: res://.godot/imported/confirmation_001.ogg-10c1724fbf034603c223706264d3a8fb.oggvorbisstr remapped: res://.godot/imported/confirmation_001.ogg-10c1724fbf034603c223706264d3a8fb.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/interface/confirmation_001.ogg' remapped 'res://assets/audio/sfx/interface/confirmation_001.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg remapped: res://assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg
+Loading resource: res://.godot/imported/click_002.ogg-0eeec99fca50b9af88b65d8916e4f2be.oggvorbisstr remapped: res://.godot/imported/click_002.ogg-0eeec99fca50b9af88b65d8916e4f2be.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg' remapped 'res://assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/comic/typewriter.wav remapped: res://assets/audio/sfx/comic/typewriter.wav
+Loading resource: res://.godot/imported/typewriter.wav-d20148425d2b205f97c4876046d95871.sample remapped: res://.godot/imported/typewriter.wav-d20148425d2b205f97c4876046d95871.sample
+Completed load for: 'res://assets/audio/sfx/comic/typewriter.wav' remapped 'res://assets/audio/sfx/comic/typewriter.wav' at thread -1
+Loading resource: res://assets/audio/sfx/comic/book_flip.ogg remapped: res://assets/audio/sfx/comic/book_flip.ogg
+Loading resource: res://.godot/imported/book_flip.ogg-fc629c7494cd4218a01845343873a0d1.oggvorbisstr remapped: res://.godot/imported/book_flip.ogg-fc629c7494cd4218a01845343873a0d1.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/comic/book_flip.ogg' remapped 'res://assets/audio/sfx/comic/book_flip.ogg' at thread -1
+Completed load for: 'res://data/shared/audio_event_config.tres' remapped 'res://data/shared/audio_event_config.tres' at thread -1
+Completed load for: 'res://core/autoload/audio_manager.gd' remapped 'res://core/autoload/audio_manager.gd' at thread -1
+Loading resource: res://core/autoload/save_manager.gd remapped: res://core/autoload/save_manager.gd
+Loading resource: res://data/identity/identity_orthodox_1.tres remapped: res://data/identity/identity_orthodox_1.tres
+Completed load for: 'res://data/identity/identity_orthodox_1.tres' remapped 'res://data/identity/identity_orthodox_1.tres' at thread -1
+Loading resource: res://data/identity/identity_heresy_4.tres remapped: res://data/identity/identity_heresy_4.tres
+Completed load for: 'res://data/identity/identity_heresy_4.tres' remapped 'res://data/identity/identity_heresy_4.tres' at thread -1
+Loading resource: res://data/identity/identity_absurd_1.tres remapped: res://data/identity/identity_absurd_1.tres
+Completed load for: 'res://data/identity/identity_absurd_1.tres' remapped 'res://data/identity/identity_absurd_1.tres' at thread -1
+Loading resource: res://data/identity/identity_heresy_2.tres remapped: res://data/identity/identity_heresy_2.tres
+Completed load for: 'res://data/identity/identity_heresy_2.tres' remapped 'res://data/identity/identity_heresy_2.tres' at thread -1
+Loading resource: res://data/identity/identity_absurd_2.tres remapped: res://data/identity/identity_absurd_2.tres
+Completed load for: 'res://data/identity/identity_absurd_2.tres' remapped 'res://data/identity/identity_absurd_2.tres' at thread -1
+Loading resource: res://data/identity/identity_orthodox_3.tres remapped: res://data/identity/identity_orthodox_3.tres
+Completed load for: 'res://data/identity/identity_orthodox_3.tres' remapped 'res://data/identity/identity_orthodox_3.tres' at thread -1
+Loading resource: res://data/identity/identity_heresy_3.tres remapped: res://data/identity/identity_heresy_3.tres
+Completed load for: 'res://data/identity/identity_heresy_3.tres' remapped 'res://data/identity/identity_heresy_3.tres' at thread -1
+Loading resource: res://data/identity/identity_absurd_4.tres remapped: res://data/identity/identity_absurd_4.tres
+Completed load for: 'res://data/identity/identity_absurd_4.tres' remapped 'res://data/identity/identity_absurd_4.tres' at thread -1
+Loading resource: res://data/identity/identity_orthodox_4.tres remapped: res://data/identity/identity_orthodox_4.tres
+Completed load for: 'res://data/identity/identity_orthodox_4.tres' remapped 'res://data/identity/identity_orthodox_4.tres' at thread -1
+Loading resource: res://data/identity/identity_absurd_3.tres remapped: res://data/identity/identity_absurd_3.tres
+Completed load for: 'res://data/identity/identity_absurd_3.tres' remapped 'res://data/identity/identity_absurd_3.tres' at thread -1
+Loading resource: res://data/identity/identity_orthodox_2.tres remapped: res://data/identity/identity_orthodox_2.tres
+Completed load for: 'res://data/identity/identity_orthodox_2.tres' remapped 'res://data/identity/identity_orthodox_2.tres' at thread -1
+Loading resource: res://data/identity/identity_heresy_1.tres remapped: res://data/identity/identity_heresy_1.tres
+Completed load for: 'res://data/identity/identity_heresy_1.tres' remapped 'res://data/identity/identity_heresy_1.tres' at thread -1
+Loading resource: res://data/identity/identity_orthodox_placeholder.tres remapped: res://data/identity/identity_orthodox_placeholder.tres
+Completed load for: 'res://data/identity/identity_orthodox_placeholder.tres' remapped 'res://data/identity/identity_orthodox_placeholder.tres' at thread -1
+Loading resource: res://data/identity/identity_heretical_placeholder.tres remapped: res://data/identity/identity_heretical_placeholder.tres
+Completed load for: 'res://data/identity/identity_heretical_placeholder.tres' remapped 'res://data/identity/identity_heretical_placeholder.tres' at thread -1
+Loading resource: res://data/identity/identity_absurd_placeholder.tres remapped: res://data/identity/identity_absurd_placeholder.tres
+Completed load for: 'res://data/identity/identity_absurd_placeholder.tres' remapped 'res://data/identity/identity_absurd_placeholder.tres' at thread -1
+Completed load for: 'res://core/autoload/save_manager.gd' remapped 'res://core/autoload/save_manager.gd' at thread -1
+Loading resource: res://addons/godot_mcp/runtime/mcp_runtime_probe.gd remapped: res://addons/godot_mcp/runtime/mcp_runtime_probe.gd
+Completed load for: 'res://addons/godot_mcp/runtime/mcp_runtime_probe.gd' remapped 'res://addons/godot_mcp/runtime/mcp_runtime_probe.gd' at thread -1
+Loaded system CA certificates
+Loading resource: res://tests/plan_b/pb05_public_api_smoke.tscn remapped: res://tests/plan_b/pb05_public_api_smoke.tscn
+Loading resource: res://tests/plan_b/pb05_public_api_smoke.gd remapped: res://tests/plan_b/pb05_public_api_smoke.gd
+Completed load for: 'res://tests/plan_b/pb05_public_api_smoke.gd' remapped 'res://tests/plan_b/pb05_public_api_smoke.gd' at thread -1
+Completed load for: 'res://tests/plan_b/pb05_public_api_smoke.tscn' remapped 'res://tests/plan_b/pb05_public_api_smoke.tscn' at thread -1
+Loading resource: res://assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_003.ogg remapped: res://assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_003.ogg
+Loading resource: res://.godot/imported/confirm_style_2_003.ogg-4b944f0a5f12009a5b2d317a637007be.oggvorbisstr remapped: res://.godot/imported/confirm_style_2_003.ogg-4b944f0a5f12009a5b2d317a637007be.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_003.ogg' remapped 'res://assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_003.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg remapped: res://assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg
+Loading resource: res://.godot/imported/click_002.ogg-0eeec99fca50b9af88b65d8916e4f2be.oggvorbisstr remapped: res://.godot/imported/click_002.ogg-0eeec99fca50b9af88b65d8916e4f2be.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg' remapped 'res://assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_interface-sounds/Audio/drop_001.ogg remapped: res://assets/audio/sfx/kenney_interface-sounds/Audio/drop_001.ogg
+Loading resource: res://.godot/imported/drop_001.ogg-43d7853e5e53627e9db8f79a7d9fcf27.oggvorbisstr remapped: res://.godot/imported/drop_001.ogg-43d7853e5e53627e9db8f79a7d9fcf27.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_interface-sounds/Audio/drop_001.ogg' remapped 'res://assets/audio/sfx/kenney_interface-sounds/Audio/drop_001.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_interface-sounds/Audio/glass_003.ogg remapped: res://assets/audio/sfx/kenney_interface-sounds/Audio/glass_003.ogg
+Loading resource: res://.godot/imported/glass_003.ogg-fbfad93259ac78a3257410abc4fcbf93.oggvorbisstr remapped: res://.godot/imported/glass_003.ogg-fbfad93259ac78a3257410abc4fcbf93.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_interface-sounds/Audio/glass_003.ogg' remapped 'res://assets/audio/sfx/kenney_interface-sounds/Audio/glass_003.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_interface-sounds/Audio/glass_001.ogg remapped: res://assets/audio/sfx/kenney_interface-sounds/Audio/glass_001.ogg
+Loading resource: res://.godot/imported/glass_001.ogg-8e7611ee74c6c20de7eeb5729e9e55e5.oggvorbisstr remapped: res://.godot/imported/glass_001.ogg-8e7611ee74c6c20de7eeb5729e9e55e5.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_interface-sounds/Audio/glass_001.ogg' remapped 'res://assets/audio/sfx/kenney_interface-sounds/Audio/glass_001.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_sci-fi-sounds/Audio/laserSmall_004.ogg remapped: res://assets/audio/sfx/kenney_sci-fi-sounds/Audio/laserSmall_004.ogg
+Loading resource: res://.godot/imported/laserSmall_004.ogg-106acbba3dcfe4244ad2ac1de67cb726.oggvorbisstr remapped: res://.godot/imported/laserSmall_004.ogg-106acbba3dcfe4244ad2ac1de67cb726.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_sci-fi-sounds/Audio/laserSmall_004.ogg' remapped 'res://assets/audio/sfx/kenney_sci-fi-sounds/Audio/laserSmall_004.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_interface-sounds/Audio/drop_002.ogg remapped: res://assets/audio/sfx/kenney_interface-sounds/Audio/drop_002.ogg
+Loading resource: res://.godot/imported/drop_002.ogg-48841d0cf256a3ff676f4c40d5c9f2ba.oggvorbisstr remapped: res://.godot/imported/drop_002.ogg-48841d0cf256a3ff676f4c40d5c9f2ba.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_interface-sounds/Audio/drop_002.ogg' remapped 'res://assets/audio/sfx/kenney_interface-sounds/Audio/drop_002.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_interface-sounds/Audio/error_008.ogg remapped: res://assets/audio/sfx/kenney_interface-sounds/Audio/error_008.ogg
+Loading resource: res://.godot/imported/error_008.ogg-95083657f7e27f8bb7655465f5226b9f.oggvorbisstr remapped: res://.godot/imported/error_008.ogg-95083657f7e27f8bb7655465f5226b9f.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_interface-sounds/Audio/error_008.ogg' remapped 'res://assets/audio/sfx/kenney_interface-sounds/Audio/error_008.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_impact-sounds/Audio/impactBell_heavy_002.ogg remapped: res://assets/audio/sfx/kenney_impact-sounds/Audio/impactBell_heavy_002.ogg
+Loading resource: res://.godot/imported/impactBell_heavy_002.ogg-eda925aa6a6410a686f9bb5707ca1da2.oggvorbisstr remapped: res://.godot/imported/impactBell_heavy_002.ogg-eda925aa6a6410a686f9bb5707ca1da2.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_impact-sounds/Audio/impactBell_heavy_002.ogg' remapped 'res://assets/audio/sfx/kenney_impact-sounds/Audio/impactBell_heavy_002.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_interface-sounds/Audio/maximize_008.ogg remapped: res://assets/audio/sfx/kenney_interface-sounds/Audio/maximize_008.ogg
+Loading resource: res://.godot/imported/maximize_008.ogg-c3b8d5156cab4c657aa5b59b5bed6134.oggvorbisstr remapped: res://.godot/imported/maximize_008.ogg-c3b8d5156cab4c657aa5b59b5bed6134.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_interface-sounds/Audio/maximize_008.ogg' remapped 'res://assets/audio/sfx/kenney_interface-sounds/Audio/maximize_008.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_001.ogg remapped: res://assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_001.ogg
+Loading resource: res://.godot/imported/confirm_style_2_001.ogg-dff20e6008d932147c12aff215c616b8.oggvorbisstr remapped: res://.godot/imported/confirm_style_2_001.ogg-dff20e6008d932147c12aff215c616b8.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_001.ogg' remapped 'res://assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_001.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_interface-sounds/Audio/maximize_006.ogg remapped: res://assets/audio/sfx/kenney_interface-sounds/Audio/maximize_006.ogg
+Loading resource: res://.godot/imported/maximize_006.ogg-b465c477acfcbc40ddfb4833c5578830.oggvorbisstr remapped: res://.godot/imported/maximize_006.ogg-b465c477acfcbc40ddfb4833c5578830.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_interface-sounds/Audio/maximize_006.ogg' remapped 'res://assets/audio/sfx/kenney_interface-sounds/Audio/maximize_006.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_impact-sounds/Audio/impactPunch_heavy_003.ogg remapped: res://assets/audio/sfx/kenney_impact-sounds/Audio/impactPunch_heavy_003.ogg
+Loading resource: res://.godot/imported/impactPunch_heavy_003.ogg-472bdcafea912a7036401449cdb4948c.oggvorbisstr remapped: res://.godot/imported/impactPunch_heavy_003.ogg-472bdcafea912a7036401449cdb4948c.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_impact-sounds/Audio/impactPunch_heavy_003.ogg' remapped 'res://assets/audio/sfx/kenney_impact-sounds/Audio/impactPunch_heavy_003.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/Ogg/Confirm_tones/style6/confirm_style_6_003.ogg remapped: res://assets/audio/sfx/Ogg/Confirm_tones/style6/confirm_style_6_003.ogg
+Loading resource: res://.godot/imported/confirm_style_6_003.ogg-64f3fec824b500e9c0558b4dcba49bc9.oggvorbisstr remapped: res://.godot/imported/confirm_style_6_003.ogg-64f3fec824b500e9c0558b4dcba49bc9.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/Ogg/Confirm_tones/style6/confirm_style_6_003.ogg' remapped 'res://assets/audio/sfx/Ogg/Confirm_tones/style6/confirm_style_6_003.ogg' at thread -1
+Loading resource: res://assets/audio/sfx/kenney_interface-sounds/Audio/error_004.ogg remapped: res://assets/audio/sfx/kenney_interface-sounds/Audio/error_004.ogg
+Loading resource: res://.godot/imported/error_004.ogg-23baec041b740dbce0f470237d079215.oggvorbisstr remapped: res://.godot/imported/error_004.ogg-23baec041b740dbce0f470237d079215.oggvorbisstr
+Completed load for: 'res://assets/audio/sfx/kenney_interface-sounds/Audio/error_004.ogg' remapped 'res://assets/audio/sfx/kenney_interface-sounds/Audio/error_004.ogg' at thread -1
+Loading resource: res://systems/plan_b/content/plan_b_content_catalog.gd remapped: res://systems/plan_b/content/plan_b_content_catalog.gd
+Completed load for: 'res://systems/plan_b/content/plan_b_content_catalog.gd' remapped 'res://systems/plan_b/content/plan_b_content_catalog.gd' at thread -1
+Loading resource: res://systems/plan_b/battle/plan_b_battle_host.gd remapped: res://systems/plan_b/battle/plan_b_battle_host.gd
+Loading resource: res://data/combat_stage/tier_catalog.tres remapped: res://data/combat_stage/tier_catalog.tres
+Loading resource: res://core/combat/combat_stage_tier_catalog.gd remapped: res://core/combat/combat_stage_tier_catalog.gd
+Completed load for: 'res://core/combat/combat_stage_tier_catalog.gd' remapped 'res://core/combat/combat_stage_tier_catalog.gd' at thread -1
+Completed load for: 'res://data/combat_stage/tier_catalog.tres' remapped 'res://data/combat_stage/tier_catalog.tres' at thread -1
+Completed load for: 'res://systems/plan_b/battle/plan_b_battle_host.gd' remapped 'res://systems/plan_b/battle/plan_b_battle_host.gd' at thread -1
+Loading resource: res://systems/plan_b/simulation/plan_b_unit_simulation.gd remapped: res://systems/plan_b/simulation/plan_b_unit_simulation.gd
+Loading resource: res://systems/plan_b/simulation/plan_b_unit.tscn remapped: res://systems/plan_b/simulation/plan_b_unit.tscn
+Loading resource: res://systems/plan_b/simulation/plan_b_unit.gd remapped: res://systems/plan_b/simulation/plan_b_unit.gd
+Completed load for: 'res://systems/plan_b/simulation/plan_b_unit.gd' remapped 'res://systems/plan_b/simulation/plan_b_unit.gd' at thread -1
+Completed load for: 'res://systems/plan_b/simulation/plan_b_unit.tscn' remapped 'res://systems/plan_b/simulation/plan_b_unit.tscn' at thread -1
+Completed load for: 'res://systems/plan_b/simulation/plan_b_unit_simulation.gd' remapped 'res://systems/plan_b/simulation/plan_b_unit_simulation.gd' at thread -1
+Loading resource: res://systems/plan_b/opponent/fermi_opponent_director.gd remapped: res://systems/plan_b/opponent/fermi_opponent_director.gd
+Completed load for: 'res://systems/plan_b/opponent/fermi_opponent_director.gd' remapped 'res://systems/plan_b/opponent/fermi_opponent_director.gd' at thread -1
+PB-05 strength contact rates={ 1: 0.15196078431373, 2: 0.30541871921182, 3: 0.44615384615385 }
+PASS PB-05 public A/B/C interfaces, fixed-seed contact rules, infection rates, lifecycle events, and PK boundaries

@@ -1,0 +1,101 @@
+{
+  "classification": "model_only_not_godot_or_human_playtest",
+  "assumptions": {
+    "opponent_first_additional_word_delay_s": 0.0,
+    "time_step_s": 0.2
+  },
+  "config": {
+    "config_id": "base",
+    "varied_parameter": "baseline",
+    "pk_k": 0.85,
+    "population_cap": 96,
+    "infection_chances": [
+      0.2,
+      0.35,
+      0.5
+    ],
+    "natural_lifetime_mean_s": 65.0,
+    "natural_lifetime_sd_s": 12.0,
+    "player_cooldown_s": 5.0,
+    "opponent_cooldown_s": 11.5
+  },
+  "seed": 20261017,
+  "strategy": "tactical",
+  "result": {
+    "config": {
+      "config_id": "base",
+      "varied_parameter": "baseline",
+      "pk_k": 0.85,
+      "population_cap": 96,
+      "infection_chances": [
+        0.2,
+        0.35,
+        0.5
+      ],
+      "natural_lifetime_mean_s": 65.0,
+      "natural_lifetime_sd_s": 12.0,
+      "player_cooldown_s": 5.0,
+      "opponent_cooldown_s": 11.5
+    },
+    "seed": 20261017,
+    "strategy": "tactical",
+    "outcome": "player_100",
+    "model_seconds": 87.8,
+    "min_pk": 49.056,
+    "max_pk": 100.0,
+    "sampled_pk_midpoint_crossings": 0,
+    "longest_neutral_shortage_s": 90.0,
+    "max_team_share": 1.0,
+    "max_sampled_pk_change_pp_per_30s": 25.095,
+    "peak_words_published_per_30s": 8,
+    "final_pk": 100.0,
+    "player_count": 50,
+    "opponent_count": 10,
+    "neutral_count": 2,
+    "player_words": 13,
+    "opponent_words": 7,
+    "contact_resolutions": 6051,
+    "legal_infection_attempts": 473,
+    "conversions": 201,
+    "relays": 365,
+    "equal_type_bounces": 2,
+    "trend": [
+      {
+        "time_s": 0.0,
+        "pk": 50.0,
+        "player": 0,
+        "opponent": 2,
+        "neutral": 76,
+        "player_words": 0,
+        "opponent_words": 1
+      },
+      {
+        "time_s": 30.0,
+        "pk": 57.616,
+        "player": 96,
+        "opponent": 0,
+        "neutral": 0,
+        "player_words": 4,
+        "opponent_words": 3
+      },
+      {
+        "time_s": 60.0,
+        "pk": 82.711,
+        "player": 78,
+        "opponent": 3,
+        "neutral": 1,
+        "player_words": 7,
+        "opponent_words": 5
+      },
+      {
+        "time_s": 87.8,
+        "pk": 100.0,
+        "player": 50,
+        "opponent": 10,
+        "neutral": 2,
+        "player_words": 13,
+        "opponent_words": 7
+      }
+    ]
+  }
+}
