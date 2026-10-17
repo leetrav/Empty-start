@@ -1148,20 +1148,31 @@ def make_loser_catalog(tables: dict, report: Report) -> str:
     """按现有 LoserCardProfile Schema 导入卡片；禁用行保持空目录，不造占位卡。"""
     streamers = {row.get("streamer_id", ""): row for _, row in tables[SHEET_NAMES[1]][1]}
     enabled = [(line, row) for line, row in tables[SHEET_NAMES[15]][1] if row.get("enabled", "").lower() == "true"]
-    parts = ['[gd_resource type="Resource" script_class="LoserCardCatalog" load_steps=3 format=3]', '',
+    art_paths = {index: resolve_asset(row.get("art_asset_id", "")) for index, (_, row) in enumerate(enabled, 1)}
+    parts = [f'[gd_resource type="Resource" script_class="LoserCardCatalog" load_steps={3 + len(enabled) + sum(bool(path) for path in art_paths.values())} format=3]', '',
              '[ext_resource type="Script" path="res://core/loser_card/loser_card_catalog.gd" id="1_catalog"]',
              '[ext_resource type="Script" path="res://core/loser_card/loser_card_profile.gd" id="2_profile"]', '']
+    for index, path in art_paths.items():
+        if path:
+            parts.append(f'[ext_resource type="Texture2D" path="res://{path}" id="art_{index}"]')
     refs = []
     for i, (line, row) in enumerate(enabled, 1):
         streamer = streamers.get(row.get("streamer_id", ""), {})
         rid = f"Card_{i}"
+        text = row.get("description", "")
+        if re.search(r"占位|待填|placeholder", text, re.I):
+            report.add("警告", "14_败者卡", line, "description", "卡片占位文案不进入正式资料，保持空文本")
+            text = ""
         refs.append(f'SubResource("{rid}")')
         parts.extend([f'[sub_resource type="Resource" script_class="LoserCardProfile" id="{rid}"]',
                       'script = ExtResource("2_profile")', f'streamer_id = {gd_string(row["streamer_id"])}',
                       f'streamer_name = {gd_string(streamer.get("streamer_name", row.get("display_name", "")))}',
-                      f'card_text = {gd_string(row.get("description", ""))}', ''])
+                      f'card_text = {gd_string(text)}'])
+        if art_paths[i]:
+            parts.append(f'card_art = ExtResource("art_{i}")')
+        parts.append("")
         art = row.get("art_asset_id", "").strip()
-        if art and not (ROOT / art).is_file():
+        if art and not art_paths[i]:
             report.add("警告", "14_败者卡", line, "art_asset_id", f"资源文件不存在：{art}")
     parts.extend(['[resource]', 'script = ExtResource("1_catalog")',
                   'profiles = Array[ExtResource("2_profile")]( [' + ", ".join(refs) + "])", ''])

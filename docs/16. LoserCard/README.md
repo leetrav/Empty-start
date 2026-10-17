@@ -1,5 +1,13 @@
 # 16. LoserCard 败者卡系统任务拆分
 
+## PTF-05 卡片资料与可审V0（2026-10-16）
+
+14表四行仍为disabled，正式Catalog为空；本轮没有擅自启用占位文案。导表器修复已填卡面只校验未写入的缺口：启用行的真实art_asset_id现在写入LoserCardProfile.card_art，明显占位description过滤为空，发卡条件与去重规则保持原系统。
+
+本地审核目录 `data/test_only/ptf05/loser_cards_a.tres` / `_b.tres` 由真实导表函数生成内存启用数据：A复用四主播idle图，B复用defeat图，姓名来自正式02，介绍为空。它们可由现有LoserCardData真实登记/查询，只能显式注入审核场景；不替代正式Catalog。
+
+可打开 `tests/presentation/ptf05_content_review.tscn` 审四卡及发卡：仅PK/未确认不新增，击破+确认新增4张，同周目重复新增0张，数据留在内存。卡面、14启用与四份介绍仍待真人批准。真实GPU截图/17.27秒内容复播留D盘，见[PTF-05日志](../Integration/移动与内容_PTF-05_2026-10-16_log.md)。
+
 ## 系统目标
 
 败者卡系统负责记录本周目真正击败过哪些主播。

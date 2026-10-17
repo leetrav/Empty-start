@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="LoserCardCatalog" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://core/loser_card/loser_card_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://core/loser_card/loser_card_profile.gd" id="2_profile"]
+
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/alien/alien_defeat.png" id="art_1"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/kiwi/kiwi_defeat.png" id="art_2"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/frog/frog_defeat.png" id="art_3"]
+[ext_resource type="Texture2D" path="res://assets/characters/opponents/fox/fox_defeat.png" id="art_4"]
+[sub_resource type="Resource" script_class="LoserCardProfile" id="Card_1"]
+script = ExtResource("2_profile")
+streamer_id = "alien"
+streamer_name = "Fermi | 费米"
+card_text = ""
+card_art = ExtResource("art_1")
+
+[sub_resource type="Resource" script_class="LoserCardProfile" id="Card_2"]
+script = ExtResource("2_profile")
+streamer_id = "kiwi"
+streamer_name = "Augur | 奥格尔"
+card_text = ""
+card_art = ExtResource("art_2")
+
+[sub_resource type="Resource" script_class="LoserCardProfile" id="Card_3"]
+script = ExtResource("2_profile")
+streamer_id = "frog"
+streamer_name = "Gula | 咕拉"
+card_text = ""
+card_art = ExtResource("art_3")
+
+[sub_resource type="Resource" script_class="LoserCardProfile" id="Card_4"]
+script = ExtResource("2_profile")
+streamer_id = "fox"
+streamer_name = "Khleb | 列巴"
+card_text = ""
+card_art = ExtResource("art_4")
+
+[resource]
+resource_name = "TEST_ONLY PTF-05 本地审核目录，未获生产启用批准"
+script = ExtResource("1_catalog")
+profiles = Array[ExtResource("2_profile")]( [SubResource("Card_1"), SubResource("Card_2"), SubResource("Card_3"), SubResource("Card_4")])
