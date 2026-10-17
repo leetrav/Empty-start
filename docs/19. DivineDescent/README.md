@@ -1,5 +1,16 @@
 # 19. DivineDescent 神降临系统任务拆分
 
+## PTF-02 全程回应输入（2026-10-16，节奏待人工选择）
+
+原 `DivineDescentFlow.handle_input(event)` 从扩散开始即可接受左键、触摸按下或非重复空格。每次有效输入有局部涟漪、可见文字缩放；锁句后沿用原锁句强化，强调中回应不改变完成 Tween。旧零 input_scale / input_return_seconds 回退到可编辑反馈参数，暂停/停止/完成后拒绝输入；0.12 秒冷却合并触摸仿真和快速重复输入。
+
+`phase_changed(phase, prompt, progress)` 提供 `spreading/locked/emphasis/completed`，DD 自有 `DivineDescentInteractionView` 以现有 Theme 展示真实阶段提示和进度，输入透传，不改 D 的 HUD。`interaction_received(phase)` 仅通知表现输入。
+
+A 版保留 15 表 12 秒自动衰减并回应；B 版在 demo 中显式启用 `interaction_repeat_enabled=true`、`interaction_decay_step_seconds=0.8`，每次输入沿原成功生成/动态加权入口请求一条复读，并推进衰减。生产默认关闭这两项主动推进，待真人选择后注入。锁句、90% 收束、1.8 秒强调、冻结历史、单次 `completed(EndingSession)` 仍归原组件。
+
+终局复读独立读取 `repeat_presentation_config` 的寿命与保持亮度比例；正文/ID/存档不由表现组件修改。预览参数与终局正式视觉均待人工验收，真实硬件输入受工具激活失败限制，详见 [PTF-02 日志](../Integration/阶段交互_PTF-02_2026-10-16_log.md)。
+
+
 ## 系统目标
 
 神降临系统是普通关卡全部结束后的终局演出。

@@ -9,6 +9,16 @@ signal oracle_opened(session: FinalOracleSession)
 signal rest_ready(result: RestSession)
 signal state_text_changed(text: String)
 signal commit_failed(reason: String)
+signal repeat_climax_finished
+
+# PTF-02 有界演出初值，A/B 手感待人工选择；业务窗口仍消费关卡 10 秒配置。
+@export var repeat_climax_duration_seconds: float = 4.5
+@export var repeat_climax_spawn_seconds: float = 0.65
+@export var repeat_presentation_config: Resource = preload("res://data/repeat/repeat_presentation_config.tres")
+@export var repeat_climax_interactive: bool = true
+var _climax_elapsed: float = 0.0
+var _climax_complete: bool = false
+var _climax_speed: float = 1.0
 
 var _run_data: SaveData
 var _current_level: LevelProfile
@@ -258,6 +268,8 @@ func start(run_data: SaveData, catalog: LevelCatalog, current_level: LevelProfil
 		repeat_queue: RepeatDelayQueue, candidate_display: FinalOracleCandidateDisplay,
 		config: SandboxBattleConfig, card_catalog: LoserCardCatalog,
 		window_config: ContradictionWindowConfig, audio_manager: Node) -> bool:
+	if not is_finite(repeat_climax_duration_seconds) or repeat_climax_duration_seconds <= 0.0 or repeat_presentation_config == null:
+		return false
 	if not is_inside_tree() or not _stopped or run_data == null or catalog == null or current_level == null:
 		return false
 	if hit_resolution == null or combat_stage == null or repeat_queue == null or config == null or window_config == null:
@@ -288,6 +300,13 @@ func start(run_data: SaveData, catalog: LevelCatalog, current_level: LevelProfil
 	_final_oracle_session = null
 	_oracle_transition_started = false
 	_contradiction_outcome_handled = false
+	_climax_elapsed = 0.0
+	_climax_complete = false
+	_climax_speed = 1.0
+	_repeat_queue.presentation_config = repeat_presentation_config
+	if not _repeat_queue.configure_contradiction_climax(repeat_climax_spawn_seconds, repeat_presentation_config.contradiction_lifetime_seconds):
+		stop()
+		return false
 	_commit_error = ""
 	_contradiction_break = ContradictionBreakSystem.new()
 	add_child(_contradiction_break)
@@ -358,7 +377,14 @@ func advance(delta: float) -> void:
 		if not _motion_attack_unlocked and _motion_elapsed_seconds >= _current_level.paradox_motion_duration_seconds:
 			_attack_charge_input.set_combat_active(true)
 			_motion_attack_unlocked = true
-		_repeat_queue.advance_and_dispatch(delta, _barrage_area)
+		_repeat_queue.advance_and_dispatch(delta * _climax_speed, _barrage_area)
+		if _contradiction_outcome_handled and not _climax_complete:
+			_climax_elapsed += maxf(delta, 0.0) * _climax_speed
+			if _climax_elapsed >= repeat_climax_duration_seconds:
+				_finish_repeat_climax()
+			else:
+				var suffix := " · 点击/空格加速，回车结束" if repeat_climax_interactive else " · 即将进入下一阶段"
+				state_text_changed.emit("复读涌现 · %.1f 秒%s" % [maxf(repeat_climax_duration_seconds - _climax_elapsed, 0.0), suffix])
 	if _oracle_selection_timer != null:
 		_oracle_selection_timer.advance(delta, false)
 	if not _contradiction_stage_active:
@@ -371,16 +397,50 @@ func advance(delta: float) -> void:
 		_open_rest_after_unbroken()
 
 
-# 成功分支必须等本发矛盾复读全部生成并离场，才开始一次静音过渡。
-func _try_start_oracle_transition() -> void:
-	if _oracle_transition_started or _repeat_queue.get_pending_contradiction_count() > 0:
+# 结果确定后有界播放；容量不足只影响实际显示数，后续阶段无需等待多轮十秒寿命。
+func _finish_repeat_climax() -> void:
+	if _climax_complete:
 		return
-	if _barrage_area.has_visible_contradiction_repeats():
+	_climax_complete = true
+	_repeat_queue.clear_contradiction_queue()
+	for child: Node in _barrage_area.get_children():
+		if child is BarrageView and child.runtime_record != null and child.runtime_record.is_contradiction_repeat:
+			_barrage_area.end_barrage(child.get_instance_id())
+	repeat_climax_finished.emit()
+
+
+# 根输入所有者在普通攻击处理前路由；按住/重复键不会重复触发，暂停与旧场均拒绝。
+func handle_input(event: InputEvent) -> bool:
+	if _stopped or not is_inside_tree() or get_tree().paused or not _contradiction_stage_active or not _contradiction_outcome_handled or _climax_complete or not repeat_climax_interactive:
+		return false
+	var finish_requested: bool = event is InputEventKey and event.keycode == KEY_ENTER and event.pressed and not event.echo
+	var accelerate: bool = event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed
+	accelerate = accelerate or (event is InputEventScreenTouch and event.pressed)
+	accelerate = accelerate or (event is InputEventKey and event.keycode == KEY_SPACE and event.pressed and not event.echo)
+	if finish_requested:
+		_finish_repeat_climax()
+	elif accelerate:
+		_climax_speed = 3.0
+	else:
+		return false
+	return true
+
+
+# 复读可自然结束，也可由玩家结束；PA-17/PA-12 的真实完成持有继续独立生效。
+func _try_start_oracle_transition() -> void:
+	if _oracle_transition_started or not _is_repeat_climax_ready():
 		return
 	_oracle_transition_started = true
 	_audio_manager.stop_music()
 	state_text_changed.emit("矛盾击破 · 静音过渡")
 	_oracle_transition_timer.start(_oracle_silence_transition_seconds)
+
+
+# 没有命中/没有可见复读时立即完成；不会让超时空场额外等待。
+func _is_repeat_climax_ready() -> bool:
+	if not _climax_complete and _repeat_queue.get_pending_contradiction_count() == 0 and not _barrage_area.has_visible_contradiction_repeats():
+		_finish_repeat_climax()
+	return _climax_complete
 
 
 # 静音过渡结束才把本场普通历史与复读统计交给 13 系统的真实入口。
@@ -590,9 +650,9 @@ func _on_contradiction_outcome_locked(outcome: int) -> void:
 	if outcome == ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		# 只消费成功结果；未击破分支继续沿用既有休息流程。
 		_start_live_result_boost(LiveSessionData.BoostEvent.CONTRADICTION_BREAK)
-		state_text_changed.emit("矛盾击破成功 · 等待复读展示")
+		state_text_changed.emit("矛盾击破成功 · 复读涌现 · 点击/空格加速，回车结束")
 	else:
-		state_text_changed.emit("未击破矛盾 · 等待复读展示")
+		state_text_changed.emit("未击破矛盾 · 复读涌现 · 点击/空格加速，回车结束")
 		_open_rest_after_unbroken()
 
 
@@ -605,7 +665,7 @@ func _open_rest_after_unbroken() -> void:
 	if not _contradiction_stage_active or (_rest_session != null and _rest_session.is_open()):
 		return
 	# 沿用成功分支的展示结束条件；输入与生成已停止，空命中和超时无需等待。
-	if _repeat_queue.get_pending_contradiction_count() > 0 or _barrage_area.has_visible_contradiction_repeats():
+	if not _is_repeat_climax_ready():
 		return
 	var current_level: LevelProfile = _current_level
 	if current_level == null:

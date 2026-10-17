@@ -25,6 +25,7 @@ var _failures: Array[String] = []
 var _checks: int = 0
 var _status: Label
 var _preview_directory: String = ""
+var _skip_climax: bool = false
 var _config_only: bool = false
 var _retry_only: bool = false
 var _divine_only: bool = false
@@ -37,6 +38,7 @@ var _comic_done: bool = false
 var _result_release_done: bool = false
 var _phase_audio_events: Dictionary = {}
 var _active_seconds: float = 0.0
+var _maximum_frame_delta: float = 0.0
 var _repeat_times: Array[float] = []
 
 
@@ -44,6 +46,8 @@ var _repeat_times: Array[float] = []
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	for arg: String in OS.get_cmdline_user_args():
+		if arg == "--skip-climax":
+			_skip_climax = true
 		if arg == "--config-only":
 			_config_only = true
 		if arg == "--retry-only":
@@ -104,6 +108,7 @@ func _ready() -> void:
 # 和正式根场景一样逐帧推进 Flow；暂停由各生产入口检查。
 func _process(delta: float) -> void:
 	if not get_tree().paused:
+		_maximum_frame_delta = maxf(_maximum_frame_delta, delta)
 		_active_seconds += delta
 	if is_instance_valid(_flow):
 		_flow.advance(delta)
@@ -129,6 +134,10 @@ func _run_checks() -> void:
 	_check(plan.apply_display_template(CONFIG.repeat_display_template) == "原句保留", "10 表原句模板")
 	var queue := RepeatDelayQueue.new(CONFIG.maximum_pending_repeat_count)
 	_check(queue.enqueue_plan(plan) == 96, "10 表待生成容量 96")
+	var lifetime_probe := RepeatDelayQueue.new(1)
+	var formal_plan := RepeatPlan.create_normal_hit_plan(&"lifetime_probe", "仅测试", 3, 1, 2.4)
+	lifetime_probe.enqueue_plan(formal_plan)
+	_check(is_equal_approx(lifetime_probe.advance(4.0)[0].lifetime_seconds, 2.4), "普通表现默认保留上游06表/Tier寿命")
 	var delays_valid := true
 	for delay: float in plan.wait_offsets_seconds:
 		delays_valid = delays_valid and delay >= 0.5 and delay <= 3.0
@@ -331,15 +340,29 @@ func _verify_attack_and_oracle() -> void:
 	if _held_system.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		return
 	print("INT17B contradiction_pending=%d" % _queue.get_pending_contradiction_count())
+	var climax_start := _active_seconds
+	if _skip_climax:
+		var finish_event := InputEventKey.new()
+		finish_event.keycode = KEY_ENTER
+		finish_event.pressed = true
+		get_tree().paused = true
+		_check(not _flow.handle_input(finish_event), "暂停拒绝结束复读")
+		get_tree().paused = false
+		_check(_flow.handle_input(finish_event), "玩家可主动结束复读")
 	var deadline := Time.get_ticks_msec() + 80000
 	while (_queue.get_pending_contradiction_count() > 0 or _area.has_visible_contradiction_repeats()) and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
+	_check(_active_seconds - climax_start < 5.5, "复读非暂停等待 %.2f 秒（上限5.5）" % (_active_seconds - climax_start))
+	_check(int(_queue.get_generation_stats().contradiction_requested_counts_by_line_id.get(true_id, 0)) == 120, "保留原句 120 条请求统计")
 	await _wait(1.15)
 	if _with_presentation:
 		_check(_pa17_done and _comic_done and _result_release_done, "Oracle 前两段正式结果演出均完成")
 	else:
 		_check(_flow.get_oracle_session() == null, "击败动画完成前 Oracle 保持关闭")
-	_check(_queue.get_generation_stats().get_contradiction_count(true_id) == 120, "真实生成 120 条矛盾复读")
+	if _skip_climax:
+		_check(_queue.get_generation_stats().get_contradiction_count(true_id) < 120, "主动结束未显示条目不冒充实际生成")
+	else:
+		_check(_queue.get_generation_stats().get_contradiction_count(true_id) == 120, "真实生成 120 条矛盾复读")
 	if not _with_presentation:
 		_flow.complete_result_presentation(_held_system)
 	await get_tree().process_frame
@@ -407,6 +430,7 @@ func _verify_divine_completion() -> void:
 			committed_hit.record_normal_word_hit(speech.original_sentence_id, speech.tendency_id)
 			committed_hit.commit_normal_hit_history(_run)
 			break
+	var saved_history_before := _run.get_committed_normal_hit_history()
 	_divine = DivineDescentFlow.new()
 	_divine.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(_divine)
@@ -421,10 +445,14 @@ func _verify_divine_completion() -> void:
 	_divine.get_spread().repeat_generated.connect(func(_id: StringName, _view: BarrageView, _weight: int) -> void: _repeat_times.append(_active_seconds))
 	_divine.get_spread().convergence_started.connect(_on_convergence)
 	await _wait(0.7)
+	var press := InputEventScreenTouch.new()
+	press.pressed = true
+	_check(_divine.handle_input(press), "锁句前真实输入入口接受触摸")
 	var progress := _divine.get_combat_mode().get_new_word_decay_progress()
 	get_tree().paused = true
 	await _wait(0.25)
 	_check(is_equal_approx(progress, _divine.get_combat_mode().get_new_word_decay_progress()), "暂停冻结新话衰减")
+	_check(not _divine.handle_input(press), "暂停拒绝神降临触摸")
 	get_tree().paused = false
 	var deadline := Time.get_ticks_msec() + 45000
 	while _ending == null and Time.get_ticks_msec() < deadline:
@@ -432,9 +460,10 @@ func _verify_divine_completion() -> void:
 		await get_tree().process_frame
 	_check(_ending != null and _ending.is_received() and _ending_count == 1, "非空历史 completed(EndingSession) 一次")
 	_check(_divine.get_combat_mode().is_new_word_decay_complete(), "正式 12 秒新话衰减完成")
+	_check(_run.get_committed_normal_hit_history() == saved_history_before, "输入及 Ending 显示保持已提交历史原值")
 	for index: int in range(1, mini(_repeat_times.size(), 6)):
 		var interval := _repeat_times[index] - _repeat_times[index - 1]
-		_check(interval >= 0.14 and interval <= 0.45, "自动复读实际间隔 %.3f" % interval)
+		_check(interval >= 0.14 and interval <= 0.38 + 2.0 * _maximum_frame_delta, "自动复读实际间隔 %.3f" % interval)
 	await _capture("ending_received")
 	_divine.stop()
 	_divine.queue_free()
@@ -485,5 +514,6 @@ func _check(passed: bool, label: String) -> void:
 func _finish() -> void:
 	if _with_presentation:
 		print("INT18B_AUDIO played=%s" % str(_phase_audio_events.keys()))
+	print("INT17B frame_max_delta=%.3f" % _maximum_frame_delta)
 	print("INT17B_RESULT checks=%d failures=%d" % [_checks, _failures.size()])
 	get_tree().quit(0 if _failures.is_empty() else 1)

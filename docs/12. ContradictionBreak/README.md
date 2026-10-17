@@ -1,5 +1,14 @@
 # 12. ContradictionBreak 矛盾击破系统任务拆分
 
+## PTF-02 有界复读与输入交接（2026-10-16）
+
+`ContradictionOracleFlow` 在结果锁定后压缩复读排期，播放最多 `repeat_climax_duration_seconds`（当前审查初值 4.5 秒，暂停不计时）。队列及可见复读提前结束可直接继续；到达上限只清本场矛盾复读，进入原静音/Oracle 或未击破 Rest。零命中/超时空场无需额外等待。PA-17 → PA-12 的同来源完成持有保持独立，主动结束复读无法绕过动画完成事实。
+
+A 在根输入所有者中路由 `flow.handle_input(event)`：点击/触摸/非重复空格加速三倍，Enter 结束；停止、暂停、未出结果、已结束均拒绝。`repeat_climax_interactive=false` 可预览自动版；`repeat_climax_finished` 仅通知本段视觉完成，不等价于结果演出或奖励提交。
+
+六句、一真五假、10 秒、一发与运动可攻击保持 11 表规则。当前依然调用 C 的真实 `BarrageArea.start_contradiction_generation(level, true_lines, false_lines, runtime_window_config)`；**普通/矛盾运动与外框统一仍待 C 提供消费者修改，本卡未伪报完成**。原两秒曲线继续由本场 `ContradictionWindowConfig` 注入。完整 A/B 材料见 [PTF-02 日志](../Integration/阶段交互_PTF-02_2026-10-16_log.md)。
+
+
 > **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。已实现的基础卡用于接口复查；新的视觉、静止弹幕、对话与阶段打磨以最新单卡和此表为准。
 
 ## INT-08 当前组合入口（2026-10-10）

@@ -4,7 +4,16 @@ extends Resource
 @export var normal_counts_by_line_id: Dictionary = {}
 @export var contradiction_counts_by_line_id: Dictionary = {}
 
+# 请求数与实际生成分开；主动结束视觉时仍能追溯命中原句和原始 120 条计划。
+@export var contradiction_requested_counts_by_line_id: Dictionary = {}
+
 var _normal_history_committed: bool = false
+
+
+# 记录已接受的矛盾计划，绝不把未显示的请求冒充实际生成。
+func record_contradiction_requested(plan: RepeatPlan, count: int) -> void:
+	if plan != null and not plan.original_line_id.is_empty() and count > 0:
+		_increment_count(contradiction_requested_counts_by_line_id, plan.original_line_id, count)
 
 
 # 按计划类型把弹幕生成系统确认的实际数量归到原句 ID。
