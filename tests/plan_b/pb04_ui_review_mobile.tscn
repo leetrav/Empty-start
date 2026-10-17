@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/plan_b/pb04_preview_scene.gd" id="1_preview"]
+
+[node name="PB04MobileReview" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_preview")
+review_window_size = Vector2i(1600, 720)
+density_profile = "compact"
+show_touch_review_overlay = true
