@@ -23,6 +23,9 @@ const CURRENT_VERSION: int = 1
 
 # 直播数据系统持有本场表现状态；随当前周目存档跨场景保留粉丝数。
 @export var live_session: LiveSessionData = LiveSessionData.new()
+## 对手各自拥有数据实例；缺少正式初始粉丝时保留0，不从观众模板推算人口。
+@export var opponent_live_sessions: Dictionary = {}
+
 
 # 吞并系统保存当前周目累计的主播、词库权重和特性成果。
 @export var assimilation_data: AssimilationData = AssimilationData.new()
@@ -49,3 +52,12 @@ func get_committed_normal_hit_history() -> Array[Dictionary]:
 	for entry: Dictionary in committed_normal_hit_history:
 		result.append(entry.duplicate(true))
 	return result
+
+
+## 按真实主播ID读取独立直播数据；切关与重开不会串到玩家或其他主播。
+func get_opponent_live_session(streamer_id: String) -> LiveSessionData:
+	if streamer_id.is_empty():
+		return null
+	if not opponent_live_sessions.has(streamer_id):
+		opponent_live_sessions[streamer_id] = LiveSessionData.new()
+	return opponent_live_sessions[streamer_id] as LiveSessionData

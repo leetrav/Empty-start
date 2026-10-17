@@ -1,5 +1,13 @@
 # Integration
 
+## PTF-01 试玩返工增量（2026-10-16，待真人验收）
+
+Issue #255 的原试玩验收保持不通过。本次只交根场景暂停、对手数据源和PK事实/净值文案修复；原94项E2E不作为玩家接受依据。
+
+房间复用PauseMenu，战后展示不吞ESC；顶层路由退出旧暂停状态。暂停通过 `paused_changed` 接 C 的 `cancel_pointer_attack()`，该取消捕获能力依赖 C 的 PTF-03接口先合入。PK延迟演出核对当前Stage并读取最新唯一值，同发普通/反弹净扣分文案修正。
+
+`SaveData.opponent_live_sessions` 按主播保存独立实例，首批生成前绑定右侧HUD，实际普通前景生成才累计对手评论。对手初始粉丝及观看/点赞/加粉事件映射没有正式定义；`opponent_reaction_preview_enabled` 默认关闭，独立预览等待负责人确认，不能报告四项增长已验收。详见 [PTF-01日志](根流程_PTF-01_2026-10-16_log.md)。
+
 ## PTF-02 玩家试玩修复候选（2026-10-16）
 
 B 已交付有界矛盾复读、全阶段 DD 输入回应和可复播 A/B demo：`res://scenes/demos/ptf02_phase_interaction_demo.tscn`。A 的最小接线为将当前 `ContradictionOracleFlow.handle_input(event)` 放在普通攻击前消费；DD 继续已有 `handle_input` 路由。PA-17/PA-12 同来源完成顺序及 Ending 幂等保持原接口。C 继续拥有普通/矛盾共享运动与外框消费者；该部分尚未验收。候选节奏、真实视频、硬件输入限制和正式玩家路径待办见 [PTF-02 日志](阶段交互_PTF-02_2026-10-16_log.md)。本轮组件回归通过不代表 Issue #255 的玩家验收通过。

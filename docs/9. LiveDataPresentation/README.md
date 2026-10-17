@@ -1,5 +1,11 @@
 # 9. LiveDataPresentation 直播数据表现系统任务拆分
 
+## PTF-01 对手数据源（2026-10-16，部分交付）
+
+旧根场景右侧四项常量0已移除。`SaveData.get_opponent_live_session(streamer_id)` 提供独立Resource；BattleAttemptFlow的 `attempt_preparing(level)` 在首批生成前由根绑定与初始化。对手普通前景实际生成计评论，玩家复读和22装饰评论不计入对手业务数字。换关按主播隔离，重开重置本场指标并保留已有粉丝记录。
+
+02/25无对手初始粉丝基数，09既有粉丝规则归玩家通关，尚未批准对手的完整热度/胜负映射。正式默认只消费可追溯生成事实；可逆A/B入口 `Sandbox.opponent_reaction_preview_enabled=false` 保持关闭，待负责人批准。`get_opponent_live_snapshot()` 可读计数及 `initial_fans_configured=false`。四项实际玩家增长验收未完成，详见 [日志](../Integration/根流程_PTF-01_2026-10-16_log.md)。
+
 ## PTF-04 显示事实接口（2026-10-16）
 
 `LiveDataHud.set_unknown_metrics(["viewer_count", "like_count", "fan_count"])` 将尚未配置来源的指标显示为“—”，不改模型；`get_display_snapshot()` 对未知字段返回 null。绑定 LiveSessionData 后，旧 `set_values(0,0,0,0)` 占位调用不能覆盖当前 Resource。A 可直接使用原 `bind_live_session()`，或调用 `SandboxBattleHud.bind_opponent_live_session(session, unknown_metrics)`。

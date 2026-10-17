@@ -4,6 +4,8 @@ extends Node
 const FORMAL_COMBAT_NUMERICS: CombatNumericsConfig = preload("res://data/combat_stage/combat_numerics.tres")
 
 signal attempt_started(level: LevelProfile, hit_resolution: HitResolution, combat_stage: CombatStage, repeat_queue: RepeatDelayQueue)
+## 首批生成前通知根场景重置独立的对手表现数据。
+signal attempt_preparing(level: LevelProfile)
 signal attempt_restarted(level: LevelProfile, hit_resolution: HitResolution, combat_stage: CombatStage, repeat_queue: RepeatDelayQueue)
 signal shot_resolved(snapshot: AttackTargetSnapshot, submission: Dictionary, current_tier: int, repeat_stats: RepeatGenerationStats)
 # 整发通知与升档清理完成后广播，供 Sandbox 和后续阶段演出接入。
@@ -124,6 +126,7 @@ func _start_attempt(is_restart: bool) -> bool:
 	if _repeat_queue != null:
 		_repeat_queue.get_generation_stats().discard_uncommitted_normal_repeat_history()
 	_stop_normal_combat()
+	attempt_preparing.emit(restarting_level)
 	_opponent_pk_bar.reset_current_attempt()
 	_run_data.tendency_state.rollback_attempt_tendency()
 	_run_data.live_session.initialize_session(_opening_fan_count)
@@ -381,7 +384,8 @@ func _on_shot_hit_resolution_submitted(snapshot: AttackTargetSnapshot, submissio
 	if normal_hit_count > 0:
 		for _hit_index in range(normal_hit_count):
 			_run_data.live_session.record_normal_hit_live_rule()
-		battle_state_changed.emit("命中 %d 条 · PK +%.2f%% · 等待复读" % [normal_hit_count, float(result.get("total_pk_delta", 0.0)) * 100.0])
+		# 普通与陷阱可能同发命中，符号必须读取整发净结果。
+		battle_state_changed.emit("命中 %d 条 · PK %+.2f%% · 等待复读" % [normal_hit_count, float(result.get("total_pk_delta", 0.0)) * 100.0])
 	elif repeat_hit_count > 0:
 		battle_state_changed.emit("复读命中 %d 条 · 零收益" % repeat_hit_count)
 	else:
