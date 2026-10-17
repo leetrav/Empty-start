@@ -97,6 +97,7 @@ func bind_sources(battle_host: Object, unit_source: Object, word_catalog: Object
 	_connect_signal(_event_source, "unit_changed", Callable(self, "_on_unit_changed"))
 	_connect_signal(_event_source, "unit_spawned", Callable(self, "_on_unit_spawned"))
 	_connect_signal(_event_source, "unit_despawned", Callable(self, "_on_unit_despawned"))
+	_connect_signal(_unit_source, "contact_resolved", Callable(self, "_on_contact_resolved"))
 	_refresh_sources()
 	_refresh_view()
 
@@ -133,9 +134,18 @@ func set_battle_tier(tier: int) -> void:
 
 func set_published_word_ids(word_ids: Array) -> void:
 	# 允许 A 用其权威记录刷新已发表状态；本地成功回执只用于即时反馈。
-	_used_word_ids.clear()
+	var next_used_ids: Dictionary = {}
 	for value in word_ids:
-		_used_word_ids[str(value)] = true
+		next_used_ids[str(value)] = true
+	var changed := next_used_ids.size() != _used_word_ids.size()
+	if not changed:
+		for word_id in next_used_ids:
+			if not _used_word_ids.has(word_id):
+				changed = true
+				break
+	if not changed:
+		return
+	_used_word_ids = next_used_ids
 	if _used_word_ids.has(_selected_word_id):
 		_selected_word_id = ""
 		if _field != null:
@@ -548,6 +558,14 @@ func _rebuild_word_list() -> void:
 func _refresh_sources() -> void:
 	if is_instance_valid(_battle_host) and _battle_host.has_method("get_pk"):
 		_pk_value = clampf(float(_battle_host.call("get_pk")), 0.0, 100.0)
+	if _has_method(_battle_host, "get_used_word_ids"):
+		var used_ids: Variant = _battle_host.call("get_used_word_ids")
+		if used_ids is Array:
+			set_published_word_ids(used_ids)
+	if _has_method(_battle_host, "get_publish_cooldown_remaining"):
+		_cooldown_remaining = maxf(float(_battle_host.call("get_publish_cooldown_remaining", "player")), 0.0)
+	if _has_method(_battle_host, "get_current_tier"):
+		_tier_label = "T%d" % int(_battle_host.call("get_current_tier"))
 	var counts_source: Object = _battle_host if _has_method(_battle_host, "get_faction_counts") else _unit_source
 	if is_instance_valid(counts_source) and counts_source.has_method("get_faction_counts"):
 		var counts: Variant = counts_source.call("get_faction_counts")
@@ -819,6 +837,7 @@ func _disconnect_sources() -> void:
 	_disconnect_signal(_event_source, "unit_changed", Callable(self, "_on_unit_changed"))
 	_disconnect_signal(_event_source, "unit_spawned", Callable(self, "_on_unit_spawned"))
 	_disconnect_signal(_event_source, "unit_despawned", Callable(self, "_on_unit_despawned"))
+	_disconnect_signal(_unit_source, "contact_resolved", Callable(self, "_on_contact_resolved"))
 	_event_source = null
 
 
@@ -846,6 +865,49 @@ func _on_battle_ended(result: Variant) -> void:
 	_set_status("战斗结束 · %s" % result_text, "warning")
 	_rebuild_word_list()
 	_refresh_view()
+
+
+func show_counterattack_windup(request: Dictionary) -> void:
+	var target_id := str(request.get("target_unit_id", ""))
+	var skill_id := str(request.get("skill_id", request.get("effect_id", "费米反击")))
+	var windup := float(request.get("pre_windup_seconds", 0.0))
+	if not target_id.is_empty():
+		_field.show_unit_feedback(target_id, "counterattack")
+	_add_event("[费米反击前摇] %s · 目标 %s · %.1f 秒" % [skill_id, target_id, windup])
+	_set_status("费米正在准备反击；请留意棋子上的紫色脉冲。", "warning")
+
+
+func show_counterattack_result(result: Dictionary) -> void:
+	var target_id := str(result.get("target_unit_id", ""))
+	var skill_id := str(result.get("skill_id", result.get("effect_id", "费米反击")))
+	var applied := bool(result.get("applied", false))
+	if not target_id.is_empty():
+		_field.show_unit_feedback(target_id, "counterattack")
+	_add_event("[%s] %s · %s" % ["费米反击生效" if applied else "费米反击未生效", skill_id, target_id])
+	_set_status("费米反击已结算：%s。" % ("生效" if applied else "未生效"), "warning" if applied else "info")
+
+
+func _on_contact_resolved(first_unit_id: Variant, second_unit_id: Variant, outcome: StringName) -> void:
+	var first_id := str(first_unit_id)
+	var second_id := str(second_unit_id)
+	var outcome_text := ""
+	match outcome:
+		&"neutral_bounce":
+			outcome_text = "中立观众弹开"
+		&"same_team_bounce":
+			outcome_text = "同阵营弹开"
+		&"same_type_bounce":
+			outcome_text = "同属性弹开"
+		&"no_counter_bounce":
+			outcome_text = "无克制，双方弹开"
+		&"converted":
+			outcome_text = "感染成功"
+		&"infection_failed":
+			outcome_text = "感染未成功"
+		_:
+			outcome_text = str(outcome)
+	_field.show_contact_feedback(first_id, second_id, str(outcome))
+	_add_event("[碰撞] %s ↔ %s · %s" % [first_id, second_id, outcome_text])
 
 
 func _on_unit_changed(unit_id: String, reason: String) -> void:

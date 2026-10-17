@@ -19,6 +19,7 @@ var _hovered_unit_id := ""
 var _feedback_pulses: Dictionary = {}
 var _previous_points: Dictionary = {}
 var _movement_segments: Dictionary = {}
+var _contact_feedback: Array[Dictionary] = []
 
 func _ready() -> void:
 	# 场地只消费只读快照；鼠标和触控都按现有棋子的可见位置做命中。
@@ -80,12 +81,28 @@ func show_unit_feedback(unit_id: String, reason: String) -> void:
 	queue_redraw()
 
 
+func show_contact_feedback(first_unit_id: String, second_unit_id: String, outcome: String) -> void:
+	# 接触对来自 B 的裁决事件；线段只提示位置与结果，不影响模拟状态。
+	_contact_feedback.push_front({
+		"first_id": first_unit_id,
+		"second_id": second_unit_id,
+		"outcome": outcome,
+		"time": Time.get_ticks_msec(),
+	})
+	while _contact_feedback.size() > 5:
+		_contact_feedback.pop_back()
+	queue_redraw()
+
+
 func _process(_delta: float) -> void:
 	# 只保留短暂提示；棋子位置仍由每帧的新快照决定。
 	var now := Time.get_ticks_msec()
 	for unit_id in _feedback_pulses.keys():
 		if now - int(_feedback_pulses[unit_id].get("time", now)) > 1500:
 			_feedback_pulses.erase(unit_id)
+	for index in range(_contact_feedback.size() - 1, -1, -1):
+		if now - int(_contact_feedback[index].get("time", now)) > 1200:
+			_contact_feedback.remove_at(index)
 	queue_redraw()
 
 
@@ -104,6 +121,7 @@ func _draw() -> void:
 	# 移动尾迹来自前一帧只读位置，用低对比度避免遮住密集棋子。
 	for segment in _movement_segments.values():
 		draw_line(segment["from"], segment["to"], Color(0.60, 0.78, 0.83, 0.22), 1.2)
+	_draw_contact_feedback()
 
 	for snapshot in _snapshots:
 		_draw_unit(snapshot)
@@ -165,6 +183,23 @@ func _draw_speech_bubble(snapshot: Dictionary) -> void:
 	draw_rect(bubble, Color("#132632"), true)
 	draw_rect(bubble, Color("#51717e"), false, 1.0)
 	draw_string(ThemeDB.fallback_font, bubble.position + Vector2(10.0, 23.0), shown, HORIZONTAL_ALIGNMENT_LEFT, bubble_width - 20.0, 15, Color("#f1f7f8"))
+
+
+func _draw_contact_feedback() -> void:
+	var now := Time.get_ticks_msec()
+	for contact in _contact_feedback:
+		var first := _snapshot_for_id(str(contact.get("first_id", "")))
+		var second := _snapshot_for_id(str(contact.get("second_id", "")))
+		if first.is_empty() or second.is_empty():
+			continue
+		var age := clampf(float(now - int(contact.get("time", now))) / 1200.0, 0.0, 1.0)
+		var tint := _contact_color(str(contact.get("outcome", "")))
+		var alpha := (1.0 - age) * 0.72
+		var first_point := _world_to_local(_unit_position(first))
+		var second_point := _world_to_local(_unit_position(second))
+		draw_line(first_point, second_point, Color(tint.r, tint.g, tint.b, alpha), 2.5)
+		draw_arc(first_point, 23.0 + age * 7.0, 0.0, TAU, 24, Color(tint.r, tint.g, tint.b, alpha), 1.7, true)
+		draw_arc(second_point, 23.0 + age * 7.0, 0.0, TAU, 24, Color(tint.r, tint.g, tint.b, alpha), 1.7, true)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -255,5 +290,23 @@ func _feedback_color(reason: String) -> Color:
 			return Color("#ff806e")
 		"relay":
 			return Color("#d7a8ff")
+		"counterattack":
+			return Color("#f17de3")
 		_:
 			return Color("#d7edf3")
+
+
+func _contact_color(outcome: String) -> Color:
+	match outcome:
+		"converted":
+			return Color("#ff806e")
+		"infection_failed":
+			return Color("#ffc77d")
+		"same_team_bounce":
+			return Color("#d7a8ff")
+		"same_type_bounce":
+			return Color("#79c9e8")
+		"no_counter_bounce":
+			return Color("#a1adbc")
+		_:
+			return Color("#91a4ae")

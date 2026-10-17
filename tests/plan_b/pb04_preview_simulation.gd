@@ -3,6 +3,7 @@ extends Node
 signal unit_changed(unit_id: String, reason: String)
 signal unit_spawned(unit_id: String)
 signal unit_despawned(unit_id: String)
+signal contact_resolved(first_unit_id: String, second_unit_id: String, outcome: StringName)
 
 const WORLD_BOUNDS := Rect2(Vector2.ZERO, Vector2(900.0, 490.0))
 
@@ -141,7 +142,9 @@ func _preview_contact(reason: String) -> void:
 				unit["strength"] = 2
 				unit["text"] = ""
 				_units[index] = unit
-				unit_changed.emit(str(unit.get("unit_id", "")), "convert")
+				var target_id := str(unit.get("unit_id", ""))
+				unit_changed.emit(target_id, "convert")
+				contact_resolved.emit("AUD-001", target_id, &"converted")
 				return
 	if reason == "relay":
 		for index in range(_units.size()):
@@ -151,7 +154,9 @@ func _preview_contact(reason: String) -> void:
 				unit["word_order"] = 1
 				unit["text"] = ""
 				_units[index] = unit
-				unit_changed.emit(str(unit.get("unit_id", "")), "relay")
+				var target_id := str(unit.get("unit_id", ""))
+				unit_changed.emit(target_id, "relay")
+				contact_resolved.emit("AUD-001", target_id, &"same_team_bounce")
 				return
 
 
