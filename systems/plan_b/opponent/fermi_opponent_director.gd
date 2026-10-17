@@ -1,0 +1,206 @@
+class_name PlanBFermiOpponentDirector
+extends RefCounted
+
+signal publish_word_requested(word_id: String, neutral_unit_id: String)
+signal counterattack_windup_started(request: Dictionary)
+signal counterattack_effect_requested(request: Dictionary)
+signal counterattack_resolved(result: Dictionary)
+
+var speech_enabled: bool = true
+var counterattack_enabled: bool = true
+
+var _content_catalog: Object
+var _profile: Dictionary = {}
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _counterattack_effect_handler: Callable = Callable()
+var _level_id: String = ""
+var _speech_cooldown_remaining: float = 0.0
+var _counterattack_cooldown_remaining: float = 0.0
+var _windup_remaining: float = 0.0
+var _pending_counterattack: Dictionary = {}
+var _awaiting_counterattack_result: bool = false
+var _counterattack_uses: int = 0
+var _last_publish_request: Dictionary = {}
+var _last_counterattack_event: Dictionary = {}
+var _configured: bool = false
+
+
+## 注入 C 的静态内容配置与随机种子；时钟、发表和棋子状态继续由 A/B 拥有。
+func configure(content_catalog: Object, seed_value: int = 1) -> bool:
+	_configured = false
+	_content_catalog = content_catalog
+	if content_catalog == null or not content_catalog.has_method("get_opponent_config") \
+		or not content_catalog.has_method("get_word_ids"):
+		return false
+	_profile = content_catalog.call("get_opponent_config", "fermi")
+	if _profile.is_empty():
+		return false
+	_level_id = str(_profile.get("level_id", ""))
+	if _level_id.is_empty():
+		return false
+	_rng.seed = seed_value
+	speech_enabled = bool(_profile.get("speech_enabled", false))
+	counterattack_enabled = bool(_profile.get("counterattack_enabled", false))
+	_speech_cooldown_remaining = float(_profile.get("initial_speech_delay_seconds", 0.0))
+	_counterattack_cooldown_remaining = 0.0
+	_windup_remaining = 0.0
+	_pending_counterattack.clear()
+	_awaiting_counterattack_result = false
+	_counterattack_uses = 0
+	_last_publish_request.clear()
+	_last_counterattack_event.clear()
+	_configured = true
+	return true
+
+
+## A 可注入执行器调用 B 的公开效果入口；C 不直接修改棋子。
+func set_counterattack_effect_handler(handler: Callable) -> void:
+	_counterattack_effect_handler = handler
+
+
+## A 每帧传入 B 的快照与自身可发表词 ID；C 只提出请求，不消耗词或播种棋子。
+func update_speech(
+	delta: float,
+	neutral_unit_snapshots: Array[Dictionary],
+	available_opponent_word_ids: Array[String]
+) -> void:
+	if not _configured or not speech_enabled:
+		return
+	_speech_cooldown_remaining = maxf(0.0, _speech_cooldown_remaining - maxf(0.0, delta))
+	if _speech_cooldown_remaining > 0.0:
+		return
+
+	var neutral_unit_ids: Array[String] = _get_unit_ids_for_team(neutral_unit_snapshots, "neutral")
+	var word_ids: Array[String] = _get_publishable_opponent_word_ids(available_opponent_word_ids)
+	if neutral_unit_ids.is_empty() or word_ids.is_empty():
+		return
+
+	var word_id: String = word_ids[_rng.randi_range(0, word_ids.size() - 1)]
+	var neutral_unit_id: String = neutral_unit_ids[_rng.randi_range(0, neutral_unit_ids.size() - 1)]
+	_speech_cooldown_remaining = float(_profile.get("speech_cooldown_seconds", 11.5))
+	_last_publish_request = {"word_id": word_id, "neutral_unit_id": neutral_unit_id}
+	# A 将该请求送入双方共用的 publish_word，不在本模块分配 word_order。
+	publish_word_requested.emit(word_id, neutral_unit_id)
+
+
+## A 每帧传入双方人数与 B 的对手棋子快照，控制器只发出反击请求事件。
+func update_counterattack(
+	delta: float,
+	faction_counts: Dictionary,
+	opponent_unit_snapshots: Array[Dictionary]
+) -> void:
+	if not _configured or not counterattack_enabled or not bool(_profile.get("counterattack_enabled", false)):
+		return
+	if _counterattack_uses >= int(_profile.get("counterattack_max_uses", 0)):
+		return
+
+	var elapsed: float = maxf(0.0, delta)
+	_counterattack_cooldown_remaining = maxf(0.0, _counterattack_cooldown_remaining - elapsed)
+	if not _pending_counterattack.is_empty():
+		if _awaiting_counterattack_result:
+			return
+		_windup_remaining = maxf(0.0, _windup_remaining - elapsed)
+		if _windup_remaining <= 0.0:
+			_request_counterattack_effect()
+		return
+	if _counterattack_cooldown_remaining > 0.0:
+		return
+
+	var player_count: int = int(faction_counts.get("player", 0))
+	var opponent_count: int = int(faction_counts.get("opponent", 0))
+	var lead_margin: int = int(_profile.get("counterattack_lead_margin", 0))
+	if player_count - opponent_count < lead_margin:
+		return
+	var opponent_unit_ids: Array[String] = _get_unit_ids_for_team(opponent_unit_snapshots, "opponent")
+	if opponent_unit_ids.is_empty():
+		return
+
+	var request := {
+		"skill_id": str(_profile.get("counterattack_skill_id", "")),
+		"trigger_event": str(_profile.get("counterattack_trigger_event", "")),
+		"target_unit_id": opponent_unit_ids[_rng.randi_range(0, opponent_unit_ids.size() - 1)],
+		"effect_id": StringName(str(_profile.get("counterattack_effect_id", ""))),
+		"effect_parameters": {
+			"child_count": int(_profile.get("counterattack_child_count", 0)),
+		},
+		"pre_windup_seconds": float(_profile.get("counterattack_pre_windup_seconds", 0.0)),
+		"cooldown_seconds": float(_profile.get("counterattack_cooldown_seconds", 0.0)),
+	}
+	if str(request["skill_id"]).is_empty() or String(request["effect_id"]).is_empty():
+		return
+	_pending_counterattack = request
+	_windup_remaining = float(request["pre_windup_seconds"])
+	_last_counterattack_event = request.duplicate(true)
+	# D 可在此事件后显示前摇提示；效果到时仍交由 A 调用 B 的公开接口。
+	counterattack_windup_started.emit(request.duplicate(true))
+	if _windup_remaining <= 0.0:
+		_request_counterattack_effect()
+
+
+## A/B 完成效果后回报结果；本模块据此更新尝试次数和冷却，不改棋子状态。
+func report_counterattack_result(applied: bool) -> bool:
+	if not _configured or _pending_counterattack.is_empty() or not _awaiting_counterattack_result:
+		return false
+	var result: Dictionary = _pending_counterattack.duplicate(true)
+	result["applied"] = applied
+	_counterattack_cooldown_remaining = float(_pending_counterattack.get("cooldown_seconds", 0.0))
+	if applied:
+		_counterattack_uses += 1
+	_pending_counterattack.clear()
+	_awaiting_counterattack_result = false
+	_windup_remaining = 0.0
+	_last_counterattack_event = result.duplicate(true)
+	counterattack_resolved.emit(result)
+	return true
+
+
+## 提供调试用值副本，便于 A/D 观察冷却、请求和反击阶段。
+func get_debug_snapshot() -> Dictionary:
+	return {
+		"configured": _configured,
+		"speech_enabled": speech_enabled,
+		"speech_cooldown_remaining": _speech_cooldown_remaining,
+		"last_publish_request": _last_publish_request.duplicate(true),
+		"counterattack_enabled": counterattack_enabled,
+		"counterattack_cooldown_remaining": _counterattack_cooldown_remaining,
+		"counterattack_windup_remaining": _windup_remaining,
+		"counterattack_uses": _counterattack_uses,
+		"pending_counterattack": _pending_counterattack.duplicate(true),
+		"last_counterattack_event": _last_counterattack_event.duplicate(true),
+	}
+
+
+func _get_publishable_opponent_word_ids(available_ids: Array[String]) -> Array[String]:
+	var result: Array[String] = []
+	var configured_ids: Array = _content_catalog.call("get_word_ids", _level_id, "opponent")
+	for word_id_value: Variant in configured_ids:
+		var word_id: String = str(word_id_value)
+		if not available_ids.has(word_id):
+			continue
+		var definition: Dictionary = _content_catalog.call("get_word_definition", word_id)
+		if str(definition.get("available_level", "")) == _level_id \
+			and str(definition.get("available_to", "")) == "opponent":
+			result.append(word_id)
+	return result
+
+
+func _get_unit_ids_for_team(snapshots: Array[Dictionary], team: String) -> Array[String]:
+	var result: Array[String] = []
+	for snapshot: Dictionary in snapshots:
+		if str(snapshot.get("team", "")) != team:
+			continue
+		var unit_id: String = str(snapshot.get("unit_id", ""))
+		if not unit_id.is_empty():
+			result.append(unit_id)
+	return result
+
+
+func _request_counterattack_effect() -> void:
+	_awaiting_counterattack_result = true
+	_last_counterattack_event = _pending_counterattack.duplicate(true)
+	var request: Dictionary = _pending_counterattack.duplicate(true)
+	if _counterattack_effect_handler.is_valid():
+		# 执行入口由 A 注入并转接 B；返回值只表示本次效果是否成功应用。
+		report_counterattack_result(bool(_counterattack_effect_handler.call(request)))
+	else:
+		counterattack_effect_requested.emit(request)
