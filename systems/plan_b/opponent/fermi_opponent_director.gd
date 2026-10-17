@@ -1,10 +1,11 @@
-class_name PlanBFermiOpponentDirector
+class_name PlanBOpponentDirector
 extends RefCounted
 
 signal publish_word_requested(word_id: String, neutral_unit_id: String)
 signal counterattack_windup_started(request: Dictionary)
 signal counterattack_effect_requested(request: Dictionary)
 signal counterattack_resolved(result: Dictionary)
+signal opponent_word_pool_exhausted(level_id: String, streamer_id: String)
 
 var speech_enabled: bool = true
 var counterattack_enabled: bool = true
@@ -14,6 +15,7 @@ var _profile: Dictionary = {}
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _counterattack_effect_handler: Callable = Callable()
 var _level_id: String = ""
+var _streamer_id: String = ""
 var _speech_cooldown_remaining: float = 0.0
 var _counterattack_cooldown_remaining: float = 0.0
 var _windup_remaining: float = 0.0
@@ -22,6 +24,7 @@ var _awaiting_counterattack_result: bool = false
 var _counterattack_uses: int = 0
 var _last_publish_request: Dictionary = {}
 var _last_counterattack_event: Dictionary = {}
+var _opponent_pool_exhausted_reported: bool = false
 var _configured: bool = false
 
 
@@ -32,11 +35,13 @@ func configure(content_catalog: Object, seed_value: int = 1) -> bool:
 	if content_catalog == null or not content_catalog.has_method("get_opponent_config") \
 		or not content_catalog.has_method("get_word_ids"):
 		return false
-	_profile = content_catalog.call("get_opponent_config", "fermi")
+	# A 先用正式 LevelProfile 配置 C；导演读取当前主播参数，不再绑定费米配置。
+	_profile = content_catalog.call("get_opponent_config")
 	if _profile.is_empty():
 		return false
 	_level_id = str(_profile.get("level_id", ""))
-	if _level_id.is_empty():
+	_streamer_id = str(_profile.get("streamer_id", ""))
+	if _level_id.is_empty() or _streamer_id.is_empty():
 		return false
 	_rng.seed = seed_value
 	speech_enabled = bool(_profile.get("speech_enabled", false))
@@ -49,6 +54,7 @@ func configure(content_catalog: Object, seed_value: int = 1) -> bool:
 	_counterattack_uses = 0
 	_last_publish_request.clear()
 	_last_counterattack_event.clear()
+	_opponent_pool_exhausted_reported = false
 	_configured = true
 	return true
 
@@ -66,13 +72,16 @@ func update_speech(
 ) -> void:
 	if not _configured or not speech_enabled:
 		return
+	var word_ids: Array[String] = _get_publishable_opponent_word_ids(available_opponent_word_ids)
+	if word_ids.is_empty():
+		_report_opponent_pool_exhausted()
+		return
 	_speech_cooldown_remaining = maxf(0.0, _speech_cooldown_remaining - maxf(0.0, delta))
 	if _speech_cooldown_remaining > 0.0:
 		return
 
 	var neutral_unit_ids: Array[String] = _get_unit_ids_for_team(neutral_unit_snapshots, "neutral")
-	var word_ids: Array[String] = _get_publishable_opponent_word_ids(available_opponent_word_ids)
-	if neutral_unit_ids.is_empty() or word_ids.is_empty():
+	if neutral_unit_ids.is_empty():
 		return
 
 	var word_id: String = word_ids[_rng.randi_range(0, word_ids.size() - 1)]
@@ -158,6 +167,8 @@ func report_counterattack_result(applied: bool) -> bool:
 func get_debug_snapshot() -> Dictionary:
 	return {
 		"configured": _configured,
+		"level_id": _level_id,
+		"streamer_id": _streamer_id,
 		"speech_enabled": speech_enabled,
 		"speech_cooldown_remaining": _speech_cooldown_remaining,
 		"last_publish_request": _last_publish_request.duplicate(true),
@@ -167,6 +178,7 @@ func get_debug_snapshot() -> Dictionary:
 		"counterattack_uses": _counterattack_uses,
 		"pending_counterattack": _pending_counterattack.duplicate(true),
 		"last_counterattack_event": _last_counterattack_event.duplicate(true),
+		"opponent_word_pool_exhausted_reported": _opponent_pool_exhausted_reported,
 	}
 
 
@@ -179,9 +191,18 @@ func _get_publishable_opponent_word_ids(available_ids: Array[String]) -> Array[S
 			continue
 		var definition: Dictionary = _content_catalog.call("get_word_definition", word_id)
 		if str(definition.get("available_level", "")) == _level_id \
-			and str(definition.get("available_to", "")) == "opponent":
+			and str(definition.get("available_to", "")) == "opponent" \
+			and str(definition.get("streamer_id", "")) == _streamer_id:
 			result.append(word_id)
 	return result
+
+
+func _report_opponent_pool_exhausted() -> void:
+	# A 收到一次耗尽事件后继续推进流程；避免逐帧重复通知。
+	if _opponent_pool_exhausted_reported:
+		return
+	_opponent_pool_exhausted_reported = true
+	opponent_word_pool_exhausted.emit(_level_id, _streamer_id)
 
 
 func _get_unit_ids_for_team(snapshots: Array[Dictionary], team: String) -> Array[String]:
