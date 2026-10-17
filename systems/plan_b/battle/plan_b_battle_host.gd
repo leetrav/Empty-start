@@ -11,16 +11,18 @@ signal publish_result(team: String, word_id: String, result: Dictionary)
 signal unit_changed(unit_id: String, reason: String)
 signal unit_spawned(unit_id: String)
 signal unit_despawned(unit_id: String)
+signal counterattack_windup_started(request: Dictionary)
+signal counterattack_resolved(result: Dictionary)
 
 const TIER_CATALOG: Resource = preload("res://data/combat_stage/tier_catalog.tres")
-const PROTOTYPE_CATALOG_SCRIPT: Script = preload("res://systems/plan_b/battle/plan_b_prototype_word_library.gd")
-const PROTOTYPE_OPPONENT_SCRIPT: Script = preload("res://systems/plan_b/battle/plan_b_prototype_opponent_director.gd")
 
 @export_range(0.0, 5.0, 0.01) var pk_rate_pp_per_second: float = 0.85
 @export_range(0.0, 60.0, 0.1) var player_publish_cooldown_seconds: float = 5.0
 @export_range(0.0, 60.0, 0.1) var opponent_publish_cooldown_seconds: float = 11.5
+@export_range(0, 8, 1) var initial_opponent_seed_count: int = 2
 @export var available_level: String = "level_001"
 @export var opponent_auto_publish_enabled: bool = true
+@export var opponent_counterattack_enabled: bool = true
 
 enum BattleState { IDLE, RUNNING, PAUSED, ENDED }
 
@@ -38,15 +40,9 @@ var _simulation_uses_integer_unit_ids: bool = false
 
 
 func _ready() -> void:
-	# 临时占位模块也走公开对象接口，正式 B/C 模块可由场景根注入替换。
+	# Simulation 是场景中的 B 节点；C 的 RefCounted 模块由 A 的组装根注入。
 	_simulation = get_node_or_null("Simulation")
-	_word_catalog = PROTOTYPE_CATALOG_SCRIPT.new()
-	_opponent_director = PROTOTYPE_OPPONENT_SCRIPT.new()
 	_bind_simulation_signals()
-	_bind_opponent_signal()
-	_load_word_catalog()
-	_configure_simulation_type_matchups()
-	_configure_opponent_director()
 
 
 func configure_modules(simulation: Node, word_catalog: Object, opponent_director: Object) -> bool:
@@ -66,7 +62,10 @@ func configure_modules(simulation: Node, word_catalog: Object, opponent_director
 		_opponent_director = opponent_director
 		_bind_opponent_signal()
 	_configure_simulation_type_matchups()
-	return _configure_opponent_director()
+	if not _configure_opponent_director():
+		return false
+	_configure_counterattack_effect_handler()
+	return true
 
 
 func start_battle(arena_size: Vector2, arena_origin: Vector2 = Vector2.ZERO) -> void:
@@ -74,7 +73,7 @@ func start_battle(arena_size: Vector2, arena_origin: Vector2 = Vector2.ZERO) -> 
 	if _simulation == null:
 		push_error("PlanBBattleHost 缺少 Simulation 模块。")
 		return
-	_battle_state = BattleState.RUNNING
+	_battle_state = BattleState.IDLE
 	_battle_elapsed = 0.0
 	_pk = 0.5
 	_current_tier = 0
@@ -82,9 +81,24 @@ func start_battle(arena_size: Vector2, arena_origin: Vector2 = Vector2.ZERO) -> 
 	_used_word_ids.clear()
 	_last_published_at = {"player": -1000000.0, "opponent": -1000000.0}
 	_configure_simulation_type_matchups()
-	_configure_opponent_director()
-	_start_simulation(arena_size, arena_origin)
+	if not _configure_opponent_director():
+		push_error("PlanBBattleHost 无法配置费米发言模块。")
+		return
+	_configure_counterattack_effect_handler()
+	var created_ids: Array = _create_population(arena_size, arena_origin)
 	_update_simulation_unit_id_kind()
+	if not _seed_initial_opponents(created_ids):
+		_simulation.call("clear_battle")
+		_used_word_ids.clear()
+		_next_word_order = 1
+		_simulation_uses_integer_unit_ids = false
+		push_error("PlanBBattleHost 无法完整播种开局费米棋子；本局未启动。")
+		return
+	if _simulation.has_method("start_simulation"):
+		_simulation.call("start_simulation")
+	else:
+		_simulation.call("set_active", true)
+	_battle_state = BattleState.RUNNING
 	battle_state_changed.emit(&"running")
 	pk_changed.emit(get_pk())
 	tier_changed.emit(_current_tier)
@@ -260,13 +274,17 @@ func update_pk(delta: float) -> void:
 
 
 func update_battle(delta: float) -> void:
-	# C 每帧只决定候选；发表、顺序号和 PK 真相继续由 A 提交与结算。
+	# A 先结算实际人口 PK；战斗结束帧不再发话或启动反击。
 	if _battle_state != BattleState.RUNNING or delta <= 0.0:
 		return
 	_battle_elapsed += delta
+	update_pk(delta)
+	if _battle_state != BattleState.RUNNING:
+		return
 	if opponent_auto_publish_enabled:
 		_update_opponent_speech(delta)
-	update_pk(delta)
+	if opponent_counterattack_enabled:
+		_update_opponent_counterattack(delta)
 
 
 func _process(delta: float) -> void:
@@ -292,20 +310,44 @@ func _update_tier() -> void:
 	tier_changed.emit(_current_tier)
 
 
-func _start_simulation(arena_size: Vector2, arena_origin: Vector2) -> void:
-	if _simulation.has_method("start_battle"):
-		_simulation.call("start_battle", arena_size, arena_origin)
-		return
+func _create_population(arena_size: Vector2, arena_origin: Vector2) -> Array:
+	# B 创建时保持所有 seed slot 中立；A 负责选两条费米初始话并播种。
 	if _simulation.has_method("clear_battle"):
 		_simulation.call("clear_battle")
 	if _simulation.has_method("set_play_area"):
-		_simulation.call("set_play_area", Rect2(arena_origin, arena_size))
-	if _simulation.has_method("create_population"):
-		_simulation.call("create_population")
-	if _simulation.has_method("start_simulation"):
-		_simulation.call("start_simulation")
-	else:
-		_simulation.call("set_active", true)
+		if not bool(_simulation.call("set_play_area", Rect2(arena_origin, arena_size))):
+			return []
+	if not _simulation.has_method("create_population"):
+		return []
+	var created_ids: Variant = _simulation.call("create_population", -1, initial_opponent_seed_count)
+	return created_ids if created_ids is Array else []
+
+
+func _seed_initial_opponents(created_ids: Array) -> bool:
+	# 开局播种消耗两条话和两个顺序号，不启动对手主动发言冷却。
+	if initial_opponent_seed_count <= 0:
+		return true
+	if created_ids.size() < initial_opponent_seed_count:
+		return false
+	var candidate_word_ids: Array[String] = get_available_word_ids("opponent")
+	if candidate_word_ids.size() < initial_opponent_seed_count:
+		return false
+	var committed_seeds: Array[Dictionary] = []
+	for seed_index: int in range(initial_opponent_seed_count):
+		var word_id: String = candidate_word_ids[seed_index]
+		var definition: Dictionary = get_word_definition(word_id)
+		var unit_id: Variant = _normalize_unit_id(created_ids[seed_index])
+		var target: Dictionary = _simulation.call("get_unit_snapshot", unit_id)
+		if definition.is_empty() or String(target.get("team", "")) != "neutral":
+			return false
+		var candidate_order: int = _next_word_order + seed_index
+		if not bool(_simulation.call("seed_unit", unit_id, StringName("opponent"), definition, candidate_order)):
+			return false
+		committed_seeds.append({"word_id": word_id, "word_order": candidate_order})
+	for initial_seed: Dictionary in committed_seeds:
+		_used_word_ids.append(String(initial_seed["word_id"]))
+	_next_word_order += committed_seeds.size()
+	return true
 
 
 func _update_opponent_speech(delta: float) -> void:
@@ -318,6 +360,16 @@ func _update_opponent_speech(delta: float) -> void:
 	_opponent_director.call(
 		"update_speech", delta, neutral_snapshots, get_available_word_ids("opponent")
 	)
+
+
+func _update_opponent_counterattack(delta: float) -> void:
+	if _opponent_director == null or not _opponent_director.has_method("update_counterattack"):
+		return
+	var opponent_snapshots: Array[Dictionary] = []
+	for snapshot: Dictionary in get_unit_snapshots():
+		if String(snapshot.get("team", "")) == "opponent":
+			opponent_snapshots.append(snapshot)
+	_opponent_director.call("update_counterattack", delta, get_faction_counts(), opponent_snapshots)
 
 
 func _load_word_catalog() -> bool:
@@ -334,6 +386,16 @@ func _configure_opponent_director() -> bool:
 	if _opponent_director.has_method("reset"):
 		_opponent_director.call("reset")
 	return true
+
+
+func _configure_counterattack_effect_handler() -> void:
+	# C 只产生命令，请求效果的执行权由 A 委派给 B 的公开入口。
+	if _opponent_director == null or not _opponent_director.has_method("set_counterattack_effect_handler"):
+		return
+	var effect_handler := Callable()
+	if _simulation != null and _simulation.has_method("apply_counterattack_effect"):
+		effect_handler = Callable(self, "_apply_counterattack_effect")
+	_opponent_director.call("set_counterattack_effect_handler", effect_handler)
 
 
 func _configure_simulation_type_matchups() -> void:
@@ -381,11 +443,23 @@ func _disconnect_simulation_signals() -> void:
 
 func _bind_opponent_signal() -> void:
 	_connect_signal(_opponent_director, &"publish_word_requested", Callable(self, "_on_opponent_publish_requested"))
+	_connect_signal(_opponent_director, &"counterattack_windup_started", Callable(self, "_on_counterattack_windup_started"))
+	_connect_signal(_opponent_director, &"counterattack_effect_requested", Callable(self, "_on_counterattack_effect_requested"))
+	_connect_signal(_opponent_director, &"counterattack_resolved", Callable(self, "_on_counterattack_resolved"))
 
 
 func _disconnect_opponent_signal() -> void:
 	_disconnect_signal(
 		_opponent_director, &"publish_word_requested", Callable(self, "_on_opponent_publish_requested")
+	)
+	_disconnect_signal(
+		_opponent_director, &"counterattack_windup_started", Callable(self, "_on_counterattack_windup_started")
+	)
+	_disconnect_signal(
+		_opponent_director, &"counterattack_effect_requested", Callable(self, "_on_counterattack_effect_requested")
+	)
+	_disconnect_signal(
+		_opponent_director, &"counterattack_resolved", Callable(self, "_on_counterattack_resolved")
 	)
 
 
@@ -421,6 +495,28 @@ func _report_publish_result(team: String, word_id: String, result: Dictionary) -
 func _on_opponent_publish_requested(word_id: String, neutral_unit_id: String) -> void:
 	# C 的请求仍必须通过 A 统一校验和 B 播种。
 	publish_word("opponent", word_id, neutral_unit_id)
+
+
+func _on_counterattack_windup_started(request: Dictionary) -> void:
+	counterattack_windup_started.emit(request.duplicate(true))
+
+
+func _on_counterattack_effect_requested(request: Dictionary) -> void:
+	# 没有可注入 Callable 时仍由 A 接收 C 的请求并转调 B，再回报 C。
+	var applied: bool = _apply_counterattack_effect(request)
+	if _opponent_director != null and _opponent_director.has_method("report_counterattack_result"):
+		_opponent_director.call("report_counterattack_result", applied)
+
+
+func _apply_counterattack_effect(request: Dictionary) -> bool:
+	# C 的控制器不直接修改 B；A 将效果请求交给模拟模块公开入口。
+	if _simulation == null or not _simulation.has_method("apply_counterattack_effect"):
+		return false
+	return bool(_simulation.call("apply_counterattack_effect", request))
+
+
+func _on_counterattack_resolved(result: Dictionary) -> void:
+	counterattack_resolved.emit(result.duplicate(true))
 
 
 func _on_unit_changed(unit_id: Variant, reason: StringName) -> void:

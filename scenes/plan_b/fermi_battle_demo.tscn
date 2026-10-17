@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/plan_b/fermi_battle_demo.gd" id="1_demo"]
 [ext_resource type="Script" path="res://systems/plan_b/battle/plan_b_battle_host.gd" id="2_host"]
-[ext_resource type="Script" path="res://systems/plan_b/battle/plan_b_prototype_simulation.gd" id="3_simulation"]
+[ext_resource type="Script" path="res://systems/plan_b/simulation/plan_b_unit_simulation.gd" id="3_simulation"]
 
 [node name="FermiBattleDemo" type="Control"]
 layout_mode = 3
