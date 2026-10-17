@@ -6,6 +6,7 @@ const TYPE_MATCHUPS_PATH := "res://data/plan_b/battle_type_matchups.csv"
 const STRENGTH_RATES_PATH := "res://data/plan_b/strength_success_rates.csv"
 const FERMI_CONFIG_PATH := "res://data/plan_b/fermi_opponent_config.csv"
 const RETALIATION_MAP_PATH := "res://data/plan_b/retaliation_skill_map.csv"
+const DEFAULT_TEST_LEVEL_ID := "level_001"
 
 const LEGACY_TENDENCIES := [&"orthodox", &"heresy", &"absurd", &"neutral"]
 
@@ -132,6 +133,19 @@ func get_word_ids(available_level: String, audience: String) -> Array[String]:
 		var definition: Dictionary = _word_definitions[word_id]
 		if str(definition["available_level"]) == available_level \
 			and str(definition["available_to"]) == audience:
+			result.append(word_id)
+	return result
+
+
+## 按 A 的阵营已用词记录过滤静态池；去重真相仍归 A 保存。
+func get_available_word_ids(
+	team: String,
+	used_word_ids: Array[String],
+	available_level: String = DEFAULT_TEST_LEVEL_ID
+) -> Array[String]:
+	var result: Array[String] = []
+	for word_id: String in get_word_ids(available_level, team):
+		if not used_word_ids.has(word_id):
 			result.append(word_id)
 	return result
 

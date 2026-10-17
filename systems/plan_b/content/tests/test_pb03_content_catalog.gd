@@ -14,6 +14,12 @@ func _initialize() -> void:
 	assert(opponent_word_ids.size() == 5)
 	assert(catalog.get_word_ids("level_002", "player").is_empty())
 	assert(catalog.get_word_ids("level_001", "unknown").is_empty())
+	var no_used_words: Array[String] = []
+	var used_player_words: Array[String] = ["w_0001"]
+	var used_opponent_words: Array[String] = ["pb_fermi_01"]
+	assert(catalog.get_available_word_ids("player", no_used_words).size() == 30)
+	assert(catalog.get_available_word_ids("player", used_player_words).size() == 29)
+	assert(catalog.get_available_word_ids("opponent", used_opponent_words).size() == 4)
 
 	var definition: Dictionary = catalog.get_word_definition("w_0001")
 	assert(definition["text"] == "天堂名额少，先点点关注！")
