@@ -2,6 +2,9 @@ extends CanvasLayer
 
 ## UI 发出重开请求；本场清理与初始化由战斗场景负责。
 signal restart_requested
+## 根场景只据此取消指针捕获，暂停计时仍由 SceneTree 统一处理。
+signal paused_changed(paused: bool)
+var _previous_focus: Control
 
 @onready var _overlay: Control = %Overlay
 @onready var _pause_actions: VBoxContainer = %PauseActions
@@ -22,9 +25,9 @@ func _ready() -> void:
 	_settings_panel.closed.connect(_on_settings_panel_closed)
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	# 所有暂停输入统一使用 Input Map 的 pause Action，不硬编码具体键位。
-	if not event.is_action_pressed("pause"):
+	if not event.is_action_pressed("pause") or event.is_echo():
 		return
 
 	if _settings_panel.visible:
@@ -43,9 +46,11 @@ func pause_game() -> void:
 	if get_tree().paused:
 		return
 
+	_previous_focus = get_viewport().gui_get_focus_owner()
 	_pause_actions.show()
 	_overlay.show()
 	get_tree().paused = true
+	paused_changed.emit(true)
 	_resume_button.grab_focus()
 
 
@@ -53,7 +58,19 @@ func resume_game() -> void:
 	# 关闭设置和暂停遮罩，再恢复游戏处理。
 	_settings_panel.close()
 	_overlay.hide()
+	var was_paused := get_tree().paused
 	get_tree().paused = false
+	if was_paused:
+		paused_changed.emit(false)
+	if is_instance_valid(_previous_focus) and _previous_focus.is_visible_in_tree():
+		_previous_focus.grab_focus()
+	_previous_focus = null
+
+
+## 房间与结果页只提供继续、设置和返回；只有普通战斗允许重开。
+func set_restart_available(available: bool) -> void:
+	%ReloadButton.visible = available
+	%ReloadButton.disabled = not available
 
 
 func _on_settings_button_pressed() -> void:

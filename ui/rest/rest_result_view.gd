@@ -239,8 +239,9 @@ func _set_menu_input_enabled(enabled: bool) -> void:
 
 
 # 展示时拦截操作；菜单阶段让原生 GUI 完整接收点击、悬停与滚动。
-func _input(_event: InputEvent) -> void:
-	if _result_active and not _menu_input_enabled:
+func _input(event: InputEvent) -> void:
+	# 转场期间屏蔽结果操作，但ESC始终交给共享暂停组件。
+	if _result_active and not _menu_input_enabled and not event.is_action("pause"):
 		get_viewport().set_input_as_handled()
 
 
