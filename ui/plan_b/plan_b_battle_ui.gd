@@ -408,7 +408,6 @@ func _build_word_column() -> Control:
 	_word_list.add_theme_constant_override("separation", 8)
 	_word_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_word_scroll.add_child(_word_list)
-	body.add_child(_word_scroll)
 
 	var selected := _card(body, 0.0, Color("#122633"), Color("#326173"))
 	selected.add_child(_label("已选话语", 12, Color("#8ab9c6")))
