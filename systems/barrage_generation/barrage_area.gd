@@ -70,12 +70,36 @@ var _terminal_presentation_only: bool = false
 var _terminal_trait_ids: Array[StringName] = []
 var _terminal_trait_colors: Dictionary = {}
 var _combat_numerics: CombatNumericsConfig
+## 持续压力比例由试玩选型后注入；0保留已发布版本的首次升档行为。
+@export_range(0.0, 1.0, 0.01) var counterpressure_probability: float = 0.0
 var _trait_catalog: RefCounted
 var _current_combat_tier: int = 0
 var _current_counter_draw_count: int = 0
 var _drawn_counter_tiers: Array[int] = []
 var _skill_traits_by_tier: Dictionary = {}
 var _pending_counter_skills: Array[Dictionary] = []
+
+
+## A 在人工选定方案后注入；不改21候选权重、首次抽选、普通/特殊容量或正式Resource。
+func configure_counterpressure(probability: float) -> bool:
+	if not is_finite(probability) or probability < 0.0 or probability > 1.0:
+		return false
+	counterpressure_probability = probability
+	return true
+
+
+## 从本场已抽中且当前Tier可用的特性里选一项；降档后停用高档项。
+func _choose_unlocked_counter_traits() -> Array[StringName]:
+	var available: Array[StringName] = []
+	for tier: int in _skill_traits_by_tier:
+		if tier > _current_combat_tier:
+			continue
+		for trait_id: StringName in _skill_traits_by_tier[tier]:
+			if not available.has(trait_id):
+				available.append(trait_id)
+	if available.is_empty():
+		return []
+	return [available.pick_random()]
 
 
 ## INT-16 注入 C 的 07/21 目录；不在本系统重做读表和抽选。
@@ -891,6 +915,11 @@ func _spawn_normal_batch(allow_when_stopped: bool = false) -> int:
 			if barrage_view != null:
 				_pending_counter_skills.remove_at(pending_index)
 			break
+		# 首次升档请求优先；之后按显式试玩配置持续使用已解锁反击，容量仍由同一入口拒绝。
+		if barrage_view == null and not _terminal_presentation_only and randf() < counterpressure_probability:
+			var recurring: Array[StringName] = _choose_unlocked_counter_traits()
+			if not recurring.is_empty():
+				barrage_view = spawn_normal_barrage(_current_level_profile, speech, recurring)
 		# 特殊容量用尽仍允许本批普通话语生成，待生成技能保留到后续批次。
 		if barrage_view == null:
 			barrage_view = spawn_normal_barrage(_current_level_profile, speech)

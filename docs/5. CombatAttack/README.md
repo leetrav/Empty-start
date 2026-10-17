@@ -1,5 +1,11 @@
 # 5. CombatAttack 战斗攻击系统任务拆分
 
+## PTF-03 输入返工（2026-10-16）
+
+硬直期间的新按住保留到READY后蓄力，飞行期间仍拒绝；暂停抬手、后台和手势取消清除残留，已发射言弹保留原Timer。隐藏目标在释放/到达均排除。正式0.8/0.2/0.15秒与判定半径保持；同一受控回放中V0丢第二发、修复版保留。
+
+E先 `set_native_touch_input_enabled(false)`，再用 `begin_pointer_attack` / `move_pointer_aim` / `end_pointer_attack` 传偏置后的Viewport位置与touch=true。A暂停用 `cancel_pointer_attack()`，只清手势/蓄力、保留已发射阶段。`charge_state_changed(progress,held,fully_charged,phase)` 供独立移动UI消费。完整签名、录像和未验收事项见[PTF-03日志](../Integration/弹幕战斗_PTF-03_2026-10-16_log.md)。实体鼠标/Android与真人手感仍待验收。
+
 > **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。已实现的基础卡用于接口复查；新的视觉、静止弹幕、对话与阶段打磨以最新单卡和此表为准。
 
 ## 2026-10-09 现行实现核对与任务状态

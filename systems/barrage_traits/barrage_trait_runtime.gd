@@ -8,6 +8,7 @@ signal visual_asset_requested(view: BarrageView, asset_id: String, status: Dicti
 
 var _area: BarrageArea
 var _catalog: BarrageTraitCatalog
+var _copy_batch_active: bool = false
 var _level_profile: LevelProfile
 
 
@@ -81,6 +82,14 @@ func _on_barrage_generated(view: BarrageView) -> void:
 	if facts == null or facts.is_repeat or facts.is_contradiction:
 		return
 	_catalog.configure_trait_set(facts.trait_set)
+	# 复制技能至少形成一对独立可命中的同句；同步装配期间不再触发下一代。
+	if facts.trait_set.is_retaliation_copy() and not _copy_batch_active and _level_profile != null:
+		_copy_batch_active = true
+		var sibling: BarrageView = _spawn_with_traits(_level_profile, _speech_from_record(facts), facts.trait_set.get_trait_ids())
+		if sibling != null:
+			sibling.runtime_record.expires_at_msec = facts.expires_at_msec
+			sibling.runtime_record.lifetime_duration_msec = facts.lifetime_duration_msec
+		_copy_batch_active = false
 	# 弹幕寿命由 BarrageArea 按 07 覆盖和 06 Tier 规则唯一计算，后续表现不重置截止时间。
 	for trait_id: StringName in facts.trait_set.get_trait_ids():
 		var status: Dictionary = _catalog.get_visual_asset_status(trait_id)

@@ -1,6 +1,9 @@
 class_name BarrageSpecialSurface
 extends "res://systems/barrage_generation/barrage_glass_surface.gd"
 
+## 只由人工选型预览开启，正式实例继续原外观直到视觉批准。
+@export var show_unselectable_marker: bool = false
+
 @export_group("遮挡 / 铁质")
 @export var metal_base: Color = Color("#394450")
 @export var metal_edge: Color = Color("#B7CBD4")
@@ -37,7 +40,7 @@ func configure_traits(
 		text_outline_size: int = 0, text_outline_color: Color = Color.TRANSPARENT
 	) -> void:
 	_main_material = &"glass"
-	for id: StringName in [&"reflect", &"occlusion", &"fake_card", &"retaliation_copy", &"split"]:
+	for id: StringName in [&"reflect", &"occlusion", &"fake_card", &"retaliation_copy", &"split", &"unselectable"]:
 		if traits.has(id):
 			_main_material = id
 			break
@@ -78,6 +81,14 @@ func _draw() -> void:
 			_draw_fake_repeat()
 		&"retaliation_copy":
 			_draw_retaliation_panel()
+		&"unselectable":
+			super._draw()
+			# 候选标识不需要新素材；默认关闭，由真人对比后再决定正式接入。
+			if not show_unselectable_marker:
+				return
+			var center := Vector2(size.x - 15.0, 13.0)
+			draw_circle(center, 8.0, Color(1.0, 0.7, 0.65), false, 2.0, true)
+			draw_line(center + Vector2(-5, 5), center + Vector2(5, -5), Color(1.0, 0.7, 0.65), 2.0, true)
 		&"split":
 			super._draw()
 			_draw_cracked_glass()

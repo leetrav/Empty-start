@@ -21,6 +21,8 @@ const LOCAL_TEXT_ANIMATION_KINDS: Array[StringName] = [&"shake", &"pulse", &"wav
 @export_range(0, 5, 1) var text_shadow_offset: int = 2
 
 var runtime_record: BarrageRuntimeRecord
+var _shared_motion_enabled: bool = false
+var _requested_curve_travel_pixels: float = 0.0
 var _foreground_motion_mode: ForegroundMotionMode = ForegroundMotionMode.STRAIGHT
 var _move_speed_pixels_per_second: float = 0.0
 var _move_direction: Vector2 = Vector2.LEFT
@@ -145,6 +147,8 @@ func setup(
 	foreground_motion_mode: ForegroundMotionMode = ForegroundMotionMode.STRAIGHT
 ) -> void:
 	runtime_record = barrage_record
+	_shared_motion_enabled = false
+	_requested_curve_travel_pixels = 0.0
 	_foreground_motion_mode = foreground_motion_mode
 	text = barrage_record.text
 	_stationary_position = stationary_position
@@ -197,6 +201,39 @@ func setup(
 	_apply_special_text_layout()
 
 
+## B 可在现有实例setup/定位后复用四种运动；保持原句、类型、样式、截止和容量不变。
+## curve_span_pixels仅用于显式试玩比较；0沿用原完整区域曲线跨度。
+func configure_shared_motion(
+	mode: int, speed: float, direction: Vector2 = Vector2.LEFT,
+	curve_amplitude: float = 72.0, speed_period: float = 2.5,
+	wander_interval: float = 2.0, speed_cap: float = 95.0, curve_span_pixels: float = 0.0
+) -> bool:
+	if runtime_record == null or not is_instance_valid(_active_area) or mode < 0 or mode > 3:
+		return false
+	if not is_finite(speed) or speed <= 0.0 or not is_finite(speed_cap) or speed_cap <= 0.0:
+		return false
+	if not is_finite(direction.x) or not is_finite(direction.y) or direction.length_squared() <= 0.0001:
+		return false
+	if not is_finite(curve_amplitude) or curve_amplitude < 0.0 or not is_finite(curve_span_pixels) or curve_span_pixels < 0.0:
+		return false
+	if not is_finite(speed_period) or speed_period <= 0.0 or not is_finite(wander_interval) or wander_interval <= 0.0:
+		return false
+	_shared_motion_enabled = true
+	_stationary_position = false
+	_foreground_motion_mode = mode as ForegroundMotionMode
+	_move_speed_pixels_per_second = minf(speed, speed_cap)
+	_move_direction = direction.normalized()
+	_wandering_motion_active = false
+	_requested_curve_amplitude_pixels = curve_amplitude if mode == ForegroundMotionMode.CURVED else 0.0
+	_requested_curve_travel_pixels = curve_span_pixels
+	_speed_change_cycle_seconds = speed_period if mode == ForegroundMotionMode.SPEED_CHANGE else 0.0
+	_speed_change_elapsed_seconds = 0.0
+	_motion_curve = null
+	if mode == ForegroundMotionMode.WANDERING:
+		return configure_wandering_motion(wander_interval)
+	return true
+
+
 ## 供验收与演示读取该视图实际选中的普通前景运动类型。
 func get_foreground_motion_mode() -> ForegroundMotionMode:
 	return _foreground_motion_mode
@@ -204,7 +241,7 @@ func get_foreground_motion_mode() -> ForegroundMotionMode:
 
 # 进入独立 BG-23 游荡状态，不改写 BG-20 使用的直线方向。
 func configure_wandering_motion(direction_change_interval_seconds: float) -> bool:
-	if (runtime_record == null or runtime_record.is_repeat or runtime_record.is_contradiction
+	if (runtime_record == null or ((runtime_record.is_repeat or runtime_record.is_contradiction) and not _shared_motion_enabled)
 			or _stationary_position or not is_instance_valid(_active_area)
 			or _move_speed_pixels_per_second <= 0.0 or not is_finite(direction_change_interval_seconds)
 			or direction_change_interval_seconds <= 0.0):
@@ -564,7 +601,7 @@ func _process(delta: float) -> void:
 		_animated_size_multiplier = _get_animated_size_multiplier()
 	_apply_presentation_scale()
 	_update_moving_foreground_layer(delta)
-	if runtime_record.is_contradiction:
+	if runtime_record.is_contradiction and not _shared_motion_enabled:
 		_advance_contradiction_ease_out(delta)
 		if not is_instance_valid(_active_area):
 			queue_free()
@@ -685,6 +722,8 @@ func _ensure_curved_motion() -> bool:
 		return false
 	var area_size: Vector2 = _active_area.size
 	var travel_distance: float = area_size.x * absf(_move_direction.x) + area_size.y * absf(_move_direction.y)
+	if _requested_curve_travel_pixels > 0.0:
+		travel_distance = minf(travel_distance, _requested_curve_travel_pixels)
 	var curve_normal: Vector2 = Vector2(_move_direction.y, -_move_direction.x)
 	var available_positive: float = _get_available_motion_space(curve_normal, area_size)
 	var available_negative: float = _get_available_motion_space(-curve_normal, area_size)

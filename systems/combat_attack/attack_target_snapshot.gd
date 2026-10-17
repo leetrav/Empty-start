@@ -105,7 +105,7 @@ func resolve_present_targets(active_barrage_area: BarrageArea) -> Array[Node]:
 			continue
 
 		var barrage_view := target as BarrageView
-		if not barrage_view.is_inside_tree() or barrage_view.is_queued_for_deletion():
+		if not barrage_view.is_inside_tree() or barrage_view.is_queued_for_deletion() or not barrage_view.is_visible_in_tree():
 			continue
 		if barrage_view.get_parent() != active_barrage_area or barrage_view.runtime_record == null:
 			continue
