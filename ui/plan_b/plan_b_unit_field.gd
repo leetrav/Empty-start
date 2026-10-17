@@ -14,8 +14,10 @@ var density_profile := "clear"
 
 var _snapshots: Array = []
 var _word_texts: Dictionary = {}
+var _team_textures: Dictionary = {}
 var _selected_unit_id := ""
 var _hovered_unit_id := ""
+var _unit_layer_visible := true
 var _feedback_pulses: Dictionary = {}
 var _previous_points: Dictionary = {}
 var _movement_segments: Dictionary = {}
@@ -34,6 +36,14 @@ func set_world_bounds(bounds: Rect2) -> void:
 
 
 func set_unit_snapshots(snapshots: Array) -> void:
+	if not _unit_layer_visible:
+		_snapshots.clear()
+		for value in snapshots:
+			if value is Dictionary:
+				_snapshots.append(value)
+		_previous_points.clear()
+		_movement_segments.clear()
+		return
 	var next_points: Dictionary = {}
 	_movement_segments.clear()
 	_snapshots.clear()
@@ -65,8 +75,34 @@ func set_word_texts(word_texts: Dictionary) -> void:
 	queue_redraw()
 
 
+func set_team_textures(neutral_texture: Texture2D, player_texture: Texture2D, opponent_texture: Texture2D) -> void:
+	# 美术资源由 A/策划注入；当前仓库无独立观众棋子贴图时使用无字母的阵营色形状。
+	_team_textures = {
+		"neutral": neutral_texture,
+		"player": player_texture,
+		"opponent": opponent_texture,
+	}
+	queue_redraw()
+
+
 func set_selected_unit(unit_id: String) -> void:
 	_selected_unit_id = unit_id
+	queue_redraw()
+
+
+func set_unit_layer_visible(visible: bool) -> void:
+	# 矛盾阶段隐藏普通棋子与接触提示，保留棋盘底板给蓄力准星使用。
+	if _unit_layer_visible == visible:
+		return
+	_unit_layer_visible = visible
+	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
+	_hovered_unit_id = ""
+	_movement_segments.clear()
+	_previous_points.clear()
+	if not visible:
+		_selected_unit_id = ""
+		_feedback_pulses.clear()
+		_contact_feedback.clear()
 	queue_redraw()
 
 
@@ -97,13 +133,15 @@ func show_contact_feedback(first_unit_id: String, second_unit_id: String, outcom
 func _process(_delta: float) -> void:
 	# 只保留短暂提示；棋子位置仍由每帧的新快照决定。
 	var now := Time.get_ticks_msec()
+	var had_transient_feedback := not _feedback_pulses.is_empty() or not _contact_feedback.is_empty()
 	for unit_id in _feedback_pulses.keys():
 		if now - int(_feedback_pulses[unit_id].get("time", now)) > 1500:
 			_feedback_pulses.erase(unit_id)
 	for index in range(_contact_feedback.size() - 1, -1, -1):
 		if now - int(_contact_feedback[index].get("time", now)) > 1200:
 			_contact_feedback.remove_at(index)
-	queue_redraw()
+	if had_transient_feedback or not _feedback_pulses.is_empty() or not _contact_feedback.is_empty():
+		queue_redraw()
 
 
 func _draw() -> void:
@@ -117,6 +155,8 @@ func _draw() -> void:
 	for row in range(1, 5):
 		var y := arena.position.y + arena.size.y * float(row) / 5.0
 		draw_line(Vector2(arena.position.x, y), Vector2(arena.end.x, y), Color(0.25, 0.42, 0.49, 0.18), 1.0)
+	if not _unit_layer_visible:
+		return
 
 	# 移动尾迹来自前一帧只读位置，用低对比度避免遮住密集棋子。
 	for segment in _movement_segments.values():
@@ -135,23 +175,19 @@ func _draw_unit(snapshot: Dictionary) -> void:
 	var team := str(snapshot.get("team", "neutral"))
 	var center := _world_to_local(_unit_position(snapshot))
 	var tint: Color = TEAM_COLORS.get(team, TEAM_COLORS["neutral"])
-	var radius := 17.0 if density_profile == "clear" else 11.0
+	var radius := _visual_radius(snapshot)
 	var is_neutral := team == "neutral"
 	var is_selected := unit_id == _selected_unit_id
 	var is_hovered := unit_id == _hovered_unit_id
 
-	if is_neutral:
-		draw_circle(center, radius + 5.0, Color(tint.r, tint.g, tint.b, 0.12))
 	if is_selected or is_hovered:
 		draw_circle(center, radius + 8.0, Color(tint.r, tint.g, tint.b, 0.22))
-	draw_circle(center, radius + 2.0, Color("#07121b"))
-	draw_circle(center, radius, tint)
-	if density_profile == "clear":
-		var glyph := "N" if team == "neutral" else ("B" if team == "player" else "F")
-		var font_size := 12
-		var font := ThemeDB.fallback_font
-		var text_width := font.get_string_size(glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-		draw_string(font, center + Vector2(-text_width * 0.5, 4.0), glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color("#07121b"))
+	var token_texture: Texture2D = _team_textures.get(team) as Texture2D
+	if token_texture != null:
+		draw_texture_rect(token_texture, Rect2(center - Vector2.ONE * radius, Vector2.ONE * radius * 2.0), false)
+	else:
+		draw_circle(center, radius + 2.0, Color("#07121b"))
+		draw_circle(center, radius, tint)
 
 	if _feedback_pulses.has(unit_id):
 		var feedback: Dictionary = _feedback_pulses[unit_id]
@@ -247,7 +283,7 @@ func _hit_unit(point: Vector2, hit_radius: float) -> Dictionary:
 
 
 func _arena_rect() -> Rect2:
-	var available := Rect2(Vector2(16.0, 16.0), size - Vector2(32.0, 32.0))
+	var available := Rect2(Vector2.ZERO, size)
 	if available.size.x <= 0.0 or available.size.y <= 0.0:
 		return Rect2(Vector2.ZERO, size)
 	var world_ratio := world_bounds.size.x / world_bounds.size.y
@@ -257,6 +293,11 @@ func _arena_rect() -> Rect2:
 		height = available.size.y
 		width = height * world_ratio
 	return Rect2(available.position + (available.size - Vector2(width, height)) * 0.5, Vector2(width, height))
+
+
+func _visual_radius(snapshot: Dictionary) -> float:
+	var radius := maxf(1.0, float(snapshot.get("collision_radius", 13.0)))
+	return radius * 0.82 if density_profile == "compact" else radius
 
 
 func _world_to_local(world_position: Vector2) -> Vector2:
