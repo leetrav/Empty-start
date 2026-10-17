@@ -1,0 +1,27 @@
+{
+  "classification": "model_only_not_godot_or_human_playtest",
+  "fixed_seeds": [
+    20261017,
+    20261018,
+    20261019,
+    20261020,
+    20261021,
+    20261022,
+    20261023,
+    20261024,
+    20261025,
+    20261026
+  ],
+  "configuration_count": 11,
+  "strategy_count": 4,
+  "run_count": 440,
+  "dt_s": 0.2,
+  "duration_cap_s": 240.0,
+  "wall_runtime_s": 695.41,
+  "replay_command": "python tests/plan_b/experiment_model.py --seed-count 10",
+  "opponent_first_additional_word_delay_s": 0.0,
+  "reversal_indicator": "sampled 50-point crossings at 30-second trend points; brief reversals between samples can be missed",
+  "shortage_indicator": "neutral count <= 3 for consecutive 30-second trend samples",
+  "snowball_indicator": "maximum of player/opponent count divided by total at 30-second trend samples",
+  "single_replay_command": "python tests/plan_b/experiment_model.py --config-id base --strategy tactical --seed 20261017"
+}

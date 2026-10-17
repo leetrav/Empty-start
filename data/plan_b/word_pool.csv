@@ -1,0 +1,36 @@
+word_id,text,battle_type,strength,traits,tendency,available_level,available_to,source_table,source_id,test_only,notes
+w_0001,天堂名额少，先点点关注！,type_a,1,none,heresy,level_001,player,03_普通词库.csv,w_0001,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0005,不听鼠言，后果自行承担,type_b,2,none,heresy,level_001,player,03_普通词库.csv,w_0005,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0006,鼠对经文有撤回权,type_c,3,none,heresy,level_001,player,03_普通词库.csv,w_0006,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0009,许愿发财，不知神会分几期,type_a,2,none,absurd,level_001,player,03_普通词库.csv,w_0009,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0013,祂无处不在,type_b,2,none,orthodox,level_001,player,03_普通词库.csv,w_0013,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0015,对空气道谢，它当然不否认,type_c,3,none,absurd,level_001,player,03_普通词库.csv,w_0015,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0019,这条不代表本鼠立场,type_a,1,none,neutral,level_001,player,03_普通词库.csv,w_0019,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0020,谁说得对？点赞高的那个,type_b,1,none,neutral,level_001,player,03_普通词库.csv,w_0020,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0022,鼠先把补光灯调亮,type_c,1,none,neutral,level_001,player,03_普通词库.csv,w_0022,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0023,鼠刚刚是不是说错话了？剪掉！,type_a,1,none,neutral,level_001,player,03_普通词库.csv,w_0023,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0028,这题可以跳过吗？跳过键在哪？,type_b,1,none,neutral,level_001,player,03_普通词库.csv,w_0028,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0030,祂若呼召，鼠就回答,type_c,2,none,orthodox,level_001,player,03_普通词库.csv,w_0030,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0032,祂给过鼠恩典，鼠不能装作没收到,type_a,2,none,orthodox,level_001,player,03_普通词库.csv,w_0032,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0033,就算所有人散去，鼠也要留下,type_b,3,none,orthodox,level_001,player,03_普通词库.csv,w_0033,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0035,神爱世人，但总得排个先后,type_c,1,none,heresy,level_001,player,03_普通词库.csv,w_0035,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0038,神不会偏爱鼠，祂只是更常听鼠的,type_a,1,none,heresy,level_001,player,03_普通词库.csv,w_0038,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0039,祂会惩罚罪人，鼠只是帮祂节省时间,type_b,2,none,heresy,level_001,player,03_普通词库.csv,w_0039,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0041,祂给鼠能力，显然希望鼠使用它,type_c,2,none,heresy,level_001,player,03_普通词库.csv,w_0041,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0046,鼠的敌人恰好也是神的敌人,type_a,3,none,heresy,level_001,player,03_普通词库.csv,w_0046,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0052,水能变成酒，那酒兑水应该也不算造假,type_b,2,none,absurd,level_001,player,03_普通词库.csv,w_0052,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0057,十三个人一起吃晚餐，谁负责买单？,type_c,1,none,absurd,level_001,player,03_普通词库.csv,w_0057,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0063,如果祂无处不在，那为什么会有404notfound,type_a,3,none,absurd,level_001,player,03_普通词库.csv,w_0063,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0064,如果连鼠都能被原谅，那你们也可以,type_b,2,none,orthodox,level_001,player,03_普通词库.csv,w_0064,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0067,如果大家都能被选上，那“拣选”还有什么意思,type_c,1,none,heresy,level_001,player,03_普通词库.csv,w_0067,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0072,有时候仁慈就是让人没有别的选择,type_a,3,none,heresy,level_001,player,03_普通词库.csv,w_0072,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0076,这个，鼠真不知道,type_b,1,none,neutral,level_001,player,03_普通词库.csv,w_0076,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0080,算了，当鼠没说,type_c,1,none,neutral,level_001,player,03_普通词库.csv,w_0080,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0105,忏悔不需要预约,type_a,1,none,orthodox,level_001,player,03_普通词库.csv,w_0105,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0112,怀疑也是信仰的一部分,type_b,2,none,orthodox,level_001,player,03_普通词库.csv,w_0112,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+w_0118,祂就是我手里的这颗瓜子,type_c,3,none,absurd,level_001,player,03_普通词库.csv,w_0118,true,Plan B TEST_ONLY；battle_type 为轮转实验配置，tendency 与原表相同。
+pb_fermi_01,乌咪拉咻！,type_a,2,none,neutral,level_001,opponent,20_主播气泡对白.csv,bubble_alien_script_20261013_001,true,Plan B TEST_ONLY；复用费米已启用开场台词，tendency=neutral 仅作旧字段占位。
+pb_fermi_02,喵哇，地球朋友们好！,type_b,1,none,neutral,level_001,opponent,20_主播气泡对白.csv,bubble_alien_script_20261013_002,true,Plan B TEST_ONLY；复用费米已启用开场台词，tendency=neutral 仅作旧字段占位。
+pb_fermi_03,欢迎来到费米的宇宙房车！,type_c,2,none,neutral,level_001,opponent,20_主播气泡对白.csv,bubble_alien_script_20261013_003,true,Plan B TEST_ONLY；复用费米已启用开场台词，tendency=neutral 仅作旧字段占位。
+pb_fermi_04,鼠鼠你好喵哇!,type_a,1,none,neutral,level_001,opponent,20_主播气泡对白.csv,bubble_alien_script_20261013_004,true,Plan B TEST_ONLY；复用费米已启用开场台词，tendency=neutral 仅作旧字段占位。
+pb_fermi_05,鼠是我本光年遇见的第一只鼠！,type_b,3,none,neutral,level_001,opponent,20_主播气泡对白.csv,bubble_alien_script_20261013_005,true,Plan B TEST_ONLY；复用费米已启用开场台词，tendency=neutral 仅作旧字段占位。

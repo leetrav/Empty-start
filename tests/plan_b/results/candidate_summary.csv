@@ -1,0 +1,5 @@
+﻿config_id,varied_parameter,pk_k,population_cap,infection_chances,natural_lifetime_mean_s,natural_lifetime_sd_s,player_cooldown_s,opponent_cooldown_s,evidence_type,strategy,n,player_100_count,opponent_0_count,censored_240_count,median_duration_s,mean_min_pk,mean_max_pk,mean_sampled_pk_midpoint_crossings,mean_longest_neutral_shortage_s,mean_max_team_share,mean_max_sampled_pk_change_pp_per_30s,mean_peak_words_published_per_30s,mean_player_words,mean_opponent_words
+candidate_slow_balanced,combined_candidate,0.55,96,0.10/0.22/0.35,45.0,12.0,5.0,11.5,model_only,no_op,10,0,10,0,107.2,0.0,50.0,0.0,78.0,0.9848,16.071,3.0,0.0,10.7
+candidate_slow_balanced,combined_candidate,0.55,96,0.10/0.22/0.35,45.0,12.0,5.0,11.5,model_only,single_type,10,0,10,0,121.0,0.0,50.632,0.2,81.0,0.9731,15.99,7.0,4.0,11.8
+candidate_slow_balanced,combined_candidate,0.55,96,0.10/0.22/0.35,45.0,12.0,5.0,11.5,model_only,random_word,10,1,1,8,240.0,29.801,68.425,0.5,69.0,0.9332,13.976,9.0,35.0,20.5
+candidate_slow_balanced,combined_candidate,0.55,96,0.10/0.22/0.35,45.0,12.0,5.0,11.5,model_only,tactical,10,4,0,6,240.0,46.519,85.876,0.5,57.0,0.8896,12.283,9.0,34.0,19.2

@@ -1,0 +1,10 @@
+attacker_type,defender_type,relation
+type_a,type_a,same
+type_a,type_b,advantage
+type_a,type_c,disadvantage
+type_b,type_a,disadvantage
+type_b,type_b,same
+type_b,type_c,advantage
+type_c,type_a,advantage
+type_c,type_b,disadvantage
+type_c,type_c,same

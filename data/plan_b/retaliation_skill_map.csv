@@ -1,0 +1,9 @@
+skill_id,streamer_id,tier,trait_id,trait_name,weight,candidate_plan_b_behavior,prototype_status,source_notes
+alien_t2_occlusion,alien,2,occlusion,遮挡,3,短时遮挡一个战场区域或选人提示，并显示反击预警；等待 PB-04 接线与试玩。,CANDIDATE_ONLY,试玩方案｜alien T2反击候选；素材效果及强弱待实机验证。
+alien_t2_unselectable,alien,2,unselectable,不可选,2,短时屏蔽一个已标记观众的玩家选取；等待 PB-01/PB-04 共同确认边界。,CANDIDATE_ONLY,试玩方案｜alien T2反击候选；素材效果及强弱待实机验证。
+alien_t3_split,alien,3,split,分裂,3,费米方棋子分裂为两个保留当前 word snapshot 的跟随者；目标池与生成由 PB-02 处理。,PB03_SPLIT_PROFILE,试玩方案｜alien T3反击候选；素材效果及强弱待实机验证。
+alien_t3_occlusion,alien,3,occlusion,遮挡,2,短时遮挡一个战场区域或选人提示，并显示反击预警；等待 PB-04 接线与试玩。,CANDIDATE_ONLY,试玩方案｜alien T3反击候选；素材效果及强弱待实机验证。
+alien_t4_split,alien,4,split,分裂,3,费米方棋子分裂为两个保留当前 word snapshot 的跟随者；目标池与生成由 PB-02 处理。,CANDIDATE_ONLY,试玩方案｜alien T4反击候选；素材效果及强弱待实机验证。
+alien_t4_unselectable,alien,4,unselectable,不可选,2,短时屏蔽一个已标记观众的玩家选取；等待 PB-01/PB-04 共同确认边界。,CANDIDATE_ONLY,试玩方案｜alien T4反击候选；素材效果及强弱待实机验证。
+alien_t5_occlusion,alien,5,occlusion,遮挡,3,短时遮挡一个战场区域或选人提示，并显示反击预警；等待 PB-04 接线与试玩。,CANDIDATE_ONLY,试玩方案｜alien T5反击候选；素材效果及强弱待实机验证。
+alien_t5_reflect,alien,5,reflect,反弹,2,一次接触后反弹目标或回退感染尝试；结果语义仍待策划确定。,CANDIDATE_ONLY,试玩方案｜alien T5反击候选；素材效果及强弱待实机验证。
