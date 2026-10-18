@@ -27,7 +27,7 @@ func _ready() -> void:
 	margin.add_child(rows)
 	_label(rows, "费米 · Teek Teek Teek", 38)
 	_label(rows, "音乐试听场景：手动选择Tier；不运行或修改PK、感染规则。", 24)
-	_label(rows, "T0/T1 低段   ·   T2/T3 中段   ·   T4/T5 高段", 24)
+	_label(rows, "T0 黑屏铺垫   ·   T1 低段   ·   T2/T3 中段   ·   T4/T5 高段", 24)
 	var buttons := HBoxContainer.new()
 	rows.add_child(buttons)
 	for tier in range(6):
@@ -51,9 +51,9 @@ https://note.com/rengokuteien/n/n9de199487005", 21)
 # 显示实际音乐组及阶段，避免把矛盾/结束状态误认为Tier请求已生效。
 func _process(_delta: float) -> void:
 	if _status != null:
-		var names: Array[String] = ["低段", "中段", "高段"]
-		var current: String = names[clampi(_music.get_current_group(), 0, 2)]
-		var target: String = names[clampi(_music.get_target_group(), 0, 2)]
+		var names: Array[String] = ["黑屏铺垫", "低段", "中段", "高段"]
+		var current: String = names[clampi(_music.get_current_group(), 0, 3)]
+		var target: String = names[clampi(_music.get_target_group(), 0, 3)]
 		if AudioManager.get_music_event_id() == &"":
 			current = "静音"
 		var selection: String = "当前选择 T%d" % _tier if _normal_pk else "点任一Tier可重新试听"

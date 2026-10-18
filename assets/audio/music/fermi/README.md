@@ -12,11 +12,14 @@
 ## 游戏内资源
 | 文件 | 原曲位置 | 长度 | Tier |
 | --- | --- | --- | --- |
-| teek_low.ogg | 28.8～38.4秒重复两遍 | 19.2秒 | T0/T1 |
+| teek_intro.ogg | 0～19.2秒，3500Hz低通、总衰减约10.1dB | 19.2秒 | T0黑屏铺垫 |
+| teek_low.ogg | 28.8～38.4秒重复两遍 | 19.2秒 | T1 |
 | teek_mid.ogg | 48.0～67.2秒 | 19.2秒 | T2/T3 |
 | teek_high.ogg | 76.8～96.0秒 | 19.2秒 | T4/T5 |
 
-沿用用户接受的预览编码：44.1kHz立体声Vorbis，约5ms首尾微淡变，三段统一衰减约4.1dB。三个19.2秒循环为暂按100BPM四拍估计的8小节；真实乐句/接缝仍需人工连续试听确认。
+沿用用户接受的预览编码：44.1kHz立体声Vorbis，约5ms首尾微淡变，三段统一衰减约4.1dB。四个19.2秒循环为暂按100BPM四拍估计的8小节；真实乐句/接缝仍需人工连续试听确认。
 
-事件ID为music_alien_low/mid/high，由17音频表提供权威映射，audio_event_config.tres为同ID兼容引用；OGG导入侧车随Git保存loop=true。旧music_battle_t0～t5未绑定费米素材，防止其他Boss误播。
+事件ID为music_alien_intro/low/mid/high，由17音频表提供权威映射，audio_event_config.tres为同ID兼容引用；OGG导入侧车随Git保存loop=true。旧music_battle_t0～t5未绑定费米素材，防止其他Boss误播。
 原始MP3继续由用户保管，仓库仅收游戏实际使用的三个加工片段。
+
+最新开局：T0铺垫相对战斗基准再轻约6dB，AudioManager首播淡入2.4秒；不会每次循环都做2.4秒淡入。T1连线后切入原低段。原低/中/高三个音频未改变；intro采用原曲开头19.2秒，而非从高段直接截入。

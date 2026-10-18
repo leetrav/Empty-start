@@ -34,7 +34,7 @@ func _ready() -> void:
 	AudioManager.music_changed.connect(_on_music_changed)
 
 
-# 新局从低档开始；中途绑定恢复当前真实Tier。
+# 新局从T0黑屏铺垫开始；中途绑定恢复当前真实Tier。
 func start_battle(tier: int = 0) -> void:
 	_active = true
 	_paused = false
@@ -43,7 +43,7 @@ func start_battle(tier: int = 0) -> void:
 	_lower_elapsed = 0.0
 	_boundary_remaining = -1.0
 	AudioManager.stop_music()
-	_play_group(_target)
+	_play_group(_target, 0.0, true)
 
 
 # 同组信号不重播；向更低组连续计时，取消时只保留最新目标。
@@ -107,9 +107,11 @@ func _process(delta: float) -> void:
 		_play_group(_target, -_boundary_remaining)
 
 
-func _play_group(group: int, from_position: float = 0.0) -> void:
+func _play_group(group: int, from_position: float = 0.0, initial: bool = false) -> void:
 	_group = group
-	if not AudioManager.change_music(profile.event_ids[group], profile.cross_fade_seconds, from_position):
+	# 黑屏等待组用一小节淡入；连线后的战斗段保持原交叉淡化。
+	var fade_in: float = profile.intro_fade_seconds if initial and group == 0 else -1.0
+	if not AudioManager.change_music(profile.event_ids[group], profile.cross_fade_seconds, from_position, fade_in):
 		_active = false
 		_group = -1
 		return
@@ -130,9 +132,10 @@ func finish_battle(result: StringName) -> void:
 	if not owns_music():
 		return
 	if result == &"enter_contradiction":
-		if _group != 2:
-			_target = 2
-			_play_group(2)
+		var high_group: int = profile.group_for_tier(5)
+		if _group != high_group:
+			_target = high_group
+			_play_group(high_group)
 	else:
 		AudioManager.fade_out_music()
 

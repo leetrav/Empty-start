@@ -9,8 +9,12 @@ func _run() -> void:
 	await process_frame
 	var audio: Node = root.get_node("AudioManager")
 	await create_timer(0.2).timeout
+	assert(audio.get_music_event_id() == &"music_alien_intro")
+	print("PASS 正式费米开局黑屏铺垫")
+	scene.debug_set_player_pk(0.58)
+	await create_timer(2.8).timeout
 	assert(audio.get_music_event_id() == &"music_alien_low")
-	print("PASS 正式费米开局低段")
+	print("PASS 费米T1连线后切入战斗低段")
 	scene.debug_set_player_pk(0.66)
 	await create_timer(2.8).timeout
 	assert(audio.get_music_event_id() == &"music_alien_mid")
@@ -31,8 +35,8 @@ func _run() -> void:
 	print("PASS 正式PK到T5切高段")
 	scene.restart_current_attempt()
 	await create_timer(0.15).timeout
-	assert(audio.get_music_event_id() == &"music_alien_low")
-	print("PASS 正式重开回低段")
+	assert(audio.get_music_event_id() == &"music_alien_intro")
+	print("PASS 正式重开回黑屏铺垫")
 	scene.debug_set_player_pk(0.0)
 	await create_timer(0.8).timeout
 	assert(audio.get_music_event_id() == &"")

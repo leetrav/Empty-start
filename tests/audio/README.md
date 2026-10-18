@@ -11,3 +11,5 @@
 完整正式Plan B四关、矛盾击破演出与结局需后续实际联调；未包含在这些局部PASS中。当前F5正式入口仍保留上游原状。
 
 - `au03_first_boss_check.gd`：工程内用--script启动，实例化真实Sandbox，经公开调试PK接口验证当前正式首关的开局/升档/暂停/重开/失败/满值与退出音乐；APPDATA必须隔离。成功输出AU03_FIRST_BOSS_PASS。
+
+最新T0修改：开局事件为music_alien_intro，T1为music_alien_low，T2/T3为mid，T4/T5为high。循环检查扩展为四份各三次；正式首关脚本增加PK58%连线后切入低段。

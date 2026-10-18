@@ -115,7 +115,7 @@ func stop_music() -> void:
 
 
 # 按 AU-01 音乐事件请求主音乐；首次淡入，换曲时交叉切换。
-func change_music(event_id: StringName, cross_fade_seconds: float = -1.0, from_position: float = 0.0) -> bool:
+func change_music(event_id: StringName, cross_fade_seconds: float = -1.0, from_position: float = 0.0, fade_in_seconds: float = -1.0) -> bool:
 	var event: AudioEvent = _audio_config.find_event(event_id)
 	if event == null or event.audio_type != AudioEvent.AudioType.MUSIC or event.stream == null:
 		push_warning("AudioManager: music event '%s' is missing, empty or not Music." % str(event_id))
@@ -140,6 +140,8 @@ func change_music(event_id: StringName, cross_fade_seconds: float = -1.0, from_p
 		_music_player.stream_paused = _music_paused
 	var has_outgoing_music: bool = _outgoing_music_player.stream != null and _outgoing_music_player.is_playing()
 	var duration: float = _audio_config.music_cross_fade_seconds if has_outgoing_music else _audio_config.music_fade_in_seconds
+	if not has_outgoing_music and fade_in_seconds >= 0.0:
+		duration = fade_in_seconds
 	if has_outgoing_music and cross_fade_seconds >= 0.0:
 		duration = cross_fade_seconds
 	_tween_music_gains(1.0, duration, _finish_music_change)

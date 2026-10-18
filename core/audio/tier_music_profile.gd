@@ -3,8 +3,9 @@ extends Resource
 
 ## 单个主播的音乐映射与节奏参数，事件资源仍由正式17表负责。
 @export var streamer_id: StringName = &"alien"
-@export var event_ids: Array[StringName] = [&"music_alien_low", &"music_alien_mid", &"music_alien_high"]
-@export var tier_groups: Array[int] = [0, 0, 1, 1, 2, 2]
+@export var event_ids: Array[StringName] = [&"music_alien_intro", &"music_alien_low", &"music_alien_mid", &"music_alien_high"]
+@export_range(0.0, 10.0) var intro_fade_seconds: float = 2.4
+@export var tier_groups: Array[int] = [0, 1, 2, 2, 3, 3]
 @export_range(1.0, 300.0) var bpm: float = 100.0
 @export_range(1, 16) var beats_per_bar: int = 4
 @export_range(0.0, 10.0) var downgrade_hold_seconds: float = 2.0

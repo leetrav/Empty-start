@@ -75,3 +75,4 @@ divine_descent_start,sfx,assets/audio/sfx/magical/magical_7.ogg,0,1,1,false,,202
 music_alien_low,music,assets/audio/music/fermi/teek_low.ogg,0,1,1,true,battle_alien,AU-03 费米Teek Teek Teek三段循环
 music_alien_mid,music,assets/audio/music/fermi/teek_mid.ogg,0,1,1,true,battle_alien,AU-03 费米Teek Teek Teek三段循环
 music_alien_high,music,assets/audio/music/fermi/teek_high.ogg,0,1,1,true,battle_alien,AU-03 费米Teek Teek Teek三段循环
+music_alien_intro,music,assets/audio/music/fermi/teek_intro.ogg,0,1,1,true,battle_alien,AU-03 费米T0黑屏等待铺垫
