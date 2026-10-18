@@ -23,6 +23,7 @@ const NEUTRAL_TEAM: StringName = &"neutral"
 const PLAYER_TEAM: StringName = &"player"
 const OPPONENT_TEAM: StringName = &"opponent"
 const WORD_BATCH_SIZE_BY_STRENGTH: Dictionary = {1: 2, 2: 4, 3: 8}
+const NEUTRAL_SPAWN_BATCH_RESERVE: int = 8
 const INFECTION_CHANCES_BY_STRENGTH: Dictionary = {
 	1: 0.50,
 	2: 0.60,
@@ -33,9 +34,11 @@ const SPAWN_BURST_DURATION_SECONDS: float = 0.5
 
 @export_group("Audience Population")
 @export_range(1, 512, 1) var maximum_population: int = 96
-@export_range(0, 500, 1) var initial_neutral_count: int = 76
+@export_range(0, 500, 1) var initial_neutral_count: int = 30
 @export_range(0, 32, 1) var initial_seed_slot_count: int = 2
 @export_range(0.05, 10.0, 0.05) var neutral_spawn_interval_seconds: float = 0.75
+## 以现有补人节奏为中心扰动到达时间；固定随机 seed 时，补人时刻可重复。
+@export_range(0.0, 0.95, 0.05) var neutral_spawn_jitter_ratio: float = 0.25
 @export_range(1.0, 180.0, 0.5) var lifespan_min_seconds: float = 53.0
 @export_range(1.0, 180.0, 0.5) var lifespan_max_seconds: float = 77.0
 
@@ -71,11 +74,13 @@ const SPAWN_BURST_DURATION_SECONDS: float = 0.5
 @export var play_area: Rect2 = Rect2()
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _neutral_spawn_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _units_by_id: Dictionary = {}
 var _type_counter_by_type: Dictionary = {}
 var _next_unit_id: int = 1
 var _is_running: bool = false
 var _spawn_elapsed_seconds: float = 0.0
+var _next_neutral_spawn_interval_seconds: float = 0.0
 var _pending_contact_pairs: Array[Vector2i] = []
 var _pending_contact_lookup: Dictionary = {}
 var _spawned_word_batches_by_order: Dictionary = {}
@@ -104,6 +109,7 @@ var _tracker_neighbor_result_max: int = 0
 
 func _ready() -> void:
 	_rng.randomize()
+	_neutral_spawn_rng.randomize()
 	# 默认使用当前 Viewport 的本地尺寸；嵌入战斗场景时由 A 注入实际中央区域。
 	if play_area.size.x <= 0.0 or play_area.size.y <= 0.0:
 		play_area = Rect2(Vector2.ZERO, get_viewport_rect().size)
@@ -124,9 +130,21 @@ func set_type_counter_map(counter_map: Dictionary) -> bool:
 	return true
 
 
-## 固定本局随机流；测试在创建棋子前调用，生产局可留空使用随机种子。
+## 固定本局随机流；补人时序使用独立随机流，避免棋子行为改变到达顺序。
 func set_random_seed(seed_value: int) -> void:
 	_rng.seed = seed_value
+	_neutral_spawn_rng.seed = seed_value
+	_spawn_elapsed_seconds = 0.0
+	_next_neutral_spawn_interval_seconds = 0.0
+
+
+## 按基础间隔和扰动比例为下一名中立观众抽取到达时间。
+func _roll_neutral_spawn_interval_seconds() -> float:
+	var base_interval: float = maxf(neutral_spawn_interval_seconds, 0.05)
+	var jitter_ratio: float = clampf(neutral_spawn_jitter_ratio, 0.0, 0.95)
+	var minimum_interval: float = maxf(base_interval * (1.0 - jitter_ratio), 0.05)
+	var maximum_interval: float = maxf(base_interval * (1.0 + jitter_ratio), minimum_interval)
+	return _neutral_spawn_rng.randf_range(minimum_interval, maximum_interval)
 
 
 ## A 注入棋盘的全局场景矩形；模拟器根节点无旋转、单位缩放时转换成本地边界。
@@ -310,6 +328,8 @@ func start_simulation() -> void:
 	var units: Array[PlanBUnit] = _get_sorted_units()
 	_rebuild_neighbor_grid(units)
 	_neighbor_grid_elapsed_seconds = 0.0
+	if _next_neutral_spawn_interval_seconds <= 0.0:
+		_next_neutral_spawn_interval_seconds = _roll_neutral_spawn_interval_seconds()
 	_refresh_word_groups()
 	# 开局或测试夹具调整棋子位置时，将首个插值区间设为零长度。
 	for unit: PlanBUnit in units:
@@ -334,6 +354,7 @@ func clear_population() -> void:
 	_pending_contact_pairs.clear()
 	_pending_contact_lookup.clear()
 	_spawn_elapsed_seconds = 0.0
+	_next_neutral_spawn_interval_seconds = 0.0
 	_spawned_word_batches_by_order.clear()
 	_player_batch_infection_counts.clear()
 	_player_batch_trait_triggered.clear()
@@ -1273,16 +1294,23 @@ func _despawn_expired_units() -> void:
 		_neighbor_grid_dirty = true
 
 
-## 空出总人口名额后按共享试算间隔逐个补充中立路人，满员时不积累补人欠账。
+## 以随机间隔补充中立观众；到达批次保留线后暂停计时，留出完整8颗发表空间。
 func _update_neutral_replenishment(delta: float) -> void:
-	if _units_by_id.size() >= maximum_population:
-		_spawn_elapsed_seconds = 0.0
+	var neutral_spawn_population_limit: int = maxi(
+		maximum_population - NEUTRAL_SPAWN_BATCH_RESERVE,
+		0
+	)
+	if _units_by_id.size() >= neutral_spawn_population_limit:
+		# 容量被批次占用时冻结剩余计时；空出空间后接着完成当前周期。
 		return
+	if _next_neutral_spawn_interval_seconds <= 0.0:
+		_next_neutral_spawn_interval_seconds = _roll_neutral_spawn_interval_seconds()
 	_spawn_elapsed_seconds += delta
-	if _spawn_elapsed_seconds < neutral_spawn_interval_seconds:
+	if _spawn_elapsed_seconds < _next_neutral_spawn_interval_seconds:
 		return
 	_spawn_elapsed_seconds = 0.0
 	_spawn_unit(NEUTRAL_TEAM, {}, 0, _random_spawn_position())
+	_next_neutral_spawn_interval_seconds = _roll_neutral_spawn_interval_seconds()
 
 
 ## 初始化独立 Area2D 和运行快照后入场；同一场地的碰撞形状资源互不共享。
