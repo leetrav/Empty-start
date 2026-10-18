@@ -1,10 +1,12 @@
+> AU-03范围已更新：当前实施目标为四Boss统一音乐接入，先完成旧版Sandbox四关（P1），上游正式PlanB可运行后适配同一音乐消费者并重新联调（P2）。当前仍只有费米接入；其余裁剪/确认状态不等于游戏完成。列巴v2待试听，开场/休息/终局选曲实施另列后续。
+
 > 最新裁剪进度：费米游戏版5191c59已确认；奥格尔《美哀》v1已确认、待统一接入；咕拉《草原》v1已确认；列巴《FELT LOVE》按反馈改为原曲开头出场的v2（outputs/khleb-felt-love-preview-v2），低中高保留v1，待用户试听。按用户意愿先裁完Boss，再统一接入。
 
 > 用户确认基线（2026-10-19）：费米5191c59试听版已获认可，保留当前效果。奥格尔《美哀》v1已裁出四段及86.4秒独立试听演示，见AU-03第3.5节和任务outputs/augur-biai-preview；已获用户确认，按批次安排尚未接入奥格尔。
 
 > 2026-10-19最新费米开局：T0黑屏等待静音；开始连线后播放原曲开头的柔和引子（比战斗基准低约6dB、3500Hz低通、首次淡入2.4秒），开场对白期间保持。真实combat_connected对白完成后，下个小节进入正常战斗段。T1低、T2/T3中、T4/T5高；退回T0恢复静音。共四个片段，17表77行、27行有资源。旧79.2秒预览仅作历史参考。
 
-## AU-03 费米三段音乐接入（2026-10-18）
+## AU-03 当前已实现部分：费米（四Boss扩展待实施）
 
 ### 当前可运行正式第一关（2026-10-18追加）
 用户要求先在第一名Boss实际战斗中试听，已将同一TierMusicPresenter接到当前main的Sandbox费米关。F5走原菜单/开场/房间后，进入费米T0静音等待；也可直接打开 `scenes/sandbox/sandbox.tscn` 按F6进入首关。主场景路径与玩法规则均未改变，仍是上游已提交的旧战斗流程。
@@ -30,7 +32,7 @@ Sandbox调用begin_connection()与finish_connection_dialogue()，分别对应连
 
 AudioManager的兼容扩展：`change_music(event_id, cross_fade_seconds=-1, from_position=0, fade_in_seconds=-1, overlap=true)`；省略参数保留原默认。新增 `get_music_event_id()`、`get_music_position()`、`get_music_length()`、`set_music_paused(bool)` 与 `music_changed` 事实信号。`Music`事件音量增益和淡化/duck分别计算，换播放器时不丢失表中音量；SFX/UI保持原入口。
 
-试听：Godot打开 `scenes/demos/au03_fermi_music_preview.tscn` 按F6，先点“开始连线/开场对白”，再点“开场对白结束”查看阶段衔接；直接点击T1～T5用于跳过对白快速试听战斗段。可测试暂停、重开、满PK、击破和失败。正式项目F5入口未更改。`scenes/plan_b/fermi_battle_demo.tscn` 启动战斗后也接入真实主控事实。其他Boss与开场/休息/终局仍待选曲实施。
+试听：Godot打开 `scenes/demos/au03_fermi_music_preview.tscn` 按F6，先点“开始连线/开场对白”，再点“开场对白结束”查看阶段衔接；直接点击T1～T5用于跳过对白快速试听战斗段。可测试暂停、重开、满PK、击破和失败。正式项目F5入口未更改。`scenes/plan_b/fermi_battle_demo.tscn` 启动战斗后也接入真实主控事实。奥格尔/咕拉已确认裁剪，列巴v2待试听，三者统一接入尚待实施；开场/休息/终局继续后续规划。
 
 验证见 `tests/audio/README.md` 和 AU-03日志。程序检查通过不等于已经完成人耳循环接缝与新玩法四关验收。
 
