@@ -11,6 +11,6 @@ PASS publish request keeps the selected slot id
 PASS publish request keeps the selected word
 PASS publish request keeps the chosen board position
 PASS capacity failure leaves the selected slot available
-RENDER B group snapshot and batch event through the D shared-bubble layer
+RENDER B batch, group, split and reflect facts through the D presentation layer
 PREVIEW C:/Users/lvy/.codex/worktrees/pb12-14-v06-d-5469/Empty-start/tests/plan_b/evidence/pb12_14_d_ui_smoke.png
 PASS PB-12/13/11/14 D UI smoke
