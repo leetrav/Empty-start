@@ -122,9 +122,11 @@ func _ready() -> void:
 		"unit_ids": [101, 102, 103],
 		"count": 3,
 	})
+	simulation.unit_changed.emit("102", "split")
+	simulation.contact_resolved.emit("103", "102", &"reflected")
 	await get_tree().process_frame
 	await get_tree().process_frame
-	print("RENDER B group snapshot and batch event through the D shared-bubble layer")
+	print("RENDER B batch, group, split and reflect facts through the D presentation layer")
 	_save_preview_image()
 	_finish()
 

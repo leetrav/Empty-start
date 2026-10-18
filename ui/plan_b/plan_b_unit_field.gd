@@ -302,8 +302,14 @@ func _draw_unit(snapshot: Dictionary) -> void:
 	if _feedback_pulses.has(unit_id):
 		var feedback: Dictionary = _feedback_pulses[unit_id]
 		var age := float(Time.get_ticks_msec() - int(feedback.get("time", 0))) / 1500.0
-		var pulse_color := _feedback_color(str(feedback.get("reason", "")))
+		var reason := str(feedback.get("reason", ""))
+		var pulse_color := _feedback_color(reason)
 		draw_arc(center, radius + 12.0 + 8.0 * age, 0.0, TAU, 32, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 2.0, true)
+		if reason == "split":
+			draw_arc(center, radius + 4.0 + 5.0 * age, 0.0, TAU, 24, Color(pulse_color.r, pulse_color.g, pulse_color.b, 0.85 * (1.0 - age)), 1.5, true)
+		elif reason == "reflect":
+			draw_arc(center, radius + 7.0, -PI * 0.8, -PI * 0.2, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 3.0, true)
+			draw_arc(center, radius + 7.0, PI * 0.2, PI * 0.8, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 3.0, true)
 
 
 func _draw_group_bubbles() -> void:
@@ -726,6 +732,10 @@ func _feedback_color(reason: String) -> Color:
 	match reason:
 		"seed":
 			return Color("#74e2ff")
+		"split":
+			return Color("#a8ed7b")
+		"reflect":
+			return Color("#e6a1ff")
 		"convert":
 			return Color("#ff806e")
 		"relay":
@@ -740,6 +750,8 @@ func _contact_color(outcome: String) -> Color:
 	match outcome:
 		"converted":
 			return Color("#ff806e")
+		"reflected":
+			return Color("#e6a1ff")
 		"infection_failed":
 			return Color("#ffc77d")
 		"same_team_bounce":

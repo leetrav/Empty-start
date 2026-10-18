@@ -1822,6 +1822,8 @@ func _on_contact_resolved(first_unit_id: Variant, second_unit_id: Variant, outco
 			outcome_text = "感染成功"
 		&"infection_failed":
 			outcome_text = "感染未成功"
+		&"reflected":
+			outcome_text = "反弹抵挡"
 		_:
 			outcome_text = str(outcome)
 	_field.call("show_contact_feedback", first_id, second_id, str(outcome))
