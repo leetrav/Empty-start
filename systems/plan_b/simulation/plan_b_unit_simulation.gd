@@ -84,10 +84,10 @@ var _neighbor_grid: Dictionary = {}
 var _neighbor_grid_cell_size: float = 220.0
 var _neighbor_grid_elapsed_seconds: float = 0.0
 var _neighbor_grid_dirty: bool = true
+var _neighbor_grid_positions_adjusted: bool = false
 var _word_groups_by_id: Dictionary = {}
 var _next_word_group_id: int = 1
 var _group_refresh_remaining_seconds: float = 0.0
-var _word_groups_dirty: bool = true
 var _steering_cache_by_unit_id: Dictionary = {}
 var _previous_physics_positions_by_unit_id: Dictionary = {}
 
@@ -137,7 +137,6 @@ func set_play_area(scene_area: Rect2) -> bool:
 	if local_area.size.x <= unit_collision_radius * 2.0 or local_area.size.y <= unit_collision_radius * 2.0:
 		return false
 	play_area = local_area
-	_mark_neighborhood_dirty()
 	return true
 
 
@@ -164,8 +163,6 @@ func seed_unit(neutral_unit_id: int, team_value: StringName, word_definition: Di
 	if not _is_faction(clean_team) or clean_definition.is_empty() or new_word_order < 1:
 		return false
 	unit.apply_word_snapshot(clean_team, clean_definition, new_word_order)
-	_mark_neighborhood_dirty()
-	_invalidate_steering_near(unit.position, unit.unit_id)
 	unit_changed.emit(unit.unit_id, &"seed")
 	return true
 
@@ -246,7 +243,6 @@ func spawn_word_batch(
 	if clean_team == PLAYER_TEAM:
 		_player_batch_infection_counts[new_word_order] = 0
 		_player_batch_trait_triggered[new_word_order] = false
-	_mark_neighborhood_dirty()
 	var batch: Dictionary = {
 		"ok": true,
 		"reason": "ok",
@@ -304,7 +300,6 @@ func start_simulation() -> void:
 	var units: Array[PlanBUnit] = _get_sorted_units()
 	_rebuild_neighbor_grid(units)
 	_neighbor_grid_elapsed_seconds = 0.0
-	_word_groups_dirty = true
 	_refresh_word_groups()
 	# 开局或测试夹具调整棋子位置时，将首个插值区间设为零长度。
 	for unit: PlanBUnit in units:
@@ -335,12 +330,12 @@ func clear_population() -> void:
 	_neighbor_grid.clear()
 	_neighbor_grid_elapsed_seconds = 0.0
 	_neighbor_grid_dirty = true
+	_neighbor_grid_positions_adjusted = false
 	_steering_cache_by_unit_id.clear()
 	_previous_physics_positions_by_unit_id.clear()
 	_word_groups_by_id.clear()
 	_next_word_group_id = 1
 	_group_refresh_remaining_seconds = 0.0
-	_word_groups_dirty = true
 	var existing_ids: Array[int] = _get_sorted_unit_ids()
 	for unit_id: int in existing_ids:
 		var unit := _units_by_id.get(unit_id) as PlanBUnit
@@ -424,13 +419,6 @@ func get_word_groups() -> Array[Dictionary]:
 		groups.append(group_snapshot)
 	return groups
 
-
-## 位置或阵营/话语事实变化后，下一次物理步刷新共享邻域与团体拓扑。
-func _mark_neighborhood_dirty() -> void:
-	_neighbor_grid_dirty = true
-	_word_groups_dirty = true
-
-
 ## 将当前稳定ID顺序的棋子放进空间网格；目标和团体查询共用这份局部索引。
 func _rebuild_neighbor_grid(units: Array[PlanBUnit]) -> void:
 	_neighbor_grid.clear()
@@ -444,6 +432,7 @@ func _rebuild_neighbor_grid(units: Array[PlanBUnit]) -> void:
 		bucket.append(unit)
 		_neighbor_grid[cell] = bucket
 	_neighbor_grid_dirty = false
+	_neighbor_grid_positions_adjusted = false
 
 
 ## 只从附近网格桶取候选，再用当前物理位置做精确半径过滤。
@@ -451,7 +440,10 @@ func _get_neighbor_units(scene_local_position: Vector2, search_radius: float) ->
 	var nearby_units: Array[PlanBUnit] = []
 	if _neighbor_grid.is_empty() or search_radius <= 0.0:
 		return nearby_units
+	# 网格刷新之间的自然位移与一次接触分离都计入候选半径，避免碰撞后立即全量重建。
 	var movement_padding: float = maximum_speed * _neighbor_grid_elapsed_seconds
+	if _neighbor_grid_positions_adjusted:
+		movement_padding += unit_collision_radius + 0.5
 	var padded_radius: float = search_radius + movement_padding
 	var cell_minimum: Vector2i = _neighbor_grid_cell_for_position(
 		scene_local_position - Vector2.ONE * padded_radius
@@ -484,8 +476,8 @@ func _target_decision_phase(unit_id: int) -> float:
 	return interval * float(posmod(unit_id - 1, 6)) / 6.0
 
 
-## 物理帧沿用缓存速度方向；到达本棋子的决策时隙后才重新查询共享邻域网格。
-func _get_cached_steering(unit: PlanBUnit, delta: float) -> Dictionary:
+## 物理帧沿用缓存方向；每个单位到达错峰时隙后才重新查询共享邻域网格。
+func _update_cached_steering(unit: PlanBUnit, delta: float) -> void:
 	var cached_value: Variant = _steering_cache_by_unit_id.get(unit.unit_id, {})
 	var cached: Dictionary = cached_value if cached_value is Dictionary else {}
 	if cached.is_empty():
@@ -493,38 +485,19 @@ func _get_cached_steering(unit: PlanBUnit, delta: float) -> Dictionary:
 			"direction": unit.wander_direction,
 			"intent": &"wander",
 			"refresh_remaining_seconds": _target_decision_phase(unit.unit_id),
-			"invalidated": true,
 		}
 	var interval: float = maxf(target_decision_refresh_seconds, 0.01)
 	var refresh_remaining: float = float(cached.get("refresh_remaining_seconds", 0.0)) - delta
 	if refresh_remaining <= 0.0:
 		var search_radius: float = maxf(detection_radius, ally_detection_radius)
-		cached = _get_steering(unit, _get_neighbor_units(unit.position, search_radius))
+		var decision: Dictionary = _get_steering(unit, _get_neighbor_units(unit.position, search_radius))
+		cached["direction"] = decision.get("direction", unit.wander_direction)
+		cached["intent"] = decision.get("intent", &"wander")
 		refresh_remaining += interval
 		if refresh_remaining <= 0.0:
 			refresh_remaining = interval
-		cached["refresh_remaining_seconds"] = refresh_remaining
-		cached["invalidated"] = false
-	else:
-		cached["refresh_remaining_seconds"] = refresh_remaining
+	cached["refresh_remaining_seconds"] = refresh_remaining
 	_steering_cache_by_unit_id[unit.unit_id] = cached
-	return {"direction": cached.get("direction", unit.wander_direction), "intent": cached.get("intent", &"wander")}
-
-
-## 接触、感染、改口或附近棋子加入/离场时标记邻近方向缓存，下个错峰决策时重新选目标。
-func _invalidate_steering_near(scene_local_position: Vector2, source_unit_id: int = -1) -> void:
-	var search_radius: float = maxf(detection_radius, ally_detection_radius)
-	var affected_units: Array[PlanBUnit] = _get_neighbor_units(scene_local_position, search_radius)
-	if source_unit_id >= 0:
-		var source_unit := _units_by_id.get(source_unit_id) as PlanBUnit
-		if source_unit != null and not affected_units.has(source_unit):
-			affected_units.append(source_unit)
-	for unit: PlanBUnit in affected_units:
-		var cached_value: Variant = _steering_cache_by_unit_id.get(unit.unit_id, {})
-		if cached_value is Dictionary:
-			var cached: Dictionary = cached_value
-			cached["invalidated"] = true
-			_steering_cache_by_unit_id[unit.unit_id] = cached
 
 
 ## 每个物理步发布按ID排序的上一/当前位置；新生棋子首帧以相同位置起步。
@@ -580,7 +553,6 @@ func _refresh_word_groups() -> void:
 		}
 	var topology_changed: bool = not _word_groups_have_same_topology(previous_groups, next_groups)
 	_word_groups_by_id = next_groups
-	_word_groups_dirty = false
 	_group_refresh_remaining_seconds = group_topology_refresh_seconds
 	if topology_changed:
 		word_groups_changed.emit(get_word_groups())
@@ -797,8 +769,6 @@ func _resolve_contact(first_unit: PlanBUnit, second_unit: PlanBUnit) -> void:
 		or first_unit.team == NEUTRAL_TEAM
 	)
 	_separate_and_recoil(first_unit, second_unit, strong_contact)
-	_invalidate_steering_near(first_unit.position, first_unit.unit_id)
-	_invalidate_steering_near(second_unit.position, second_unit.unit_id)
 
 	if first_unit.team == second_unit.team:
 		if first_unit.team == NEUTRAL_TEAM:
@@ -849,8 +819,6 @@ func _attempt_conversion(infecting_unit: PlanBUnit, receiving_unit: PlanBUnit) -
 			infecting_unit.get_word_snapshot(),
 			infecting_word_order
 		)
-		_mark_neighborhood_dirty()
-		_invalidate_steering_near(receiving_unit.position, receiving_unit.unit_id)
 		unit_changed.emit(receiving_unit.unit_id, &"convert")
 		if infecting_team == PLAYER_TEAM:
 			_record_player_batch_infection(infecting_word_order)
@@ -929,8 +897,6 @@ func _relay_newer_word(first_unit: PlanBUnit, second_unit: PlanBUnit) -> void:
 	if source_unit.word_order <= receiving_unit.word_order or not source_unit.has_word():
 		return
 	receiving_unit.apply_word_snapshot(source_unit.team, source_unit.get_word_snapshot(), source_unit.word_order)
-	_mark_neighborhood_dirty()
-	_invalidate_steering_near(receiving_unit.position, receiving_unit.unit_id)
 	unit_changed.emit(receiving_unit.unit_id, &"relay")
 
 
@@ -944,7 +910,7 @@ func _separate_and_recoil(first_unit: PlanBUnit, second_unit: PlanBUnit, strong_
 		var separation: float = minimum_distance - current_distance + 0.5
 		first_unit.position += normal * separation * 0.5
 		second_unit.position -= normal * separation * 0.5
-		_neighbor_grid_dirty = true
+		_neighbor_grid_positions_adjusted = true
 	if strong_contact:
 		_begin_contact_recoil(first_unit, normal)
 		_begin_contact_recoil(second_unit, -normal)
@@ -972,7 +938,7 @@ func _advance_units(delta: float) -> void:
 		_rebuild_neighbor_grid(units)
 		_neighbor_grid_elapsed_seconds = 0.0
 	_group_refresh_remaining_seconds = maxf(_group_refresh_remaining_seconds - delta, 0.0)
-	if _word_groups_dirty or _group_refresh_remaining_seconds <= 0.0:
+	if _group_refresh_remaining_seconds <= 0.0:
 		_refresh_word_groups()
 	for unit: PlanBUnit in units:
 		unit.age_seconds += delta
@@ -982,10 +948,14 @@ func _advance_units(delta: float) -> void:
 			unit.wander_direction = Vector2.from_angle(_rng.randf_range(0.0, TAU))
 			unit.wander_change_remaining = _rng.randf_range(1.2, 3.1)
 
-	var steering_by_id: Dictionary = {}
+	var steering_by_index: Array[Dictionary] = []
 	for unit: PlanBUnit in units:
-		steering_by_id[unit.unit_id] = _get_cached_steering(unit, delta)
-	for unit: PlanBUnit in units:
+		_update_cached_steering(unit, delta)
+		var cached_value: Variant = _steering_cache_by_unit_id.get(unit.unit_id, {})
+		var cached: Dictionary = cached_value if cached_value is Dictionary else {}
+		steering_by_index.append(cached)
+	for unit_index: int in units.size():
+		var unit: PlanBUnit = units[unit_index]
 		if unit.contact_recoil_remaining_seconds > 0.0:
 			unit.spawn_burst_remaining_seconds = maxf(unit.spawn_burst_remaining_seconds - delta, 0.0)
 			unit.velocity = unit.contact_recoil_velocity
@@ -998,7 +968,6 @@ func _advance_units(delta: float) -> void:
 				var cached_value: Variant = _steering_cache_by_unit_id.get(unit.unit_id, {})
 				if cached_value is Dictionary:
 					var cached: Dictionary = cached_value
-					cached["invalidated"] = true
 					cached["refresh_remaining_seconds"] = 0.0
 					_steering_cache_by_unit_id[unit.unit_id] = cached
 			continue
@@ -1008,7 +977,7 @@ func _advance_units(delta: float) -> void:
 			unit.spawn_burst_remaining_seconds = maxf(unit.spawn_burst_remaining_seconds - delta, 0.0)
 			_bounce_from_play_area(unit)
 			continue
-		var steering: Dictionary = steering_by_id.get(unit.unit_id, {})
+		var steering: Dictionary = steering_by_index[unit_index]
 		var direction: Vector2 = steering.get("direction", unit.wander_direction)
 		var intent: StringName = steering.get("intent", &"wander")
 		unit.motion_intent = intent
@@ -1166,16 +1135,12 @@ func _bounce_from_play_area(unit: PlanBUnit) -> void:
 ## 棋子只会因真实寿命到期离场；替补总以新中立 ID 入场，不重置既有阵营。
 func _despawn_expired_units() -> void:
 	var expired_ids: Array[int] = []
-	var removed_word_group_member: bool = false
 	for unit_id: int in _get_sorted_unit_ids():
 		var unit := _units_by_id.get(unit_id) as PlanBUnit
 		if unit != null and unit.age_seconds >= unit.lifespan_seconds:
 			expired_ids.append(unit_id)
 	for unit_id: int in expired_ids:
 		var unit := _units_by_id.get(unit_id) as PlanBUnit
-		var expired_position: Vector2 = unit.position if unit != null else Vector2.ZERO
-		if unit != null and unit.team != NEUTRAL_TEAM and unit.has_word():
-			removed_word_group_member = true
 		_units_by_id.erase(unit_id)
 		_steering_cache_by_unit_id.erase(unit_id)
 		_previous_physics_positions_by_unit_id.erase(unit_id)
@@ -1183,11 +1148,8 @@ func _despawn_expired_units() -> void:
 			remove_child(unit)
 			unit.queue_free()
 		unit_despawned.emit(unit_id)
-		_invalidate_steering_near(expired_position)
 	if not expired_ids.is_empty():
 		_neighbor_grid_dirty = true
-		if removed_word_group_member:
-			_word_groups_dirty = true
 
 
 ## 空出总人口名额后按共享试算间隔逐个补充中立路人，满员时不积累补人欠账。
@@ -1304,13 +1266,9 @@ func _register_spawn_unit(unit: PlanBUnit, unit_id: int) -> void:
 		"direction": unit.wander_direction,
 		"intent": &"wander",
 		"refresh_remaining_seconds": _target_decision_phase(unit_id),
-		"invalidated": true,
 	}
 	_previous_physics_positions_by_unit_id[unit_id] = unit.global_position
 	_neighbor_grid_dirty = true
-	if unit.team != NEUTRAL_TEAM and unit.has_word():
-		_word_groups_dirty = true
-	_invalidate_steering_near(unit.position, unit_id)
 
 
 ## 中立补充、split和其它单体出生仍沿用同一初始化和ID登记路径。

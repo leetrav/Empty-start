@@ -21,7 +21,7 @@ func _ready() -> void:
 ## 固定一秒物理样本，验证决策约10Hz、位置发布保持60Hz且插值坐标连续。
 func _run_smoke() -> void:
 	_simulation.position = BOARD_RECT.position
-	_simulation.maximum_population = 4
+	_simulation.maximum_population = 5
 	_simulation.neutral_spawn_interval_seconds = 100.0
 	_simulation.lifespan_min_seconds = 120.0
 	_simulation.lifespan_max_seconds = 120.0
@@ -37,23 +37,43 @@ func _run_smoke() -> void:
 	_simulation.set_random_seed(20261401)
 	_simulation.set_type_counter_map({"type_a": "type_b", "type_b": "type_c", "type_c": "type_a"})
 	_simulation.set_play_area(BOARD_RECT)
-	var ids: Array[int] = _simulation.create_population(4, 0)
-	for index: int in ids.size():
+	var ids: Array[int] = _simulation.create_population(5, 0)
+	for index: int in 4:
 		var phrase_id: String = "pair-a" if index < 2 else "pair-b"
 		var phrase_text: String = "邻域A" if index < 2 else "邻域B"
 		_simulation.seed_unit(ids[index], &"player", _word(phrase_id, phrase_text), index + 1)
 		var local_x: float = 180.0 + float(index % 2) * 150.0 + float(index / 2) * 400.0
 		_set_global_position(ids[index], BOARD_RECT.position + Vector2(local_x, 300.0))
+	_set_global_position(ids[4], BOARD_RECT.position + Vector2(900.0, 600.0))
 	_set_motion_speed(ids, 30.0)
 	_simulation.start_simulation()
-	await _wait_physics_frames(60)
+	var initial_grid_rebuilds: int = int(_simulation.get("neighbor_grid_rebuild_count"))
+	var initial_group_refreshes: int = int(_simulation.get("word_group_refresh_count"))
+	_check(
+		_simulation.seed_unit(ids[4], &"player", _word("pair-a", "邻域A"), 5),
+		"an in-round phrase change succeeds"
+	)
+	await _wait_physics_frames(2)
+	_check(
+		int(_simulation.get("neighbor_grid_rebuild_count")) == initial_grid_rebuilds,
+		"a phrase-only change waits for the scheduled spatial-grid refresh"
+	)
+	_check(
+		int(_simulation.get("word_group_refresh_count")) == initial_group_refreshes,
+		"a phrase change waits for the scheduled topology refresh"
+	)
+	await _wait_physics_frames(58)
 	_simulation.pause_simulation()
 
 	var decision_count: int = int(_simulation.get("steering_call_count"))
 	var decisions_by_id: Dictionary = _simulation.get("steering_calls_by_id")
+	var grid_rebuild_count: int = int(_simulation.get("neighbor_grid_rebuild_count"))
+	var group_refresh_count: int = int(_simulation.get("word_group_refresh_count"))
 	var expected_full_rate: int = _physics_signal_count * ids.size()
 	_check(_physics_signal_count >= 56 and _physics_signal_count <= 62, "position facts publish on every 60Hz physics step")
 	_check(decision_count > 0 and decision_count < int(float(expected_full_rate) * 0.4), "target decisions are staggered and throttled below every-physics-step work")
+	_check(grid_rebuild_count >= 8 and grid_rebuild_count <= 13, "the shared spatial grid stays near its 10Hz refresh cadence")
+	_check(group_refresh_count >= 4 and group_refresh_count <= 7, "word-group topology stays near its 5Hz refresh cadence")
 	_check(_history_is_contiguous, "each physics signal previous position matches the preceding current position")
 	_check(_all_ids_stable_and_sorted, "packed position arrays use stable ascending unit IDs")
 	_check(_last_published_ids.size() == ids.size(), "physics position publication includes every surviving unit")
@@ -64,8 +84,9 @@ func _run_smoke() -> void:
 		var latest_snapshot: Dictionary = _simulation.get_unit_snapshot(unit_id)
 		var latest_position: Vector2 = latest_snapshot.get("position", Vector2.ZERO)
 		_check(latest_position.distance_to(_last_current_position_for(unit_id)) <= 0.01, "position fact matches the actual current unit position")
-	_check(_simulation.get_faction_counts() == {"player": 4, "opponent": 0, "neutral": 0}, "decision throttling preserves real battle population")
-	_finish_smoke(decision_count)
+	_check(_simulation.get_faction_counts() == {"player": 5, "opponent": 0, "neutral": 0}, "decision throttling preserves real battle population")
+	_check(_simulation.get_word_groups().size() == 5, "phrase changes join the topology at its next scheduled refresh")
+	_finish_smoke(decision_count, grid_rebuild_count, group_refresh_count)
 
 
 ## 每个物理步核对ID、数组对齐及上一帧到当前帧的位置连续性。
@@ -141,10 +162,10 @@ func _check(condition: bool, description: String) -> void:
 	push_error("PB-14 CHECK FAILED: " + description)
 
 
-func _finish_smoke(decision_count: int) -> void:
+func _finish_smoke(decision_count: int, grid_rebuild_count: int, group_refresh_count: int) -> void:
 	if _failed_checks.is_empty():
-		print("PB-14 PASS: physics_ticks=%d decision_updates=%d units=%d" % [
-			_physics_signal_count, decision_count, _last_published_ids.size()
+		print("PB-14 PASS: physics_ticks=%d decision_updates=%d grid_rebuilds=%d group_refreshes=%d units=%d" % [
+			_physics_signal_count, decision_count, grid_rebuild_count, group_refresh_count, _last_published_ids.size()
 		])
 		await get_tree().create_timer(0.5).timeout
 		get_tree().quit(0)
