@@ -172,3 +172,10 @@ ID-12 提供独立漫画播放控制 Node，按配置发出 1-based 分镜编号
 ## INT-11 当前边界（2026-10-13）
 
 首次 Boot 六幕漫画是角色塑造之前的独立演出，结束到主菜单。它不会代替身份动机漫画；ID-14 在正式动机分镜交付前跳过该素材步骤。
+
+## 2026-10-19 十二张身份卡美术到库
+
+- 新素材路径：`assets/ui/identity/cards/`：`identity_card_back.png`、`identity_card_front_00_blank.png`、`identity_card_front_01.png`～`identity_card_front_12.png`。
+- 12 张带符号卡面已由项目负责人确认为身份卡；空白正面和背面同属于身份卡。
+- 本次只归类美术，不改变翻开、选择和存档逻辑。美术原 01～12 编号保留；当前尚无依据将各图案与三个倾向组的 12 个 identity_id 一一绑定。
+- 全部旧文件名到新文件名的对照：`docs/Shared/PresentationAssets/Art_Intake_Rename_2026-10-19.md`。

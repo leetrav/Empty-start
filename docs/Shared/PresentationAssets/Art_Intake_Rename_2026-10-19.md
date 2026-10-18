@@ -25,20 +25,20 @@
 | 青蛙拆分 | `assets/characters/opponents/frog/defeat/chr_enemy_frog_defeat-1.png` | `assets/characters/opponents/frog/slices/defeat/01_head.png` | 987x778 | 原 defeat 第 1 层；保留原层序 |
 | 青蛙拆分 | `assets/characters/opponents/frog/defeat/chr_enemy_frog_defeat-2.png` | `assets/characters/opponents/frog/slices/defeat/02_green_fragment.png` | 201x260 | 原 defeat 第 2 层；保留原层序 |
 | 青蛙拆分 | `assets/characters/opponents/frog/defeat/chr_enemy_frog_defeat-3.png` | `assets/characters/opponents/frog/slices/defeat/03_cockroach.png` | 373x358 | 原 defeat 第 3 层；保留原层序 |
-| 卡片 | `assets/ui/card/ui_card_back.png` | `assets/ui/cards/card_back.png` | 297x371 | 卡背 |
-| 卡片 | `assets/ui/card/ui_card_front0.png` | `assets/ui/cards/card_front_00_blank.png` | 297x371 | 无符号正面 |
-| 卡片 | `assets/ui/card/ui_card_front1.png` | `assets/ui/cards/card_front_01.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front2.png` | `assets/ui/cards/card_front_02.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front3.png` | `assets/ui/cards/card_front_03.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front4.png` | `assets/ui/cards/card_front_04.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front5.png` | `assets/ui/cards/card_front_05.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front6.png` | `assets/ui/cards/card_front_06.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front7.png` | `assets/ui/cards/card_front_07.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front8.png` | `assets/ui/cards/card_front_08.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front9.png` | `assets/ui/cards/card_front_09.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front10.png` | `assets/ui/cards/card_front_10.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front11.png` | `assets/ui/cards/card_front_11.png` | 297x371 | 原编号保留，含义待确认 |
-| 卡片 | `assets/ui/card/ui_card_front12.png` | `assets/ui/cards/card_front_12.png` | 297x371 | 原编号保留，含义待确认 |
+| 身份卡 | `assets/ui/card/ui_card_back.png` | `assets/ui/identity/cards/identity_card_back.png` | 297x371 | 身份卡背面 |
+| 身份卡 | `assets/ui/card/ui_card_front0.png` | `assets/ui/identity/cards/identity_card_front_00_blank.png` | 297x371 | 身份卡无符号空白正面 |
+| 身份卡 | `assets/ui/card/ui_card_front1.png` | `assets/ui/identity/cards/identity_card_front_01.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front2.png` | `assets/ui/identity/cards/identity_card_front_02.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front3.png` | `assets/ui/identity/cards/identity_card_front_03.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front4.png` | `assets/ui/identity/cards/identity_card_front_04.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front5.png` | `assets/ui/identity/cards/identity_card_front_05.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front6.png` | `assets/ui/identity/cards/identity_card_front_06.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front7.png` | `assets/ui/identity/cards/identity_card_front_07.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front8.png` | `assets/ui/identity/cards/identity_card_front_08.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front9.png` | `assets/ui/identity/cards/identity_card_front_09.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front10.png` | `assets/ui/identity/cards/identity_card_front_10.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front11.png` | `assets/ui/identity/cards/identity_card_front_11.png` | 297x371 | 身份卡正面，按美术原编号保留 |
+| 身份卡 | `assets/ui/card/ui_card_front12.png` | `assets/ui/identity/cards/identity_card_front_12.png` | 297x371 | 身份卡正面，按美术原编号保留 |
 | 粉丝徽章 | `assets/ui/combat/fan_badges/ui_alien_fan_badge.png` | `assets/ui/combat/fan_badges/alien_fan_badge.png` | 144x144 | 独立徽章 |
 | 粉丝徽章 | `assets/ui/combat/fan_badges/ui_fox_fan_badge.png` | `assets/ui/combat/fan_badges/fox_fan_badge.png` | 144x144 | 独立徽章 |
 | 粉丝徽章 | `assets/ui/combat/fan_badges/ui_frog_fan_badge.png` | `assets/ui/combat/fan_badges/frog_fan_badge.png` | 144x144 | 独立徽章 |
@@ -75,14 +75,14 @@
 ## 规则与接入提醒
 
 - 青蛙拆分在 `frog/slices/<状态>/` 中按原序号保留；描述仅用于识图，缺少原图层的锚点/相对位移数据。原完整立绘是当前正式消费资源。
-- 卡正面 00 是空白；01~12 的配置语义和绑定关系尚未核实，保留原序号。
+- 身份卡 00 是空白正面，01~12 为十二张身份卡图案，原编号保留。正式十二身份分为 orthodox、heretical、absurd 三组，每组四张；图案编号到 identity_id 的一一对应尚未明确。
 - 粉丝徽章 144x144 与粉丝横幅 532x144 分开存放；原 UI 文件并未自动接线。
 - 512x512 六张球体已归入 Plan B 棋子图目录；是否直接取代程序绘制需要另一张正式任务卡。
 - 休息室笔记本素材属于开播互动入口；这里只命名归档，没有新增可点击逻辑。
 
 ## 待确认
 
-1. 12 张有符号的卡正面具体用于身份卡、话语卡，还是其他卡片系统？编号与表格是否逐一对应？
+1. 已确认：12 张带符号的卡片用于身份选择（2026-10-19）。待确定图案编号 01~12 与正式 identity_id 的一一映射。
 2. 青蛙切图是否有 Aseprite/PSD 源文件记录图层的共同原点？蟑螂跳舞希望有哪些可动部件？
 3. 五张横向粉丝标牌用于评论还是主播区？两种按钮底板是否对应主次按钮？
 
