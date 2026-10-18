@@ -824,6 +824,8 @@ func play_failure_presentation() -> void:
 	if _failure_presentation_active:
 		return
 	_failure_presentation_active = true
+	# T0 刷新会先关闭对手侧；失败事件随后提交剧情对白，因此演出期间重新开放该侧。
+	set_opponent_portrait_connected(true)
 	clear_dialogue_bubbles()
 	if _actual_player_pk > 0.0:
 		_failure_presentation_active = false

@@ -287,6 +287,12 @@ PB-10 配置核对发现 `data/plan_b/` 的五份战斗 CSV 缺少 Keep File sid
 - **处理**：先执行 `godot --headless --editor --import --path <project-root> --quit` 完成资源导入，再用项目场景入口复验。首轮主题加载报错不单独作为资源不存在的结论；随后场景仍失败时再按最终解析日志定位。
 - **证据**：PB-12～14 D worktree 首轮 import 完成后，Plan B UI 场景与 D UI smoke 均退出 0；相同 cold-import 现象在 B 的新 worktree 复现。
 
+### KT-46：PK 归零关闭对手侧后，失败剧情序列被 SD-03 拒收
+
+- **现象**：正式 Plan B 战斗到 0% 后，对手侧 `combat_lose` 序列被标记为拒收。
+- **条件**：外部 PK 同步先发出 `pk_feedback_changed`，Plan B UI 按 T0 禁用对手侧队列；随后 `attempt_failed` 消费者提交对手侧失败剧情。
+- **处理**：Plan B UI 在失败演出开始时重新启用对手立绘与对白侧，再提交后续失败序列；重开仍由 `reset_for_attempt()` 清理活动对白。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。
@@ -300,6 +306,7 @@ PB-10 配置核对发现 `data/plan_b/` 的五份战斗 CSV 缺少 Keep File sid
 - CanvasItem 动画多边形三角化：KT-42。
 - 源工程可读 CSV、导出包缺表：KT-43。
 - 新 worktree 首次字体 / 音频 loader 报错：KT-45。
+- Plan B 到 0% 后失败对白未入队：KT-46。
 
 ## 附录 A：Godot 生命周期提醒
 
