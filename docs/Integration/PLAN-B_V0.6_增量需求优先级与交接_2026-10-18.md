@@ -31,3 +31,10 @@
 - `spawn_word_batch(scene_position, team, word_definition, word_order, requested_count) -> Dictionary` 由玩家和对手共用。仅接受 strength 1/2/3 对应 2/4/8 的完整数量、有效阵营/词/棋盘落点及足够容量；成功结果含 `ok`, `reason`, `word_order`, `team`, `word_id`, `word_definition`, `spawn_position`, `spawn_target_positions`, `unit_ids`, `count`。失败返回 `ok=false` 和明确 `reason`，人口、单位 ID 与批次事实均不改变。
 - `word_batch_spawned(batch: Dictionary)` 每个完整成功批次只发一次，字段沿用上项批次快照；`unit_spawned(unit_id)` 仍按真实单位各发一次。D 用批次事实表现喷涌，继续以 B 的单位快照渲染运行位置。
 - 合法感染常量为 strength 1/2/3 = 50%/60%/70%。玩家批次以 `word_order` 累计成功感染；达到5次最多发放一次 split/reflect，并通过 `word_batch_trait_awarded(word_order, unit_id, trait_name)` 通知表现层。
+
+## Lane D 当前 UI 交接接口
+
+- `PlanBBattleUI.publish_requested(slot_id, word_id, spawn_position)`：D 以槽位 ID、词条 ID 和中央棋盘全局坐标提交发表；A 回调 `resolve_publish_request(slot_id, word_id, spawn_position, result)`。D 读取 `get_player_slot_states()`，槽位可用状态与倒计时由 A 唯一管理。
+- `PlanBUnitField.board_position_clicked(spawn_position)`：中央棋盘内任意有效位置发出坐标，单位位置不作为点击合法性的条件。
+- D 消费 B 的 `word_batch_spawned(batch)`、`word_groups_changed(groups)` 与 `unit_physics_positions_updated(unit_ids, previous_positions, current_positions)`；`group_id/team/word_id/member_ids/center_position/member_positions/word_snapshot` 由 B 提供。
+- D 使用物理 tick 的位置对和引擎插值绘制平滑位置；接触、发表落点和模拟结果仍读取真实位置。
