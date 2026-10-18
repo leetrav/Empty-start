@@ -65,6 +65,8 @@ var _pending_oracle_session: FinalOracleSession
 var _pending_rest_session: RestSession
 var _result_feedback_active: bool = false
 var _fermi_music: TierMusicPresenter
+# F3直接改PK不产生命中清场/连线对白，音乐不应等待不存在的完成事件。
+var _debug_pk_update_active: bool = false
 var _formal_sheet_consumer
 var _active_dialogue_config: BubbleDialogueConfig
 var _trait_catalog: BarrageTraitCatalog
@@ -226,7 +228,7 @@ func _ready() -> void:
 # CombatStage 的起始 Tier 通知早于 attempt_started；延后一帧避免新场误播升降档动作。
 func _queue_pk_tier_visual(current_tier: int, _player_pk: float) -> void:
 	if is_instance_valid(_fermi_music):
-		if current_tier > 0 and _fermi_music.is_waiting_for_connection():
+		if current_tier > 0 and _fermi_music.is_waiting_for_connection() and not _debug_pk_update_active:
 			_fermi_music.begin_connection()
 		_fermi_music.request_tier(current_tier)
 	# 延迟只保存来源和档位，PK在执行时读取，避免旧回调覆盖回拉或新尝试。
@@ -380,6 +382,9 @@ func _on_tier_breakthrough_finished(
 
 # 真实矛盾流程发出进入事实后，HUD 才展示 T6 / Paradox。
 func _on_contradiction_stage_entered(_system: ContradictionBreakSystem) -> void:
+	# 转场结束进入可操作矛盾窗口，恢复高段，结果锁定仍按原流程淡出。
+	if is_instance_valid(_fermi_music) and _fermi_music.owns_music():
+		AudioManager.restore_music()
 	_battle_hud.set_paradox_stage_active(true, _battle_attempt_flow.get_current_tier())
 	_refresh_mobile_touch_phase()
 
@@ -400,6 +405,9 @@ func _on_normal_combat_completed(
 ) -> void:
 	if is_instance_valid(_fermi_music):
 		_fermi_music.finish_battle(&"enter_contradiction")
+		# 击破标题/斜切出现时压至25%，让演出与音效先被听见。
+		if _fermi_music.owns_music():
+			AudioManager.duck_music()
 	_reset_paradox_presentation()
 	if is_instance_valid(_mobile_touch):
 		_mobile_touch.call("set_enabled", false)
@@ -548,7 +556,10 @@ func debug_set_player_pk(player_pk: float) -> float:
 	var hit_resolution: HitResolution = _battle_attempt_flow.get_hit_resolution()
 	if hit_resolution == null:
 		return 0.0
-	return hit_resolution.set_player_pk_for_debug(player_pk)
+	_debug_pk_update_active = true
+	var applied_pk: float = hit_resolution.set_player_pk_for_debug(player_pk)
+	_debug_pk_update_active = false
+	return applied_pk
 
 
 # 直播调试值仍写入本场 LiveSessionData，由 Resource.changed 刷新当前 HUD。

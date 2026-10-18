@@ -5,6 +5,8 @@
 ### 当前可运行正式第一关（2026-10-18追加）
 用户要求先在第一名Boss实际战斗中试听，已将同一TierMusicPresenter接到当前main的Sandbox费米关。F5走原菜单/开场/房间后，进入费米T0静音等待；也可直接打开 `scenes/sandbox/sandbox.tscn` 按F6进入首关。主场景路径与玩法规则均未改变，仍是上游已提交的旧战斗流程。
 
+F3调PK时使用真实Tier选择战斗段，但不等待调试操作没有触发的连线对白；正常命中路径仍保留对白引子。换组仍等待音乐小节，升档最长约2.4秒（同组不换曲），降档还需2秒稳定等待。
+
 Sandbox从attempt_started识别alien，读取真实Tier变化、暂停、失败、满PK、矛盾结果与休息事实；重开恢复T0静音等待。CombatStage.bind_audio_manager新增默认true的enable_music_requests参数，BattleAttemptFlow只对alien关闭旧Tier切曲，升档音效仍保留；其他三关沿用原接线。
 
 真实正式场景验证通过开局、PK66%中段、92%高段、暂停续播、重开、失败淡出、100%高段及退出清理。完整Plan B四关仍未交付，不能把这次旧流程首关接线当成新玩法完整集成。
@@ -19,7 +21,7 @@ Sandbox调用begin_connection()与finish_connection_dialogue()，分别对应连
 - 同组保持播放；跨组用实际音频位置等待下一小节；帧越界小偏移带入新段，属于帧级调度，不宣称采样级无缝同步。
 - 降档稳定2秒，等待期间进一步降低目标保留稳定时间；重新上升到正在播放的组取消。等待中只保留最新目标。
 - 暂停音乐与过渡一起暂停并冻结等待；恢复接着播。重开清理旧请求并在T0静音等待。
-- 满PK停止响应Tier，使用高段；正式矛盾击破继续调用原 `fade_to_silence()`。当前独立原型只发进入矛盾事实，完整击破演出仍待正式流程交付。
+- 满PK停止响应Tier，使用高段；矛盾击破转场标题/斜切出现时用原duck配置在0.2秒压到25%，转场结束进入可操作矛盾窗口后0.3秒恢复，不修改玩家Music总线。正式矛盾击破继续调用原 `fade_to_silence()`。当前独立原型只发进入矛盾事实，完整击破演出仍待正式流程交付。
 - 失败淡出；场景释放停止；其他阶段接管/停止音乐会使旧消费者失效，不再抢播。
 
 AudioManager的兼容扩展：`change_music(event_id, cross_fade_seconds=-1, from_position=0, fade_in_seconds=-1, overlap=true)`；省略参数保留原默认。新增 `get_music_event_id()`、`get_music_position()`、`get_music_length()`、`set_music_paused(bool)` 与 `music_changed` 事实信号。`Music`事件音量增益和淡化/duck分别计算，换播放器时不丢失表中音量；SFX/UI保持原入口。
