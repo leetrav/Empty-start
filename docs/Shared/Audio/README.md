@@ -12,7 +12,7 @@ Sandbox从attempt_started识别alien，读取真实Tier变化、暂停、失败�
 
 费米使用《Teek Teek Teek》：T0静音，连线/对白柔和引子，完成后T1低、T2/T3中、T4/T5高。资源在 `assets/audio/music/fermi/`，来源和署名见该目录README；正式结尾页和试听场景已有署名。17表新增 `music_alien_intro/low/mid/high` 四个Music事件，Resource配置保留相同引用作为兼容；共77行，27行有资源、50行仍空。旧泛用 `music_battle_t0～t5` 未填费米曲，其他Boss不会误用。
 
-Sandbox调用begin_connection()与finish_connection_dialogue()，分别对应连线开始和本次真实对白完成；对白期间Tier请求只更新后续目标，不抢占引子。无对白演出的独立Plan B原型仍按Tier直接试听战斗段。
+Sandbox调用begin_connection()与finish_connection_dialogue()，分别对应连线开始和本次真实对白完成；对白期间Tier请求只更新后续目标，不抢占引子。引子切战斗段采用顺序淡变：0.3秒淡出并停止引子，再0.3秒淡入战斗段，不同时混入不同旋律；其余战斗组仍用原0.6秒交叉淡化。无对白演出的独立Plan B原型仍按Tier直接试听战斗段。
 
 `TierMusicProfile` Resource 保存ID映射、100BPM/4拍、降档2秒、费米交叉淡化0.6秒；`TierMusicPresenter` 是场景拥有的消费者，不创建播放器、不计算PK。组合根创建后调用 `bind_host(host)` 接入 `tier_changed`、`battle_state_changed`、`battle_ended`，用于当前可运行费米原型。正式Plan B合入时按同样公开事实组合，并协调旧CombatStage音乐请求，不能将当前原型接线冒充四关已完成。
 
@@ -22,7 +22,7 @@ Sandbox调用begin_connection()与finish_connection_dialogue()，分别对应连
 - 满PK停止响应Tier，使用高段；正式矛盾击破继续调用原 `fade_to_silence()`。当前独立原型只发进入矛盾事实，完整击破演出仍待正式流程交付。
 - 失败淡出；场景释放停止；其他阶段接管/停止音乐会使旧消费者失效，不再抢播。
 
-AudioManager的兼容扩展：`change_music(event_id, cross_fade_seconds=-1, from_position=0, fade_in_seconds=-1)`；省略参数保留原默认。新增 `get_music_event_id()`、`get_music_position()`、`get_music_length()`、`set_music_paused(bool)` 与 `music_changed` 事实信号。`Music`事件音量增益和淡化/duck分别计算，换播放器时不丢失表中音量；SFX/UI保持原入口。
+AudioManager的兼容扩展：`change_music(event_id, cross_fade_seconds=-1, from_position=0, fade_in_seconds=-1, overlap=true)`；省略参数保留原默认。新增 `get_music_event_id()`、`get_music_position()`、`get_music_length()`、`set_music_paused(bool)` 与 `music_changed` 事实信号。`Music`事件音量增益和淡化/duck分别计算，换播放器时不丢失表中音量；SFX/UI保持原入口。
 
 试听：Godot打开 `scenes/demos/au03_fermi_music_preview.tscn` 按F6，先点“开始连线/开场对白”，再点“开场对白结束”查看阶段衔接；直接点击T1～T5用于跳过对白快速试听战斗段。可测试暂停、重开、满PK、击破和失败。正式项目F5入口未更改。`scenes/plan_b/fermi_battle_demo.tscn` 启动战斗后也接入真实主控事实。其他Boss与开场/休息/终局仍待选曲实施。
 

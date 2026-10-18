@@ -157,10 +157,11 @@ func _process(delta: float) -> void:
 
 
 func _play_group(group: int, from_position: float = 0.0, initial: bool = false) -> void:
+	var leaving_intro: bool = _group == 0 and group > 0
 	_group = group
 	# 连线柔和引子用一小节淡入；对白完成后切正常战斗段。
 	var fade_in: float = profile.intro_fade_seconds if initial and group == 0 else -1.0
-	if not AudioManager.change_music(profile.event_ids[group], profile.cross_fade_seconds, from_position, fade_in):
+	if not AudioManager.change_music(profile.event_ids[group], profile.cross_fade_seconds, from_position, fade_in, not leaving_intro):
 		_active = false
 		_group = -1
 		return

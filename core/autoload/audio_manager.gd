@@ -115,7 +115,7 @@ func stop_music() -> void:
 
 
 # 按 AU-01 音乐事件请求主音乐；首次淡入，换曲时交叉切换。
-func change_music(event_id: StringName, cross_fade_seconds: float = -1.0, from_position: float = 0.0, fade_in_seconds: float = -1.0) -> bool:
+func change_music(event_id: StringName, cross_fade_seconds: float = -1.0, from_position: float = 0.0, fade_in_seconds: float = -1.0, overlap: bool = true) -> bool:
 	var event: AudioEvent = _audio_config.find_event(event_id)
 	if event == null or event.audio_type != AudioEvent.AudioType.MUSIC or event.stream == null:
 		push_warning("AudioManager: music event '%s' is missing, empty or not Music." % str(event_id))
@@ -144,7 +144,10 @@ func change_music(event_id: StringName, cross_fade_seconds: float = -1.0, from_p
 		duration = fade_in_seconds
 	if has_outgoing_music and cross_fade_seconds >= 0.0:
 		duration = cross_fade_seconds
-	_tween_music_gains(1.0, duration, _finish_music_change)
+	if has_outgoing_music and not overlap and duration > 0.0:
+		_tween_music_without_overlap(duration)
+	else:
+		_tween_music_gains(1.0, duration, _finish_music_change)
 	_music_event_id = event_id
 	music_changed.emit(event_id)
 	return true
@@ -229,6 +232,20 @@ func _tween_music_gains(target_gain: float, duration: float, completion: Callabl
 	_music_tween.tween_property(self, "_music_gain", target_gain, duration)
 	_music_tween.tween_property(self, "_outgoing_gain", 0.0, duration)
 	_music_tween.chain().tween_callback(completion)
+	if _music_paused:
+		_music_tween.pause()
+
+
+# 不同旋律的剧情引子接战斗时，先停止旧曲再起新曲，避免交叉叠音。
+# 新曲在静音状态保留音频时钟；暂停/取消沿用同一个音乐Tween。
+func _tween_music_without_overlap(duration: float) -> void:
+	_cancel_music_tween()
+	_music_gain = 0.0
+	_music_tween = create_tween()
+	_music_tween.tween_property(self, "_outgoing_gain", 0.0, duration * 0.5)
+	_music_tween.tween_callback(_stop_outgoing_music)
+	_music_tween.tween_property(self, "_music_gain", 1.0, duration * 0.5)
+	_music_tween.tween_callback(_finish_music_change)
 	if _music_paused:
 		_music_tween.pause()
 

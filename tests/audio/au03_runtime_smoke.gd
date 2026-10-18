@@ -17,7 +17,21 @@ func _ready() -> void:
 	await _wait(3.0)
 	_check(_music.is_opening_dialogue_active() and AudioManager.get_music_event_id() == &"music_alien_intro", "对白未完成持续柔和引子")
 	_music.finish_connection_dialogue()
-	await _wait(2.7)
+	var overlapped: bool = false
+	var old_retained: bool = false
+	var elapsed: float = 0.0
+	while elapsed < 3.3:
+		await get_tree().process_frame
+		elapsed += get_process_delta_time()
+		var audible: int = 0
+		for child: Node in AudioManager.get_children():
+			if child is AudioStreamPlayer and child.bus == &"Music" and child.playing:
+				if child.volume_linear > 0.001:
+					audible += 1
+				if elapsed > 3.1 and child.stream.resource_path.ends_with("teek_intro.ogg"):
+					old_retained = true
+		overlapped = overlapped or audible > 1
+	_check(not overlapped and not old_retained, "引子接低段无旋律重叠且旧播放器停止")
 	_check(AudioManager.get_music_event_id() == &"music_alien_low", "对白完成进入战斗低段")
 	var pos: float = AudioManager.get_music_position()
 	_music.request_tier(1)
