@@ -28,8 +28,11 @@ var _hovered_unit_id := ""
 var _unit_layer_visible := true
 var _feedback_pulses: Dictionary = {}
 var _previous_points: Dictionary = {}
-var _previous_physics_positions: Dictionary = {}
-var _current_physics_positions: Dictionary = {}
+var _physics_unit_ids := PackedInt32Array()
+var _physics_previous_positions := PackedVector2Array()
+var _physics_current_positions := PackedVector2Array()
+var _physics_position_index_by_unit_id: Dictionary = {}
+var _physics_position_index_dirty := true
 var _render_interpolation_fraction := 0.0
 var _movement_segments: Dictionary = {}
 var _contact_feedback: Array[Dictionary] = []
@@ -88,53 +91,43 @@ func set_unit_snapshots(snapshots: Array) -> void:
 	queue_redraw()
 
 
-func set_physics_tick_positions(positions: Dictionary) -> void:
-	# 每个物理 tick 只保存 unit_id 和 Vector2；渲染帧用引擎插值比例平滑显示。
-	var next_positions: Dictionary = {}
-	for unit_id_value in positions:
-		var position := _position_value(positions[unit_id_value])
-		if position != Vector2.ZERO:
-			next_positions[str(unit_id_value)] = position
-	var previous_positions: Dictionary = {}
-	for unit_id in next_positions:
-		var current: Vector2 = next_positions[unit_id]
-		var previous: Vector2 = _current_physics_positions.get(unit_id, current)
-		if previous.distance_to(current) > 96.0:
-			previous = current
-		previous_positions[unit_id] = previous
-	_current_physics_positions = next_positions
-	_previous_physics_positions = previous_positions
-	queue_redraw()
-
-
-func set_physics_tick_position_arrays(unit_ids: Variant, previous_positions: Variant, current_positions: Variant) -> void:
-	# B 按相同索引传递 ID、上一 tick 位置和当前 tick 位置，不带话语文本或单位字典。
-	var next_previous: Dictionary = {}
-	var next_current: Dictionary = {}
-	var item_count: int = mini(int(unit_ids.size()), mini(int(previous_positions.size()), int(current_positions.size())))
-	for index in item_count:
-		var unit_id := str(unit_ids[index])
-		var previous: Vector2 = _position_value(previous_positions[index])
-		var current: Vector2 = _position_value(current_positions[index])
-		if previous.distance_to(current) > 96.0:
-			previous = current
-		next_previous[unit_id] = previous
-		next_current[unit_id] = current
-	_previous_physics_positions = next_previous
-	_current_physics_positions = next_current
+func set_physics_tick_position_arrays(
+	unit_ids: PackedInt32Array,
+	previous_positions: PackedVector2Array,
+	current_positions: PackedVector2Array
+) -> void:
+	# 直接保存 B 的紧凑位置数组；ID 索引只在棋子出生/离场时重建。
+	var item_count: int = mini(unit_ids.size(), mini(previous_positions.size(), current_positions.size()))
+	var rebuild_index := _physics_position_index_dirty or _physics_unit_ids.size() != item_count
+	if not rebuild_index:
+		for index in item_count:
+			if _physics_unit_ids[index] != unit_ids[index]:
+				rebuild_index = true
+				break
+	_physics_unit_ids = unit_ids
+	_physics_previous_positions = previous_positions
+	_physics_current_positions = current_positions
+	if rebuild_index:
+		_physics_position_index_by_unit_id.clear()
+		for index in item_count:
+			_physics_position_index_by_unit_id[str(unit_ids[index])] = index
+		_physics_position_index_dirty = false
 	queue_redraw()
 
 
 func forget_unit_position(unit_id: String) -> void:
 	# 离场后清除插值历史，重开时复用 ID 也不会从旧位置拖出残影。
-	_previous_physics_positions.erase(unit_id)
-	_current_physics_positions.erase(unit_id)
+	_physics_position_index_by_unit_id.erase(unit_id)
+	_physics_position_index_dirty = true
 	queue_redraw()
 
 
 func reset_physics_interpolation_history() -> void:
-	_previous_physics_positions.clear()
-	_current_physics_positions.clear()
+	_physics_unit_ids = PackedInt32Array()
+	_physics_previous_positions = PackedVector2Array()
+	_physics_current_positions = PackedVector2Array()
+	_physics_position_index_by_unit_id.clear()
+	_physics_position_index_dirty = true
 	queue_redraw()
 
 
@@ -296,8 +289,13 @@ func _draw_unit(snapshot: Dictionary) -> void:
 	draw_arc(center, radius + 1.8, 0.0, TAU, 20, tint, 2.0, true)
 	var attribute_color := _battle_type_color(str(snapshot.get("battle_type", "")))
 	var badge_center := center + Vector2(radius * 0.68, radius * 0.68)
-	draw_circle(badge_center, 5.0, Color("#07121b"))
-	draw_circle(badge_center, 3.0, attribute_color)
+	var badge_size := 4.0
+	draw_colored_polygon(PackedVector2Array([
+		badge_center + Vector2(0.0, -badge_size),
+		badge_center + Vector2(badge_size, 0.0),
+		badge_center + Vector2(0.0, badge_size),
+		badge_center + Vector2(-badge_size, 0.0),
+	]), attribute_color)
 
 	if _feedback_pulses.has(unit_id):
 		var feedback: Dictionary = _feedback_pulses[unit_id]
@@ -526,12 +524,18 @@ func _group_member_positions(group: Dictionary, member_ids: Array) -> Dictionary
 	for member_index in member_ids.size():
 		var member_id := str(member_ids[member_index])
 		var snapshot: Dictionary = _snapshots_by_id.get(member_id, {})
-		var position := _unit_position(snapshot) if not snapshot.is_empty() else Vector2.ZERO
+		var current_position := _physics_position_for_unit(member_id)
+		if current_position.is_zero_approx() and not snapshot.is_empty():
+			current_position = _unit_position(snapshot)
+		var position := current_position
 		if position.is_zero_approx():
 			position = _provided_member_position(provided, member_id, member_index)
 		if not position.is_zero_approx():
-			var previous_position: Vector2 = _previous_physics_positions.get(member_id, position)
-			var current_position: Vector2 = _current_physics_positions.get(member_id, position)
+			var previous_position := _physics_position_for_unit(member_id, true)
+			if previous_position.is_zero_approx():
+				previous_position = position
+			if current_position.is_zero_approx():
+				current_position = position
 			positions[member_id] = _world_to_local(previous_position.lerp(current_position, _render_interpolation_fraction))
 	if positions.is_empty():
 		var center: Vector2 = _position_value(group.get("center_position", Vector2.ZERO))
@@ -558,6 +562,15 @@ func _position_value(value: Variant) -> Vector2:
 		var position_value: Variant = value.get("position", Vector2.ZERO)
 		return position_value if position_value is Vector2 else Vector2.ZERO
 	return Vector2.ZERO
+
+
+func _physics_position_for_unit(unit_id: String, previous: bool = false) -> Vector2:
+	var index := int(_physics_position_index_by_unit_id.get(unit_id, -1))
+	if index < 0:
+		return Vector2.ZERO
+	if previous:
+		return _physics_previous_positions[index] if index < _physics_previous_positions.size() else Vector2.ZERO
+	return _physics_current_positions[index] if index < _physics_current_positions.size() else Vector2.ZERO
 
 
 func _build_word_group_signature(groups: Array) -> String:
@@ -703,15 +716,19 @@ func _unit_position(snapshot: Dictionary) -> Vector2:
 
 
 func _display_local_position(unit_id: String, snapshot: Dictionary) -> Vector2:
-	if _current_physics_positions.has(unit_id):
-		var current: Vector2 = _current_physics_positions[unit_id]
-		var previous: Vector2 = _previous_physics_positions.get(unit_id, current)
+	var current := _physics_position_for_unit(unit_id)
+	if not current.is_zero_approx():
+		var previous := _physics_position_for_unit(unit_id, true)
+		if previous.is_zero_approx():
+			previous = current
 		return _world_to_local(previous.lerp(current, _render_interpolation_fraction))
 	return _world_to_local(_unit_position(snapshot))
 
 
 func _actual_local_position(unit_id: String, snapshot: Dictionary) -> Vector2:
-	var actual: Vector2 = _current_physics_positions.get(unit_id, _unit_position(snapshot))
+	var actual := _physics_position_for_unit(unit_id)
+	if actual.is_zero_approx():
+		actual = _unit_position(snapshot)
 	return _world_to_local(actual)
 
 
