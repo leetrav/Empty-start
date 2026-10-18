@@ -35,10 +35,12 @@ Headless 模式下 draw calls / GPU 数据不代表 D3D12 绘制成本；需结�
 
 ## 本轮观测
 
-当前分支的 8 秒 headless Sandbox 基线与一次 7 秒 Tracker 样本保存在：
+8 秒 headless Sandbox 基线与 7 秒 Tracker 样本保存在：
 
 - [Tracker 样本 JSONL](evidence/PB-14_2026-10-18/pb14_tracker_short_validation.jsonl)
 - [Tracker 前基线 JSONL](evidence/PB-14_2026-10-18/pb14_pre_tracker_baseline.jsonl)
 - 8秒 headless 基线探针源码与场景是 `evidence/PB-14_2026-10-18/pb14_short_baseline_probe.gd/.tscn`；冷缓存阻断及后续缓存处理记在 PB-14 日志。
 
 Tracker 样本包含 `start`、7个1秒窗口和 `end` 记录；section 和 runtime 字段均有实际运行值。样本由 headless renderer 采集，draw calls 为0，因此只用于确认字段接线与逻辑阶段数据；窗口渲染性能仍由 E 在同口径 D3D12 profile 中测量。A 未执行优化或容量 sweep。
+
+两个样本采集时的 A HEAD 为 `6f192286`，早于 B 的 neutral neighbor skip commit `b0bd8506`。它们证明字段布局和初始运行状态，不能代表当前候选的后优化性能值。
