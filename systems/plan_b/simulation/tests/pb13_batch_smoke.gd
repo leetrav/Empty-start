@@ -346,6 +346,7 @@ func _set_unit_global_position(unit_id: int, new_position: Vector2) -> void:
 		unit.global_position = new_position
 
 
+## 通过稳定 unit_id 找到真实棋子节点，仅供场景夹具摆放碰撞位置。
 func _find_unit_node(unit_id: int) -> PlanBUnit:
 	for child: Node in _simulation.get_children():
 		var unit := child as PlanBUnit
@@ -383,19 +384,23 @@ func _attempt_contact_pair(first_id: int, second_id: int, scene_position: Vector
 	return "no-contact"
 
 
+## 记录真实 unit_spawned 事实，并确认回调读取时整批人口已经登记完成。
 func _on_unit_spawned(unit_id: int) -> void:
 	_unit_spawned_ids.append(unit_id)
 	_spawn_population_sizes.append(_simulation.get_unit_snapshots().size())
 
 
+## 保存完整批次事实快照，验证一个发表只发一次批次事件。
 func _on_word_batch_spawned(batch: Dictionary) -> void:
 	_batch_events.append(batch.duplicate(true))
 
 
+## 记录玩家同批五次传播后的候选特性奖励事实。
 func _on_word_batch_trait_awarded(word_order: int, unit_id: int, trait_name: StringName) -> void:
 	_trait_events.append({"word_order": word_order, "unit_id": unit_id, "trait": trait_name})
 
 
+## 统计真实 Area2D 接触结果，并按合法感染方的 strength 汇总抽样率。
 func _on_contact_resolved(first_id: int, second_id: int, outcome: StringName) -> void:
 	var pair := Vector2i(mini(first_id, second_id), maxi(first_id, second_id))
 	var events: Array = _contact_events_by_pair.get(pair, [])
@@ -412,6 +417,7 @@ func _on_contact_resolved(first_id: int, second_id: int, outcome: StringName) ->
 		_probability_conversions[strength] = int(_probability_conversions.get(strength, 0)) + 1
 
 
+## 汇总固定抽样中的事件次数。
 func _sum_dictionary_values(values: Dictionary) -> int:
 	var total: int = 0
 	for value: Variant in values.values():
@@ -419,6 +425,7 @@ func _sum_dictionary_values(values: Dictionary) -> int:
 	return total
 
 
+## 构造与真实静态词定义一致的独立值快照。
 func _word(word_id: String, text: String, battle_type: String, strength: int) -> Dictionary:
 	return {
 		"word_id": word_id,
@@ -431,6 +438,7 @@ func _word(word_id: String, text: String, battle_type: String, strength: int) ->
 	}
 
 
+## 聚合确定性 smoke 断言；失败会让场景以非零状态退出。
 func _check(condition: bool, description: String) -> void:
 	if condition:
 		return
@@ -438,6 +446,7 @@ func _check(condition: bool, description: String) -> void:
 	push_error("PB-13 CHECK FAILED: " + description)
 
 
+## 输出 PB-13 smoke 汇总并按断言结果退出。
 func _finish_smoke() -> void:
 	_simulation.pause_simulation()
 	if _failed_checks.is_empty():
