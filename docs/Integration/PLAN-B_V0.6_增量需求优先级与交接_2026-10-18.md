@@ -32,23 +32,18 @@
 - `word_batch_spawned(batch: Dictionary)` 每个完整成功批次只发一次，字段沿用上项批次快照；`unit_spawned(unit_id)` 仍按真实单位各发一次。D 用批次事实表现喷涌，继续以 B 的单位快照渲染运行位置。
 - 合法感染常量为 strength 1/2/3 = 50%/60%/70%。玩家批次以 `word_order` 累计成功感染；达到5次最多发放一次 split/reflect，并通过 `word_batch_trait_awarded(word_order, unit_id, trait_name)` 通知表现层。
 
-## Lane D 当前 UI 交接接口
-
-- `PlanBBattleUI.publish_requested(slot_id, word_id, spawn_position)`：D 以槽位 ID、词条 ID 和中央棋盘全局坐标提交发表；A 回调 `resolve_publish_request(slot_id, word_id, spawn_position, result)`。D 读取 `get_player_slot_states()`，槽位可用状态与倒计时由 A 唯一管理。
-- `PlanBUnitField.board_position_clicked(spawn_position)`：中央棋盘内任意有效位置发出坐标，单位位置不作为点击合法性的条件。
-- D 消费 B 的 `word_batch_spawned(batch)`、`word_groups_changed(groups)` 与 `unit_physics_positions_updated(unit_ids, previous_positions, current_positions)`；`group_id/team/word_id/member_ids/center_position/member_positions/word_snapshot` 由 B 提供。
-- D 使用物理 tick 的位置对和引擎插值绘制平滑位置；接触、发表落点和模拟结果仍读取真实位置。
-
 ### Lane B 当前已实现的 PB-11 团体与运动接口
-
-- `PlanBUnitSimulation.get_word_groups() -> Array[Dictionary]` 返回按稳定 `group_id` 排序的同阵营、同当前 `word_id` 空间连通组；字段含 `group_id/team/word_id/word_order/member_ids/word_snapshot/member_positions/center_position`，均为 scene-global 坐标。
-- `word_groups_changed(groups)` 在团体成员、阵营、话语关系或清场事实改变时发出完整组快照；实时位置由按需读取接口提供。`unit_physics_positions_updated(unit_ids, previous_positions, current_positions)` 提供物理 tick 插值点。
-- B 负责邻域判定与团体拓扑，默认72px加入、90px离开、中心半径上限180px，刷新间隔0.2秒；同阵营改口和敌我碰撞裁决保持原规则，结群不改变人数/寿命/PK。
-- Lane D 负责共享气泡绘制，不在 UI 重算连通关系。
+- `PlanBUnitSimulation.get_word_groups() -> Array[Dictionary]` 返回按稳定 `group_id` 排序的同阵营、同当前 `word_id` 空间连通组。每组字段包括 `group_id/team/word_id/word_order/member_ids/word_snapshot/member_positions/center_position`；成员位置、几何中心使用 scene-global 坐标，1人单位也保留为一组。
+- `word_groups_changed(groups: Array)` 在团体拓扑、阵营、话语成员关系变化时发出完整组快照；清场会在旧组存在时发出空数组。成员实时位置由 `get_word_groups()` 读取，避免每个物理步复制话语字典。
+- `PlanBUnit.get_word_id()` 提供稳定当前话语 ID，用于组建团体。玩家、对手棋子以同阵营、同话语、相邻关系组成气泡组；单个棋子也形成独立组。
+- 团体邻接默认 72px 加入、90px 离开，成员到组中心半径上限180px；拓扑固定每0.2秒刷新，同一周期内的出生、感染、改口和离场会合并到下一次刷新。成员位置仍由查询接口即时提供。
+- 主动移动默认同阵营侦测160px、理想间距36px、同话吸引0.45、同阵营不同话吸引0.225、分离0.65。可感染目标追击与克制威胁回避优先于团体靠拢；无优先目标时向同伴移动。
+- 敌我/中立接触反冲持续0.18秒并沿用原接触裁决；同阵营贴碰使用轻量软分离并保留 `word_order` 改口规则。团体始终保留独立 `unit_id`、人口、寿命和PK统计。
+- lane D 负责将这些团体快照绘制为共享气泡及尾巴。PB-14 会补充单位物理帧位置事实信号供绘制插值。
 
 ### Lane B 当前已实现的 PB-14 决策与位置事实
-
-- `target_decision_refresh_seconds` 默认0.1秒；按稳定 `unit_id` 分成6个时间相位，错峰刷新目标方向和团体靠拢决策，邻域查询复用同一空间网格。
-- 每个物理步仍推进移动、Area2D 接触、感染/改口、反冲和边缘反射；新事实会失效附近决策缓存，下一决策时隙再重算目标。
-- `unit_physics_positions_updated(unit_ids, previous_positions, current_positions)` 每个物理步发一次；三个同长数组按升序 Unit ID 对齐，坐标为 scene-global，新生位置以前后相同坐标初始化。
-- B 的 PB-14 probe / decision smoke 覆盖错峰频率、位置事件频率及坐标连续性；正式优化后前后性能与人口容量分档仍由 E 按真实 Sandbox profiler 记录。
+- `target_decision_refresh_seconds` 默认0.1秒。目标、威胁与同伴查询复用同一邻居网格；棋子按稳定 `unit_id` 错峰刷新决策缓存。
+- 单位位置积分、真实 Area2D 接触、感染/改口、反冲和边缘反射继续每个物理步运行。物理步之间沿缓存方向和当前速度运动；碰撞反冲期间不由寻敌改写速度。
+- 目标方向按单位各自错峰每0.1秒更新；接触、感染和改口在下个决策时隙读取新状态。空间网格默认0.1秒刷新；新生/离场会使成员索引在下一物理步重建，碰撞分离期间以额外候选padding覆盖网格位置偏移。团体拓扑固定每0.2秒刷新，事件不会把它提升到每物理步。
+- `unit_physics_positions_updated(unit_ids: PackedInt32Array, previous_positions: PackedVector2Array, current_positions: PackedVector2Array)` 每个物理步发出一次。三组数组按升序 Unit ID 对齐，位置使用 scene-global 坐标，新生首帧的前后位置相同；D 可在渲染帧之间据此插值。
+- PB-14 的 pre-optimization 正式 Sandbox CLI profile 与后续同场景 post-optimization 结果记录在 `evidence/PB-14_2026-10-18/`。Engine `TIME_PROCESS/TIME_PHYSICS_PROCESS` 与 CLI GPU/FPS 值按各自计量名记录；GUI Profiler 的 Script/Idle 函数明细及窗口截图需人工验收。
