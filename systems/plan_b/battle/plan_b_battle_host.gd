@@ -324,11 +324,14 @@ func _get_player_slot_state(slot_id: int) -> Dictionary:
 	return {}
 
 
-func publish_word(team: String, word_id: String, spawn_request: Variant, slot_id: int = -1) -> Dictionary:
-	# 正式游戏传棋盘场景坐标并创建完整批次；旧 PB-01 夹具仍可用中立 ID 验证历史单颗播种。
-	if spawn_request is Vector2:
-		return _publish_word_batch(team, word_id, spawn_request, slot_id)
-	return _publish_word_to_legacy_target(team, word_id, spawn_request)
+func publish_word(team: String, word_id: String, spawn_position: Vector2, slot_id: int = -1) -> Dictionary:
+	# 正式发表只接受棋盘全局坐标；B 要么创建完整批次，要么返回失败且不消费发表事实。
+	return _publish_word_batch(team, word_id, spawn_position, slot_id)
+
+
+## 仅供 PB-01 / PB-05 旧主机夹具继续覆盖单颗播种，不用于正式 Sandbox 流程。
+func publish_legacy_seed_word(team: String, word_id: String, neutral_unit_id: Variant) -> Dictionary:
+	return _publish_word_to_legacy_target(team, word_id, neutral_unit_id)
 
 
 func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2, slot_id: int) -> Dictionary:
