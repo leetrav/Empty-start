@@ -93,6 +93,18 @@ func begin_connection() -> void:
 	_play_group(0, 0.0, true)
 
 
+# 真实对白气泡呈现时，从原色出场版切到同一进度的柔和版，不猜秒数。
+func begin_connection_dialogue() -> void:
+	if not _active or not _opening_active or profile.entrance_event_id == &"":
+		return
+	if AudioManager.get_music_event_id() != profile.entrance_event_id:
+		return
+	var position: float = AudioManager.get_music_position()
+	AudioManager.change_music(profile.event_ids[0], profile.dialogue_mix_seconds, position)
+	AudioManager.set_music_paused(_paused)
+	_last_position = position
+
+
 # 仅由本次真实开场对白完成事实放行，空对白也走同一完成路径。
 func finish_connection_dialogue() -> void:
 	if not _active or not _opening_active:
@@ -128,7 +140,10 @@ func get_target_group() -> int:
 
 
 func owns_music() -> bool:
-	return _group >= 0 and AudioManager.get_music_event_id() == profile.event_ids[_group]
+	if _group < 0:
+		return false
+	var event_id: StringName = AudioManager.get_music_event_id()
+	return event_id == profile.event_ids[_group] or (_group == 0 and profile.entrance_event_id != &"" and event_id == profile.entrance_event_id)
 
 
 func _process(delta: float) -> void:
@@ -161,7 +176,11 @@ func _play_group(group: int, from_position: float = 0.0, initial: bool = false) 
 	_group = group
 	# 连线柔和引子用一小节淡入；对白完成后切正常战斗段。
 	var fade_in: float = profile.intro_fade_seconds if initial and group == 0 else -1.0
-	if not AudioManager.change_music(profile.event_ids[group], profile.cross_fade_seconds, from_position, fade_in, not leaving_intro):
+	var event_id: StringName = profile.event_ids[group]
+	if initial and group == 0 and profile.entrance_event_id != &"":
+		event_id = profile.entrance_event_id
+		fade_in = profile.entrance_fade_seconds
+	if not AudioManager.change_music(event_id, profile.cross_fade_seconds, from_position, fade_in, profile.overlap_battle and not leaving_intro):
 		_active = false
 		_group = -1
 		return
@@ -207,8 +226,8 @@ func _on_battle_state_changed(state: StringName) -> void:
 
 
 # 其他场景接管音乐或击破静音时使旧场景失效，不再重播费米曲。
-func _on_music_changed(event_id: StringName) -> void:
-	if _group >= 0 and event_id != profile.event_ids[_group]:
+func _on_music_changed(_event_id: StringName) -> void:
+	if _group >= 0 and not owns_music():
 		_active = false
 		_boundary_remaining = -1.0
 

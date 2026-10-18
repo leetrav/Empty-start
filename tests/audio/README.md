@@ -1,12 +1,12 @@
-# AU-03 费米局部运行验收
+# AU-03 四Boss局部运行验收
 
 使用Godot 4.7.2。先导入工程，OGG导入侧车必须保留loop=true。无Godot MCP时使用CLI；Windows图形exe用Start-Process -Wait -PassThru -WindowStyle Hidden，核对ExitCode、PASS与stderr。验证进程APPDATA设为独立临时目录，避免覆盖玩家存档。
 
 - `au03_runtime_smoke.tscn`：约40秒，真实AudioManager播放器和真实费米主控生命周期，检查同组保持、跨档最新目标、短暂下降取消、暂停恢复、持续下降、失败/离场取消、重开、满PK及击破、玩家Music音量/静音。成功输出AU03_RUNTIME_PASS。
-- `au03_loop_smoke.tscn`：最多75秒，同时以极低音量播放四个实际OGG，检查19.2秒长度、循环标记及每份三次真实回绕。成功输出AU03_LOOPS_PASS [3, 3, 3, 3]。这是解码/循环检查，不是人耳接缝验收。
-- `au03_pack_check.gd`：Windows Desktop导出PCK后，在工程外用--main-pack <pack.pck> --script <本脚本绝对路径>启动，核对包内四个循环、17表映射和结尾署名。成功输出AU03_PACK_PASS。
+- `au03_loop_smoke.tscn`：最多100秒，同时以极低音量播放17份采用OGG（四Boss各四段加列巴原色出场），检查循环标记及每份至少三次真实回绕。成功输出AU03_LOOPS_PASS与17项回绕计数。这是解码/循环检查，不是人耳接缝验收。
+- `au03_pack_check.gd`：Windows Desktop导出PCK后，在工程外用--main-pack <pack.pck> --script <本脚本绝对路径>启动，核对包内17份循环、90行17表中的四Boss事件映射、结尾署名和随游戏音乐说明。成功输出AU03_PACK_PASS。
 
-独立试听：打开scenes/demos/au03_fermi_music_preview.tscn，F6运行。先逐一播放低/中/高至少三次循环，再手动测试所有Tier变化及暂停/失败/满PK。该场景不会改变游戏PK或原型规则。
+独立试听：打开scenes/demos/au03_boss_music_preview.tscn（兼容原fermi试听入口），F6运行并下拉选Boss；列巴点“开始连线”听原色开头，再点“对白开始”听同位置柔化。先逐一播放低/中/高至少三次循环，再手动测试所有Tier变化及暂停/失败/满PK。该场景不会改变游戏PK或原型规则。
 
 完整正式Plan B四关、矛盾击破演出与结局需后续实际联调；未包含在这些局部PASS中。当前F5正式入口仍保留上游原状。
 
@@ -17,3 +17,10 @@
 引子→低段额外逐帧检查Music总线上有声播放器最多一个，过渡后引子播放器已停止，避免只检查事件ID而漏掉实际叠音。
 
 首关检查分别覆盖正式连线/真实对白队列和F3调PK入口：F3从T0到58%直接低段，再到92%高段；100%矛盾转场实际输出增益压至25%，真实转场结束进入操作窗口后恢复。正常对白路径仍通过公开突破流程放行，不以F3效果替代真实对白验收。
+
+## 四关场景回归
+`au03_four_boss_check.gd`：工程内--script运行。按正式存档结构在隔离APPDATA的RAM数据中准备四关，每关实例化真实Sandbox，通过公开命中到达/结算信号和PK事实完成清场突破动画，再观察真实气泡开始/完成。检查低中高、同组、稳定下降、F3、暂停、重开、失败、击破25%降音/操作窗口恢复、场景释放。成功输出AU03_FOUR_BOSS_PASS。-- --fox-only仅用于定向复现列巴，不等于全四关通过。
+
+测试分别重建各关场景验证退出后下一Boss选择，不代替用户从首关到第四关逐一完成矛盾答案/结算/房间的整局人工验收。程序源与PCK验证不代表完整PlanB交付。临时userdata/日志在任务outputs/au03-validation，不覆盖真实玩家存档。
+
+同一四关检查脚本可用-- --terminal-only运行结果淡出专项，通过公开ContradictionBreakSystem.register_launched_shot/resolve_shot_hit_ids提交真矛盾结果，成功输出AU03_TERMINAL_PASS；不以直接发信号伪造结果。

@@ -76,3 +76,16 @@ music_alien_low,music,assets/audio/music/fermi/teek_low.ogg,0,1,1,true,battle_al
 music_alien_mid,music,assets/audio/music/fermi/teek_mid.ogg,0,1,1,true,battle_alien,AU-03 费米Teek Teek Teek三段循环
 music_alien_high,music,assets/audio/music/fermi/teek_high.ogg,0,1,1,true,battle_alien,AU-03 费米Teek Teek Teek三段循环
 music_alien_intro,music,assets/audio/music/fermi/teek_intro.ogg,0,1,1,true,battle_alien,AU-03 费米T0黑屏等待铺垫
+music_kiwi_intro,music,assets/audio/music/augur/biai_intro.ogg,0,1,1,true,battle_kiwi,AU-03 四Boss已裁剪游戏片段
+music_kiwi_low,music,assets/audio/music/augur/biai_low.ogg,0,1,1,true,battle_kiwi,AU-03 四Boss已裁剪游戏片段
+music_kiwi_mid,music,assets/audio/music/augur/biai_mid.ogg,0,1,1,true,battle_kiwi,AU-03 四Boss已裁剪游戏片段
+music_kiwi_high,music,assets/audio/music/augur/biai_high.ogg,0,1,1,true,battle_kiwi,AU-03 四Boss已裁剪游戏片段
+music_frog_intro,music,assets/audio/music/gula/grassland_intro.ogg,0,1,1,true,battle_frog,AU-03 四Boss已裁剪游戏片段
+music_frog_low,music,assets/audio/music/gula/grassland_low.ogg,0,1,1,true,battle_frog,AU-03 四Boss已裁剪游戏片段
+music_frog_mid,music,assets/audio/music/gula/grassland_mid.ogg,0,1,1,true,battle_frog,AU-03 四Boss已裁剪游戏片段
+music_frog_high,music,assets/audio/music/gula/grassland_high.ogg,0,1,1,true,battle_frog,AU-03 四Boss已裁剪游戏片段
+music_fox_intro,music,assets/audio/music/khleb/felt_intro.ogg,0,1,1,true,battle_fox,AU-03 四Boss已裁剪游戏片段
+music_fox_low,music,assets/audio/music/khleb/felt_low.ogg,0,1,1,true,battle_fox,AU-03 四Boss已裁剪游戏片段
+music_fox_mid,music,assets/audio/music/khleb/felt_mid.ogg,0,1,1,true,battle_fox,AU-03 四Boss已裁剪游戏片段
+music_fox_high,music,assets/audio/music/khleb/felt_high.ogg,0,1,1,true,battle_fox,AU-03 四Boss已裁剪游戏片段
+music_fox_entrance,music,assets/audio/music/khleb/felt_entrance.ogg,0,1,1,true,battle_fox,AU-03 四Boss已裁剪游戏片段

@@ -1,6 +1,15 @@
 extends Control
 
 ## AU-03可独立试听：复用正式音乐消费者，仅人工输入Tier，不伪装为真实PK战斗。
+const BOSS_IDS: Array[StringName] = [&"alien", &"kiwi", &"frog", &"fox"]
+const MUSIC_INFO: Array[Array] = [
+	["费米 · Teek Teek Teek", "n9de199487005"],
+	["奥格尔 · 美哀 -Blai-", "ne4cf9e4749fe"],
+	["咕拉 · 草原ダンスィング♪-RemakeVer-", "n6bce9b739300"],
+	["列巴 · FELT LOVE", "n92c313450308"],
+]
+var _title: Label
+var _credit: Label
 var _music: TierMusicPresenter
 var _status: Label
 var _tier: int = 0
@@ -25,7 +34,12 @@ func _ready() -> void:
 	var rows := VBoxContainer.new()
 	rows.add_theme_constant_override("separation", 20)
 	margin.add_child(rows)
-	_label(rows, "费米 · Teek Teek Teek", 38)
+	_title = _label(rows, "费米 · Teek Teek Teek", 38)
+	var bosses := OptionButton.new()
+	for info: Array in MUSIC_INFO:
+		bosses.add_item(info[0])
+	rows.add_child(bosses)
+	bosses.item_selected.connect(_select_boss)
 	_label(rows, "音乐试听场景：手动选择Tier；不运行或修改PK、感染规则。", 24)
 	_label(rows, "T0 静音等待   ·   连线/开场对白 柔和引子   ·   对白后 T1低 / T2-T3中 / T4-T5高", 24)
 	var buttons := HBoxContainer.new()
@@ -36,6 +50,7 @@ func _ready() -> void:
 	rows.add_child(opening)
 	_button(opening, "开始连线/开场对白", _begin_connection)
 	_button(opening, "开场对白结束", _finish_connection)
+	_button(opening, "对白开始（列巴柔化）", _music.begin_connection_dialogue)
 	var actions := HBoxContainer.new()
 	rows.add_child(actions)
 	_button(actions, "暂停 / 继续", _toggle_pause)
@@ -45,11 +60,19 @@ func _ready() -> void:
 	_button(actions, "失败淡出", _finish.bind(&"failed"))
 	_button(actions, "命中音效", AudioManager.play_event.bind(&"hit_normal"))
 	_status = _label(rows, "", 26)
-	_label(rows, "升档跨组等下一小节；降档稳定2秒后等下一小节；交叉淡化0.6秒。", 22)
-	_label(rows, "音乐：《Teek Teek Teek》
+	_label(rows, "跨组等曲目自己的下一小节；降档稳定2秒后切换；同组不重播。", 22)
+	_credit = _label(rows, "音乐：《Teek Teek Teek》
 煉獄庭園 · 作曲/編曲：煉獄小僧
 https://note.com/rengokuteien/n/n9de199487005", 21)
 	_music.start_battle()
+
+
+# 下拉试听切Boss时重置为T0，不改变正式游戏关卡或存档。
+func _select_boss(index: int) -> void:
+	_music.profile = BossMusicCatalog.find_profile(BOSS_IDS[index])
+	_title.text = MUSIC_INFO[index][0]
+	_credit.text = "音乐：%s\n煉獄庭園 · 作曲/編曲：煉獄小僧\nhttps://note.com/rengokuteien/n/%s" % [MUSIC_INFO[index][0], MUSIC_INFO[index][1]]
+	_restart()
 
 
 # 显示实际音乐组及阶段，避免把矛盾/结束状态误认为Tier请求已生效。
@@ -65,6 +88,9 @@ func _process(_delta: float) -> void:
 			target = "等待连线"
 		elif _music.is_opening_dialogue_active():
 			_phase = "连线/开场对白：柔和引子，等待对白完成"
+			if _music.profile.entrance_event_id != &"" and AudioManager.get_music_event_id() == _music.profile.entrance_event_id:
+				_phase = "连线出场：原曲开头；对白开始后再柔化"
+				current = "原色出场"
 		var selection: String = "当前选择 T%d" % _tier if _normal_pk else "点任一Tier可重新试听"
 		_status.text = "%s  |  %s%s\n正在播放：%s → 目标：%s  |  音乐位置 %.2fs" % [
 			selection, _phase, "（已暂停）" if _paused else "", current, target,

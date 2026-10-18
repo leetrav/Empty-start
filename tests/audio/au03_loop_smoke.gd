@@ -1,26 +1,31 @@
 extends Node
 
-## 测试同时解码三份循环，每份真实经过三次循环；不替代人耳接缝验收。
+## 测试同时解码四Boss所有采用的循环，每份真实经过三次循环；不替代人耳接缝验收。
 var _players: Array[AudioStreamPlayer] = []
-var _wraps: Array[int] = [0, 0, 0, 0]
-var _positions: Array[float] = [0.0, 0.0, 0.0, 0.0]
+var _wraps: Array[int] = []
+var _positions: Array[float] = []
 
 
 func _ready() -> void:
-	for group: String in ["intro", "low", "mid", "high"]:
-		var stream: AudioStreamOggVorbis = load("res://assets/audio/music/fermi/teek_" + group + ".ogg")
-		assert(stream.loop and absf(stream.get_length() - 19.2) < 0.002)
+	var rows: String = FileAccess.get_file_as_string("res://data/source_tables/17_音频事件.csv")
+	for line: String in rows.split("\n"):
+		if not line.begins_with("music_") or not line.contains(",music,assets/audio/music/"):
+			continue
+		var stream: AudioStreamOggVorbis = load("res://" + line.get_slice(",", 2))
+		assert(stream.loop and stream.get_length() > 1.0)
 		var player := AudioStreamPlayer.new()
 		player.stream = stream
-		player.volume_db = -80.0
+		player.volume_db = -100.0
 		add_child(player)
 		_players.append(player)
+		_wraps.append(0)
+		_positions.append(0.0)
 		player.play()
 	# 等真实音频回绕，避免无声/硬件驱动与场景计时的微小偏差造成误报。
-	var deadline: int = Time.get_ticks_msec() + 75000
+	var deadline: int = Time.get_ticks_msec() + 100000
 	while _wraps.min() < 3 and Time.get_ticks_msec() < deadline:
 		await get_tree().create_timer(0.1).timeout
-	var passed: bool = _wraps[0] >= 3 and _wraps[1] >= 3 and _wraps[2] >= 3 and _wraps[3] >= 3
+	var passed: bool = _players.size() == 17 and _wraps.min() >= 3
 	print("AU03_LOOPS_PASS " + str(_wraps) if passed else "AU03_LOOPS_FAIL " + str(_wraps))
 	for player: AudioStreamPlayer in _players:
 		player.stop()

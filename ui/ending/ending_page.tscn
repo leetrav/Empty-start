@@ -113,4 +113,4 @@ autowrap_mode = 3
 [node name="MusicCredit" type="Label" parent="Margin/PageScroll/Content"]
 layout_mode = 2
 autowrap_mode = 3
-text = "音乐《Teek Teek Teek》\n煉獄庭園（作曲・編曲：煉獄小僧）\nhttps://note.com/rengokuteien/n/n9de199487005"
+text = "音乐：Teek Teek Teek / 美哀 -Blai- / 草原ダンスィング♪-RemakeVer- / FELT LOVE\n煉獄庭園（作曲・編曲：煉獄小僧）\nhttps://note.com/rengokuteien\n来源与授权详见随游戏说明的 assets/audio/music/README.md"

@@ -5,6 +5,11 @@ extends Resource
 @export var streamer_id: StringName = &"alien"
 @export var event_ids: Array[StringName] = [&"music_alien_intro", &"music_alien_low", &"music_alien_mid", &"music_alien_high"]
 @export_range(0.0, 10.0) var intro_fade_seconds: float = 2.4
+# 仅列巴使用原色出场版；空ID表示直接播放既有对白引子。
+@export var entrance_event_id: StringName = &""
+@export_range(0.0, 10.0) var entrance_fade_seconds: float = 0.25
+@export_range(0.0, 10.0) var dialogue_mix_seconds: float = 0.3
+@export var overlap_battle: bool = true
 @export var tier_groups: Array[int] = [0, 1, 2, 2, 3, 3]
 @export_range(1.0, 300.0) var bpm: float = 100.0
 @export_range(1, 16) var beats_per_bar: int = 4

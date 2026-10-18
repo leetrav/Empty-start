@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="AudioEventConfig" load_steps=35 format=3]
+[gd_resource type="Resource" script_class="AudioEventConfig" load_steps=61 format=3]
 
 [ext_resource type="Script" path="res://core/audio/audio_event_config.gd" id="1_config"]
 [ext_resource type="Script" path="res://core/audio/audio_event.gd" id="2_event"]
@@ -21,6 +21,20 @@
 [ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/fermi/teek_high.ogg" id="teek_high"]
 
 [ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/fermi/teek_intro.ogg" id="teek_intro"]
+
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/augur/biai_intro.ogg" id="biai_intro"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/augur/biai_low.ogg" id="biai_low"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/augur/biai_mid.ogg" id="biai_mid"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/augur/biai_high.ogg" id="biai_high"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/gula/grassland_intro.ogg" id="grassland_intro"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/gula/grassland_low.ogg" id="grassland_low"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/gula/grassland_mid.ogg" id="grassland_mid"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/gula/grassland_high.ogg" id="grassland_high"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/khleb/felt_intro.ogg" id="felt_intro"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/khleb/felt_low.ogg" id="felt_low"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/khleb/felt_mid.ogg" id="felt_mid"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/khleb/felt_high.ogg" id="felt_high"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/khleb/felt_entrance.ogg" id="felt_entrance"]
 
 [sub_resource type="Resource" id="event_comic_write"]
 script = ExtResource("2_event")
@@ -132,6 +146,110 @@ stream = ExtResource("teek_intro")
 loop = true
 transition_group = "battle_alien"
 
+[sub_resource type="Resource" id="event_music_kiwi_intro"]
+script = ExtResource("2_event")
+event_id = &"music_kiwi_intro"
+audio_type = 0
+stream = ExtResource("biai_intro")
+loop = true
+transition_group = "battle_kiwi"
+
+[sub_resource type="Resource" id="event_music_kiwi_low"]
+script = ExtResource("2_event")
+event_id = &"music_kiwi_low"
+audio_type = 0
+stream = ExtResource("biai_low")
+loop = true
+transition_group = "battle_kiwi"
+
+[sub_resource type="Resource" id="event_music_kiwi_mid"]
+script = ExtResource("2_event")
+event_id = &"music_kiwi_mid"
+audio_type = 0
+stream = ExtResource("biai_mid")
+loop = true
+transition_group = "battle_kiwi"
+
+[sub_resource type="Resource" id="event_music_kiwi_high"]
+script = ExtResource("2_event")
+event_id = &"music_kiwi_high"
+audio_type = 0
+stream = ExtResource("biai_high")
+loop = true
+transition_group = "battle_kiwi"
+
+[sub_resource type="Resource" id="event_music_frog_intro"]
+script = ExtResource("2_event")
+event_id = &"music_frog_intro"
+audio_type = 0
+stream = ExtResource("grassland_intro")
+loop = true
+transition_group = "battle_frog"
+
+[sub_resource type="Resource" id="event_music_frog_low"]
+script = ExtResource("2_event")
+event_id = &"music_frog_low"
+audio_type = 0
+stream = ExtResource("grassland_low")
+loop = true
+transition_group = "battle_frog"
+
+[sub_resource type="Resource" id="event_music_frog_mid"]
+script = ExtResource("2_event")
+event_id = &"music_frog_mid"
+audio_type = 0
+stream = ExtResource("grassland_mid")
+loop = true
+transition_group = "battle_frog"
+
+[sub_resource type="Resource" id="event_music_frog_high"]
+script = ExtResource("2_event")
+event_id = &"music_frog_high"
+audio_type = 0
+stream = ExtResource("grassland_high")
+loop = true
+transition_group = "battle_frog"
+
+[sub_resource type="Resource" id="event_music_fox_intro"]
+script = ExtResource("2_event")
+event_id = &"music_fox_intro"
+audio_type = 0
+stream = ExtResource("felt_intro")
+loop = true
+transition_group = "battle_fox"
+
+[sub_resource type="Resource" id="event_music_fox_low"]
+script = ExtResource("2_event")
+event_id = &"music_fox_low"
+audio_type = 0
+stream = ExtResource("felt_low")
+loop = true
+transition_group = "battle_fox"
+
+[sub_resource type="Resource" id="event_music_fox_mid"]
+script = ExtResource("2_event")
+event_id = &"music_fox_mid"
+audio_type = 0
+stream = ExtResource("felt_mid")
+loop = true
+transition_group = "battle_fox"
+
+[sub_resource type="Resource" id="event_music_fox_high"]
+script = ExtResource("2_event")
+event_id = &"music_fox_high"
+audio_type = 0
+stream = ExtResource("felt_high")
+loop = true
+transition_group = "battle_fox"
+
+[sub_resource type="Resource" id="event_music_fox_entrance"]
+script = ExtResource("2_event")
+event_id = &"music_fox_entrance"
+audio_type = 0
+stream = ExtResource("felt_entrance")
+loop = true
+transition_group = "battle_fox"
+
 [resource]
 script = ExtResource("1_config")
 music_fade_in_seconds = 0.5
@@ -141,4 +259,4 @@ music_duck_seconds = 0.2
 music_restore_seconds = 0.3
 music_silence_seconds = 0.25
 music_duck_volume = 0.25
-events = Array[ExtResource("2_event")]([SubResource("event_music_alien_intro"), SubResource("event_music_alien_low"), SubResource("event_music_alien_mid"), SubResource("event_music_alien_high"), SubResource("event_comic_write"), SubResource("event_comic_page"), SubResource("event_attack_charge"), SubResource("event_attack_ready"), SubResource("event_attack_fire"), SubResource("event_hit_normal"), SubResource("event_hit_trap"), SubResource("event_tier_up"), SubResource("event_contradiction_start"), SubResource("event_contradiction_break"), SubResource("event_oracle_confirm"), SubResource("event_divine_descent_start"), SubResource("event_divine_descent_lock")])
+events = Array[ExtResource("2_event")]([SubResource("event_music_kiwi_intro"), SubResource("event_music_kiwi_low"), SubResource("event_music_kiwi_mid"), SubResource("event_music_kiwi_high"), SubResource("event_music_frog_intro"), SubResource("event_music_frog_low"), SubResource("event_music_frog_mid"), SubResource("event_music_frog_high"), SubResource("event_music_fox_intro"), SubResource("event_music_fox_low"), SubResource("event_music_fox_mid"), SubResource("event_music_fox_high"), SubResource("event_music_fox_entrance"), SubResource("event_music_alien_intro"), SubResource("event_music_alien_low"), SubResource("event_music_alien_mid"), SubResource("event_music_alien_high"), SubResource("event_comic_write"), SubResource("event_comic_page"), SubResource("event_attack_charge"), SubResource("event_attack_ready"), SubResource("event_attack_fire"), SubResource("event_hit_normal"), SubResource("event_hit_trap"), SubResource("event_tier_up"), SubResource("event_contradiction_start"), SubResource("event_contradiction_break"), SubResource("event_oracle_confirm"), SubResource("event_divine_descent_start"), SubResource("event_divine_descent_lock")])

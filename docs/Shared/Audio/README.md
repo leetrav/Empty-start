@@ -1,3 +1,16 @@
+> **P1程序接入已完成（2026-10-19）**：当前旧版Sandbox已按alien/kiwi/frog/fox接入四Boss配置，费米保留确认效果；奥格尔v1、咕拉v1、列巴原曲开头v2已入库。真实四关场景、最终击破淡出、17段循环、独立PCK验证通过。用户实际四关听感/完整结算回房间试玩仍待确认，正式PlanB为P2待适配，未推送。
+>
+> 快速比较：打开scenes/demos/au03_boss_music_preview.tscn按F6，下拉选Boss；列巴先“开始连线”，再“对白开始”听同进度柔化。真实游戏从scenes/sandbox/sandbox.tscn按F6进入当前关，F5保留原菜单/开场/房间流程。独立试听不替代游戏联调。
+
+## 四Boss共用接线
+BossMusicCatalog强引用四份data/audio配置，Sandbox每次attempt_started先释放旧消费者，再按正式主播主键创建同一TierMusicPresenter。BattleAttemptFlow对这些已配置Boss关闭旧music_battle_t*请求，升档SFX保留。17表现在90行、40行有资源、50行仍空；本轮增加13个事件/OGG，和费米4段共17份。
+
+配置新增overlap_battle、entrance_event_id、entrance_fade_seconds和dialogue_mix_seconds。费米保持原战斗组交叉淡化；其他三曲采用顺序0.3秒淡出/0.3秒淡入。列巴begin_connection先用原色开头，HUD现有dialogue_bubble_presented中真实combat_connected显示时调用begin_connection_dialogue()，切同位置柔和版本，不重播、不新增对白计时器。
+
+四曲来源/加工见assets/audio/music各目录，结尾页已列四曲署名；总README与分曲README纳入导出include_filter，并提供随游戏音乐说明。来源页加载限制与人工验证边界见AU-03日志。
+
+## 费米阶段历史记录（后文描述原局部接入过程，当前以顶部四Boss状态为准）
+
 > AU-03范围已更新：当前实施目标为四Boss统一音乐接入，先完成旧版Sandbox四关（P1），上游正式PlanB可运行后适配同一音乐消费者并重新联调（P2）。当前仍只有费米接入；其余裁剪/确认状态不等于游戏完成。列巴v2待试听，开场/休息/终局选曲实施另列后续。
 
 > 最新裁剪进度：费米游戏版5191c59已确认；奥格尔《美哀》v1已确认、待统一接入；咕拉《草原》v1已确认；列巴《FELT LOVE》按反馈改为原曲开头出场的v2（outputs/khleb-felt-love-preview-v2），低中高保留v1，待用户试听。按用户意愿先裁完Boss，再统一接入。
@@ -13,12 +26,12 @@
 
 F3调PK时使用真实Tier选择战斗段，但不等待调试操作没有触发的连线对白；正常命中路径仍保留对白引子。换组仍等待音乐小节，升档最长约2.4秒（同组不换曲），降档还需2秒稳定等待。
 
-Sandbox从attempt_started识别alien，读取真实Tier变化、暂停、失败、满PK、矛盾结果与休息事实；重开恢复T0静音等待。CombatStage.bind_audio_manager新增默认true的enable_music_requests参数，BattleAttemptFlow只对alien关闭旧Tier切曲，升档音效仍保留；其他三关沿用原接线。
+Sandbox已从attempt_started选择四Boss各自配置，读取真实Tier变化、暂停、失败、满PK、矛盾结果与休息事实；重开恢复T0静音等待。CombatStage.bind_audio_manager的enable_music_requests保持兼容，BattleAttemptFlow对目录内四Boss关闭旧Tier切曲，升档音效保留。
 
 真实正式场景验证通过开局、PK66%中段、92%高段、暂停续播、重开、失败淡出、100%高段及退出清理。完整Plan B四关仍未交付，不能把这次旧流程首关接线当成新玩法完整集成。
 
 
-费米使用《Teek Teek Teek》：T0静音，连线/对白柔和引子，完成后T1低、T2/T3中、T4/T5高。资源在 `assets/audio/music/fermi/`，来源和署名见该目录README；正式结尾页和试听场景已有署名。17表新增 `music_alien_intro/low/mid/high` 四个Music事件，Resource配置保留相同引用作为兼容；共77行，27行有资源、50行仍空。旧泛用 `music_battle_t0～t5` 未填费米曲，其他Boss不会误用。
+费米使用《Teek Teek Teek》：T0静音，连线/对白柔和引子，完成后T1低、T2/T3中、T4/T5高。资源在 `assets/audio/music/fermi/`，来源和署名见该目录README；正式结尾页和试听场景已有署名。17表新增 `music_alien_intro/low/mid/high` 四个Music事件，Resource配置保留相同引用作为兼容；本阶段原77行/27有资源，现扩展为90行/40有资源、50行仍空。旧泛用 `music_battle_t0～t5` 未填费米曲，其他Boss不会误用。
 
 Sandbox调用begin_connection()与finish_connection_dialogue()，分别对应连线开始和本次真实对白完成；对白期间Tier请求只更新后续目标，不抢占引子。引子切战斗段采用顺序淡变：0.3秒淡出并停止引子，再0.3秒淡入战斗段，不同时混入不同旋律；其余战斗组仍用原0.6秒交叉淡化。无对白演出的独立Plan B原型仍按Tier直接试听战斗段。
 
@@ -32,7 +45,7 @@ Sandbox调用begin_connection()与finish_connection_dialogue()，分别对应连
 
 AudioManager的兼容扩展：`change_music(event_id, cross_fade_seconds=-1, from_position=0, fade_in_seconds=-1, overlap=true)`；省略参数保留原默认。新增 `get_music_event_id()`、`get_music_position()`、`get_music_length()`、`set_music_paused(bool)` 与 `music_changed` 事实信号。`Music`事件音量增益和淡化/duck分别计算，换播放器时不丢失表中音量；SFX/UI保持原入口。
 
-试听：Godot打开 `scenes/demos/au03_fermi_music_preview.tscn` 按F6，先点“开始连线/开场对白”，再点“开场对白结束”查看阶段衔接；直接点击T1～T5用于跳过对白快速试听战斗段。可测试暂停、重开、满PK、击破和失败。正式项目F5入口未更改。`scenes/plan_b/fermi_battle_demo.tscn` 启动战斗后也接入真实主控事实。奥格尔/咕拉已确认裁剪，列巴v2待试听，三者统一接入尚待实施；开场/休息/终局继续后续规划。
+试听：Godot打开 `scenes/demos/au03_fermi_music_preview.tscn` 按F6，先点“开始连线/开场对白”，再点“开场对白结束”查看阶段衔接；直接点击T1～T5用于跳过对白快速试听战斗段。可测试暂停、重开、满PK、击破和失败。正式项目F5入口未更改。`scenes/plan_b/fermi_battle_demo.tscn` 启动战斗后也接入真实主控事实。奥格尔/咕拉已确认裁剪，列巴v2待试听，三者已接入旧版Sandbox，游戏内听感待确认；开场/休息/终局继续后续规划。
 
 验证见 `tests/audio/README.md` 和 AU-03日志。程序检查通过不等于已经完成人耳循环接缝与新玩法四关验收。
 

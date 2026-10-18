@@ -158,9 +158,9 @@ func _start_attempt(is_restart: bool) -> bool:
 	_combat_stage.bind_hit_resolution(_hit_resolution)
 	_combat_stage.bind_barrage_area(_barrage_area)
 	_combat_stage.bind_opponent_pk_bar(_opponent_pk_bar)
-	# 费米由场景的三段音乐消费者处理，保留原升档音效，其他关卡仍用原音乐入口。
+	# 已配置Boss统一由场景音乐消费者处理，原升档音效仍保留。
 	var audio_level: LevelProfile = get_current_level_profile()
-	var legacy_music: bool = audio_level == null or audio_level.streamer_id != "alien"
+	var legacy_music: bool = audio_level == null or BossMusicCatalog.find_profile(StringName(audio_level.streamer_id)) == null
 	_combat_stage.bind_audio_manager(_audio_manager, legacy_music)
 	_combat_stage.tier_state_changed.connect(_on_tier_state_changed.bind(_combat_stage))
 	_hit_resolution.final_player_pk_updated.connect(_on_final_player_pk_updated.bind(_hit_resolution))
