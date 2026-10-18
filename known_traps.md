@@ -278,9 +278,9 @@
 - **处理**：业务表使用原生 Keep File（`importer="keep"`），把 `data/source_tables/*.csv.import` 随 Git 保存；旧 `.translation` 缓存继续忽略并排除出包。使用包外验证脚本挂载真实 PCK，核对 27 张 CSV、字体和已映射音频，不能仅在源工程 smoke。
 - **证据**：INT-18E 的失败 PCK `csv=0`；修复后 Godot 4.7.2 实包 `csv=27 fonts=2 audio=23`、退出 0。
 
-### KT-45：全新 worktree 的首次 headless 启动先报字体导入缺失
+### KT-45：全新 worktree 的首次 headless 启动先报资源导入缺失
 
-- **现象**：Godot 4.7.2 在新 worktree 首次 `--headless --editor` 时，项目主题加载先报告 `NotoSansSC-VF.ttf` / `ZCOOLKuaiLe-Regular.ttf` 没有 FontFile loader；同一轮后续扫描会重新导入字体资源，之后加载 UI 场景正常。
+- **现象**：Godot 4.7.2 在新 worktree 首次 `--headless --editor` 时，项目主题加载先报告字体没有 FontFile loader，部分音频也短暂出现 `Failed loading resource`；同一轮后续扫描会重新导入字体和音频，之后加载 UI 场景正常。
 - **条件**：worktree 尚无 `.godot` 导入缓存，且项目全局主题在首次文件系统扫描前初始化。
 - **处理**：先执行 `godot --headless --editor --import --path <project-root> --quit` 完成资源导入，再用项目场景入口复验。首轮主题加载报错不单独作为资源不存在的结论；随后场景仍失败时再按最终解析日志定位。
 - **证据**：PB-12～14 D worktree 首轮 import 完成后，`ui/plan_b/plan_b_battle_ui.tscn` 和 D UI smoke 均退出 0；相同 cold-import 现象在 B 的新 worktree 复现。
@@ -296,7 +296,7 @@
 - Godot MCP 连接 / 端口占用：KT-28。
 - headless 位移速度与计时验证：KT-40；Curve2D 速度上限：KT-41。
 - CanvasItem 动画多边形三角化：KT-42。
-- 新 worktree 首次字体 loader 报错：KT-45。
+- 新 worktree 首次资源 loader 报错：KT-45。
 - 源工程可读 CSV、导出包缺表：KT-43。
 
 ## 附录 A：Godot 生命周期提醒
