@@ -8,6 +8,7 @@ signal unit_despawned(unit_id: int)
 signal contact_resolved(first_unit_id: int, second_unit_id: int, outcome: StringName)
 signal word_batch_spawned(batch: Dictionary)
 signal word_batch_trait_awarded(word_order: int, unit_id: int, trait_name: StringName)
+signal word_groups_changed(groups: Array)
 signal simulation_started
 signal simulation_paused
 
@@ -47,6 +48,19 @@ const SPAWN_BURST_DURATION_SECONDS: float = 0.5
 @export_range(0.0, 3.0, 0.05) var flee_weight: float = 1.35
 @export_range(0.0, 2.0, 0.05) var chase_speed_scale: float = 1.05
 @export_range(0.0, 2.0, 0.05) var flee_speed_scale: float = 1.15
+
+@export_group("Group Motion")
+@export_range(32.0, 512.0, 1.0) var ally_detection_radius: float = 160.0
+@export_range(20.0, 128.0, 1.0) var ally_ideal_spacing: float = 36.0
+@export_range(0.0, 2.0, 0.05) var ally_attraction_weight: float = 0.45
+@export_range(0.0, 2.0, 0.05) var ally_separation_weight: float = 0.65
+@export_range(24.0, 128.0, 1.0) var word_group_join_distance: float = 72.0
+@export_range(24.0, 180.0, 1.0) var word_group_leave_distance: float = 90.0
+@export_range(60.0, 400.0, 1.0) var word_group_max_center_radius: float = 180.0
+@export_range(0.05, 0.5, 0.05) var neighbor_grid_refresh_seconds: float = 0.1
+@export_range(0.05, 1.0, 0.05) var group_topology_refresh_seconds: float = 0.2
+@export_range(0.05, 0.5, 0.01) var contact_recoil_duration_seconds: float = 0.18
+
 @export var play_area: Rect2 = Rect2()
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -60,6 +74,14 @@ var _pending_contact_lookup: Dictionary = {}
 var _spawned_word_batches_by_order: Dictionary = {}
 var _player_batch_infection_counts: Dictionary = {}
 var _player_batch_trait_triggered: Dictionary = {}
+var _neighbor_grid: Dictionary = {}
+var _neighbor_grid_cell_size: float = 220.0
+var _neighbor_grid_elapsed_seconds: float = 0.0
+var _neighbor_grid_dirty: bool = true
+var _word_groups_by_id: Dictionary = {}
+var _next_word_group_id: int = 1
+var _group_refresh_remaining_seconds: float = 0.0
+var _word_groups_dirty: bool = true
 
 
 func _ready() -> void:
@@ -107,6 +129,7 @@ func set_play_area(scene_area: Rect2) -> bool:
 	if local_area.size.x <= unit_collision_radius * 2.0 or local_area.size.y <= unit_collision_radius * 2.0:
 		return false
 	play_area = local_area
+	_mark_neighborhood_dirty()
 	return true
 
 
@@ -133,6 +156,7 @@ func seed_unit(neutral_unit_id: int, team_value: StringName, word_definition: Di
 	if not _is_faction(clean_team) or clean_definition.is_empty() or new_word_order < 1:
 		return false
 	unit.apply_word_snapshot(clean_team, clean_definition, new_word_order)
+	_mark_neighborhood_dirty()
 	unit_changed.emit(unit.unit_id, &"seed")
 	return true
 
@@ -213,6 +237,7 @@ func spawn_word_batch(
 	if clean_team == PLAYER_TEAM:
 		_player_batch_infection_counts[new_word_order] = 0
 		_player_batch_trait_triggered[new_word_order] = false
+	_mark_neighborhood_dirty()
 	var batch: Dictionary = {
 		"ok": true,
 		"reason": "ok",
@@ -267,6 +292,10 @@ func start_simulation() -> void:
 	if _is_running:
 		return
 	_is_running = true
+	_rebuild_neighbor_grid(_get_sorted_units())
+	_neighbor_grid_elapsed_seconds = 0.0
+	_word_groups_dirty = true
+	_refresh_word_groups()
 	set_physics_process(true)
 	simulation_started.emit()
 
@@ -283,12 +312,20 @@ func pause_simulation() -> void:
 ## 清场并立即释放所属棋子，不依赖离树回调完成业务清理。
 func clear_population() -> void:
 	pause_simulation()
+	var had_word_groups: bool = not _word_groups_by_id.is_empty()
 	_pending_contact_pairs.clear()
 	_pending_contact_lookup.clear()
 	_spawn_elapsed_seconds = 0.0
 	_spawned_word_batches_by_order.clear()
 	_player_batch_infection_counts.clear()
 	_player_batch_trait_triggered.clear()
+	_neighbor_grid.clear()
+	_neighbor_grid_elapsed_seconds = 0.0
+	_neighbor_grid_dirty = true
+	_word_groups_by_id.clear()
+	_next_word_group_id = 1
+	_group_refresh_remaining_seconds = 0.0
+	_word_groups_dirty = true
 	var existing_ids: Array[int] = _get_sorted_unit_ids()
 	for unit_id: int in existing_ids:
 		var unit := _units_by_id.get(unit_id) as PlanBUnit
@@ -297,6 +334,8 @@ func clear_population() -> void:
 			remove_child(unit)
 			unit.queue_free()
 		unit_despawned.emit(unit_id)
+	if had_word_groups:
+		word_groups_changed.emit([])
 
 
 ## PB-01 的清场入口；业务清理仍统一由本模拟模块拥有。
@@ -338,6 +377,256 @@ func get_unit_snapshots() -> Array[Dictionary]:
 func get_unit_snapshot(unit_id: int) -> Dictionary:
 	var unit := _units_by_id.get(unit_id) as PlanBUnit
 	return unit.get_public_snapshot() if unit != null else {}
+
+
+## 返回 B 唯一计算的同阵营、同word_id空间连通组；成员位置用全局像素坐标。
+func get_word_groups() -> Array[Dictionary]:
+	var groups: Array[Dictionary] = []
+	var group_ids: Array[int] = []
+	for key: Variant in _word_groups_by_id.keys():
+		group_ids.append(int(key))
+	group_ids.sort()
+	for group_id: int in group_ids:
+		var stored_group: Dictionary = _word_groups_by_id.get(group_id, {})
+		var member_positions: Dictionary = {}
+		var member_ids: Array[int] = []
+		var center_sum := Vector2.ZERO
+		for member_value: Variant in stored_group.get("member_ids", []):
+			var member_id: int = int(member_value)
+			var unit := _units_by_id.get(member_id) as PlanBUnit
+			if unit == null or unit.team != StringName(str(stored_group.get("team", ""))):
+				continue
+			var world_position: Vector2 = unit.global_position
+			member_ids.append(member_id)
+			member_positions[member_id] = world_position
+			center_sum += world_position
+		if member_ids.is_empty():
+			continue
+		var group_snapshot: Dictionary = stored_group.duplicate(true)
+		group_snapshot["member_ids"] = member_ids
+		group_snapshot["member_positions"] = member_positions
+		group_snapshot["center_position"] = center_sum / float(member_ids.size())
+		groups.append(group_snapshot)
+	return groups
+
+
+## 位置或阵营/话语事实变化后，下一次物理步刷新共享邻域与团体拓扑。
+func _mark_neighborhood_dirty() -> void:
+	_neighbor_grid_dirty = true
+	_word_groups_dirty = true
+
+
+## 将当前稳定ID顺序的棋子放进空间网格；目标和团体查询共用这份局部索引。
+func _rebuild_neighbor_grid(units: Array[PlanBUnit]) -> void:
+	_neighbor_grid.clear()
+	_neighbor_grid_cell_size = maxf(
+		maxf(detection_radius, ally_detection_radius),
+		maxf(word_group_leave_distance, unit_collision_radius * 4.0)
+	)
+	for unit: PlanBUnit in units:
+		var cell: Vector2i = _neighbor_grid_cell_for_position(unit.position)
+		var bucket: Array = _neighbor_grid.get(cell, [])
+		bucket.append(unit)
+		_neighbor_grid[cell] = bucket
+	_neighbor_grid_dirty = false
+
+
+## 只从附近网格桶取候选，再用当前物理位置做精确半径过滤。
+func _get_neighbor_units(scene_local_position: Vector2, search_radius: float) -> Array[PlanBUnit]:
+	var nearby_units: Array[PlanBUnit] = []
+	if _neighbor_grid.is_empty() or search_radius <= 0.0:
+		return nearby_units
+	var movement_padding: float = maximum_speed * _neighbor_grid_elapsed_seconds
+	var padded_radius: float = search_radius + movement_padding
+	var cell_minimum: Vector2i = _neighbor_grid_cell_for_position(
+		scene_local_position - Vector2.ONE * padded_radius
+	)
+	var cell_maximum: Vector2i = _neighbor_grid_cell_for_position(
+		scene_local_position + Vector2.ONE * padded_radius
+	)
+	var radius_squared: float = padded_radius * padded_radius
+	for cell_y: int in range(cell_minimum.y, cell_maximum.y + 1):
+		for cell_x: int in range(cell_minimum.x, cell_maximum.x + 1):
+			var bucket_value: Variant = _neighbor_grid.get(Vector2i(cell_x, cell_y), [])
+			if not (bucket_value is Array):
+				continue
+			for unit_value: Variant in bucket_value:
+				var unit := unit_value as PlanBUnit
+				if unit == null or unit.position.distance_squared_to(scene_local_position) > radius_squared:
+					continue
+				nearby_units.append(unit)
+	nearby_units.sort_custom(_unit_id_is_before)
+	return nearby_units
+
+
+func _neighbor_grid_cell_for_position(scene_local_position: Vector2) -> Vector2i:
+	return Vector2i(
+		int(floor(scene_local_position.x / _neighbor_grid_cell_size)),
+		int(floor(scene_local_position.y / _neighbor_grid_cell_size))
+	)
+
+
+func _unit_id_is_before(first_unit: PlanBUnit, second_unit: PlanBUnit) -> bool:
+	return first_unit.unit_id < second_unit.unit_id
+
+
+## 按成员集合重叠延续 group_id，团体拆分或合并时不依赖数组临时索引。
+func _refresh_word_groups() -> void:
+	var previous_groups: Dictionary = _word_groups_by_id
+	var previous_group_by_unit: Dictionary = {}
+	for group_id_value: Variant in previous_groups.keys():
+		var previous_group: Dictionary = previous_groups[group_id_value]
+		for member_value: Variant in previous_group.get("member_ids", []):
+			previous_group_by_unit[int(member_value)] = int(group_id_value)
+
+	var components: Array[Dictionary] = _build_word_group_components(previous_group_by_unit)
+	var assigned_ids: Dictionary = _assign_word_group_ids(components)
+	var next_groups: Dictionary = {}
+	for component_index: int in components.size():
+		var component: Dictionary = components[component_index]
+		var group_id: int = int(assigned_ids[component_index])
+		var member_ids: Array = component.get("member_ids", [])
+		next_groups[group_id] = {
+			"group_id": group_id,
+			"team": str(component.get("team", "")),
+			"word_id": str(component.get("word_id", "")),
+			"word_order": int(component.get("word_order", 0)),
+			"member_ids": member_ids.duplicate(),
+			"word_snapshot": (component.get("word_snapshot", {}) as Dictionary).duplicate(true),
+		}
+	var topology_changed: bool = not _word_groups_have_same_topology(previous_groups, next_groups)
+	_word_groups_by_id = next_groups
+	_word_groups_dirty = false
+	_group_refresh_remaining_seconds = group_topology_refresh_seconds
+	if topology_changed:
+		word_groups_changed.emit(get_word_groups())
+
+
+## 同队同词的邻近单位形成连通组件；72/90px距离迟滞避免阈值抖动。
+func _build_word_group_components(previous_group_by_unit: Dictionary) -> Array[Dictionary]:
+	var components: Array[Dictionary] = []
+	var visited: Dictionary = {}
+	for seed_unit: PlanBUnit in _get_sorted_units():
+		if seed_unit.team == NEUTRAL_TEAM or not seed_unit.has_word() or visited.has(seed_unit.unit_id):
+			continue
+		var seed_word_id: StringName = seed_unit.get_word_id()
+		var member_ids: Array[int] = [seed_unit.unit_id]
+		var member_positions: Array[Vector2] = [seed_unit.position]
+		var queue: Array[PlanBUnit] = [seed_unit]
+		var queue_index: int = 0
+		visited[seed_unit.unit_id] = true
+		while queue_index < queue.size():
+			var current_unit: PlanBUnit = queue[queue_index]
+			queue_index += 1
+			var current_old_group_id: int = int(previous_group_by_unit.get(current_unit.unit_id, -1))
+			for neighbor_unit: PlanBUnit in _get_neighbor_units(current_unit.position, word_group_leave_distance):
+				if visited.has(neighbor_unit.unit_id):
+					continue
+				if neighbor_unit.team != seed_unit.team or neighbor_unit.get_word_id() != seed_word_id:
+					continue
+				var neighbor_old_group_id: int = int(previous_group_by_unit.get(neighbor_unit.unit_id, -1))
+				var link_distance: float = word_group_join_distance
+				if current_old_group_id >= 0 and current_old_group_id == neighbor_old_group_id:
+					link_distance = word_group_leave_distance
+				if current_unit.position.distance_squared_to(neighbor_unit.position) > link_distance * link_distance:
+					continue
+				if not _can_add_word_group_member(member_positions, neighbor_unit.position):
+					continue
+				visited[neighbor_unit.unit_id] = true
+				member_ids.append(neighbor_unit.unit_id)
+				member_positions.append(neighbor_unit.position)
+				queue.append(neighbor_unit)
+
+		member_ids.sort()
+		var old_group_overlaps: Dictionary = {}
+		for member_id: int in member_ids:
+			var old_group_id: int = int(previous_group_by_unit.get(member_id, -1))
+			if old_group_id >= 0:
+				old_group_overlaps[old_group_id] = int(old_group_overlaps.get(old_group_id, 0)) + 1
+		components.append({
+			"team": str(seed_unit.team),
+			"word_id": str(seed_word_id),
+			"word_order": seed_unit.word_order,
+			"member_ids": member_ids,
+			"word_snapshot": seed_unit.get_word_snapshot(),
+			"old_group_overlaps": old_group_overlaps,
+		})
+	return components
+
+
+## 拒绝会让任一成员距新几何中心超过180px的新增连通边，避免长链串场。
+func _can_add_word_group_member(member_positions: Array[Vector2], candidate_position: Vector2) -> bool:
+	var proposed_center: Vector2 = candidate_position
+	for member_position: Vector2 in member_positions:
+		proposed_center += member_position
+	proposed_center /= float(member_positions.size() + 1)
+	if candidate_position.distance_to(proposed_center) > word_group_max_center_radius:
+		return false
+	for member_position: Vector2 in member_positions:
+		if member_position.distance_to(proposed_center) > word_group_max_center_radius:
+			return false
+	return true
+
+
+## 最大成员重叠的后继组优先复用旧ID；其余组取得新的战斗内ID。
+func _assign_word_group_ids(components: Array[Dictionary]) -> Dictionary:
+	var assigned_ids: Dictionary = {}
+	var claimed_old_group_ids: Dictionary = {}
+	for assignment_index: int in components.size():
+		var best_component_index: int = -1
+		var best_old_group_id: int = -1
+		var best_overlap_count: int = 0
+		var best_first_member_id: int = 2147483647
+		for component_index: int in components.size():
+			if assigned_ids.has(component_index):
+				continue
+			var component: Dictionary = components[component_index]
+			var member_ids: Array = component.get("member_ids", [])
+			var first_member_id: int = int(member_ids[0]) if not member_ids.is_empty() else 2147483647
+			var overlaps: Dictionary = component.get("old_group_overlaps", {})
+			for old_group_value: Variant in overlaps.keys():
+				var old_group_id: int = int(old_group_value)
+				if claimed_old_group_ids.has(old_group_id):
+					continue
+				var overlap_count: int = int(overlaps[old_group_value])
+				if (
+					overlap_count > best_overlap_count
+					or (overlap_count == best_overlap_count and overlap_count > 0 and first_member_id < best_first_member_id)
+					or (overlap_count == best_overlap_count and overlap_count > 0 and first_member_id == best_first_member_id and old_group_id < best_old_group_id)
+				):
+					best_component_index = component_index
+					best_old_group_id = old_group_id
+					best_overlap_count = overlap_count
+					best_first_member_id = first_member_id
+		if best_component_index < 0 or best_overlap_count <= 0:
+			break
+		assigned_ids[best_component_index] = best_old_group_id
+		claimed_old_group_ids[best_old_group_id] = true
+
+	for component_index: int in components.size():
+		if assigned_ids.has(component_index):
+			continue
+		assigned_ids[component_index] = _next_word_group_id
+		_next_word_group_id += 1
+	return assigned_ids
+
+
+func _word_groups_have_same_topology(previous_groups: Dictionary, next_groups: Dictionary) -> bool:
+	if previous_groups.size() != next_groups.size():
+		return false
+	for group_id_value: Variant in previous_groups.keys():
+		var group_id: int = int(group_id_value)
+		if not next_groups.has(group_id):
+			return false
+		var previous_group: Dictionary = previous_groups[group_id]
+		var next_group: Dictionary = next_groups[group_id]
+		if (
+			str(previous_group.get("team", "")) != str(next_group.get("team", ""))
+			or str(previous_group.get("word_id", "")) != str(next_group.get("word_id", ""))
+			or previous_group.get("member_ids", []) != next_group.get("member_ids", [])
+		):
+			return false
+	return true
 
 
 ## 让 A / D 直接取得仍属中立的稳定 ID 列表，结果按 unit_id 排序。
@@ -418,7 +707,11 @@ func _resolve_contact(first_unit: PlanBUnit, second_unit: PlanBUnit) -> void:
 		return
 	first_unit.contact_cooldown_remaining = collision_cooldown_seconds
 	second_unit.contact_cooldown_remaining = collision_cooldown_seconds
-	_separate_and_recoil(first_unit, second_unit)
+	var strong_contact: bool = (
+		first_unit.team != second_unit.team
+		or first_unit.team == NEUTRAL_TEAM
+	)
+	_separate_and_recoil(first_unit, second_unit, strong_contact)
 
 	if first_unit.team == second_unit.team:
 		if first_unit.team == NEUTRAL_TEAM:
@@ -469,6 +762,7 @@ func _attempt_conversion(infecting_unit: PlanBUnit, receiving_unit: PlanBUnit) -
 			infecting_unit.get_word_snapshot(),
 			infecting_word_order
 		)
+		_mark_neighborhood_dirty()
 		unit_changed.emit(receiving_unit.unit_id, &"convert")
 		if infecting_team == PLAYER_TEAM:
 			_record_player_batch_infection(infecting_word_order)
@@ -534,9 +828,7 @@ func _try_reflect_legal_attack(infecting_unit: PlanBUnit, receiving_unit: PlanBU
 	var recoil_direction: Vector2 = (infecting_unit.position - receiving_unit.position).normalized()
 	if recoil_direction.length_squared() <= 0.0001:
 		recoil_direction = Vector2.RIGHT
-	var recoil_speed: float = minf(maximum_speed, maxf(contact_recoil_speed * 2.0, infecting_unit.base_speed))
-	infecting_unit.contact_recoil_velocity = recoil_direction * recoil_speed
-	infecting_unit.contact_recoil_remaining_seconds = 0.18
+	_begin_contact_recoil(infecting_unit, recoil_direction)
 	unit_changed.emit(receiving_unit.unit_id, &"reflect")
 	contact_resolved.emit(infecting_unit.unit_id, receiving_unit.unit_id, &"reflected")
 	return true
@@ -549,35 +841,50 @@ func _relay_newer_word(first_unit: PlanBUnit, second_unit: PlanBUnit) -> void:
 	if source_unit.word_order <= receiving_unit.word_order or not source_unit.has_word():
 		return
 	receiving_unit.apply_word_snapshot(source_unit.team, source_unit.get_word_snapshot(), source_unit.word_order)
+	_mark_neighborhood_dirty()
 	unit_changed.emit(receiving_unit.unit_id, &"relay")
 
 
-## 将穿透式 Area2D 接触转为可见分离和反向速度，避免棋子粘连。
-func _separate_and_recoil(first_unit: PlanBUnit, second_unit: PlanBUnit) -> void:
+## 分开真实重叠；敌我和中立接触保留短暂击退，同盟只做轻量软分离。
+func _separate_and_recoil(first_unit: PlanBUnit, second_unit: PlanBUnit, strong_contact: bool) -> void:
 	var offset: Vector2 = first_unit.position - second_unit.position
 	var minimum_distance: float = unit_collision_radius * 2.0
 	var current_distance: float = offset.length()
 	var normal: Vector2 = offset.normalized() if current_distance > 0.001 else Vector2.from_angle(_rng.randf_range(0.0, TAU))
-	first_unit.wander_direction = normal
-	second_unit.wander_direction = -normal
 	if current_distance < minimum_distance:
 		var separation: float = minimum_distance - current_distance + 0.5
 		first_unit.position += normal * separation * 0.5
 		second_unit.position -= normal * separation * 0.5
-	if first_unit.velocity.dot(normal) < 0.0:
-		first_unit.velocity = first_unit.velocity.bounce(normal)
-	if second_unit.velocity.dot(-normal) < 0.0:
-		second_unit.velocity = second_unit.velocity.bounce(-normal)
-	first_unit.velocity += normal * contact_recoil_speed * 0.5
-	second_unit.velocity -= normal * contact_recoil_speed * 0.5
+	if strong_contact:
+		_begin_contact_recoil(first_unit, normal)
+		_begin_contact_recoil(second_unit, -normal)
+	else:
+		# 同阵营贴碰只推开少量，避免团体每次接触都被强烈弹散。
+		first_unit.velocity += normal * contact_recoil_speed * 0.1
+		second_unit.velocity -= normal * contact_recoil_speed * 0.1
+
+
+## 接触反冲有明确短时生命周期；期间保留退开速度，目标更新不能覆盖它。
+func _begin_contact_recoil(unit: PlanBUnit, direction: Vector2) -> void:
+	var recoil_direction: Vector2 = direction.normalized()
+	if recoil_direction.length_squared() <= 0.0001:
+		recoil_direction = Vector2.RIGHT
+	var recoil_speed: float = minf(maximum_speed, maxf(contact_recoil_speed * 2.0, unit.base_speed))
+	unit.contact_recoil_velocity = recoil_direction * recoil_speed
+	unit.contact_recoil_remaining_seconds = contact_recoil_duration_seconds
 
 
 ## 游荡是默认意图；可感染目标进入追逐，可感染当前棋子的敌人优先触发逃跑。
 func _advance_units(delta: float) -> void:
 	var units: Array[PlanBUnit] = _get_sorted_units()
-	var positions_by_id: Dictionary = {}
+	_neighbor_grid_elapsed_seconds += delta
+	if _neighbor_grid_dirty or _neighbor_grid_elapsed_seconds >= maxf(neighbor_grid_refresh_seconds, 0.01):
+		_rebuild_neighbor_grid(units)
+		_neighbor_grid_elapsed_seconds = 0.0
+	_group_refresh_remaining_seconds = maxf(_group_refresh_remaining_seconds - delta, 0.0)
+	if _word_groups_dirty or _group_refresh_remaining_seconds <= 0.0:
+		_refresh_word_groups()
 	for unit: PlanBUnit in units:
-		positions_by_id[unit.unit_id] = unit.position
 		unit.age_seconds += delta
 		unit.contact_cooldown_remaining = maxf(unit.contact_cooldown_remaining - delta, 0.0)
 		unit.wander_change_remaining -= delta
@@ -587,15 +894,11 @@ func _advance_units(delta: float) -> void:
 
 	var steering_by_id: Dictionary = {}
 	for unit: PlanBUnit in units:
-		steering_by_id[unit.unit_id] = _get_steering(unit, units, positions_by_id)
+		var search_radius: float = maxf(detection_radius, ally_detection_radius)
+		steering_by_id[unit.unit_id] = _get_steering(unit, _get_neighbor_units(unit.position, search_radius))
 	for unit: PlanBUnit in units:
-		if unit.spawn_burst_remaining_seconds > 0.0:
-			unit.velocity = unit.spawn_burst_direction * unit.spawn_burst_speed
-			unit.position += unit.velocity * delta
-			unit.spawn_burst_remaining_seconds = maxf(unit.spawn_burst_remaining_seconds - delta, 0.0)
-			_bounce_from_play_area(unit)
-			continue
 		if unit.contact_recoil_remaining_seconds > 0.0:
+			unit.spawn_burst_remaining_seconds = maxf(unit.spawn_burst_remaining_seconds - delta, 0.0)
 			unit.velocity = unit.contact_recoil_velocity
 			unit.position += unit.velocity * delta
 			_bounce_from_play_area(unit)
@@ -603,6 +906,12 @@ func _advance_units(delta: float) -> void:
 			unit.contact_recoil_remaining_seconds = maxf(unit.contact_recoil_remaining_seconds - delta, 0.0)
 			if unit.contact_recoil_remaining_seconds == 0.0:
 				unit.contact_recoil_velocity = Vector2.ZERO
+			continue
+		if unit.spawn_burst_remaining_seconds > 0.0:
+			unit.velocity = unit.spawn_burst_direction * unit.spawn_burst_speed
+			unit.position += unit.velocity * delta
+			unit.spawn_burst_remaining_seconds = maxf(unit.spawn_burst_remaining_seconds - delta, 0.0)
+			_bounce_from_play_area(unit)
 			continue
 		var steering: Dictionary = steering_by_id.get(unit.unit_id, {})
 		var direction: Vector2 = steering.get("direction", unit.wander_direction)
@@ -619,22 +928,40 @@ func _advance_units(delta: float) -> void:
 		_bounce_from_play_area(unit)
 
 
-func _get_steering(unit: PlanBUnit, units: Array[PlanBUnit], positions_by_id: Dictionary) -> Dictionary:
+func _get_steering(unit: PlanBUnit, nearby_units: Array[PlanBUnit]) -> Dictionary:
 	if unit.team == NEUTRAL_TEAM:
 		return {"direction": unit.wander_direction, "intent": &"wander"}
 	var nearest_chase_direction := Vector2.ZERO
 	var nearest_threat_direction := Vector2.ZERO
+	var same_word_cohesion := Vector2.ZERO
+	var other_word_cohesion := Vector2.ZERO
+	var separation_direction := Vector2.ZERO
+	var same_word_count: int = 0
+	var other_word_count: int = 0
 	var detection_radius_squared: float = detection_radius * detection_radius
 	var nearest_chase_distance_squared: float = detection_radius_squared
 	var nearest_threat_distance_squared: float = detection_radius_squared
-	var unit_position: Vector2 = positions_by_id.get(unit.unit_id, unit.position)
-	for other_unit: PlanBUnit in units:
+	for other_unit: PlanBUnit in nearby_units:
 		if other_unit == unit:
 			continue
-		var other_position: Vector2 = positions_by_id.get(other_unit.unit_id, other_unit.position)
-		var offset: Vector2 = other_position - unit_position
+		var offset: Vector2 = other_unit.position - unit.position
 		var distance_squared: float = offset.length_squared()
-		if distance_squared <= 0.000001 or distance_squared > detection_radius_squared:
+		if distance_squared <= 0.000001:
+			continue
+		if other_unit.team == unit.team:
+			if distance_squared <= ally_detection_radius * ally_detection_radius:
+				var toward_ally: Vector2 = offset.normalized()
+				if other_unit.get_word_id() == unit.get_word_id():
+					same_word_cohesion += toward_ally
+					same_word_count += 1
+				else:
+					other_word_cohesion += toward_ally
+					other_word_count += 1
+				var distance: float = sqrt(distance_squared)
+				if distance < ally_ideal_spacing:
+					separation_direction -= toward_ally * ((ally_ideal_spacing - distance) / ally_ideal_spacing)
+			continue
+		if distance_squared > detection_radius_squared:
 			continue
 		if other_unit.team == NEUTRAL_TEAM:
 			if distance_squared < nearest_chase_distance_squared:
@@ -649,12 +976,49 @@ func _get_steering(unit: PlanBUnit, units: Array[PlanBUnit], positions_by_id: Di
 				nearest_chase_direction = offset.normalized()
 
 	if nearest_threat_direction != Vector2.ZERO:
-		var flee_direction: Vector2 = nearest_threat_direction * flee_weight + unit.wander_direction * wandering_weight
+		var flee_direction: Vector2 = (
+			nearest_threat_direction * flee_weight
+			+ unit.wander_direction * wandering_weight
+			+ separation_direction.normalized() * ally_separation_weight * 0.35
+		)
 		return {"direction": flee_direction.normalized(), "intent": &"flee"}
 	if nearest_chase_direction != Vector2.ZERO:
-		var chase_direction: Vector2 = nearest_chase_direction * chase_weight + unit.wander_direction * wandering_weight
+		var cohesion_direction: Vector2 = _get_cohesion_direction(
+			same_word_cohesion, same_word_count, other_word_cohesion, other_word_count
+		)
+		var chase_direction: Vector2 = (
+			nearest_chase_direction * chase_weight
+			+ unit.wander_direction * wandering_weight
+			+ cohesion_direction * ally_attraction_weight * 0.25
+			+ separation_direction.normalized() * ally_separation_weight * 0.35
+		)
 		return {"direction": chase_direction.normalized(), "intent": &"chase"}
+	if same_word_count > 0 or other_word_count > 0:
+		var attraction_weight: float = ally_attraction_weight if same_word_count > 0 else ally_attraction_weight * 0.5
+		var cohesion_direction: Vector2 = _get_cohesion_direction(
+			same_word_cohesion, same_word_count, other_word_cohesion, other_word_count
+		)
+		var group_direction: Vector2 = (
+			cohesion_direction * attraction_weight
+			+ separation_direction.normalized() * ally_separation_weight
+			+ unit.wander_direction * wandering_weight
+		)
+		return {"direction": group_direction.normalized(), "intent": &"group"}
 	return {"direction": unit.wander_direction, "intent": &"wander"}
+
+
+## 同话小队凝聚优先，异话友军保持较弱吸引以保留真实接触传话。
+func _get_cohesion_direction(
+	same_word_cohesion: Vector2,
+	same_word_count: int,
+	other_word_cohesion: Vector2,
+	other_word_count: int
+) -> Vector2:
+	if same_word_count > 0:
+		return same_word_cohesion.normalized()
+	if other_word_count > 0:
+		return other_word_cohesion.normalized()
+	return Vector2.ZERO
 
 
 ## 以棋子碰撞半径约束场景边缘，速度法线分量反射回战场。
@@ -684,17 +1048,24 @@ func _bounce_from_play_area(unit: PlanBUnit) -> void:
 ## 棋子只会因真实寿命到期离场；替补总以新中立 ID 入场，不重置既有阵营。
 func _despawn_expired_units() -> void:
 	var expired_ids: Array[int] = []
+	var removed_word_group_member: bool = false
 	for unit_id: int in _get_sorted_unit_ids():
 		var unit := _units_by_id.get(unit_id) as PlanBUnit
 		if unit != null and unit.age_seconds >= unit.lifespan_seconds:
 			expired_ids.append(unit_id)
 	for unit_id: int in expired_ids:
 		var unit := _units_by_id.get(unit_id) as PlanBUnit
+		if unit != null and unit.team != NEUTRAL_TEAM and unit.has_word():
+			removed_word_group_member = true
 		_units_by_id.erase(unit_id)
 		if is_instance_valid(unit):
 			remove_child(unit)
 			unit.queue_free()
 		unit_despawned.emit(unit_id)
+	if not expired_ids.is_empty():
+		_neighbor_grid_dirty = true
+		if removed_word_group_member:
+			_word_groups_dirty = true
 
 
 ## 空出总人口名额后按共享试算间隔逐个补充中立路人，满员时不积累补人欠账。
@@ -807,6 +1178,9 @@ func _register_spawn_unit(unit: PlanBUnit, unit_id: int) -> void:
 	add_child(unit)
 	unit.area_entered.connect(_on_unit_area_entered.bind(unit_id))
 	_units_by_id[unit_id] = unit
+	_neighbor_grid_dirty = true
+	if unit.team != NEUTRAL_TEAM and unit.has_word():
+		_word_groups_dirty = true
 
 
 ## 中立补充、split和其它单体出生仍沿用同一初始化和ID登记路径。

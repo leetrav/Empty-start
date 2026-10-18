@@ -94,6 +94,11 @@ func has_word() -> bool:
 	return not _word_definition.is_empty()
 
 
+## 返回当前话语稳定ID，供 B 邻域分组使用，不复制完整词条字典。
+func get_word_id() -> StringName:
+	return StringName(str(_word_definition.get("word_id", "")))
+
+
 func get_word_snapshot() -> Dictionary:
 	return _word_definition.duplicate(true)
 
