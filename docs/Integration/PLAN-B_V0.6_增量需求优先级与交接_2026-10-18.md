@@ -25,3 +25,9 @@
 1. A 当前 PB-06 未提交的代码保留并由 A 自己同步新规格；B/C/D/E 在各自原工作树继续，分别提交变更与log。
 2. B 先交批次出生/合法容量，再接PB-11运动和PB-14低频决策；A 改发表事务，C 同步对手与三槽词池，D 同步三槽UI与批次视觉，E 在合流后测实际帧率并出包。
 3. 游戏完整流程不断开：Boot→身份→房间→四关 Plan B 普通 PK→旧六选一蓄力矛盾击破→败者卡/结算→回房间或结局。
+
+### Lane B 当前已实现的批次接口（PB-13）
+- `PlanBUnitSimulation.set_play_area(scene_area: Rect2)` 接收棋盘 scene-global 矩形并转换为模拟节点本地边界；模拟器根按正式场景保持无旋转、单位缩放。单位快照中的 `position` 与 `collision_radius` 使用 scene-global 坐标。
+- `spawn_word_batch(scene_position, team, word_definition, word_order, requested_count) -> Dictionary` 由玩家和对手共用。仅接受 strength 1/2/3 对应 2/4/8 的完整数量、有效阵营/词/棋盘落点及足够容量；成功结果含 `ok`, `reason`, `word_order`, `team`, `word_id`, `word_definition`, `spawn_position`, `spawn_target_positions`, `unit_ids`, `count`。失败返回 `ok=false` 和明确 `reason`，人口、单位 ID 与批次事实均不改变。
+- `word_batch_spawned(batch: Dictionary)` 每个完整成功批次只发一次，字段沿用上项批次快照；`unit_spawned(unit_id)` 仍按真实单位各发一次。D 用批次事实表现喷涌，继续以 B 的单位快照渲染运行位置。
+- 合法感染常量为 strength 1/2/3 = 50%/60%/70%。玩家批次以 `word_order` 累计成功感染；达到5次最多发放一次 split/reflect，并通过 `word_batch_trait_awarded(word_order, unit_id, trait_name)` 通知表现层。
