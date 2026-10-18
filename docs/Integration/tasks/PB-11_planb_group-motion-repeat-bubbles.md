@@ -9,6 +9,7 @@
 - `docs/Integration/tasks/PB-02_planb_b_unit-contact.md`
 - `docs/Integration/tasks/PB-07_planb_b_board-geometry-simulation.md`（原仓库的 Lane B 棋盘任务）
 - `docs/Integration/tasks/PB-09_planb_d_fixed-layout-streamer-hud.md`
+- `docs/Integration/reference/PB-11_group_repeat_bubbles.svg`（本次新增的可编辑 SVG 结构示意，游戏内用程序绘制，不作为贴图；原始 P1/P2 用户截图为视觉目标）
 - 当前实际运行的 Plan B 棋盘、棋子模拟、交互 UI、2/4/8 批量投放和感染/传话事件实现及最新完成日志
 - 实现前阅读 `systems/plan_b/simulation/plan_b_unit_simulation.gd`、`systems/plan_b/simulation/plan_b_unit.gd`、`ui/plan_b/plan_b_unit_field.gd` 及真实绑定场景（实际路径以当前工程为准）
 
