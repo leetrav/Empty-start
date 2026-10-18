@@ -29,6 +29,7 @@ enum BattleState { IDLE, RUNNING, PAUSED, ENDED }
 var _simulation: Node
 var _word_catalog: Object
 var _opponent_director: Object
+var _tier_source: Callable
 var _battle_state: int = BattleState.IDLE
 var _battle_elapsed: float = 0.0
 var _pk: float = 0.5
@@ -101,7 +102,8 @@ func start_battle(arena_size: Vector2, arena_origin: Vector2 = Vector2.ZERO) -> 
 	_battle_state = BattleState.RUNNING
 	battle_state_changed.emit(&"running")
 	pk_changed.emit(get_pk())
-	tier_changed.emit(_current_tier)
+	if not _tier_source.is_valid():
+		tier_changed.emit(_current_tier)
 
 
 func pause_battle() -> void:
@@ -139,6 +141,11 @@ func get_pk() -> float:
 	return _pk * 100.0
 
 
+## 给旧关卡 Flow / HitResolution 提供0～1只读视图，普通 PK 仍由本 Host 唯一持有。
+func get_pk_fraction() -> float:
+	return _pk
+
+
 func get_faction_counts() -> Dictionary:
 	# 转发模拟模块的只读事实，PK 和 HUD 都从同一棋子计数采样。
 	return {} if _simulation == null else _simulation.call("get_faction_counts")
@@ -159,7 +166,23 @@ func get_neutral_unit_at(scene_position: Vector2) -> Variant:
 
 
 func get_current_tier() -> int:
+	# 正式 Sandbox 由旧 CombatStage 持有 Tier；独立 PB-01 场景使用本地表驱动值。
+	if _tier_source.is_valid():
+		return int(_tier_source.call())
 	return _current_tier
+
+
+func set_tier_source(source: Callable) -> bool:
+	# Tier 阈值与升降档演出归正式 CombatStage；Host 只转发其显示事实。
+	if not source.is_valid():
+		return false
+	_tier_source = source
+	return true
+
+
+func notify_external_tier_changed(current_tier: int) -> void:
+	if _tier_source.is_valid():
+		tier_changed.emit(current_tier)
 
 
 func get_battle_state() -> StringName:
@@ -293,6 +316,8 @@ func _process(delta: float) -> void:
 
 func _update_tier() -> void:
 	# 阈值取现有 Tier Catalog（由08表导入），只提供临时展示，不触发正式阶段演出。
+	if _tier_source.is_valid():
+		return
 	var tier: int = _current_tier
 	while tier < 5:
 		var current_config: Resource = TIER_CATALOG.call("get_tier_config", tier)
