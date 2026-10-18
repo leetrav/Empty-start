@@ -1,6 +1,6 @@
 extends Node
 
-const PROFILE_SOURCE: String = "b9c2060a plus PB-14 working tree"
+const PROFILE_SOURCE: String = "1ddd5b41"
 const EXPECTED_POPULATION: int = 96
 const POPULATION_STABLE_WARMUP_MSEC: int = 5000
 const PROFILE_DURATION_MSEC: int = 20000
