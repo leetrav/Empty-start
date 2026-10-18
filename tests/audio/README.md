@@ -9,3 +9,5 @@
 独立试听：打开scenes/demos/au03_fermi_music_preview.tscn，F6运行。先逐一播放低/中/高至少三次循环，再手动测试所有Tier变化及暂停/失败/满PK。该场景不会改变游戏PK或原型规则。
 
 完整正式Plan B四关、矛盾击破演出与结局需后续实际联调；未包含在这些局部PASS中。当前F5正式入口仍保留上游原状。
+
+- `au03_first_boss_check.gd`：工程内用--script启动，实例化真实Sandbox，经公开调试PK接口验证当前正式首关的开局/升档/暂停/重开/失败/满值与退出音乐；APPDATA必须隔离。成功输出AU03_FIRST_BOSS_PASS。

@@ -1,5 +1,13 @@
 ## AU-03 费米三段音乐接入（2026-10-18）
 
+### 当前可运行正式第一关（2026-10-18追加）
+用户要求先在第一名Boss实际战斗中试听，已将同一TierMusicPresenter接到当前main的Sandbox费米关。F5走原菜单/开场/房间后，进入费米即播低段；也可直接打开 `scenes/sandbox/sandbox.tscn` 按F6进入首关。主场景路径与玩法规则均未改变，仍是上游已提交的旧战斗流程。
+
+Sandbox从attempt_started识别alien，读取真实Tier变化、暂停、失败、满PK、矛盾结果与休息事实；重开从低段开始。CombatStage.bind_audio_manager新增默认true的enable_music_requests参数，BattleAttemptFlow只对alien关闭旧Tier切曲，升档音效仍保留；其他三关沿用原接线。
+
+真实正式场景验证通过开局、PK66%中段、92%高段、暂停续播、重开、失败淡出、100%高段及退出清理。完整Plan B四关仍未交付，不能把这次旧流程首关接线当成新玩法完整集成。
+
+
 费米使用《Teek Teek Teek》：T0/T1低、T2/T3中、T4/T5高。资源在 `assets/audio/music/fermi/`，来源和署名见该目录README；正式结尾页和试听场景已有署名。17表新增 `music_alien_low/mid/high` 三个Music事件，Resource配置保留相同引用作为兼容；共76行，26行有资源、50行仍空。旧泛用 `music_battle_t0～t5` 未填费米曲，其他Boss不会误用。
 
 `TierMusicProfile` Resource 保存ID映射、100BPM/4拍、降档2秒、费米交叉淡化0.6秒；`TierMusicPresenter` 是场景拥有的消费者，不创建播放器、不计算PK。组合根创建后调用 `bind_host(host)` 接入 `tier_changed`、`battle_state_changed`、`battle_ended`，用于当前可运行费米原型。正式Plan B合入时按同样公开事实组合，并协调旧CombatStage音乐请求，不能将当前原型接线冒充四关已完成。

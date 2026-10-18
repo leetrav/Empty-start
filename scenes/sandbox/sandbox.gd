@@ -64,6 +64,7 @@ var _paradox_entry_repeat_stats: RepeatGenerationStats
 var _pending_oracle_session: FinalOracleSession
 var _pending_rest_session: RestSession
 var _result_feedback_active: bool = false
+var _fermi_music: TierMusicPresenter
 var _formal_sheet_consumer
 var _active_dialogue_config: BubbleDialogueConfig
 var _trait_catalog: BarrageTraitCatalog
@@ -224,6 +225,8 @@ func _ready() -> void:
 
 # CombatStage 的起始 Tier 通知早于 attempt_started；延后一帧避免新场误播升降档动作。
 func _queue_pk_tier_visual(current_tier: int, _player_pk: float) -> void:
+	if is_instance_valid(_fermi_music):
+		_fermi_music.request_tier(current_tier)
 	# 延迟只保存来源和档位，PK在执行时读取，避免旧回调覆盖回拉或新尝试。
 	_deliver_pk_tier_visual.call_deferred(_battle_attempt_flow.get_combat_stage(), current_tier)
 
@@ -239,6 +242,8 @@ func _deliver_pk_tier_visual(source: CombatStage, tier: int) -> void:
 
 ## C的公开入口只撤销当前指针蓄力，保留已发射言弹及硬直计时。
 func _on_pause_changed(paused: bool) -> void:
+	if is_instance_valid(_fermi_music):
+		_fermi_music.set_paused(paused)
 	if paused and _attack_charge_input.has_method("cancel_pointer_attack"):
 		_attack_charge_input.call("cancel_pointer_attack")
 	_refresh_mobile_touch_phase()
@@ -262,6 +267,17 @@ func restart_current_attempt() -> void:
 
 # 当前关的角色和素材由一次尝试启动事实提供；HUD 只呈现组合方状态。
 func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage: CombatStage, _queue: RepeatDelayQueue) -> void:
+	# 当前可运行正式首关接入同一三段消费者；仅按真实主播ID启用。
+	if current_level.streamer_id == "alien":
+		if not is_instance_valid(_fermi_music):
+			_fermi_music = TierMusicPresenter.new()
+			add_child(_fermi_music)
+		_fermi_music.start_battle(stage.get_current_tier())
+	elif is_instance_valid(_fermi_music):
+		# 先退树清理旧音乐，再释放，避免下一关被延迟的旧退出回调停止。
+		remove_child(_fermi_music)
+		_fermi_music.queue_free()
+		_fermi_music = null
 	%PauseMenu.set_restart_available(true)
 	_refresh_mobile_touch_phase()
 	_pa11_connection_dialogue_active = false
@@ -307,6 +323,8 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 
 # 正式失败先播放 PA-18 局部演出，完成通知后再显示既有失败界面。
 func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: HitResolution, _repeat_stats: RepeatGenerationStats) -> void:
+	if is_instance_valid(_fermi_music):
+		_fermi_music.finish_battle(&"failed")
 	if is_instance_valid(_mobile_touch):
 		_mobile_touch.call("set_enabled", false)
 	if opponent_reaction_preview_enabled and _opponent_live != null:
@@ -376,6 +394,8 @@ func _on_final_oracle_opened(session: FinalOracleSession) -> void:
 func _on_normal_combat_completed(
 		level: LevelProfile, hit_resolution: HitResolution, repeat_stats: RepeatGenerationStats
 ) -> void:
+	if is_instance_valid(_fermi_music):
+		_fermi_music.finish_battle(&"enter_contradiction")
 	_reset_paradox_presentation()
 	if is_instance_valid(_mobile_touch):
 		_mobile_touch.call("set_enabled", false)
@@ -404,6 +424,8 @@ func _on_contradiction_outcome_resolved(outcome: int) -> void:
 		_mobile_touch.call("set_enabled", false)
 	if _result_feedback_active:
 		return
+	if is_instance_valid(_fermi_music) and _fermi_music.owns_music():
+		AudioManager.fade_to_silence()
 	_result_feedback_active = true
 	_result_feedback_system = _contradiction_oracle_flow.get_contradiction_system()
 	_contradiction_oracle_flow.hold_result_presentation()
@@ -564,6 +586,9 @@ func debug_set_normal_generation_enabled(enabled: bool) -> bool:
 
 # 流程已经提交成果并准备好 Rest；根场景只展示同一结果对象。
 func _on_rest_ready(result: RestSession) -> void:
+	if is_instance_valid(_fermi_music) and _fermi_music.owns_music():
+		_fermi_music.set_paused(false)
+		AudioManager.fade_out_music()
 	if _result_feedback_active:
 		_pending_rest_session = result
 		return
