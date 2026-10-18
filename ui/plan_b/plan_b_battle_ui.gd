@@ -28,12 +28,12 @@ const GROUP_BUBBLE_MIN_DELAY := 2.5
 const GROUP_BUBBLE_MAX_DELAY := 5.0
 const GROUP_BUBBLE_MIN_DURATION := 1.2
 const GROUP_BUBBLE_MAX_DURATION := 1.8
-const DANMU_HAM: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_ham.png")
-const DANMU_NPC: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_npc.png")
-const DANMU_ALIEN: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_alien.png")
-const DANMU_KIWI: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_kiwi.png")
-const DANMU_FROG: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_frog.png")
-const DANMU_FOX: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_fox.png")
+const DANMU_HAM: Texture2D = preload("res://assets/ui/plan_b/units/hamster_unit.png")
+const DANMU_NPC: Texture2D = preload("res://assets/ui/plan_b/units/neutral_unit.png")
+const DANMU_ALIEN: Texture2D = preload("res://assets/ui/plan_b/units/alien_unit.png")
+const DANMU_KIWI: Texture2D = preload("res://assets/ui/plan_b/units/kiwi_unit.png")
+const DANMU_FROG: Texture2D = preload("res://assets/ui/plan_b/units/frog_unit.png")
+const DANMU_FOX: Texture2D = preload("res://assets/ui/plan_b/units/fox_unit.png")
 
 class CardCooldownFill:
 	# 按 A 的实际槽位进度绘制整卡遮罩，不在 UI 内启动第二套计时器。
