@@ -74,6 +74,10 @@ func configure_opponent_tier_textures(idle: Texture2D, tier_01: Texture2D, tier_
 	if _tier_presenter != null and streamer_side == "opponent":
 		_tier_presenter.call("configure_textures", idle, tier_01, tier_02, tier_03)
 
+func configure_portrait_character(character_id: String) -> void:
+	# 保存当前对手 ID，供结算演出选择对应的角色表现资源。
+	_result_character_id = StringName(character_id)
+
 func configure_opponent_foreground(texture: Texture2D) -> void:
 	_set_texture(_portrait_foreground, texture)
 
@@ -98,7 +102,9 @@ func configure_opponent_result(level: LevelProfile, presentation: Dictionary = {
 		tier_three = tiers[3] as Texture2D
 	var transition: Texture2D = presentation.get("portrait_defeat_transition", level.opponent_defeat_transition_portrait) as Texture2D
 	_tier_presenter.call("configure_result_bounds", transition, _result_defeat_texture)
-	var petals: Array[Texture2D] = FOX_PETALS if _result_character_id == &"fox" else []
+	var petals: Array[Texture2D] = []
+	if _result_character_id == &"fox":
+		petals = FOX_PETALS
 	_result_configured = bool(_breakthrough.call("configure_visuals", tier_three, transition, _result_defeat_texture, petals))
 	_tier_presenter.call("reset_for_tier", int(_tier_presenter.get("current_tier")))
 	return _result_configured
