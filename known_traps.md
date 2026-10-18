@@ -280,6 +280,13 @@
 
 PB-10 配置核对发现 `data/plan_b/` 的五份战斗 CSV 缺少 Keep File sidecar，Windows / Android include filter 也只包含 `data/source_tables/*.csv`，存在源工程可读、导出 PCK 缺原表的同类风险。五份表都要提交 `importer="keep"` sidecar，并加入两端 include filter；旧 `.translation` 输出需排除。此次 4.7.2 资源 PCK 导出退出 0，包外脚本挂载该 PCK 后逐表用 `FileAccess` 打开，五表 PASS。冷导入还会在 `tests/plan_b/results/` 旁生成 CSV Translation 临时文件，已由 `.gitignore` 定点忽略。
 
+### KT-45：全新 worktree 首次 headless 启动先报字体导入缺失
+
+- **现象**：Godot 4.7.2 在新 worktree 首次 `--headless --editor` 时，项目主题加载先报告 `NotoSansSC-VF.ttf` / `ZCOOLKuaiLe-Regular.ttf` 没有 FontFile loader；同一轮后续扫描会重新导入字体资源，之后加载 UI 场景正常。
+- **条件**：worktree 尚无 `.godot` 导入缓存，且项目全局主题在首次文件系统扫描前初始化。
+- **处理**：先执行 `godot --headless --editor --import --path <project-root> --quit` 完成资源导入，再用项目场景入口复验。首轮主题加载报错不单独作为资源不存在的结论；随后场景仍失败时再按最终解析日志定位。
+- **证据**：PB-12～14 D worktree 首轮 import 完成后，Plan B UI 场景与 D UI smoke 均退出 0；相同 cold-import 现象在 B 的新 worktree 复现。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。
@@ -292,6 +299,7 @@ PB-10 配置核对发现 `data/plan_b/` 的五份战斗 CSV 缺少 Keep File sid
 - headless 位移速度与计时验证：KT-40；Curve2D 速度上限：KT-41。
 - CanvasItem 动画多边形三角化：KT-42。
 - 源工程可读 CSV、导出包缺表：KT-43。
+- 新 worktree 首次字体 loader 报错：KT-45。
 
 ## 附录 A：Godot 生命周期提醒
 
