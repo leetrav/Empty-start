@@ -359,6 +359,7 @@ func _create_plan_b_runtime() -> bool:
 	if _plan_b_content_catalog.has_signal("player_hand_changed"):
 		_plan_b_content_catalog.connect(
 			"player_hand_changed", Callable(self, "_on_plan_b_hand_changed"))
+	_plan_b_host.player_hand_changed.connect(_on_plan_b_hand_changed)
 	if _plan_b_opponent_director.has_signal("opponent_word_pool_exhausted"):
 		_plan_b_opponent_director.connect(
 			"opponent_word_pool_exhausted", Callable(self, "_on_opponent_word_pool_exhausted"))
@@ -496,7 +497,7 @@ func _start_plan_b_battle(level: LevelProfile) -> bool:
 	_plan_b_host.start_battle(board_bounds.size, board_bounds.position)
 	if _plan_b_host.get_battle_state() != &"running":
 		return false
-	var current_hand: Array[Dictionary] = _plan_b_content_catalog.call("get_player_hand")
+	var current_hand: Array[Dictionary] = _plan_b_host.get_player_hand()
 	_refresh_plan_b_hand(current_hand)
 	return true
 

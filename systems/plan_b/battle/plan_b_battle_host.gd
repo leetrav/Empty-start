@@ -8,6 +8,7 @@ signal tier_changed(current_tier: int)
 signal battle_ended(result: StringName)
 signal battle_state_changed(state: StringName)
 signal publish_result(team: String, word_id: String, result: Dictionary)
+signal player_hand_changed(hand: Array)
 signal unit_changed(unit_id: String, reason: String)
 signal unit_spawned(unit_id: String)
 signal unit_despawned(unit_id: String)
@@ -41,6 +42,7 @@ var _used_word_ids: Array[String] = []
 var _last_published_at: Dictionary = {"player": -1000000.0, "opponent": -1000000.0}
 var _player_slot_refresh_remaining: Array[float] = [0.0, 0.0, 0.0]
 var _player_slot_refresh_word_ids: Array[String] = ["", "", ""]
+var _player_slot_definitions: Array[Dictionary] = [{}, {}, {}]
 var _simulation_uses_integer_unit_ids: bool = false
 
 
@@ -88,6 +90,7 @@ func start_battle(arena_size: Vector2, arena_origin: Vector2 = Vector2.ZERO) -> 
 	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
 		_player_slot_refresh_remaining[slot_id] = 0.0
 		_player_slot_refresh_word_ids[slot_id] = ""
+		_player_slot_definitions[slot_id] = {}
 	_configure_simulation_type_matchups()
 	if not _configure_opponent_director():
 		push_error("PlanBBattleHost 无法配置费米发言模块。")
@@ -107,6 +110,9 @@ func start_battle(arena_size: Vector2, arena_origin: Vector2 = Vector2.ZERO) -> 
 	else:
 		_simulation.call("set_active", true)
 	_battle_state = BattleState.RUNNING
+	_reset_player_hand_slots()
+	if _opponent_director != null and _opponent_director.has_method("set_spawn_area"):
+		_opponent_director.call("set_spawn_area", Rect2(arena_origin, arena_size))
 	battle_state_changed.emit(&"running")
 	pk_changed.emit(get_pk())
 	if not _tier_source.is_valid():
@@ -247,16 +253,23 @@ func get_publish_cooldown_remaining(team: String) -> float:
 	return maxf(cooldown - elapsed_since_publish, 0.0)
 
 
+## A 持有三个当前卡槽事实；C 只提供无状态随机候选。
+func get_player_hand() -> Array[Dictionary]:
+	var hand: Array[Dictionary] = []
+	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
+		var source_definition: Dictionary = _player_slot_definitions[slot_id]
+		var definition: Dictionary = source_definition.duplicate(true)
+		if definition.is_empty():
+			definition = {"word_id": "", "text": "", "strength": 0, "battle_type": ""}
+		definition["slot_id"] = slot_id
+		hand.append(definition)
+	return hand
+
+
 func get_player_slot_states() -> Array[Dictionary]:
 	var states: Array[Dictionary] = []
-	var hand: Array = _word_catalog.call("get_player_hand") if _word_catalog != null else []
 	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
-		var entry: Dictionary = {}
-		for value: Variant in hand:
-			if value is Dictionary and int(value.get("slot_id", -1)) == slot_id:
-				entry = value
-				break
-		var word_id: String = str(entry.get("word_id", ""))
+		var word_id: String = str(_player_slot_definitions[slot_id].get("word_id", ""))
 		var remaining: float = _player_slot_refresh_remaining[slot_id]
 		states.append({
 			"slot_id": slot_id,
@@ -267,6 +280,41 @@ func get_player_slot_states() -> Array[Dictionary]:
 			"cooling_word_id": _player_slot_refresh_word_ids[slot_id],
 		})
 	return states
+
+
+## 每次尝试从 C 的无状态抽牌入口固定填充三个独立槽位。
+func _reset_player_hand_slots() -> void:
+	var occupied_word_ids: Array[String] = []
+	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
+		var definition: Dictionary = _draw_player_word_candidate(occupied_word_ids)
+		_player_slot_definitions[slot_id] = definition
+		var word_id: String = str(definition.get("word_id", ""))
+		if not word_id.is_empty():
+			occupied_word_ids.append(word_id)
+	player_hand_changed.emit(get_player_hand())
+
+
+## C 每次只返回一个候选；当前槽和其他槽的状态由 A 持有。
+func _draw_player_word_candidate(occupied_word_ids: Array[String]) -> Dictionary:
+	if _word_catalog == null:
+		return {}
+	if _word_catalog.has_method("draw_player_speech_word"):
+		var candidate: Variant = _word_catalog.call(
+			"draw_player_speech_word", _used_word_ids, occupied_word_ids, available_level
+		)
+		return candidate.duplicate(true) if candidate is Dictionary else {}
+	if _word_catalog.has_method("get_available_word_ids"):
+		var candidates: Variant = _word_catalog.call(
+			"get_available_word_ids", "player", _used_word_ids, available_level
+		)
+		if not candidates is Array:
+			return {}
+		for value: Variant in candidates:
+			var word_id: String = str(value)
+			if occupied_word_ids.has(word_id):
+				continue
+			return get_word_definition(word_id)
+	return {}
 
 
 func _get_player_slot_state(slot_id: int) -> Dictionary:
@@ -320,7 +368,11 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2,
 	if _simulation == null or not _simulation.has_method("spawn_word_batch"):
 		failure["reason"] = &"batch_unavailable"
 		return _report_publish_result(team, word_id, failure)
-	var spawn_count: int = {1: 2, 2: 4, 3: 8}.get(int(definition.get("strength", 0)), 0)
+	var spawn_count: int = 0
+	if _word_catalog != null and _word_catalog.has_method("get_strength_batch_spawn_count"):
+		spawn_count = int(_word_catalog.call("get_strength_batch_spawn_count", int(definition.get("strength", 0))))
+	else:
+		spawn_count = {1: 2, 2: 4, 3: 8}.get(int(definition.get("strength", 0)), 0)
 	if spawn_count <= 0:
 		failure["reason"] = &"invalid_strength"
 		return _report_publish_result(team, word_id, failure)
@@ -347,6 +399,8 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2,
 		"spawn_position": spawn_position,
 		"slot_id": slot_id,
 		"unit_ids": batch_result.get("unit_ids", []).duplicate(),
+		"spawn_target_positions": batch_result.get("spawn_target_positions", []).duplicate(),
+		"batch": batch_result.duplicate(true),
 	}
 	return _report_publish_result(team, word_id, success)
 
@@ -435,7 +489,7 @@ func _process(delta: float) -> void:
 
 ## 只在运行战斗期间推进玩家各自的补牌计时；替换词仍由 C 从可用池抽取。
 func _update_player_slot_refills(delta: float) -> void:
-	if _word_catalog == null or not _word_catalog.has_method("replace_player_hand_slot"):
+	if _word_catalog == null or not _word_catalog.has_method("draw_player_speech_word"):
 		return
 	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
 		if _player_slot_refresh_remaining[slot_id] <= 0.0:
@@ -448,8 +502,19 @@ func _update_player_slot_refills(delta: float) -> void:
 		var expected_word_id: String = _player_slot_refresh_word_ids[slot_id]
 		if expected_word_id.is_empty():
 			continue
-		_word_catalog.call("replace_player_hand_slot", slot_id, expected_word_id, _used_word_ids)
+		if str(_player_slot_definitions[slot_id].get("word_id", "")) != expected_word_id:
+			_player_slot_refresh_word_ids[slot_id] = ""
+			continue
+		var occupied_word_ids: Array[String] = []
+		for other_slot_id: int in PLAYER_WORD_SLOT_COUNT:
+			if other_slot_id == slot_id:
+				continue
+			var occupied_word_id: String = str(_player_slot_definitions[other_slot_id].get("word_id", ""))
+			if not occupied_word_id.is_empty():
+				occupied_word_ids.append(occupied_word_id)
+		_player_slot_definitions[slot_id] = _draw_player_word_candidate(occupied_word_ids)
 		_player_slot_refresh_word_ids[slot_id] = ""
+		player_hand_changed.emit(get_player_hand())
 
 
 func _get_legacy_publish_cooldown_remaining(team: String) -> float:
@@ -663,21 +728,11 @@ func _report_publish_result(team: String, word_id: String, result: Dictionary) -
 	return result
 
 
-func _on_opponent_publish_requested(word_id: String, neutral_unit_id: String) -> void:
-	# C 仍以最近中立目标提出意图；A 将其真实棋盘位置交给统一批次发表入口。
-	if _simulation == null:
-		_report_publish_result("opponent", word_id, {"ok": false, "reason": &"invalid_target"})
-		return
-	var target_id: Variant = _normalize_unit_id(neutral_unit_id)
-	var target: Dictionary = _simulation.call("get_unit_snapshot", target_id)
-	if target.is_empty() or str(target.get("team", "")) != "neutral":
-		_report_publish_result("opponent", word_id, {"ok": false, "reason": &"invalid_target"})
-		return
-	var spawn_position: Variant = target.get("position", Vector2.ZERO)
-	if not spawn_position is Vector2:
-		_report_publish_result("opponent", word_id, {"ok": false, "reason": &"invalid_position"})
-		return
-	publish_word("opponent", word_id, spawn_position)
+func _on_opponent_publish_requested(word_id: String, spawn_position: Vector2) -> void:
+	# C 给出棋盘坐标；A 通过同一事务回报成功与否，供 C 决定是否启动 AI 冷却。
+	var result: Dictionary = publish_word("opponent", word_id, spawn_position)
+	if _opponent_director != null and _opponent_director.has_method("report_speech_publish_result"):
+		_opponent_director.call("report_speech_publish_result", word_id, bool(result.get("ok", false)))
 
 
 func _on_counterattack_windup_started(request: Dictionary) -> void:

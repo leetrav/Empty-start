@@ -80,7 +80,7 @@ func _run() -> void:
 		_check(int(initial_counts.get("opponent", 0)) == 2, "A 用两名费米初始棋子播种")
 		_check(int(initial_counts.get("neutral", 0)) == 76, "开局保留76名中立观众")
 		_check(host.get_used_word_ids().size() == 2, "两条开局费米词进入 A 已用集合")
-		_check(catalog.call("get_player_hand").size() == 3, "C 开局提供三个固定话语槽")
+		_check(host.get_player_hand().size() == 3, "A 按 C 候选初始化三个固定话语槽")
 		print("PB06_LEVEL_BEGIN ", level.level_id, " ", level.streamer_id)
 		await _capture("level_%d_start" % order)
 
@@ -102,7 +102,7 @@ func _run() -> void:
 			var restarted_counts: Dictionary = host.get_faction_counts()
 			_check(int(restarted_counts.get("player", 0)) == 0 and int(restarted_counts.get("opponent", 0)) == 2,
 				"重开重置 B 人口与费米播种")
-			_check(catalog.call("get_player_hand").size() == 3, "重开重置 C 三个话语槽")
+			_check(host.get_player_hand().size() == 3, "重开重置 A 的三个话语槽")
 
 		await _publish_first_word_with_pointer(sandbox)
 		var player_count := await _fill_player_population(sandbox, CAMPAIGN_PLAYER_UNIT_TARGET)
@@ -220,7 +220,7 @@ func _publish_first_word_with_pointer(sandbox) -> void:
 	var host: PlanBBattleHost = sandbox.get_plan_b_battle_host()
 	var catalog: Object = sandbox.get_plan_b_content_catalog()
 	var ui: Control = sandbox.get_plan_b_battle_ui()
-	var hand: Array[Dictionary] = catalog.call("get_player_hand")
+	var hand: Array[Dictionary] = host.get_player_hand()
 	if hand.is_empty():
 		_check(false, "C提供的手牌不能为空")
 		return
@@ -234,7 +234,7 @@ func _publish_first_word_with_pointer(sandbox) -> void:
 	await _click_canvas_point(spawn_position)
 	await _wait(func(): return host.get_used_word_ids().has(word_id), "D点击事件经A Host成功播种")
 	_check(int(host.get_faction_counts().get("player", 0)) >= 2, "成功发表按强度创建完整玩家棋子批次")
-	_check(catalog.call("get_player_hand").size() == 3, "成功发表保留固定三槽")
+	_check(host.get_player_hand().size() == 3, "成功发表保留固定三槽")
 
 
 func _fill_player_population(sandbox, target_count: int) -> int:
@@ -249,7 +249,7 @@ func _fill_player_population(sandbox, target_count: int) -> int:
 		var player_count: int = int(counts.get("player", 0))
 		if player_count >= target_count and seen_tendencies.size() >= 3:
 			break
-		var hand: Array[Dictionary] = catalog.call("get_player_hand")
+		var hand: Array[Dictionary] = host.get_player_hand()
 		if hand.is_empty():
 			break
 		var selected_index: int = -1
