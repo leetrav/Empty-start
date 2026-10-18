@@ -89,3 +89,4 @@ music_fox_low,music,assets/audio/music/khleb/felt_low.ogg,0,1,1,true,battle_fox,
 music_fox_mid,music,assets/audio/music/khleb/felt_mid.ogg,0,1,1,true,battle_fox,AU-03 四Boss已裁剪游戏片段
 music_fox_high,music,assets/audio/music/khleb/felt_high.ogg,0,1,1,true,battle_fox,AU-03 四Boss已裁剪游戏片段
 music_fox_entrance,music,assets/audio/music/khleb/felt_entrance.ogg,0,1,1,true,battle_fox,AU-03 四Boss已裁剪游戏片段
+music_comic_street,music,assets/audio/music/opening/street.ogg,-14,1,1,false,comic,开场完整六幕及分段回看

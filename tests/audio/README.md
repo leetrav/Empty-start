@@ -29,3 +29,6 @@
 ## 列巴开头只播一次
 `au03_khleb_intro_check.gd`用--script运行，约35秒（70秒超时）：真实等待出场回绕一次、对白伴奏回绕两次，确认首次0秒、回绕只到约7.432秒，出场转对白不重播，暂停续播、长等待完成切低、失败和重开清理。成功AU03_KHLEB_INTRO_PASS。复现问题需要超过原14.868秒长度，不能只检查ID或播放前3秒；SceneTree脚本在deferred阶段加载依赖Autoload的Presenter。
 包验证新增检查列巴entrance/intro的loop_offset，不把本地导入设置误当导出包已带同一设置。
+
+
+开场回放集成：au03_opening_check.gd，经--script运行、使用隔离APPDATA，覆盖真实菜单三入口、音乐进度/暂停/退出、Boot首次与已观看行为。成功标记OPENING_STREET_INTEGRATION_PASS。

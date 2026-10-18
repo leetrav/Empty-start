@@ -1,0 +1,6 @@
+# 开场音乐《街》
+作曲・編曲：煉獄小僧／煉獄庭園。
+来源：https://note.com/rengokuteien/n/n5ad9dc0984c2
+许可：沿用 assets/audio/music/README.md 中的作者自定义素材许可与署名要求。
+用户提供 E:/BGM/Godot背景音乐/开场/街.mp3，完整转为 Vorbis quality 5；不变速、不剪辑、不循环。
+完整六幕和前四幕从0秒起，后两幕从前四幕自动时长之和起播。音频事件-14dB、1.5秒淡入；退出/完成短淡出，受Music音量控制。

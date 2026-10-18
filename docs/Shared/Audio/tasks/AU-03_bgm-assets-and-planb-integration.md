@@ -498,3 +498,10 @@ Headless 测试只能证明其覆盖到的逻辑。
 - 列巴原色开头→对白柔化复用HUD已有真实气泡显示事件，不额外修改对白组件，不用模拟视频时间作为生产计时。
 - Godot4.7.2/WASAPI、隔离APPDATA：four-boss3为四关完整程序检查，four-terminal为真矛盾结果淡出，four-loops为17份至少三次回绕，four-regression为费米/AudioManager回归；最终PCK从工程外运行，17曲目/CSV/署名/音乐说明检查通过。
 - 主入口未改。快速试听场景为scenes/demos/au03_boss_music_preview.tscn；正式试玩按原F5或Sandbox F6。当前代码只报告旧版四关局部音乐集成，尚未宣称用户实际整局或正式PlanB已验。
+
+## 2026-10-19 开场《街》正式接入补充
+- 用户确认《街》，已由临时试听扩展到正式ComicPlayer；完整P1～P6、前四幕、后两幕共用music_comic_street事件。完整/前四幕从0秒，后两幕从前四幕自动时长合计33.4秒起播；不变速、不循环，-14dB、1.5秒淡入，暂停同步，退出或完成由AudioManager短淡出。
+- 主菜单新增“重播完整开场”，保留并明确前四幕/后两幕回看。所有回看record_first_view=false，不更改周目或观看记录。
+- Boot原有规则不改：settings.cfg的story/opening_intro_v2_seen为true则启动进菜单；首次自动开场完成或Esc跳过会记录已看过。无需删除真实用户设置或存档即可从菜单完整重看。
+- 新增assets/audio/music/opening/street.ogg及原生loop=false导入，来自用户本地《街》MP3，完整转Vorbis；17表现91行/41有资源（含表头则92），Resource兼容事件同步，音乐说明/游戏内署名补《街》。其他场景与Boss音乐不改。
+- au03_opening_check.gd经隔离APPDATA运行真实菜单按钮，三路分镜数19/13/6、曲目/后半进度、暂停恢复、完成返回菜单与淡出、回看不写观看事实、Boot首次自动开场及Esc后再次启动跳过均通过：OPENING_STREET_INTEGRATION_PASS。音乐听感仍待用户确认。

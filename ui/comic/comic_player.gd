@@ -11,6 +11,7 @@ var _writing_tick: float = 0.0
 
 const OPENING: ComicSequence = preload("res://data/comics/opening.tres")
 const ENDING: ComicSequence = preload("res://data/comics/ending.tres")
+const MUSIC_EVENT: StringName = &"music_comic_street"
 const CANVAS_SIZE := Vector2(1920, 1080)
 
 var _canvas: Control
@@ -66,9 +67,20 @@ func _ready() -> void:
 	_control.panel_display_requested.connect(_show_frame)
 	_control.playback_completed.connect(_finish.bind(&"completed"))
 	add_child(_control)
+	_start_comic_music()
 	if not start_playback():
 		push_error("ComicPlayer: 播放配置为空或控制器未就绪。")
 		SceneRouter.goto_main_menu()
+
+# 完整开场与前四幕从曲首播放；后两幕从前四幕的自动播放时长继续。
+func _start_comic_music() -> void:
+	var start_seconds: float = 0.0
+	if _kind == &"ending":
+		for frame in OPENING.frames:
+			start_seconds += maxf(frame.seconds, frame.text.length() / maxf(1.0, frame.characters_per_second) + 1.0)
+	# 每次重播重新起曲，避免快速重进时复用上次淡出的进度。
+	AudioManager.stop_music()
+	AudioManager.change_music(MUSIC_EVENT, -1.0, start_seconds, 1.5)
 
 # 独立场景启动共用计时控制器。
 func start_playback() -> bool:
@@ -80,6 +92,8 @@ func get_playback_control() -> ComicPanelPlaybackControl:
 # 隐藏页面时冻结计时、动画及逐字进度，回到页面后继续。
 func set_playback_paused(value: bool) -> void:
 	_paused = value
+	if AudioManager.get_music_event_id() == MUSIC_EVENT:
+		AudioManager.set_music_paused(value)
 	if value:
 		_control.pause_playback()
 		if _animation != null:
@@ -228,5 +242,8 @@ func _stop_animation_and_sound() -> void:
 			_layers[index].modulate.a = 1.0
 
 func _exit_tree() -> void:
-	# 离树只清理，不写观看标记。
+	# 离树只清理，不写观看标记；由全局播放器完成短淡出。
+	if AudioManager.get_music_event_id() == MUSIC_EVENT:
+		AudioManager.set_music_paused(false)
+		AudioManager.fade_to_silence()
 	_stop_animation_and_sound()
