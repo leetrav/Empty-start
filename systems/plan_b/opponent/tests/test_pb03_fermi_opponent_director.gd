@@ -24,37 +24,47 @@ func _init() -> void:
 		assert(catalog.configure_level(level))
 		var director = OpponentDirectorScript.new()
 		assert(director.configure(catalog, 20261017))
+		assert(director.set_spawn_area(Rect2(40.0, 60.0, 640.0, 420.0)))
 		assert(director.get_debug_snapshot()["streamer_id"] == level.streamer_id)
 		_test_level_speech(catalog, director, level)
 		_test_counterattack(director, level, EXPECTED_SKILLS[index])
 		_test_exhaustion_signal(director, level)
-	print("PB08_OPPONENT_TEST_OK")
+	print("PB13_OPPONENT_TEST_OK")
 	quit()
 
 
 func _test_level_speech(catalog: Object, director: Object, level: LevelProfile) -> void:
 	var speech_requests: Array[Dictionary] = []
 	director.publish_word_requested.connect(
-		func(word_id: String, unit_id: String) -> void:
-			speech_requests.append({"word_id": word_id, "neutral_unit_id": unit_id})
+		func(word_id: String, spawn_position: Vector2) -> void:
+			speech_requests.append({"word_id": word_id, "spawn_position": spawn_position})
 	)
-	var neutral_snapshots: Array[Dictionary] = [
-		{"unit_id": "viewer_neutral_01", "team": "neutral"},
-		{"unit_id": "viewer_player_01", "team": "player"},
-	]
+	var neutral_snapshots: Array[Dictionary] = []
 	var opponent_word_ids: Array[String] = catalog.get_word_ids(level, "opponent")
 	director.update_speech(11.49, neutral_snapshots, opponent_word_ids)
 	assert(speech_requests.is_empty())
 	director.update_speech(0.02, neutral_snapshots, opponent_word_ids)
 	assert(speech_requests.size() == 1)
 	assert(opponent_word_ids.has(str(speech_requests[0]["word_id"])))
-	assert(speech_requests[0]["neutral_unit_id"] == "viewer_neutral_01")
+	var spawn_position: Vector2 = speech_requests[0]["spawn_position"]
+	assert(spawn_position.x >= 56.0 and spawn_position.x <= 664.0)
+	assert(spawn_position.y >= 76.0 and spawn_position.y <= 464.0)
+	assert(director.get_debug_snapshot()["awaiting_speech_publish_result"])
+	assert(is_zero_approx(float(director.get_debug_snapshot()["speech_cooldown_remaining"])))
+	assert(not director.report_speech_publish_result("unknown", true))
 	assert(catalog.get_word_ids(level, "opponent").size() == opponent_word_ids.size())
-	var no_neutrals: Array[Dictionary] = []
-	director.update_speech(11.5, no_neutrals, opponent_word_ids)
+	director.update_speech(20.0, neutral_snapshots, opponent_word_ids)
 	assert(speech_requests.size() == 1)
+	assert(director.report_speech_publish_result(str(speech_requests[0]["word_id"]), false))
 	director.update_speech(0.0, neutral_snapshots, opponent_word_ids)
 	assert(speech_requests.size() == 2)
+	assert(director.report_speech_publish_result(str(speech_requests[1]["word_id"]), true))
+	assert(is_equal_approx(float(director.get_debug_snapshot()["speech_cooldown_remaining"]), 11.5))
+	director.update_speech(11.49, neutral_snapshots, opponent_word_ids)
+	assert(speech_requests.size() == 2)
+	director.update_speech(0.02, neutral_snapshots, opponent_word_ids)
+	assert(speech_requests.size() == 3)
+	assert(director.report_speech_publish_result(str(speech_requests[2]["word_id"]), true))
 	for request: Dictionary in speech_requests:
 		assert(catalog.get_word_definition(str(request["word_id"]))["streamer_id"] == level.streamer_id)
 
