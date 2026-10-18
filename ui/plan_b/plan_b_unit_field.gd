@@ -437,6 +437,9 @@ func _draw_group_bubble_tails(
 		var root := Vector2(bubble_rect.position.x + spread * float(tail_index + 1), bubble_rect.end.y if point_down else bubble_rect.position.y)
 		var target_tip := target + (Vector2(0.0, -12.0) if point_down else Vector2(0.0, 12.0))
 		var half_width := 6.0
+		# 目标点与水平底边重合时三角形面积为零，跳过以避免多边形三角化失败。
+		if absf(target_tip.y - root.y) <= 0.001:
+			continue
 		var triangle := PackedVector2Array([root + Vector2(-half_width, 0.0), root + Vector2(half_width, 0.0), target_tip])
 		draw_colored_polygon(triangle, fill_color)
 		draw_line(triangle[0], triangle[2], border_color, 1.6)
