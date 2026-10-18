@@ -25,3 +25,9 @@
 1. A 当前 PB-06 未提交的代码保留并由 A 自己同步新规格；B/C/D/E 在各自原工作树继续，分别提交变更与log。
 2. B 先交批次出生/合法容量，再接PB-11运动和PB-14低频决策；A 改发表事务，C 同步对手与三槽词池，D 同步三槽UI与批次视觉，E 在合流后测实际帧率并出包。
 3. 游戏完整流程不断开：Boot→身份→房间→四关 Plan B 普通 PK→旧六选一蓄力矛盾击破→败者卡/结算→回房间或结局。
+
+## D 侧 UI 交接接口（2026-10-18）
+- `PlanBBattleUI.publish_requested(slot_id, word_id, spawn_position)`：D 以卡槽 ID、词条 ID 和中央棋盘全局坐标提交发表；A 回调 `resolve_publish_request(slot_id, word_id, spawn_position, result)`。D 读取 `get_player_slot_states()`，槽位可用状态与倒计时保持由 A 唯一管理。
+- `PlanBUnitField.board_position_clicked(spawn_position)`：中央棋盘内任意有效位置都发出坐标，单位位置只影响画面，不作为点击合法性的条件。
+- D 消费 B 的 `word_batch_spawned(batch)`、`word_groups_changed(groups)` 与 `unit_physics_positions_updated(unit_ids, previous_positions, current_positions)`；`group_id/team/word_id/member_ids/center_position/member_positions/word_snapshot` 由 B 提供。连通判定只保留在 B。
+- D 用物理 tick 的位置对 `(previous,current)` 和 `Engine.get_physics_interpolation_fraction()` 绘制平滑位置；接触、发表落点和模拟结果继续读取真实位置。
