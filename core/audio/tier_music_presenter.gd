@@ -152,7 +152,7 @@ func _process(delta: float) -> void:
 	var position: float = AudioManager.get_music_position()
 	var audio_delta: float = position - _last_position
 	if audio_delta < -0.1:
-		audio_delta += AudioManager.get_music_length()
+		audio_delta += AudioManager.get_music_length() - AudioManager.get_music_loop_offset()
 	audio_delta = maxf(audio_delta, 0.0)
 	_last_position = position
 	if _opening_active or _target == _group:

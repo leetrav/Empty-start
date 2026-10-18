@@ -1,3 +1,5 @@
+> 列巴长对白修复（2026-10-19）：原色出场版与对白柔和版首次仍从0秒播放，后续只循环原曲约7.432～14.868秒的伴奏，不再回到0秒重复开头。仍等真实对白完成再接战斗段。使用Godot原生OGG loop_offset，未重剪/改速或新增对白定时器；长等待、真实列巴场景、通用回归及新PCK检查通过。
+
 > **P1程序接入已完成（2026-10-19）**：当前旧版Sandbox已按alien/kiwi/frog/fox接入四Boss配置，费米保留确认效果；奥格尔v1、咕拉v1、列巴原曲开头v2已入库。真实四关场景、最终击破淡出、17段循环、独立PCK验证通过。用户实际四关听感/完整结算回房间试玩仍待确认，正式PlanB为P2待适配，未推送。
 >
 > 快速比较：打开scenes/demos/au03_boss_music_preview.tscn按F6，下拉选Boss；列巴先“开始连线”，再“对白开始”听同进度柔化。真实游戏从scenes/sandbox/sandbox.tscn按F6进入当前关，F5保留原菜单/开场/房间流程。独立试听不替代游戏联调。
@@ -167,3 +169,5 @@ assets/audio/
 ## SHEET-C 正式音频字段消费（2026-10-15）
 
 `AudioEvent` 同时保存 `volume_db`、`pitch_min`、`pitch_max`、`loop` 和 `transition_group`。正式事件注册时由 CSV 映射这些字段；SFX/UI 播放器应用配置音量与随机音高，`loop=true` 的事件在当前播放完成后重播。`transition_group` 保留在事件数据上供同组事件识别；当前没有按组切换/淡出的运行规则。Music 事件沿用现有音乐状态入口。`tests/integration/sheet_c_runtime_consumer_test.gd` 实际加载了 23 个有资源的事件；50 个缺资源事件见 SHEET-C 日志。
+
+AudioManager.get_music_loop_offset()返回当前OGG循环起点（非OGG或不循环返回0），音乐消费者回绕时用length-loop_offset修正音频增量；其他Boss起点仍0，行为保持。

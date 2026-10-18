@@ -13,7 +13,7 @@ dest_files=["res://.godot/imported/felt_intro.ogg-438fb0777105524eda2345e710a017
 [params]
 
 loop=true
-loop_offset=0
+loop_offset=7.432290249433106
 bpm=129.13933333333333
 beat_count=32
 bar_beats=4

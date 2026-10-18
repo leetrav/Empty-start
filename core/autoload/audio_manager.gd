@@ -171,6 +171,14 @@ func get_music_length() -> float:
 	return _music_player.stream.get_length() if is_instance_valid(_music_player) and _music_player.stream != null else 0.0
 
 
+# OGG可只循环中间伴奏；音乐时钟回绕应扣除不再重复的开头。
+func get_music_loop_offset() -> float:
+	if is_instance_valid(_music_player) and _music_player.stream is AudioStreamOggVorbis:
+		var stream: AudioStreamOggVorbis = _music_player.stream
+		return stream.loop_offset if stream.loop else 0.0
+	return 0.0
+
+
 # 两首过渡音乐及淡变一起暂停，恢复时不重头播放，不改玩家Music总线。
 func set_music_paused(paused: bool) -> void:
 	_music_paused = paused

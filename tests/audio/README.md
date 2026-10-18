@@ -24,3 +24,8 @@
 测试分别重建各关场景验证退出后下一Boss选择，不代替用户从首关到第四关逐一完成矛盾答案/结算/房间的整局人工验收。程序源与PCK验证不代表完整PlanB交付。临时userdata/日志在任务outputs/au03-validation，不覆盖真实玩家存档。
 
 同一四关检查脚本可用-- --terminal-only运行结果淡出专项，通过公开ContradictionBreakSystem.register_launched_shot/resolve_shot_hit_ids提交真矛盾结果，成功输出AU03_TERMINAL_PASS；不以直接发信号伪造结果。
+
+
+## 列巴开头只播一次
+`au03_khleb_intro_check.gd`用--script运行，约35秒（70秒超时）：真实等待出场回绕一次、对白伴奏回绕两次，确认首次0秒、回绕只到约7.432秒，出场转对白不重播，暂停续播、长等待完成切低、失败和重开清理。成功AU03_KHLEB_INTRO_PASS。复现问题需要超过原14.868秒长度，不能只检查ID或播放前3秒；SceneTree脚本在deferred阶段加载依赖Autoload的Presenter。
+包验证新增检查列巴entrance/intro的loop_offset，不把本地导入设置误当导出包已带同一设置。
