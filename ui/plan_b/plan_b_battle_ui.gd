@@ -1308,7 +1308,7 @@ func _refresh_hand_view() -> void:
 				tooltip += "\n本局已发表"
 			if button.tooltip_text != tooltip:
 				button.tooltip_text = tooltip
-			next_disabled = not available or _battle_over or _pending_publish
+			next_disabled = not available or used or _battle_over or _pending_publish
 		if index < _hand_cooldown_fills.size():
 			_hand_cooldown_fills[index].set_fill_ratio(progress if remaining > 0.0 else 0.0)
 		var next_selected := index == _selected_slot_index and available
@@ -1963,9 +1963,9 @@ func _try_show_group_bubble(group_id: String, event_priority: bool) -> void:
 		if not event_priority:
 			state["cooldown_remaining"] = _group_bubble_rng.randf_range(GROUP_BUBBLE_MIN_DELAY, GROUP_BUBBLE_MAX_DELAY)
 			return
-		var displaced_id := _oldest_active_group_bubble(false)
+		var displaced_id := _oldest_active_group_bubble(true)
 		if displaced_id.is_empty():
-			displaced_id = _oldest_active_group_bubble(true)
+			displaced_id = _oldest_active_group_bubble(false)
 		if not displaced_id.is_empty() and _group_bubble_states.has(displaced_id):
 			var displaced: Dictionary = _group_bubble_states[displaced_id]
 			displaced["display_remaining"] = 0.0
