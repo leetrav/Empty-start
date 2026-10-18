@@ -380,8 +380,15 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2,
 	var batch_result: Dictionary = _simulation.call(
 		"spawn_word_batch", spawn_position, StringName(team), definition, candidate_order, spawn_count
 	)
+	var batch_unit_ids_value: Variant = batch_result.get("unit_ids", [])
+	var batch_unit_ids: Array = batch_unit_ids_value if batch_unit_ids_value is Array else []
+	var batch_count: int = int(batch_result.get("count", batch_unit_ids.size()))
 	if not bool(batch_result.get("ok", false)):
 		failure["reason"] = StringName(str(batch_result.get("reason", "batch_failed")))
+		failure["spawn_count"] = spawn_count
+		return _report_publish_result(team, word_id, failure)
+	if batch_count != spawn_count or batch_unit_ids.size() != spawn_count:
+		failure["reason"] = &"incomplete_batch"
 		failure["spawn_count"] = spawn_count
 		return _report_publish_result(team, word_id, failure)
 	_used_word_ids.append(word_id)
@@ -398,7 +405,7 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2,
 		"spawn_count": spawn_count,
 		"spawn_position": spawn_position,
 		"slot_id": slot_id,
-		"unit_ids": batch_result.get("unit_ids", []).duplicate(),
+		"unit_ids": batch_unit_ids.duplicate(),
 		"spawn_target_positions": batch_result.get("spawn_target_positions", []).duplicate(),
 		"batch": batch_result.duplicate(true),
 	}
