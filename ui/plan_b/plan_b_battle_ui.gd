@@ -2,7 +2,7 @@ extends Control
 
 signal publish_result(word_id: String, unit_id: String, succeeded: bool)
 signal word_selected(word_id: String)
-signal publish_requested(word_id: String, unit_id: String)
+signal publish_requested(slot_id: int, word_id: String, spawn_position: Vector2)
 signal dialogue_sequence_completed(sequence_id: StringName, side: int)
 signal dialogue_bubble_presented(side: int, event_id: StringName, text: String)
 signal tier_breakthrough_finished(previous_tier: int, current_tier: int, completed: bool)
@@ -22,6 +22,40 @@ const COLOR_NEUTRAL := Color("#92a2ad")
 const COLOR_TEXT := Color("#eef5f6")
 const COLOR_MUTED := Color("#91a4ae")
 const BOARD_FALLBACK_BOUNDS := Rect2(Vector2(448.0, 72.0), Vector2(1024.0, 828.0))
+const MAX_ACTIVE_GROUP_BUBBLES := 3
+const GROUP_BUBBLE_MIN_DELAY := 2.5
+const GROUP_BUBBLE_MAX_DELAY := 5.0
+const GROUP_BUBBLE_MIN_DURATION := 1.2
+const GROUP_BUBBLE_MAX_DURATION := 1.8
+const DANMU_HAM: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_ham.png")
+const DANMU_NPC: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_npc.png")
+const DANMU_ALIEN: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_alien.png")
+const DANMU_KIWI: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_kiwi.png")
+const DANMU_FROG: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_frog.png")
+const DANMU_FOX: Texture2D = preload("res://assets/ui/弹幕球/ui_danmu_fox.png")
+
+class CardCooldownFill:
+	# 按 A 的实际槽位进度绘制整卡遮罩，不在 UI 内启动第二套计时器。
+	extends Control
+
+	var fill_ratio := 0.0
+
+	func set_fill_ratio(value: float) -> void:
+		var next_ratio := clampf(value, 0.0, 1.0)
+		if is_equal_approx(fill_ratio, next_ratio):
+			return
+		fill_ratio = next_ratio
+		queue_redraw()
+
+	func _draw() -> void:
+		if fill_ratio <= 0.0:
+			return
+		var fill_height := size.y * fill_ratio
+		draw_rect(
+			Rect2(Vector2(0.0, size.y - fill_height), Vector2(size.x, fill_height)),
+			Color(0.23, 0.60, 0.69, 0.34),
+			true
+		)
 
 class TouchReviewOverlay:
 	extends Control
@@ -45,13 +79,23 @@ var _word_definitions: Array = []
 var _word_text_by_id: Dictionary = {}
 var _used_word_ids: Dictionary = {}
 var _counts: Dictionary = {"player": 0, "opponent": 0, "neutral": 0}
+var _population_limit := 96
 var _snapshots: Array = []
+var _snapshot_index_by_id: Dictionary = {}
+var _sources_initialized := false
+var _unit_snapshots_initialized := false
+var _faction_phrases_dirty := true
+var _word_groups: Array = []
+var _group_bubble_states: Dictionary = {}
+var _active_group_bubble_ids: Dictionary = {}
+var _pending_group_speech_events: Array[Dictionary] = []
+var _group_bubble_rng := RandomNumberGenerator.new()
 var _selected_word_id := ""
 var _battle_over := false
 var _pk_value := 50.0
 var _tier_label := "T—"
 var _cooldown_remaining := 0.0
-var _status_text := "先选一句，再点击场内中立观众。"
+var _status_text := "先选一句，再点击棋盘位置发表。"
 var _status_kind := "info"
 var _event_lines: Array[String] = []
 var _density_profile := "clear"
@@ -64,10 +108,14 @@ var _touch_overlay: Control
 var _sync_elapsed := 0.0
 var _hand_remaining_count := 0
 var _hand_words: Array[Dictionary] = []
+var _hand_slot_states: Array[Dictionary] = [{}, {}, {}]
+var _hand_display_remaining: Array[float] = [0.0, 0.0, 0.0]
 var _hand_from_c := false
+var _selected_slot_index := -1
 var _pending_publish := false
 var _pending_word_id := ""
 var _pending_unit_id := ""
+var _pending_spawn_position := Vector2.ZERO
 var _battle_tier := 0
 var _paradox_stage_active := false
 var _final_oracle_stage_active := false
@@ -105,6 +153,7 @@ var _oracle_footer: Control
 var _hand_buttons: Array[Button] = []
 var _hand_phrase_labels: Array[Label] = []
 var _hand_meta_labels: Array[Label] = []
+var _hand_cooldown_fills: Array[CardCooldownFill] = []
 var _hand_button_selected_state: Array[bool] = []
 var _hand_button_disabled_state: Array[bool] = []
 var _hand_status_label: Label
@@ -123,6 +172,7 @@ func _ready() -> void:
 	add_child(_dialogue_queue)
 	_refresh_sources()
 	set_opponent_portrait_connected(_battle_tier > 0)
+	_group_bubble_rng.randomize()
 	_refresh_view()
 
 
@@ -134,6 +184,8 @@ func _process(delta: float) -> void:
 	_counterattack_seconds = maxf(0.0, _counterattack_seconds - delta)
 	if _counterattack_seconds <= 0.0 and _counterattack_label != null:
 		_counterattack_label.visible = false
+	_advance_slot_fill_visual(delta)
+	_advance_group_bubbles(delta)
 	_sync_elapsed += delta
 	if _sync_elapsed < 0.1:
 		return
@@ -145,6 +197,10 @@ func _process(delta: float) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
+	if event.keycode == KEY_ESCAPE:
+		_clear_word_selection()
+		get_viewport().set_input_as_handled()
+		return
 	var slot := -1
 	match event.keycode:
 		KEY_1:
@@ -153,8 +209,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			slot = 1
 		KEY_3:
 			slot = 2
-		KEY_4:
-			slot = 3
 	if slot >= 0:
 		_select_hand_slot(slot)
 		get_viewport().set_input_as_handled()
@@ -166,6 +220,11 @@ func bind_sources(battle_host: Object, unit_source: Object, word_catalog: Object
 	_battle_host = battle_host
 	_unit_source = unit_source
 	_word_catalog = word_catalog
+	_sources_initialized = false
+	_unit_snapshots_initialized = false
+	_snapshots.clear()
+	_snapshot_index_by_id.clear()
+	_faction_phrases_dirty = true
 	_event_source = _battle_host if _has_signal(_battle_host, "unit_changed") else _unit_source
 	_connect_signal(_battle_host, "pk_changed", Callable(self, "_on_pk_changed"))
 	_connect_signal(_battle_host, "tier_changed", Callable(self, "_on_tier_changed"))
@@ -173,6 +232,9 @@ func bind_sources(battle_host: Object, unit_source: Object, word_catalog: Object
 	_connect_signal(_event_source, "unit_changed", Callable(self, "_on_unit_changed"))
 	_connect_signal(_event_source, "unit_spawned", Callable(self, "_on_unit_spawned"))
 	_connect_signal(_event_source, "unit_despawned", Callable(self, "_on_unit_despawned"))
+	_connect_signal(_unit_source, "word_batch_spawned", Callable(self, "_on_word_batch_spawned"))
+	_connect_signal(_unit_source, "word_groups_changed", Callable(self, "_on_word_groups_changed"))
+	_connect_signal(_unit_source, "unit_physics_positions_updated", Callable(self, "_on_unit_physics_positions_updated"))
 	_connect_signal(_unit_source, "contact_resolved", Callable(self, "_on_contact_resolved"))
 	_refresh_sources()
 	_refresh_view()
@@ -203,25 +265,171 @@ func set_word_hand(hand: Array, remaining_count: int = 0) -> void:
 	# C 提供当前手牌快照与词池余量；D 只显示和选择，不抽取、不补牌。
 	_hand_from_c = true
 	_hand_remaining_count = maxi(remaining_count, 0)
-	_hand_words.clear()
+	var next_hand: Array[Dictionary] = [{}, {}, {}]
+	var fallback_slot_id := 0
 	for value in hand:
 		if not value is Dictionary:
 			continue
-		var entry: Dictionary = value.duplicate(true)
+		var entry: Dictionary = value
 		var word_id := _entry_word_id(entry)
-		if word_id.is_empty():
+		var slot_id := int(entry.get("slot_id", fallback_slot_id))
+		fallback_slot_id += 1
+		if slot_id < 0 or slot_id >= next_hand.size():
 			continue
-		if not entry.has("text") and _word_text_by_id.has(word_id):
+		if not word_id.is_empty() and not entry.has("text") and _word_text_by_id.has(word_id):
 			entry["text"] = _word_text_by_id[word_id]
-		if entry.has("text"):
+		if not word_id.is_empty() and entry.has("text"):
 			_word_text_by_id[word_id] = str(entry["text"])
-		_hand_words.append(entry)
-		if _hand_words.size() >= 4:
-			break
+		next_hand[slot_id] = entry
+	_hand_words = next_hand
 	_refresh_hand_view()
 	if _field != null:
 		_field.set_word_texts(_word_text_by_id)
 	_refresh_view()
+
+
+func set_player_slot_states(states: Array) -> void:
+	# A 的槽位快照是唯一可用状态与五秒剩余时间来源。
+	var next_states: Array[Dictionary] = [{}, {}, {}]
+	for value in states:
+		if not value is Dictionary:
+			continue
+		var state: Dictionary = value
+		var slot_id := int(state.get("slot_id", -1))
+		if slot_id >= 0 and slot_id < next_states.size():
+			next_states[slot_id] = state
+	_hand_slot_states = next_states
+	for slot_id in 3:
+		_hand_display_remaining[slot_id] = maxf(float(_hand_slot_states[slot_id].get("remaining", 0.0)), 0.0)
+	_refresh_hand_view()
+
+
+func set_group_bubble_random_seed(seed_value: int) -> void:
+	# 固定表现层的随机复读间隔，便于复核气泡计时而不影响战斗模拟 RNG。
+	_group_bubble_rng.seed = seed_value
+
+
+func set_word_group_snapshots(groups: Array) -> void:
+	# B 管理连通关系；D 只同步显示快照并延续可见气泡计时。
+	if _is_special_stage_active() or _battle_over:
+		_clear_group_bubbles()
+		return
+	var next_groups: Array = []
+	var members_by_group: Dictionary = {}
+	for value in groups:
+		if not value is Dictionary:
+			continue
+		var group: Dictionary = value
+		var group_id := str(group.get("group_id", group.get("id", "")))
+		var word_id := str(group.get("word_id", ""))
+		var team := str(group.get("team", "neutral"))
+		var members: Array = _group_member_ids(group)
+		if group_id.is_empty() or team == "neutral" or word_id.is_empty() or members.is_empty():
+			continue
+		members_by_group[group_id] = members
+		next_groups.append(group)
+	var old_group_owner := _assign_previous_bubble_states(members_by_group)
+	var next_states: Dictionary = {}
+	for group in next_groups:
+		var group_id := str(group.get("group_id", group.get("id", "")))
+		var state_ids: Array = old_group_owner.get(group_id, [])
+		var state := _inherit_group_bubble_state(state_ids)
+		if state.is_empty():
+			state = _new_group_bubble_state()
+		var members: Array = members_by_group[group_id]
+		var team := str(group.get("team", "neutral"))
+		var word_id := str(group.get("word_id", ""))
+		state["team"] = team
+		state["word_id"] = word_id
+		state["members"] = members
+		next_states[group_id] = state
+	_group_bubble_states = next_states
+	_word_groups = next_groups
+	_sync_active_group_bubble_ids()
+	if _field != null:
+		_field.call("set_word_groups", _word_groups, _active_group_bubble_ids)
+	_apply_pending_group_speech_events()
+
+
+func _assign_previous_bubble_states(members_by_group: Dictionary) -> Dictionary:
+	# 拆团时一个旧计时器只跟随重叠最多的后继团；合团时多个旧状态交给同一新团合并。
+	var owners: Dictionary = {}
+	for old_group_id in _group_bubble_states:
+		var old_state: Dictionary = _group_bubble_states[old_group_id]
+		var old_members: Array = old_state.get("members", [])
+		var best_group_id := ""
+		var best_overlap := 0
+		for new_group_id in members_by_group:
+			var new_members: Array = members_by_group[new_group_id]
+			var overlap := 0
+			for member_id in old_members:
+				if new_members.has(member_id):
+					overlap += 1
+			if overlap > best_overlap or (overlap == best_overlap and overlap > 0 and str(new_group_id) == str(old_group_id)):
+				best_overlap = overlap
+				best_group_id = str(new_group_id)
+		if not best_group_id.is_empty():
+			if not owners.has(best_group_id):
+				owners[best_group_id] = []
+			owners[best_group_id].append(str(old_group_id))
+	return owners
+
+
+func _new_group_bubble_state() -> Dictionary:
+	return {
+		"cooldown_remaining": _group_bubble_rng.randf_range(GROUP_BUBBLE_MIN_DELAY, GROUP_BUBBLE_MAX_DELAY),
+		"display_remaining": 0.0,
+		"event_active": false,
+		"started_at_msec": 0,
+		"last_event_msec": -100000,
+	}
+
+
+func _inherit_group_bubble_state(old_group_ids: Array) -> Dictionary:
+	if old_group_ids.is_empty():
+		return {}
+	var chosen: Dictionary = {}
+	var chosen_active := false
+	var soonest_cooldown := INF
+	var longest_display := 0.0
+	var merged_event_active := false
+	var most_recent_event := -100000
+	for old_group_id in old_group_ids:
+		if not _group_bubble_states.has(old_group_id):
+			continue
+		var state: Dictionary = _group_bubble_states[old_group_id]
+		var display_remaining := float(state.get("display_remaining", 0.0))
+		var is_active := display_remaining > 0.0
+		if is_active and (not chosen_active or display_remaining > longest_display):
+			chosen = state.duplicate(false)
+			chosen_active = true
+			longest_display = display_remaining
+		elif not chosen_active and not is_active and float(state.get("cooldown_remaining", INF)) < soonest_cooldown:
+			chosen = state.duplicate(false)
+			soonest_cooldown = float(state.get("cooldown_remaining", INF))
+		if is_active:
+			merged_event_active = merged_event_active or bool(state.get("event_active", false))
+		most_recent_event = maxi(most_recent_event, int(state.get("last_event_msec", -100000)))
+	if chosen.is_empty():
+		return {}
+	if chosen_active:
+		chosen["display_remaining"] = longest_display
+		chosen["event_active"] = merged_event_active
+	else:
+		chosen["cooldown_remaining"] = soonest_cooldown
+	chosen["last_event_msec"] = most_recent_event
+	return chosen
+
+
+func _advance_slot_fill_visual(delta: float) -> void:
+	# 只在 UI 侧平滑 A 的剩余时间快照；槽位可用性与补牌决策仍由 A 管理。
+	for slot_id in 3:
+		if _hand_display_remaining[slot_id] <= 0.0:
+			continue
+		_hand_display_remaining[slot_id] = maxf(0.0, _hand_display_remaining[slot_id] - delta)
+		var fill_ratio := clampf(1.0 - _hand_display_remaining[slot_id] / 5.0, 0.0, 1.0)
+		if slot_id < _hand_cooldown_fills.size():
+			_hand_cooldown_fills[slot_id].set_fill_ratio(fill_ratio)
 
 
 func set_world_bounds(bounds: Rect2) -> void:
@@ -272,6 +480,7 @@ func set_published_word_ids(word_ids: Array) -> void:
 	_used_word_ids = next_used_ids
 	if _used_word_ids.has(_selected_word_id):
 		_selected_word_id = ""
+		_selected_slot_index = -1
 		if _field != null:
 			_field.set_selected_unit("")
 	if not _hand_from_c:
@@ -343,6 +552,8 @@ func configure_opponent_foreground(texture: Texture2D) -> void:
 
 func configure_portrait_character(character_id: String) -> void:
 	_opponent_panel.call("configure_portrait_character", character_id)
+	if _field != null:
+		_field.call("set_active_opponent_sprite_id", character_id)
 
 
 func bind_player_live_session(session: LiveSessionData, unknown_metrics: Array = []) -> void:
@@ -434,6 +645,7 @@ func _refresh_special_stage_layout() -> void:
 	if special_stage_active:
 		_counterattack_label.visible = false
 		_counterattack_seconds = 0.0
+		_clear_group_bubbles()
 
 
 func _is_special_stage_active() -> bool:
@@ -604,7 +816,7 @@ func reset_for_attempt(current_tier: int = 0) -> void:
 	set_battle_tier(current_tier)
 	set_opponent_portrait_connected(current_tier > 0)
 	_field.call("set_selected_unit", "")
-	_set_status("先选一句，再点击棋盘中的中立观众。", "info")
+	_set_status("先选一句，再点击棋盘内任意位置发表。", "info")
 	_refresh_hand_view()
 
 
@@ -783,8 +995,15 @@ func _build_field(parent: Container) -> void:
 	_field.custom_minimum_size = Vector2(1024.0, 828.0)
 	_field.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_field.set_density_profile(_density_profile)
-	_field.unit_clicked.connect(_on_unit_clicked)
-	_field.empty_field_clicked.connect(_on_empty_field_clicked)
+	_field.call("set_unit_sprite_textures", {
+		"ham": DANMU_HAM,
+		"npc": DANMU_NPC,
+		"alien": DANMU_ALIEN,
+		"kiwi": DANMU_KIWI,
+		"frog": DANMU_FROG,
+		"fox": DANMU_FOX,
+	})
+	_field.board_position_clicked.connect(_on_board_position_clicked)
 	field_host.add_child(_field)
 
 	_board_overlay = Control.new()
@@ -858,7 +1077,7 @@ func _build_field(parent: Container) -> void:
 
 
 func _build_word_hand(parent: Container) -> void:
-	# 四张卡只展示 C 的手牌快照；抽取和成功补位由 C/A 负责。
+	# 三张固定卡只展示 A/C 的槽位事实；刷新时机和随机补位由 A/C 负责。
 	var panel := PanelContainer.new()
 	panel.name = "WordHand"
 	panel.custom_minimum_size = Vector2(0.0, 180.0)
@@ -874,12 +1093,12 @@ func _build_word_hand(parent: Container) -> void:
 	var heading := HBoxContainer.new()
 	heading.add_theme_constant_override("separation", 8)
 	content.add_child(heading)
-	var title := _label("当前手牌  ·  按 1–4 选句", 16, Color("#75d9f0"))
+	var title := _label("选一句  ·  按 1–3 选句", 16, Color("#75d9f0"))
 	heading.add_child(title)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(spacer)
-	_hand_count_label = _label("等待 C 提供手牌", 14, COLOR_MUTED)
+	_hand_count_label = _label("等待 A/C 提供三槽", 14, COLOR_MUTED)
 	_hand_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	heading.add_child(_hand_count_label)
 
@@ -887,7 +1106,7 @@ func _build_word_hand(parent: Container) -> void:
 	cards.add_theme_constant_override("separation", 8)
 	cards.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(cards)
-	for index in range(4):
+	for index in range(3):
 		var button := Button.new()
 		button.name = "WordCard%d" % (index + 1)
 		button.custom_minimum_size = Vector2(0.0, 98.0)
@@ -899,6 +1118,11 @@ func _build_word_hand(parent: Container) -> void:
 		button.add_theme_color_override("font_disabled_color", Color("#82929a"))
 		_style_button(button, false)
 		cards.add_child(button)
+		var cooldown_fill := CardCooldownFill.new()
+		cooldown_fill.name = "CooldownFill"
+		cooldown_fill.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		cooldown_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(cooldown_fill)
 
 		var card_content := VBoxContainer.new()
 		card_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -907,19 +1131,23 @@ func _build_word_hand(parent: Container) -> void:
 		button.add_child(card_content)
 
 		var key_label := _label("%d" % (index + 1), 11, Color("#7dd9ef"))
+		key_label.name = "KeyLabel"
 		card_content.add_child(key_label)
 		var phrase_label := _label("等待词池", 18, COLOR_TEXT)
+		phrase_label.name = "PhraseLabel"
 		phrase_label.custom_minimum_size.y = 42.0
 		phrase_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		phrase_label.max_lines_visible = 2
 		card_content.add_child(phrase_label)
 		var meta_label := _label("", 11, COLOR_MUTED)
+		meta_label.name = "MetaLabel"
 		card_content.add_child(meta_label)
 
 		button.pressed.connect(_select_hand_slot.bind(index))
 		_hand_buttons.append(button)
 		_hand_phrase_labels.append(phrase_label)
 		_hand_meta_labels.append(meta_label)
+		_hand_cooldown_fills.append(cooldown_fill)
 		_hand_button_selected_state.append(false)
 		_hand_button_disabled_state.append(false)
 
@@ -1015,21 +1243,21 @@ func _style_button(button: Button, selected: bool) -> void:
 
 
 func _rebuild_word_list() -> void:
-	# 兼容旧联调入口；正式布局只重绘底部四张手牌。
+	# 兼容旧联调入口；正式布局只重绘底部三张手牌。
 	if not _hand_from_c:
 		_rebuild_fallback_hand()
 	_refresh_hand_view()
 
 
 func _rebuild_fallback_hand() -> void:
-	# 旧预览只提供词条全集时取前四条；正式接入由 C 的手牌快照覆盖。
+	# 旧预览只提供词条全集时取前三条；正式接入由 A/C 的三槽快照覆盖。
 	_hand_words.clear()
 	for definition in _word_definitions:
 		var word_id := str(definition.get("word_id", ""))
 		if word_id.is_empty() or _used_word_ids.has(word_id):
 			continue
 		_hand_words.append(definition.duplicate(true))
-		if _hand_words.size() >= 4:
+		if _hand_words.size() >= 3:
 			break
 	_hand_remaining_count = maxi(0, _word_definitions.size() - _hand_words.size())
 
@@ -1041,17 +1269,23 @@ func _entry_word_id(entry: Dictionary) -> String:
 func _refresh_hand_view() -> void:
 	if _hand_buttons.is_empty():
 		return
-	for index in range(4):
+	for index in range(3):
 		var entry: Dictionary = _hand_words[index] if index < _hand_words.size() else {}
 		var word_id := _entry_word_id(entry)
 		var phrase := str(entry.get("text", _word_text_by_id.get(word_id, "")))
 		var used := not word_id.is_empty() and _used_word_ids.has(word_id)
+		var slot_state: Dictionary = _hand_slot_states[index] if index < _hand_slot_states.size() else {}
+		var remaining := _hand_display_remaining[index] if index < _hand_display_remaining.size() else maxf(float(slot_state.get("remaining", 0.0)), 0.0)
+		var progress := clampf(1.0 - remaining / 5.0, 0.0, 1.0)
+		var available := bool(slot_state.get("available", not word_id.is_empty() and not used and remaining <= 0.0))
+		if slot_state.has("word_id") and str(slot_state.get("word_id", "")) != word_id:
+			available = false
 		var button := _hand_buttons[index]
 		var phrase_label := _hand_phrase_labels[index]
 		var meta_label := _hand_meta_labels[index]
 		var next_disabled := true
 		if word_id.is_empty():
-			var empty_text := "词池已空" if _hand_from_c else "等待 C 提供手牌"
+			var empty_text := "无可用话语" if _hand_from_c else "等待 A/C 提供三槽"
 			if phrase_label.text != empty_text:
 				phrase_label.text = empty_text
 			if meta_label.text != "":
@@ -1064,14 +1298,20 @@ func _refresh_hand_view() -> void:
 				phrase_label.text = shown_phrase
 			var strength := int(entry.get("strength", 1))
 			var battle_type := str(entry.get("battle_type", "话语"))
-			var meta_text := "已发表" if used else "强度 %d · %s" % [strength, battle_type]
+			var meta_text := "刷新中 %.1f 秒 · 强度 %d · %s" % [remaining, strength, battle_type] if remaining > 0.0 else ("本局已发表" if used else "强度 %d · %s" % [strength, battle_type])
 			if meta_label.text != meta_text:
 				meta_label.text = meta_text
-			var tooltip := phrase if not used else phrase + "\n本局已发表"
+			var tooltip := phrase
+			if remaining > 0.0:
+				tooltip += "\n%.1f 秒后补入新话语" % remaining
+			elif used:
+				tooltip += "\n本局已发表"
 			if button.tooltip_text != tooltip:
 				button.tooltip_text = tooltip
-			next_disabled = used or _battle_over or _pending_publish
-		var next_selected := word_id == _selected_word_id and not used
+			next_disabled = not available or _battle_over or _pending_publish
+		if index < _hand_cooldown_fills.size():
+			_hand_cooldown_fills[index].set_fill_ratio(progress if remaining > 0.0 else 0.0)
+		var next_selected := index == _selected_slot_index and available
 		var disabled_changed := _hand_button_disabled_state[index] != next_disabled
 		var selection_changed := _hand_button_selected_state[index] != next_selected
 		if button.disabled != next_disabled:
@@ -1081,42 +1321,132 @@ func _refresh_hand_view() -> void:
 			_hand_button_disabled_state[index] = next_disabled
 			_hand_button_selected_state[index] = next_selected
 	if _hand_count_label != null:
+		var occupied_slots := 0
+		for entry in _hand_words:
+			if not _entry_word_id(entry).is_empty():
+				occupied_slots += 1
 		if _hand_from_c:
-			_hand_count_label.text = "手牌 %d/4 · 词池余 %d" % [_hand_words.size(), _hand_remaining_count]
+			_hand_count_label.text = "三槽 %d/3 · 可补话语 %d" % [occupied_slots, _hand_remaining_count]
 		else:
-			_hand_count_label.text = "手牌 %d/4 · 词库预览" % _hand_words.size()
+			_hand_count_label.text = "三槽 %d/3 · 词库预览" % occupied_slots
 	_update_status_view()
 
 
 func _refresh_sources() -> void:
-	if is_instance_valid(_battle_host) and _battle_host.has_method("get_pk"):
+	var has_host := is_instance_valid(_battle_host)
+	if not _sources_initialized and has_host and _battle_host.has_method("get_pk"):
 		var pk_value := float(_battle_host.call("get_pk"))
 		_actual_player_pk = clampf(pk_value / 100.0 if pk_value > 1.0 else pk_value, 0.0, 1.0)
 		_pk_value = _actual_player_pk * 100.0
-	if _has_method(_battle_host, "get_used_word_ids"):
+	if not _sources_initialized:
+		_population_limit = _read_population_limit()
+	if not _sources_initialized and _has_method(_battle_host, "get_used_word_ids"):
 		var used_ids: Variant = _battle_host.call("get_used_word_ids")
 		if used_ids is Array:
 			set_published_word_ids(used_ids)
-	if _has_method(_battle_host, "get_publish_cooldown_remaining"):
-		_cooldown_remaining = maxf(float(_battle_host.call("get_publish_cooldown_remaining", "player")), 0.0)
-	if _has_method(_battle_host, "get_current_tier"):
+	if _has_method(_battle_host, "get_player_slot_states"):
+		var slot_states: Variant = _battle_host.call("get_player_slot_states")
+		if slot_states is Array:
+			set_player_slot_states(slot_states)
+	if not _sources_initialized and _has_method(_battle_host, "get_current_tier"):
 		var current_tier := int(_battle_host.call("get_current_tier"))
 		if current_tier != _battle_tier:
 			_on_tier_changed(current_tier)
-	var counts_source: Object = _battle_host if _has_method(_battle_host, "get_faction_counts") else _unit_source
-	if is_instance_valid(counts_source) and counts_source.has_method("get_faction_counts"):
-		var counts: Variant = counts_source.call("get_faction_counts")
-		if counts is Dictionary:
-			_counts = counts.duplicate(true)
-	var snapshot_source: Object = _battle_host if _has_method(_battle_host, "get_unit_snapshots") else _unit_source
-	if is_instance_valid(snapshot_source) and snapshot_source.has_method("get_unit_snapshots"):
+	if not _sources_initialized:
+		_refresh_faction_counts()
+	var snapshot_source: Object = _unit_source if _has_method(_unit_source, "get_unit_snapshots") else _battle_host
+	if not _unit_snapshots_initialized and is_instance_valid(snapshot_source) and snapshot_source.has_method("get_unit_snapshots"):
 		var snapshots: Variant = snapshot_source.call("get_unit_snapshots")
 		if snapshots is Array:
 			_snapshots = snapshots
+			_reindex_unit_snapshots()
 			if _refresh_missing_word_texts() and _field != null:
 				_field.set_word_texts(_word_text_by_id)
-		if _field != null:
-			_field.set_unit_snapshots(_snapshots)
+			_unit_snapshots_initialized = true
+			_faction_phrases_dirty = true
+			if _field != null:
+				_field.set_unit_snapshots(_snapshots)
+	var group_source: Object = _unit_source if _has_method(_unit_source, "get_word_groups") else _battle_host
+	var group_signal_connected := _has_signal(_unit_source, "word_groups_changed")
+	if _has_method(group_source, "get_word_groups") and (not _sources_initialized or not group_signal_connected):
+		var groups: Variant = group_source.call("get_word_groups")
+		if groups is Array:
+			set_word_group_snapshots(groups)
+	if has_host:
+		_sources_initialized = true
+
+
+func _refresh_faction_counts() -> void:
+	var counts_source: Object = _battle_host if _has_method(_battle_host, "get_faction_counts") else _unit_source
+	if not is_instance_valid(counts_source) or not counts_source.has_method("get_faction_counts"):
+		return
+	var counts: Variant = counts_source.call("get_faction_counts")
+	if counts is Dictionary:
+		_counts = counts
+
+
+func _read_population_limit() -> int:
+	# UI 上限数字读取模拟器公开配置，避免最大人口调整后仍显示旧常数。
+	if not is_instance_valid(_unit_source):
+		return 96
+	for property in _unit_source.get_property_list():
+		if str(property.get("name", "")) == "maximum_population":
+			return maxi(int(_unit_source.get("maximum_population")), 1)
+	return 96
+
+
+func _reindex_unit_snapshots() -> void:
+	_snapshot_index_by_id.clear()
+	for index in _snapshots.size():
+		var unit_id := str(_snapshots[index].get("unit_id", ""))
+		if not unit_id.is_empty():
+			_snapshot_index_by_id[unit_id] = index
+
+
+func _upsert_unit_snapshot(unit_id: String) -> void:
+	var snapshot_source: Object = _unit_source if _has_method(_unit_source, "get_unit_snapshot") else _battle_host
+	if not _has_method(snapshot_source, "get_unit_snapshot"):
+		return
+	var lookup_id: Variant = unit_id.to_int() if unit_id.is_valid_int() else unit_id
+	var value: Variant = snapshot_source.call("get_unit_snapshot", lookup_id)
+	if not value is Dictionary or value.is_empty():
+		return
+	var snapshot: Dictionary = value
+	var normalized_id := str(snapshot.get("unit_id", unit_id))
+	if _snapshot_index_by_id.has(normalized_id):
+		_snapshots[int(_snapshot_index_by_id[normalized_id])] = snapshot
+	else:
+		_snapshot_index_by_id[normalized_id] = _snapshots.size()
+		_snapshots.append(snapshot)
+	var word_texts_changed := _ensure_word_text_for_snapshot(snapshot)
+	if _field != null:
+		if word_texts_changed:
+			_field.set_word_texts(_word_text_by_id)
+		_field.set_unit_snapshots(_snapshots)
+	_faction_phrases_dirty = true
+
+
+func _ensure_word_text_for_snapshot(snapshot: Dictionary) -> bool:
+	var word_id := str(snapshot.get("word_id", ""))
+	if word_id.is_empty() or _word_text_by_id.has(word_id):
+		return false
+	if not is_instance_valid(_word_catalog) or not _word_catalog.has_method("get_word_definition"):
+		return false
+	var definition: Variant = _word_catalog.call("get_word_definition", word_id)
+	if not definition is Dictionary:
+		return false
+	_word_text_by_id[word_id] = str(definition.get("text", ""))
+	return true
+
+
+func _remove_unit_snapshot(unit_id: String) -> void:
+	if not _snapshot_index_by_id.has(unit_id):
+		return
+	_snapshots.remove_at(int(_snapshot_index_by_id[unit_id]))
+	_reindex_unit_snapshots()
+	if _field != null:
+		_field.set_unit_snapshots(_snapshots)
+	_faction_phrases_dirty = true
 
 
 func _refresh_missing_word_texts() -> bool:
@@ -1150,12 +1480,14 @@ func _refresh_view() -> void:
 	var player_count := int(_counts.get("player", 0))
 	var opponent_count := int(_counts.get("opponent", 0))
 	var neutral_count := int(_counts.get("neutral", 0))
-	var counts_text := "煲煲 %d    ·    中立 %d    ·    费米 %d    ·    合计 %d / 96" % [
-		player_count, neutral_count, opponent_count, player_count + neutral_count + opponent_count
+	var counts_text := "煲煲 %d    ·    中立 %d    ·    费米 %d    ·    合计 %d / %d" % [
+		player_count, neutral_count, opponent_count, player_count + neutral_count + opponent_count, _population_limit
 	]
 	if _counts_label.text != counts_text:
 		_counts_label.text = counts_text
-	_update_faction_phrases()
+	if _faction_phrases_dirty:
+		_update_faction_phrases()
+		_faction_phrases_dirty = false
 	_refresh_hand_view()
 
 
@@ -1220,13 +1552,12 @@ func _update_status_view() -> void:
 	elif _pending_publish:
 		next_text = "正在提交「%s」…" % _clip_text(str(_word_text_by_id.get(_pending_word_id, _pending_word_id)), 28)
 	elif _selected_word_id.is_empty():
-		next_text = "选择一句话，再点击棋盘中的中立观众。"
-	elif int(_counts.get("neutral", 0)) <= 0:
-		next_text = "场内暂无中立观众，请等局势变化。"
+		next_text = "选择一句话，再点击棋盘内任意位置发表。"
 	else:
-		next_text = "已选「%s」· 点击中立观众发表" % _clip_text(str(_word_text_by_id.get(_selected_word_id, _selected_word_id)), 30)
-	if _cooldown_remaining > 0.0:
-		next_text += "  ·  冷却 %.1f 秒" % _cooldown_remaining
+		next_text = "已选第 %d 槽「%s」· 点击棋盘位置发表" % [
+		_selected_slot_index + 1,
+		_clip_text(str(_word_text_by_id.get(_selected_word_id, _selected_word_id)), 30),
+	]
 	var tint := COLOR_MUTED
 	match _status_kind:
 		"success":
@@ -1258,7 +1589,7 @@ func _on_word_pressed(word_id: String) -> void:
 
 
 func _select_hand_slot(index: int) -> void:
-	# 鼠标与 1–4 键共用一次选择入口，已发表话语保持禁用。
+	# 鼠标与 1–3 键共用一次选择入口；重复点选可取消当前待发表卡。
 	if _battle_over:
 		_set_status("本场已经结束。", "warning")
 		return
@@ -1269,9 +1600,16 @@ func _select_hand_slot(index: int) -> void:
 	if word_id.is_empty():
 		_set_status("当前没有可选话语。", "warning")
 		return
-	if _used_word_ids.has(word_id):
-		_set_status("这句话本局已经发表。", "warning")
+	var slot_state: Dictionary = _hand_slot_states[index] if index < _hand_slot_states.size() else {}
+	var remaining := maxf(float(slot_state.get("remaining", 0.0)), 0.0)
+	var available := bool(slot_state.get("available", not _used_word_ids.has(word_id) and remaining <= 0.0))
+	if not available or _used_word_ids.has(word_id):
+		_set_status("这张卡还在补牌中，等倒计时结束再选。", "warning")
 		return
+	if _selected_slot_index == index:
+		_clear_word_selection()
+		return
+	_selected_slot_index = index
 	_selected_word_id = word_id
 	_field.call("set_selected_unit", "")
 	_status_kind = "info"
@@ -1280,32 +1618,27 @@ func _select_hand_slot(index: int) -> void:
 	_refresh_hand_view()
 
 
-func _on_unit_clicked(unit_id: String, team: String) -> void:
+func _on_board_position_clicked(spawn_position: Vector2) -> void:
 	if _battle_over:
 		_set_status("本场已经结束，无法继续发表。", "warning")
 		return
-	if _selected_word_id.is_empty():
+	if _selected_word_id.is_empty() or _selected_slot_index < 0:
 		_set_status("先从底部手牌选择一句话。", "warning")
 		return
-	if team != "neutral":
-		_set_status("这个观众已加入%s阵营，请点中立观众。" % ("煲煲" if team == "player" else "费米"), "error")
-		_field.call("show_unit_feedback", unit_id, "invalid_target")
-		return
-	if _cooldown_remaining > 0.0:
-		_set_status("发表冷却还剩 %.1f 秒。" % _cooldown_remaining, "warning")
-		return
-	if int(_counts.get("neutral", 0)) <= 0:
-		_set_status("当前没有中立观众可供发表。", "warning")
+	var slot_state: Dictionary = _hand_slot_states[_selected_slot_index] if _selected_slot_index < _hand_slot_states.size() else {}
+	if not bool(slot_state.get("available", not _used_word_ids.has(_selected_word_id))):
+		_set_status("这张卡正在补牌，当前不能发表。", "warning")
 		return
 
 	var word_id := _selected_word_id
 	if not publish_requested.get_connections().is_empty():
 		_pending_publish = true
 		_pending_word_id = word_id
-		_pending_unit_id = unit_id
-		publish_requested.emit(word_id, unit_id)
+		_pending_unit_id = ""
+		_pending_spawn_position = spawn_position
+		publish_requested.emit(_selected_slot_index, word_id, spawn_position)
 		if _pending_publish:
-			_status_text = "已提交发表请求，等待战斗主控回执。"
+			_status_text = "已提交棋盘落点，等待发表结果。"
 			_status_kind = "info"
 			_refresh_hand_view()
 		return
@@ -1313,12 +1646,12 @@ func _on_unit_clicked(unit_id: String, team: String) -> void:
 	if not _has_method(_battle_host, "publish_word"):
 		_set_status("战斗主控尚未提供发表入口。", "error")
 		return
-	var result: Variant = _battle_host.call("publish_word", "player", word_id, unit_id)
-	resolve_publish_request(word_id, unit_id, result)
+	var result: Variant = _battle_host.call("publish_word", "player", word_id, spawn_position, _selected_slot_index)
+	resolve_publish_request(_selected_slot_index, word_id, spawn_position, result)
 
 
-func resolve_publish_request(word_id: String, unit_id: String, result: Variant) -> void:
-	# A 回传权威发表结果；失败保留当前手牌与选句，成功后由 C 更新补位。
+func resolve_publish_request(slot_id: int, word_id: String, spawn_position: Vector2, result: Variant) -> void:
+	# A 回传权威结果；失败保留原卡，成功后槽位快照驱动刷新遮罩。
 	var succeeded := false
 	var reason := ""
 	var word_order := 0
@@ -1331,29 +1664,40 @@ func resolve_publish_request(word_id: String, unit_id: String, result: Variant) 
 	_pending_publish = false
 	_pending_word_id = ""
 	_pending_unit_id = ""
+	_pending_spawn_position = Vector2.ZERO
 	if not succeeded:
 		_set_status(_friendly_failure_reason(reason), "error")
-		publish_result.emit(word_id, unit_id, false)
+		publish_result.emit(word_id, "", false)
 		_refresh_hand_view()
 		return
 
 	_used_word_ids[word_id] = true
 	if _selected_word_id == word_id:
 		_selected_word_id = ""
+		_selected_slot_index = -1
 	_field.call("set_selected_unit", "")
 	var published_text := str(_word_text_by_id.get(word_id, _definition_for(word_id).get("text", word_id)))
 	var order_suffix := " · 顺序 #%d" % word_order if word_order > 0 else ""
-	_set_status("发表成功：%s 开始复读「%s」%s" % [unit_id, _clip_text(published_text, 30), order_suffix], "success")
-	_field.call("show_unit_feedback", unit_id, "seed")
+	_set_status("落点已发表：%s%s" % [_clip_text(published_text, 30), order_suffix], "success")
 	if not _hand_from_c:
 		_rebuild_fallback_hand()
 	_refresh_hand_view()
-	publish_result.emit(word_id, unit_id, true)
+	var first_unit_id := ""
+	if result is Dictionary:
+		var unit_ids: Array = result.get("unit_ids", [])
+		if not unit_ids.is_empty():
+			first_unit_id = str(unit_ids[0])
+	publish_result.emit(word_id, first_unit_id, true)
 
 
-func _on_empty_field_clicked() -> void:
-	if not _selected_word_id.is_empty():
-		_set_status("这里没有观众棋子，空白处不会生成新单位。", "warning")
+func _clear_word_selection() -> void:
+	if _selected_slot_index < 0 and _selected_word_id.is_empty():
+		return
+	_selected_slot_index = -1
+	_selected_word_id = ""
+	_status_text = ""
+	_status_kind = "info"
+	_refresh_hand_view()
 
 
 func _on_density_pressed(profile: String) -> void:
@@ -1384,8 +1728,12 @@ func _disconnect_sources() -> void:
 	_disconnect_signal(_event_source, "unit_changed", Callable(self, "_on_unit_changed"))
 	_disconnect_signal(_event_source, "unit_spawned", Callable(self, "_on_unit_spawned"))
 	_disconnect_signal(_event_source, "unit_despawned", Callable(self, "_on_unit_despawned"))
+	_disconnect_signal(_unit_source, "word_batch_spawned", Callable(self, "_on_word_batch_spawned"))
+	_disconnect_signal(_unit_source, "word_groups_changed", Callable(self, "_on_word_groups_changed"))
+	_disconnect_signal(_unit_source, "unit_physics_positions_updated", Callable(self, "_on_unit_physics_positions_updated"))
 	_disconnect_signal(_unit_source, "contact_resolved", Callable(self, "_on_contact_resolved"))
 	_event_source = null
+	_clear_group_bubbles()
 
 
 func _disconnect_signal(source: Object, signal_name: String, callback: Callable) -> void:
@@ -1415,6 +1763,8 @@ func _on_tier_changed(current_tier: int) -> void:
 func _on_battle_ended(result: Variant) -> void:
 	_battle_over = true
 	_selected_word_id = ""
+	_selected_slot_index = -1
+	_clear_group_bubbles()
 	_field.call("set_selected_unit", "")
 	var result_text := str(result)
 	if result is Dictionary:
@@ -1481,6 +1831,9 @@ func _on_contact_resolved(first_unit_id: Variant, second_unit_id: Variant, outco
 func _on_unit_changed(unit_id: String, reason: String) -> void:
 	if _is_special_stage_active():
 		return
+	_queue_group_speech_event([unit_id], false, reason)
+	_upsert_unit_snapshot(unit_id)
+	_refresh_faction_counts()
 	var message := ""
 	match reason:
 		"seed":
@@ -1500,12 +1853,219 @@ func _on_unit_changed(unit_id: String, reason: String) -> void:
 func _on_unit_spawned(unit_id: String) -> void:
 	if _is_special_stage_active():
 		return
+	_upsert_unit_snapshot(unit_id)
+	_refresh_faction_counts()
+	_refresh_view()
 	_add_event("[入场] 新观众 %s 加入" % unit_id)
+
+
+func _on_word_batch_spawned(batch: Dictionary) -> void:
+	if _is_special_stage_active() or _field == null:
+		return
+	_field.call("show_word_batch_burst", batch)
+	var unit_ids: Variant = batch.get("unit_ids", [])
+	if unit_ids is Array:
+		_queue_group_speech_event(unit_ids, true, "batch_spawned")
+
+
+func _on_word_groups_changed(groups: Array) -> void:
+	set_word_group_snapshots(groups)
+
+
+func _on_unit_physics_positions_updated(unit_ids: Variant, previous_positions: Variant, current_positions: Variant) -> void:
+	# 仅把 B 的轻量位置快照送到手绘场；碰撞和点击仍读取真实物理坐标。
+	if _field != null:
+		_field.call("set_physics_tick_position_arrays", unit_ids, previous_positions, current_positions)
+
+
+func _advance_group_bubbles(delta: float) -> void:
+	if _is_special_stage_active() or _battle_over:
+		return
+	var visibility_changed := false
+	for group_id_value in _group_bubble_states.keys():
+		var group_id := str(group_id_value)
+		var state: Dictionary = _group_bubble_states[group_id]
+		if float(state.get("display_remaining", 0.0)) > 0.0:
+			state["display_remaining"] = maxf(0.0, float(state["display_remaining"]) - delta)
+			if float(state["display_remaining"]) <= 0.0:
+				state["event_active"] = false
+				state["cooldown_remaining"] = _group_bubble_rng.randf_range(GROUP_BUBBLE_MIN_DELAY, GROUP_BUBBLE_MAX_DELAY)
+				visibility_changed = true
+		else:
+			state["cooldown_remaining"] = maxf(0.0, float(state.get("cooldown_remaining", 0.0)) - delta)
+			if float(state["cooldown_remaining"]) <= 0.0:
+				_try_show_group_bubble(group_id, false)
+	if visibility_changed:
+		_sync_active_group_bubble_ids()
+
+
+func _queue_group_speech_event(unit_ids: Array, is_batch: bool, reason: String) -> void:
+	var normalized_ids: Array[String] = []
+	for value in unit_ids:
+		var unit_id := str(value)
+		if not unit_id.is_empty() and not normalized_ids.has(unit_id):
+			normalized_ids.append(unit_id)
+	if normalized_ids.is_empty():
+		return
+	_pending_group_speech_events.append({
+		"unit_ids": normalized_ids,
+		"is_batch": is_batch,
+		"reason": reason,
+		"expires_at_msec": Time.get_ticks_msec() + 700,
+	})
+	_apply_pending_group_speech_events()
+
+
+func _apply_pending_group_speech_events() -> void:
+	var now := Time.get_ticks_msec()
+	for event_index in range(_pending_group_speech_events.size() - 1, -1, -1):
+		var event: Dictionary = _pending_group_speech_events[event_index]
+		var event_ids: Array = event.get("unit_ids", [])
+		var best_group_id := ""
+		var best_overlap := 0
+		for group in _word_groups:
+			if not group is Dictionary:
+				continue
+			var group_id := str(group.get("group_id", group.get("id", "")))
+			var members: Array = _group_member_ids(group)
+			var overlap := 0
+			for unit_id in event_ids:
+				if members.has(unit_id) or members.has(str(unit_id)):
+					overlap += 1
+			if overlap > best_overlap:
+				best_overlap = overlap
+				best_group_id = group_id
+		if best_overlap > 0 and not best_group_id.is_empty():
+			_try_show_group_bubble(best_group_id, true)
+			_pending_group_speech_events.remove_at(event_index)
+		elif now >= int(event.get("expires_at_msec", now)):
+			_pending_group_speech_events.remove_at(event_index)
+
+
+func _try_show_group_bubble(group_id: String, event_priority: bool) -> void:
+	if not _group_bubble_states.has(group_id):
+		return
+	var state: Dictionary = _group_bubble_states[group_id]
+	var now := Time.get_ticks_msec()
+	if float(state.get("display_remaining", 0.0)) > 0.0:
+		if event_priority and now - int(state.get("last_event_msec", -100000)) <= 150:
+			state["display_remaining"] = minf(GROUP_BUBBLE_MAX_DURATION, float(state["display_remaining"]) + 0.25)
+			state["last_event_msec"] = now
+			state["event_active"] = true
+			return
+		if not event_priority:
+			return
+	var active_ids: Array[String] = []
+	for active_group_id in _group_bubble_states:
+		if float(_group_bubble_states[active_group_id].get("display_remaining", 0.0)) > 0.0:
+			active_ids.append(str(active_group_id))
+	if active_ids.size() >= MAX_ACTIVE_GROUP_BUBBLES:
+		if not event_priority:
+			state["cooldown_remaining"] = _group_bubble_rng.randf_range(GROUP_BUBBLE_MIN_DELAY, GROUP_BUBBLE_MAX_DELAY)
+			return
+		var displaced_id := _oldest_active_group_bubble(false)
+		if displaced_id.is_empty():
+			displaced_id = _oldest_active_group_bubble(true)
+		if not displaced_id.is_empty() and _group_bubble_states.has(displaced_id):
+			var displaced: Dictionary = _group_bubble_states[displaced_id]
+			displaced["display_remaining"] = 0.0
+			displaced["event_active"] = false
+			displaced["cooldown_remaining"] = _group_bubble_rng.randf_range(GROUP_BUBBLE_MIN_DELAY, GROUP_BUBBLE_MAX_DELAY)
+	var text := _group_text_for_id(group_id)
+	var duration := clampf(GROUP_BUBBLE_MIN_DURATION + float(text.length()) / 220.0, GROUP_BUBBLE_MIN_DURATION, GROUP_BUBBLE_MAX_DURATION)
+	state["display_remaining"] = duration
+	state["cooldown_remaining"] = 0.0
+	state["event_active"] = event_priority
+	state["started_at_msec"] = now
+	state["last_event_msec"] = now if event_priority else int(state.get("last_event_msec", -100000))
+	_sync_active_group_bubble_ids()
+
+
+func _oldest_active_group_bubble(only_random: bool) -> String:
+	var oldest_id := ""
+	var oldest_time := 2147483647
+	for group_id in _group_bubble_states:
+		var state: Dictionary = _group_bubble_states[group_id]
+		if float(state.get("display_remaining", 0.0)) <= 0.0:
+			continue
+		if only_random and bool(state.get("event_active", false)):
+			continue
+		var started := int(state.get("started_at_msec", 0))
+		if started < oldest_time:
+			oldest_time = started
+			oldest_id = str(group_id)
+	return oldest_id
+
+
+func _sync_active_group_bubble_ids() -> void:
+	var next_active_ids: Dictionary = {}
+	for group_id in _group_bubble_states:
+		if float(_group_bubble_states[group_id].get("display_remaining", 0.0)) > 0.0:
+			next_active_ids[str(group_id)] = true
+	if _same_key_set(_active_group_bubble_ids, next_active_ids):
+		return
+	_active_group_bubble_ids.clear()
+	for group_id in next_active_ids:
+		_active_group_bubble_ids[group_id] = true
+	if _field != null:
+		_field.call("set_word_groups", _word_groups, _active_group_bubble_ids)
+
+
+func _same_key_set(first: Dictionary, second: Dictionary) -> bool:
+	if first.size() != second.size():
+		return false
+	for key in first:
+		if not second.has(key):
+			return false
+	return true
+
+
+func _group_member_ids(group: Dictionary) -> Array:
+	var values: Variant = group.get("member_ids", group.get("unit_ids", group.get("members", [])))
+	if not values is Array:
+		return []
+	var result: Array = []
+	for value in values:
+		if value is Dictionary:
+			var unit_id := str(value.get("unit_id", value.get("id", "")))
+			if not unit_id.is_empty():
+				result.append(unit_id)
+		else:
+			result.append(str(value))
+	return result
+
+
+func _group_text_for_id(group_id: String) -> String:
+	for group in _word_groups:
+		if group is Dictionary and str(group.get("group_id", group.get("id", ""))) == group_id:
+			var direct_text := str(group.get("text", group.get("word_text", "")))
+			if not direct_text.is_empty():
+				return direct_text
+			var word_snapshot: Variant = group.get("word_snapshot", {})
+			if word_snapshot is Dictionary:
+				var snapshot_text := str(word_snapshot.get("text", ""))
+				if not snapshot_text.is_empty():
+					return snapshot_text
+			return str(_word_text_by_id.get(str(group.get("word_id", "")), ""))
+	return ""
+
+
+func _clear_group_bubbles() -> void:
+	_group_bubble_states.clear()
+	_word_groups.clear()
+	_pending_group_speech_events.clear()
+	_active_group_bubble_ids.clear()
+	if _field != null:
+		_field.call("set_word_groups", _word_groups, _active_group_bubble_ids)
 
 
 func _on_unit_despawned(unit_id: String) -> void:
 	if _is_special_stage_active():
 		return
+	_remove_unit_snapshot(unit_id)
+	_refresh_faction_counts()
+	_field.call("forget_unit_position", unit_id)
+	_refresh_view()
 	_add_event("[离场] 观众 %s 离开" % unit_id)
 
 
@@ -1527,11 +2087,17 @@ func _set_status(message: String, kind: String) -> void:
 func _friendly_failure_reason(reason: String) -> String:
 	var normalized := reason.to_lower()
 	if normalized.contains("cool"):
-		return "还在发言冷却中；请稍候再点，失败不会消耗话语。"
+		return "这张卡还在补牌；失败不会消耗话语。"
+	if normalized.contains("capacity"):
+		return "棋子数量已到上限；卡片仍可再次使用。"
+	if normalized.contains("position"):
+		return "落点不在中央棋盘内；卡片仍可再次使用。"
+	if normalized.contains("slot"):
+		return "卡槽状态已变化；请重新选择可用卡片。"
 	if normalized.contains("used") or normalized.contains("published"):
 		return "这句话已经发表，本局不能再次主动使用。"
 	if normalized.contains("neutral") or normalized.contains("target"):
-		return "目标已经改变或不再中立；请选择场上另一名中立观众。"
+		return "发表目标已变化；重新点击棋盘位置即可重试。"
 	if normalized.contains("battle") or normalized.contains("ended"):
 		return "当前战斗无法发表；请等待战斗主控状态更新。"
 	return "发表未完成：%s" % reason if not reason.is_empty() else "发表未完成；请重新选择目标。"

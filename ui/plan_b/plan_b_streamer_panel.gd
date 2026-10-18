@@ -74,13 +74,12 @@ func configure_opponent_tier_textures(idle: Texture2D, tier_01: Texture2D, tier_
 	if _tier_presenter != null and streamer_side == "opponent":
 		_tier_presenter.call("configure_textures", idle, tier_01, tier_02, tier_03)
 
+func configure_portrait_character(character_id: String) -> void:
+	# 保存当前对手 ID，供结算演出选择对应的角色表现资源。
+	_result_character_id = StringName(character_id.strip_edges())
+
 func configure_opponent_foreground(texture: Texture2D) -> void:
 	_set_texture(_portrait_foreground, texture)
-
-
-## Sandbox 通过固定三列 HUD 公开入口注入主播身份，供结算演出选择角色动画。
-func configure_portrait_character(character_id: String) -> void:
-	_result_character_id = StringName(character_id.strip_edges())
 
 
 func set_tier(tier: int) -> void:
