@@ -4,6 +4,8 @@ signal unit_clicked(unit_id: String, team: String)
 signal empty_field_clicked
 signal board_position_clicked(spawn_position: Vector2)
 
+const PB14_PERFORMANCE_TRACKER_SCRIPT: Script = preload("res://systems/plan_b/performance/pb14_performance_tracker.gd")
+
 const TEAM_COLORS := {
 	"neutral": Color("#92a2ad"),
 	"player": Color("#50c7ff"),
@@ -14,6 +16,7 @@ var world_bounds := Rect2(Vector2.ZERO, Vector2(900.0, 490.0))
 var density_profile := "clear"
 
 var _snapshots: Array = []
+var _performance_tracker: Node
 var _snapshots_by_id: Dictionary = {}
 var _word_texts: Dictionary = {}
 var _unit_sprite_textures: Dictionary = {}
@@ -37,11 +40,19 @@ var _render_interpolation_fraction := 0.0
 var _movement_segments: Dictionary = {}
 var _contact_feedback: Array[Dictionary] = []
 var _word_batch_bursts: Array[Dictionary] = []
+var _last_drawn_group_bubbles: int = 0
+var _last_group_tail_candidates: int = 0
+var _tracker_group_layout_cache_hits: int = 0
 
 func _ready() -> void:
 	# 场地只消费只读快照；鼠标和触控都按现有棋子的可见位置做命中。
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	queue_redraw()
+
+
+## D 只在 A 显式启用 PB14 Tracker 时接收观测器。
+func set_performance_tracker(tracker: Node) -> void:
+	_performance_tracker = tracker if is_instance_valid(tracker) else null
 
 
 func set_world_bounds(bounds: Rect2) -> void:
@@ -51,6 +62,7 @@ func set_world_bounds(bounds: Rect2) -> void:
 
 
 func set_unit_snapshots(snapshots: Array) -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	if not _unit_layer_visible:
 		_snapshots.clear()
 		_snapshots_by_id.clear()
@@ -62,6 +74,8 @@ func set_unit_snapshots(snapshots: Array) -> void:
 					_snapshots_by_id[unit_id] = value
 		_previous_points.clear()
 		_movement_segments.clear()
+		if _performance_tracker != null:
+			_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_UNIT_SNAPSHOT, Time.get_ticks_usec() - tracker_start_usec, snapshots.size())
 		return
 	var next_points: Dictionary = {}
 	_movement_segments.clear()
@@ -89,6 +103,8 @@ func set_unit_snapshots(snapshots: Array) -> void:
 		if not next_points.has(old_id):
 			_previous_points.erase(old_id)
 	queue_redraw()
+	if _performance_tracker != null:
+		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_UNIT_SNAPSHOT, Time.get_ticks_usec() - tracker_start_usec, _snapshots.size())
 
 
 func set_physics_tick_position_arrays(
@@ -96,6 +112,7 @@ func set_physics_tick_position_arrays(
 	previous_positions: PackedVector2Array,
 	current_positions: PackedVector2Array
 ) -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	# 直接保存 B 的紧凑位置数组；ID 索引只在棋子出生/离场时重建。
 	var item_count: int = mini(unit_ids.size(), mini(previous_positions.size(), current_positions.size()))
 	var rebuild_index := _physics_position_index_dirty or _physics_unit_ids.size() != item_count
@@ -113,6 +130,8 @@ func set_physics_tick_position_arrays(
 			_physics_position_index_by_unit_id[str(unit_ids[index])] = index
 		_physics_position_index_dirty = false
 	queue_redraw()
+	if _performance_tracker != null:
+		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_POSITION_SNAPSHOT, Time.get_ticks_usec() - tracker_start_usec, item_count, 1 if rebuild_index else 0)
 
 
 func forget_unit_position(unit_id: String) -> void:
@@ -139,6 +158,7 @@ func set_word_texts(word_texts: Dictionary) -> void:
 
 
 func set_word_groups(groups: Array, active_bubble_ids: Dictionary) -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	# D 只消費 B 已算好的连通团体，不在显示层重复做邻近扫描。
 	var signature := _build_word_group_signature(groups)
 	if signature != _word_group_signature:
@@ -147,6 +167,8 @@ func set_word_groups(groups: Array, active_bubble_ids: Dictionary) -> void:
 	_word_groups = groups
 	_active_group_bubble_ids = active_bubble_ids
 	queue_redraw()
+	if _performance_tracker != null:
+		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_GROUP_SNAPSHOT, Time.get_ticks_usec() - tracker_start_usec, groups.size(), active_bubble_ids.size())
 
 
 func set_team_textures(neutral_texture: Texture2D, player_texture: Texture2D, opponent_texture: Texture2D) -> void:
@@ -216,6 +238,8 @@ func show_contact_feedback(first_unit_id: String, second_unit_id: String, outcom
 
 func show_word_batch_burst(batch: Dictionary) -> void:
 	# 发表事实只负责约半秒的扇形入场提示；棋子位置仍取 B 的实时快照。
+	if _performance_tracker != null:
+		_performance_tracker.call("record_event", PB14_PERFORMANCE_TRACKER_SCRIPT.EVENT_BATCH_BURST_STARTED)
 	var visual: Dictionary = batch.duplicate(false)
 	visual["started_at_msec"] = Time.get_ticks_msec()
 	_word_batch_bursts.push_front(visual)
@@ -242,6 +266,7 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	_render_interpolation_fraction = clampf(Engine.get_physics_interpolation_fraction(), 0.0, 1.0)
 	var arena := _arena_rect()
 	draw_rect(Rect2(Vector2.ZERO, size), Color("#07121b"), true)
@@ -254,6 +279,9 @@ func _draw() -> void:
 		var y := arena.position.y + arena.size.y * float(row) / 5.0
 		draw_line(Vector2(arena.position.x, y), Vector2(arena.end.x, y), Color(0.25, 0.42, 0.49, 0.18), 1.0)
 	if not _unit_layer_visible:
+		if _performance_tracker != null:
+			_performance_tracker.call("set_ui_draw_work", 0, 0, 0)
+			_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_DRAW, Time.get_ticks_usec() - tracker_start_usec, 0)
 		return
 
 	# 移动尾迹来自前一帧只读位置，用低对比度避免遮住密集棋子。
@@ -262,9 +290,15 @@ func _draw() -> void:
 	_draw_contact_feedback()
 	_draw_word_batch_bursts()
 
+	var unit_draw_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	for snapshot in _snapshots:
 		_draw_unit(snapshot)
+	if _performance_tracker != null:
+		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UNIT_DRAW_BATCH, Time.get_ticks_usec() - unit_draw_start_usec, _snapshots.size())
 	_draw_group_bubbles()
+	if _performance_tracker != null:
+		_performance_tracker.call("set_ui_draw_work", _snapshots.size(), _last_drawn_group_bubbles, _last_group_tail_candidates)
+		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_DRAW, Time.get_ticks_usec() - tracker_start_usec, _snapshots.size(), _last_drawn_group_bubbles + _last_group_tail_candidates)
 
 
 func _draw_unit(snapshot: Dictionary) -> void:
@@ -311,8 +345,28 @@ func _draw_unit(snapshot: Dictionary) -> void:
 
 
 func _draw_group_bubbles() -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
+	var drawn_bubble_count: int = 0
+	var tail_candidate_count: int = 0
+	var layout_call_count: int = 0
+	var layout_total_usec: int = 0
+	var layout_max_usec: int = 0
+	var layout_member_total: int = 0
+	var layout_member_max: int = 0
+	var layout_cache_hits_before: int = _tracker_group_layout_cache_hits
+	var position_call_count: int = 0
+	var position_total_usec: int = 0
+	var position_max_usec: int = 0
+	var position_member_total: int = 0
+	var position_member_max: int = 0
+	var position_entry_total: int = 0
+	var position_entry_max: int = 0
 	# 每帧只取可见团体成员的当前显示位置；文本测量和尾巴成员选择由布局缓存复用。
 	if not _unit_layer_visible or _active_group_bubble_ids.is_empty():
+		_last_drawn_group_bubbles = 0
+		_last_group_tail_candidates = 0
+		if _performance_tracker != null:
+			_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_GROUP_BUBBLE_DRAW, Time.get_ticks_usec() - tracker_start_usec, _word_groups.size(), 0)
 		return
 	for group_value in _word_groups:
 		if not group_value is Dictionary:
@@ -328,10 +382,33 @@ func _draw_group_bubbles() -> void:
 		var phrase := _group_text(group, word_id)
 		if word_id.is_empty() or phrase.is_empty() or str(group.get("team", "neutral")) == "neutral":
 			continue
+		var layout_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 		var layout := _get_group_bubble_layout(group, group_id, member_ids, phrase)
+		if _performance_tracker != null:
+			var layout_elapsed_usec: int = Time.get_ticks_usec() - layout_start_usec
+			layout_call_count += 1
+			layout_total_usec += layout_elapsed_usec
+			layout_max_usec = maxi(layout_max_usec, layout_elapsed_usec)
+			layout_member_total += member_ids.size()
+			layout_member_max = maxi(layout_member_max, member_ids.size())
+		var member_positions_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 		var positions_by_id := _group_member_positions(group, member_ids)
+		if _performance_tracker != null:
+			var positions_elapsed_usec: int = Time.get_ticks_usec() - member_positions_start_usec
+			position_call_count += 1
+			position_total_usec += positions_elapsed_usec
+			position_max_usec = maxi(position_max_usec, positions_elapsed_usec)
+			position_member_total += member_ids.size()
+			position_member_max = maxi(position_member_max, member_ids.size())
+			position_entry_total += positions_by_id.size()
+			position_entry_max = maxi(position_entry_max, positions_by_id.size())
 		if positions_by_id.is_empty():
 			continue
+		if _performance_tracker != null:
+			drawn_bubble_count += 1
+			var tail_ids_value: Variant = layout.get("tail_ids", [])
+			if tail_ids_value is Array:
+				tail_candidate_count += tail_ids_value.size()
 		var center := Vector2.ZERO
 		for position_value in positions_by_id.values():
 			center += position_value
@@ -360,12 +437,42 @@ func _draw_group_bubbles() -> void:
 			-1,
 			Color("#36252f")
 		)
+	_last_drawn_group_bubbles = drawn_bubble_count
+	_last_group_tail_candidates = tail_candidate_count
+	if _performance_tracker != null:
+		if layout_call_count > 0:
+			_performance_tracker.call(
+				"record_aggregate",
+				PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_GROUP_BUBBLE_LAYOUT,
+				layout_call_count,
+				layout_total_usec,
+				layout_max_usec,
+				layout_member_total,
+			_tracker_group_layout_cache_hits - layout_cache_hits_before,
+				layout_member_max,
+			1 if _tracker_group_layout_cache_hits > layout_cache_hits_before else 0
+			)
+		if position_call_count > 0:
+			_performance_tracker.call(
+				"record_aggregate",
+				PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_GROUP_BUBBLE_POSITIONS,
+				position_call_count,
+				position_total_usec,
+				position_max_usec,
+				position_member_total,
+				position_entry_total,
+				position_member_max,
+				position_entry_max
+			)
+		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_GROUP_BUBBLE_DRAW, Time.get_ticks_usec() - tracker_start_usec, drawn_bubble_count, tail_candidate_count)
 
 
 func _get_group_bubble_layout(group: Dictionary, group_id: String, member_ids: Array, phrase: String) -> Dictionary:
 	var signature := "%s|%d|%s|%d|%d" % [str(group.get("team", "")), member_ids.size(), phrase, int(size.x), int(size.y)]
 	var cached: Dictionary = _group_bubble_layouts.get(group_id, {})
 	if str(cached.get("signature", "")) == signature:
+		if _performance_tracker != null:
+			_tracker_group_layout_cache_hits += 1
 		return cached
 	var bubble_width := minf(_bubble_base_width(member_ids.size()), maxf(100.0, size.x - 24.0))
 	var padding := 12.0
@@ -388,6 +495,8 @@ func _get_group_bubble_layout(group: Dictionary, group_id: String, member_ids: A
 		"tail_ids": _choose_tail_member_ids(group, member_ids),
 	}
 	_group_bubble_layouts[group_id] = layout
+	if _performance_tracker != null:
+		_performance_tracker.call("record_event", PB14_PERFORMANCE_TRACKER_SCRIPT.EVENT_GROUP_BUBBLE_LAYOUT_MISS)
 	return layout
 
 

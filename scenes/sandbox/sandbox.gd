@@ -24,6 +24,7 @@ const PARADOX_COMIC_SCENE: PackedScene = preload("res://systems/presentation/par
 const PLAN_B_BATTLE_UI_SCENE: PackedScene = preload("res://ui/plan_b/plan_b_battle_ui.tscn")
 const PLAN_B_HOST_SCRIPT: Script = preload("res://systems/plan_b/battle/plan_b_battle_host.gd")
 const PLAN_B_SIMULATION_SCRIPT: Script = preload("res://systems/plan_b/simulation/plan_b_unit_simulation.gd")
+const PB14_PERFORMANCE_TRACKER_SCRIPT: Script = preload("res://systems/plan_b/performance/pb14_performance_tracker.gd")
 const PLAN_B_CONTENT_CATALOG_SCRIPT: Script = preload("res://systems/plan_b/content/plan_b_content_catalog.gd")
 const PLAN_B_OPPONENT_DIRECTOR_SCRIPT: Script = preload("res://systems/plan_b/opponent/fermi_opponent_director.gd")
 # 关卡资料统一由目录提供，运行验证可注入独立临时目录。
@@ -60,6 +61,7 @@ var _plan_b_host: PlanBBattleHost
 var _plan_b_simulation: Node2D
 var _plan_b_content_catalog: Object
 var _plan_b_opponent_director: Object
+var _pb14_performance_tracker: Node
 var _plan_b_level_ready: bool = false
 var _plan_b_slot_state_sync_elapsed: float = 0.0
 var _rest_session: RestSession
@@ -287,8 +289,39 @@ func _ready() -> void:
 			Callable(_battle_hud, "enqueue_dialogue_bubble"))):
 		push_error("Sandbox: 无法接入战斗定时对手对白消费者。")
 		return
+	_setup_pb14_performance_tracker()
 	if not _battle_attempt_flow.start_first_attempt():
 		push_error("Sandbox: 无法启动首场普通战斗。")
+
+
+## 默认不创建 Tracker；只有 PB14_PERF_TRACKER=1 时才向 B/D 注入观测器。
+func _setup_pb14_performance_tracker() -> void:
+	if not use_plan_b_campaign or OS.get_environment("PB14_PERF_TRACKER") != "1":
+		return
+	if _plan_b_host == null or _plan_b_simulation == null or _battle_hud == null or _battle_attempt_flow == null:
+		push_error("PB14 tracker: runtime sources are unavailable")
+		return
+	var tracker := PB14_PERFORMANCE_TRACKER_SCRIPT.new() as Node
+	if tracker == null:
+		push_error("PB14 tracker: unable to create tracker node")
+		return
+	var duration_seconds: float = 0.0
+	var duration_text: String = OS.get_environment("PB14_PERF_TRACKER_SECONDS")
+	if duration_text.is_valid_float():
+		duration_seconds = duration_text.to_float()
+	var output_path: String = OS.get_environment("PB14_PERF_TRACKER_PATH")
+	if not bool(tracker.call("configure", output_path, duration_seconds)):
+		tracker.free()
+		push_error("PB14 tracker: invalid runtime configuration")
+		return
+	tracker.call("set_runtime_sources", _plan_b_host, _plan_b_simulation, _battle_hud, _battle_attempt_flow)
+	add_child(tracker)
+	if not bool(tracker.call("is_enabled")):
+		tracker.queue_free()
+		return
+	_pb14_performance_tracker = tracker
+	_plan_b_simulation.call("set_performance_tracker", tracker)
+	_battle_hud.call("set_performance_tracker", tracker)
 
 
 ## 正式三列 UI 由 D 提供；旧六句矛盾与准心组件复用 D 明确开放的 Paradox 容器。

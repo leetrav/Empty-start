@@ -4,12 +4,18 @@ var steering_call_count: int = 0
 var steering_calls_by_id: Dictionary = {}
 var neighbor_grid_rebuild_count: int = 0
 var word_group_refresh_count: int = 0
+var neutral_decisions_with_neighbors: int = 0
+var faction_decisions_with_neighbors: int = 0
 
 
 ## 仅供 PB-14 smoke 统计决策频率；生产模拟器仍调用同一基类实现。
 func _get_steering(unit: PlanBUnit, nearby_units: Array[PlanBUnit]) -> Dictionary:
 	steering_call_count += 1
 	steering_calls_by_id[unit.unit_id] = int(steering_calls_by_id.get(unit.unit_id, 0)) + 1
+	if unit.team == &"neutral" and not nearby_units.is_empty():
+		neutral_decisions_with_neighbors += 1
+	elif unit.team != &"neutral" and not nearby_units.is_empty():
+		faction_decisions_with_neighbors += 1
 	return super._get_steering(unit, nearby_units)
 
 

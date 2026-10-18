@@ -18,6 +18,7 @@ signal simulation_started
 signal simulation_paused
 
 const UNIT_SCENE: PackedScene = preload("res://systems/plan_b/simulation/plan_b_unit.tscn")
+const PB14_PERFORMANCE_TRACKER_SCRIPT: Script = preload("res://systems/plan_b/performance/pb14_performance_tracker.gd")
 const NEUTRAL_TEAM: StringName = &"neutral"
 const PLAYER_TEAM: StringName = &"player"
 const OPPONENT_TEAM: StringName = &"opponent"
@@ -90,6 +91,15 @@ var _next_word_group_id: int = 1
 var _group_refresh_remaining_seconds: float = 0.0
 var _steering_cache_by_unit_id: Dictionary = {}
 var _previous_physics_positions_by_unit_id: Dictionary = {}
+var _performance_tracker: Node
+var _tracker_steering_decisions_this_tick: int = 0
+var _tracker_neighbor_query_count: int = 0
+var _tracker_neighbor_total_usec: int = 0
+var _tracker_neighbor_max_usec: int = 0
+var _tracker_neighbor_candidate_total: int = 0
+var _tracker_neighbor_candidate_max: int = 0
+var _tracker_neighbor_result_total: int = 0
+var _tracker_neighbor_result_max: int = 0
 
 
 func _ready() -> void:
@@ -336,6 +346,8 @@ func clear_population() -> void:
 	_word_groups_by_id.clear()
 	_next_word_group_id = 1
 	_group_refresh_remaining_seconds = 0.0
+	if _performance_tracker != null:
+		_performance_tracker.call("set_group_snapshot", 0, 0)
 	var existing_ids: Array[int] = _get_sorted_unit_ids()
 	for unit_id: int in existing_ids:
 		var unit := _units_by_id.get(unit_id) as PlanBUnit
@@ -437,8 +449,12 @@ func _rebuild_neighbor_grid(units: Array[PlanBUnit]) -> void:
 
 ## 只从附近网格桶取候选，再用当前物理位置做精确半径过滤。
 func _get_neighbor_units(scene_local_position: Vector2, search_radius: float) -> Array[PlanBUnit]:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
+	var scanned_candidate_count: int = 0
 	var nearby_units: Array[PlanBUnit] = []
 	if _neighbor_grid.is_empty() or search_radius <= 0.0:
+		if _performance_tracker != null:
+			_record_tracker_neighbor_query(Time.get_ticks_usec() - tracker_start_usec, 0, 0)
 		return nearby_units
 	# 网格刷新之间的自然位移与一次接触分离都计入候选半径，避免碰撞后立即全量重建。
 	var movement_padding: float = maximum_speed * _neighbor_grid_elapsed_seconds
@@ -457,6 +473,8 @@ func _get_neighbor_units(scene_local_position: Vector2, search_radius: float) ->
 			var bucket_value: Variant = _neighbor_grid.get(Vector2i(cell_x, cell_y), [])
 			if not (bucket_value is Array):
 				continue
+			if _performance_tracker != null:
+				scanned_candidate_count += bucket_value.size()
 			for unit_value: Variant in bucket_value:
 				var unit := unit_value as PlanBUnit
 				if (
@@ -467,7 +485,22 @@ func _get_neighbor_units(scene_local_position: Vector2, search_radius: float) ->
 					continue
 				nearby_units.append(unit)
 	nearby_units.sort_custom(_unit_id_is_before)
+	if _performance_tracker != null:
+		_record_tracker_neighbor_query(
+			Time.get_ticks_usec() - tracker_start_usec, scanned_candidate_count, nearby_units.size()
+		)
 	return nearby_units
+
+
+## Neighborhood 查询在物理步内先累计，避免每次查询都跨 Node 调用 Tracker。
+func _record_tracker_neighbor_query(elapsed_usec: int, candidate_count: int, result_count: int) -> void:
+	_tracker_neighbor_query_count += 1
+	_tracker_neighbor_total_usec += maxi(elapsed_usec, 0)
+	_tracker_neighbor_max_usec = maxi(_tracker_neighbor_max_usec, elapsed_usec)
+	_tracker_neighbor_candidate_total += maxi(candidate_count, 0)
+	_tracker_neighbor_candidate_max = maxi(_tracker_neighbor_candidate_max, candidate_count)
+	_tracker_neighbor_result_total += maxi(result_count, 0)
+	_tracker_neighbor_result_max = maxi(_tracker_neighbor_result_max, result_count)
 
 
 ## 目标方向按棋子ID分相错峰；每个棋子独立遵守约10Hz更新上限。
@@ -489,10 +522,16 @@ func _update_cached_steering(unit: PlanBUnit, delta: float) -> void:
 	var interval: float = maxf(target_decision_refresh_seconds, 0.01)
 	var refresh_remaining: float = float(cached.get("refresh_remaining_seconds", 0.0)) - delta
 	if refresh_remaining <= 0.0:
-		var search_radius: float = maxf(detection_radius, ally_detection_radius)
-		var decision: Dictionary = _get_steering(unit, _get_neighbor_units(unit.position, search_radius))
+		var nearby_units: Array[PlanBUnit] = []
+		# 中立棋子只会游荡；略过永远不会被它们使用的邻域扫描。
+		if unit.team != NEUTRAL_TEAM:
+			var search_radius: float = maxf(detection_radius, ally_detection_radius)
+			nearby_units = _get_neighbor_units(unit.position, search_radius)
+		var decision: Dictionary = _get_steering(unit, nearby_units)
 		cached["direction"] = decision.get("direction", unit.wander_direction)
 		cached["intent"] = decision.get("intent", &"wander")
+		if _performance_tracker != null:
+			_tracker_steering_decisions_this_tick += 1
 		refresh_remaining += interval
 		if refresh_remaining <= 0.0:
 			refresh_remaining = interval
@@ -502,6 +541,7 @@ func _update_cached_steering(unit: PlanBUnit, delta: float) -> void:
 
 ## 每个物理步发布按ID排序的上一/当前位置；新生棋子首帧以相同位置起步。
 func _emit_physics_positions() -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	var unit_ids := PackedInt32Array()
 	var previous_positions := PackedVector2Array()
 	var current_positions := PackedVector2Array()
@@ -513,7 +553,22 @@ func _emit_physics_positions() -> void:
 		previous_positions.append(previous_position)
 		current_positions.append(current_position)
 		_previous_physics_positions_by_unit_id[unit.unit_id] = current_position
+	if _performance_tracker != null:
+		_performance_tracker.call(
+			"record_section",
+			PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_POSITION_EXPORT,
+			Time.get_ticks_usec() - tracker_start_usec,
+			unit_ids.size()
+		)
+		tracker_start_usec = Time.get_ticks_usec()
 	unit_physics_positions_updated.emit(unit_ids, previous_positions, current_positions)
+	if _performance_tracker != null:
+		_performance_tracker.call(
+			"record_section",
+			PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_POSITION_SIGNAL,
+			Time.get_ticks_usec() - tracker_start_usec,
+			unit_ids.size()
+		)
 
 
 func _neighbor_grid_cell_for_position(scene_local_position: Vector2) -> Vector2i:
@@ -529,6 +584,7 @@ func _unit_id_is_before(first_unit: PlanBUnit, second_unit: PlanBUnit) -> bool:
 
 ## 按成员集合重叠延续 group_id，团体拆分或合并时不依赖数组临时索引。
 func _refresh_word_groups() -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	var previous_groups: Dictionary = _word_groups_by_id
 	var previous_group_by_unit: Dictionary = {}
 	for group_id_value: Variant in previous_groups.keys():
@@ -539,10 +595,13 @@ func _refresh_word_groups() -> void:
 	var components: Array[Dictionary] = _build_word_group_components(previous_group_by_unit)
 	var assigned_ids: Dictionary = _assign_word_group_ids(components)
 	var next_groups: Dictionary = {}
+	var member_count: int = 0
 	for component_index: int in components.size():
 		var component: Dictionary = components[component_index]
 		var group_id: int = int(assigned_ids[component_index])
 		var member_ids: Array = component.get("member_ids", [])
+		if _performance_tracker != null:
+			member_count += member_ids.size()
 		next_groups[group_id] = {
 			"group_id": group_id,
 			"team": str(component.get("team", "")),
@@ -554,8 +613,26 @@ func _refresh_word_groups() -> void:
 	var topology_changed: bool = not _word_groups_have_same_topology(previous_groups, next_groups)
 	_word_groups_by_id = next_groups
 	_group_refresh_remaining_seconds = group_topology_refresh_seconds
+	if _performance_tracker != null:
+		_performance_tracker.call("set_group_snapshot", next_groups.size(), member_count)
+		_performance_tracker.call(
+			"record_section",
+			PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_GROUP_REFRESH,
+			Time.get_ticks_usec() - tracker_start_usec,
+			next_groups.size(),
+			member_count
+		)
 	if topology_changed:
+		var snapshot_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 		word_groups_changed.emit(get_word_groups())
+		if _performance_tracker != null:
+			_performance_tracker.call(
+				"record_section",
+				PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_GROUP_SNAPSHOT_EMIT,
+				Time.get_ticks_usec() - snapshot_start_usec,
+				next_groups.size(),
+				member_count
+			)
 
 
 ## 同队同词的邻近单位形成连通组件；72/90px距离迟滞避免阈值抖动。
@@ -714,13 +791,46 @@ func is_running() -> bool:
 	return _is_running
 
 
+## A 仅在显式 opt-in 时注入观察器；默认模拟逻辑不创建 Tracker 节点。
+func set_performance_tracker(tracker: Node) -> void:
+	_performance_tracker = tracker if is_instance_valid(tracker) else null
+
+
 ## 每个物理帧先裁决上一轮实际碰撞，再推进移动、寿命和补人。
 func _physics_process(delta: float) -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
+	if _performance_tracker != null:
+		_tracker_neighbor_query_count = 0
+		_tracker_neighbor_total_usec = 0
+		_tracker_neighbor_max_usec = 0
+		_tracker_neighbor_candidate_total = 0
+		_tracker_neighbor_candidate_max = 0
+		_tracker_neighbor_result_total = 0
+		_tracker_neighbor_result_max = 0
 	_resolve_pending_contacts()
 	_advance_units(delta)
 	_despawn_expired_units()
 	_update_neutral_replenishment(delta)
 	_emit_physics_positions()
+	if _performance_tracker != null:
+		_performance_tracker.call(
+			"record_section",
+			PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_SIMULATION_TICK,
+			Time.get_ticks_usec() - tracker_start_usec,
+			_units_by_id.size()
+		)
+		if _tracker_neighbor_query_count > 0:
+			_performance_tracker.call(
+				"record_aggregate",
+				PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_NEIGHBOR_QUERY,
+				_tracker_neighbor_query_count,
+				_tracker_neighbor_total_usec,
+				_tracker_neighbor_max_usec,
+				_tracker_neighbor_candidate_total,
+				_tracker_neighbor_result_total,
+				_tracker_neighbor_candidate_max,
+				_tracker_neighbor_result_max
+			)
 
 
 ## 收集 Area2D 实际碰撞，双方的 entered 信号折叠为同一个无向棋子对。
@@ -948,12 +1058,23 @@ func _advance_units(delta: float) -> void:
 			unit.wander_direction = Vector2.from_angle(_rng.randf_range(0.0, TAU))
 			unit.wander_change_remaining = _rng.randf_range(1.2, 3.1)
 
+	var steering_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
+	if _performance_tracker != null:
+		_tracker_steering_decisions_this_tick = 0
 	var steering_by_index: Array[Dictionary] = []
 	for unit: PlanBUnit in units:
 		_update_cached_steering(unit, delta)
 		var cached_value: Variant = _steering_cache_by_unit_id.get(unit.unit_id, {})
 		var cached: Dictionary = cached_value if cached_value is Dictionary else {}
 		steering_by_index.append(cached)
+	if _performance_tracker != null:
+		_performance_tracker.call(
+			"record_section",
+			PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_STEERING_BATCH,
+			Time.get_ticks_usec() - steering_start_usec,
+			units.size(),
+			_tracker_steering_decisions_this_tick
+		)
 	for unit_index: int in units.size():
 		var unit: PlanBUnit = units[unit_index]
 		if unit.contact_recoil_remaining_seconds > 0.0:

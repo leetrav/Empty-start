@@ -285,7 +285,7 @@ PB-10 配置核对发现 `data/plan_b/` 的五份战斗 CSV 缺少 Keep File sid
 - **现象**：Godot 4.7.2 在新 worktree 首次 `--headless --editor` 时，项目主题加载先报告字体没有 FontFile loader，部分音频也短暂出现 `Failed loading resource`；同一轮后续扫描会重新导入字体和音频，之后加载 UI 场景正常。
 - **条件**：worktree 尚无 `.godot` 导入缓存，且项目全局主题在首次文件系统扫描前初始化。
 - **处理**：先执行 `godot --headless --editor --import --path <project-root> --quit` 完成资源导入，再用项目场景入口复验。首轮主题加载报错不单独作为资源不存在的结论；随后场景仍失败时再按最终解析日志定位。
-- **证据**：PB-12～14 D worktree 首轮 import 完成后，Plan B UI 场景与 D UI smoke 均退出 0；相同 cold-import 现象在 B 的新 worktree 复现。
+- **证据**：PB-12～14 D worktree 首轮 import 完成后，Plan B UI 场景与 D UI smoke 均退出 0；相同 cold-import 现象在 B 的新 worktree 复现。PB-14 A worktree 另复现了 PNG 与 `.import` sidecar 齐全、但6张弹幕球目标 `.ctex` 缺失；一次 `--headless --editor --import --quit` 返回0仍未生成这些目标，核对实际缓存后从同项目同版本的 E worktree 复制六个确切缓存文件，随后 Sandbox headless 短跑进入运行态。Exit 0 不足以证明指定导入目标已经存在。
 
 ### KT-46：PK 归零关闭对手侧后，失败剧情序列被 SD-03 拒收
 

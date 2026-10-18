@@ -16,6 +16,7 @@ const PK_BAR_SKIN_SCENE: PackedScene = preload("res://systems/presentation/pk_ba
 const AIM_RETICLE_SCENE: PackedScene = preload("res://systems/combat_attack/aim_reticle.tscn")
 const StageArrowScript = preload("res://systems/presentation/stage_arrow_fx.gd")
 const DialogueQueueScript = preload("res://ui/streamer_bubble_dialogue/streamer_bubble_dialogue_queue.gd")
+const PB14_PERFORMANCE_TRACKER_SCRIPT: Script = preload("res://systems/plan_b/performance/pb14_performance_tracker.gd")
 const COLOR_PLAYER := Color("#50c7ff")
 const COLOR_OPPONENT := Color("#ff9f68")
 const COLOR_NEUTRAL := Color("#92a2ad")
@@ -72,6 +73,7 @@ class TouchReviewOverlay:
 		draw_string(ThemeDB.fallback_font, Vector2(24.0, size.y - 16.0), "触控热区示意", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#ffd6aa"))
 
 var _battle_host: Object
+var _performance_tracker: Node
 var _unit_source: Object
 var _word_catalog: Object
 var _event_source: Object
@@ -90,6 +92,10 @@ var _group_bubble_states: Dictionary = {}
 var _active_group_bubble_ids: Dictionary = {}
 var _pending_group_speech_events: Array[Dictionary] = []
 var _group_bubble_rng := RandomNumberGenerator.new()
+var _tracker_unit_snapshot_calls: int = 0
+var _tracker_unit_snapshot_total_usec: int = 0
+var _tracker_unit_snapshot_max_usec: int = 0
+var _tracker_unit_snapshot_work_total: int = 0
 var _selected_word_id := ""
 var _battle_over := false
 var _pk_value := 50.0
@@ -186,6 +192,7 @@ func _process(delta: float) -> void:
 		_counterattack_label.visible = false
 	_advance_slot_fill_visual(delta)
 	_advance_group_bubbles(delta)
+	_flush_tracker_unit_snapshot_metrics()
 	_sync_elapsed += delta
 	if _sync_elapsed < 0.1:
 		return
@@ -240,6 +247,23 @@ func bind_sources(battle_host: Object, unit_source: Object, word_catalog: Object
 	_refresh_view()
 
 
+## Sandbox 只在显式 opt-in 时注入 Tracker；D 的正常 UI 路径保持关闭。
+func set_performance_tracker(tracker: Node) -> void:
+	_performance_tracker = tracker if is_instance_valid(tracker) else null
+	if _field != null and _field.has_method("set_performance_tracker"):
+		_field.call("set_performance_tracker", _performance_tracker)
+
+
+## Tracker 每秒读取一次轻量快照；正常关闭时没有额外调用和复制。
+func get_pb14_performance_snapshot() -> Dictionary:
+	return {
+		"unit_snapshot_count": _snapshots.size(),
+		"group_snapshot_count": _word_groups.size(),
+		"active_group_bubble_count": _active_group_bubble_ids.size(),
+		"pending_group_speech_events": _pending_group_speech_events.size(),
+	}
+
+
 func set_word_definitions(definitions: Array) -> void:
 	# C 交付只读词条快照；界面不从正式词库自行拼装原型句子。
 	_word_definitions.clear()
@@ -289,6 +313,7 @@ func set_word_hand(hand: Array, remaining_count: int = 0) -> void:
 
 
 func set_player_slot_states(states: Array) -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	# A 的槽位快照是唯一可用状态与五秒剩余时间来源。
 	var next_states: Array[Dictionary] = [{}, {}, {}]
 	for value in states:
@@ -302,6 +327,8 @@ func set_player_slot_states(states: Array) -> void:
 	for slot_id in 3:
 		_hand_display_remaining[slot_id] = maxf(float(_hand_slot_states[slot_id].get("remaining", 0.0)), 0.0)
 	_refresh_hand_view()
+	if _performance_tracker != null:
+		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_REFRESH, Time.get_ticks_usec() - tracker_start_usec, next_states.size())
 
 
 func set_group_bubble_random_seed(seed_value: int) -> void:
@@ -310,9 +337,17 @@ func set_group_bubble_random_seed(seed_value: int) -> void:
 
 
 func set_word_group_snapshots(groups: Array) -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	# B 管理连通关系；D 只同步显示快照并延续可见气泡计时。
 	if _is_special_stage_active() or _battle_over:
 		_clear_group_bubbles()
+		if _performance_tracker != null:
+			_performance_tracker.call(
+				"record_section",
+				PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_GROUP_SNAPSHOT,
+				Time.get_ticks_usec() - tracker_start_usec,
+				0
+			)
 		return
 	var next_groups: Array = []
 	var members_by_group: Dictionary = {}
@@ -349,6 +384,13 @@ func set_word_group_snapshots(groups: Array) -> void:
 	if _field != null:
 		_field.call("set_word_groups", _word_groups, _active_group_bubble_ids)
 	_apply_pending_group_speech_events()
+	if _performance_tracker != null:
+		_performance_tracker.call(
+			"record_section",
+			PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_GROUP_SNAPSHOT,
+			Time.get_ticks_usec() - tracker_start_usec,
+			next_groups.size()
+		)
 
 
 func _assign_previous_bubble_states(members_by_group: Dictionary) -> Dictionary:
@@ -741,10 +783,15 @@ func restore_mouse_aim(viewport_position: Vector2) -> void:
 func show_dialogue_bubble(entry: BubbleDialogueEntry) -> StreamerBubbleView:
 	if entry == null or entry.text.strip_edges().is_empty():
 		return null
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	var panel: Control = _player_panel if entry.side == BubbleDialogueEntry.SpeakerSide.PLAYER else _opponent_panel
 	var bubble: StreamerBubbleView = panel.call("show_bubble", entry) as StreamerBubbleView
 	if bubble != null:
 		dialogue_bubble_presented.emit(entry.side, entry.event_id, entry.text)
+	if _performance_tracker != null:
+		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_DIALOGUE_BUBBLE_CREATE, Time.get_ticks_usec() - tracker_start_usec, 1 if bubble != null else 0)
+		if bubble != null:
+			_performance_tracker.call("record_event", PB14_PERFORMANCE_TRACKER_SCRIPT.EVENT_DIALOGUE_BUBBLE_STARTED)
 	return bubble
 
 
@@ -1335,6 +1382,7 @@ func _refresh_hand_view() -> void:
 
 
 func _refresh_sources() -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	var has_host := is_instance_valid(_battle_host)
 	if not _sources_initialized and has_host and _battle_host.has_method("get_pk"):
 		var pk_value := float(_battle_host.call("get_pk"))
@@ -1376,6 +1424,13 @@ func _refresh_sources() -> void:
 			set_word_group_snapshots(groups)
 	if has_host:
 		_sources_initialized = true
+	if _performance_tracker != null:
+		_performance_tracker.call(
+			"record_section",
+			PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_SOURCE_REFRESH,
+			Time.get_ticks_usec() - tracker_start_usec,
+			_snapshots.size()
+		)
 
 
 func _refresh_faction_counts() -> void:
@@ -1406,6 +1461,7 @@ func _reindex_unit_snapshots() -> void:
 
 
 func _upsert_unit_snapshot(unit_id: String) -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	var snapshot_source: Object = _unit_source if _has_method(_unit_source, "get_unit_snapshot") else _battle_host
 	if not _has_method(snapshot_source, "get_unit_snapshot"):
 		return
@@ -1426,6 +1482,8 @@ func _upsert_unit_snapshot(unit_id: String) -> void:
 			_field.set_word_texts(_word_text_by_id)
 		_field.set_unit_snapshots(_snapshots)
 	_faction_phrases_dirty = true
+	if _performance_tracker != null:
+		_accumulate_tracker_unit_snapshot(Time.get_ticks_usec() - tracker_start_usec)
 
 
 func _ensure_word_text_for_snapshot(snapshot: Dictionary) -> bool:
@@ -1444,11 +1502,42 @@ func _ensure_word_text_for_snapshot(snapshot: Dictionary) -> bool:
 func _remove_unit_snapshot(unit_id: String) -> void:
 	if not _snapshot_index_by_id.has(unit_id):
 		return
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	_snapshots.remove_at(int(_snapshot_index_by_id[unit_id]))
 	_reindex_unit_snapshots()
 	if _field != null:
 		_field.set_unit_snapshots(_snapshots)
 	_faction_phrases_dirty = true
+	if _performance_tracker != null:
+		_accumulate_tracker_unit_snapshot(Time.get_ticks_usec() - tracker_start_usec)
+
+
+## 合并同一渲染帧内的棋子快照更新，再批量交给 Tracker。
+func _accumulate_tracker_unit_snapshot(elapsed_usec: int) -> void:
+	_tracker_unit_snapshot_calls += 1
+	_tracker_unit_snapshot_total_usec += maxi(elapsed_usec, 0)
+	_tracker_unit_snapshot_max_usec = maxi(_tracker_unit_snapshot_max_usec, elapsed_usec)
+	_tracker_unit_snapshot_work_total += 1
+
+
+func _flush_tracker_unit_snapshot_metrics() -> void:
+	if _performance_tracker == null or _tracker_unit_snapshot_calls <= 0:
+		return
+	_performance_tracker.call(
+		"record_aggregate",
+		PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_UNIT_EVENT_SNAPSHOT,
+		_tracker_unit_snapshot_calls,
+		_tracker_unit_snapshot_total_usec,
+		_tracker_unit_snapshot_max_usec,
+		_tracker_unit_snapshot_work_total,
+		0,
+		1,
+		0
+	)
+	_tracker_unit_snapshot_calls = 0
+	_tracker_unit_snapshot_total_usec = 0
+	_tracker_unit_snapshot_max_usec = 0
+	_tracker_unit_snapshot_work_total = 0
 
 
 func _refresh_missing_word_texts() -> bool:
@@ -1469,7 +1558,15 @@ func _refresh_missing_word_texts() -> bool:
 
 
 func _refresh_view() -> void:
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	if _pk_value_label == null:
+		if _performance_tracker != null:
+			_performance_tracker.call(
+				"record_section",
+				PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_VIEW_REFRESH,
+				Time.get_ticks_usec() - tracker_start_usec,
+				0
+			)
 		return
 	var pk_text := "玩家 PK %.0f%%" % _pk_value
 	if _pk_value_label.text != pk_text:
@@ -1491,6 +1588,13 @@ func _refresh_view() -> void:
 		_update_faction_phrases()
 		_faction_phrases_dirty = false
 	_refresh_hand_view()
+	if _performance_tracker != null:
+		_performance_tracker.call(
+			"record_section",
+			PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_VIEW_REFRESH,
+			Time.get_ticks_usec() - tracker_start_usec,
+			_snapshots.size()
+		)
 
 
 func _update_faction_phrases() -> void:
@@ -1959,6 +2063,7 @@ func _try_show_group_bubble(group_id: String, event_priority: bool) -> void:
 			return
 		if not event_priority:
 			return
+	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	var active_ids: Array[String] = []
 	for active_group_id in _group_bubble_states:
 		if float(_group_bubble_states[active_group_id].get("display_remaining", 0.0)) > 0.0:
@@ -1982,6 +2087,14 @@ func _try_show_group_bubble(group_id: String, event_priority: bool) -> void:
 	state["event_active"] = event_priority
 	state["started_at_msec"] = now
 	state["last_event_msec"] = now if event_priority else int(state.get("last_event_msec", -100000))
+	if _performance_tracker != null:
+		_performance_tracker.call(
+			"record_section",
+			PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_GROUP_BUBBLE_GENERATION,
+			Time.get_ticks_usec() - tracker_start_usec,
+			active_ids.size() + 1
+		)
+		_performance_tracker.call("record_event", PB14_PERFORMANCE_TRACKER_SCRIPT.EVENT_GROUP_BUBBLE_STARTED)
 	_sync_active_group_bubble_ids()
 
 
@@ -2011,6 +2124,8 @@ func _sync_active_group_bubble_ids() -> void:
 	_active_group_bubble_ids.clear()
 	for group_id in next_active_ids:
 		_active_group_bubble_ids[group_id] = true
+	if _performance_tracker != null:
+		_performance_tracker.call("set_active_group_bubble_count", _active_group_bubble_ids.size())
 	if _field != null:
 		_field.call("set_word_groups", _word_groups, _active_group_bubble_ids)
 
@@ -2059,6 +2174,8 @@ func _clear_group_bubbles() -> void:
 	_word_groups.clear()
 	_pending_group_speech_events.clear()
 	_active_group_bubble_ids.clear()
+	if _performance_tracker != null:
+		_performance_tracker.call("set_active_group_bubble_count", 0)
 	if _field != null:
 		_field.call("set_word_groups", _word_groups, _active_group_bubble_ids)
 
