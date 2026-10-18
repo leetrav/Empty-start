@@ -542,10 +542,10 @@ func _on_plan_b_publish_result(team: String, word_id: String, result: Dictionary
 		_opponent_live.record_generated_comments(1)
 
 
-func _on_plan_b_publish_requested(word_id: String, unit_id: String) -> void:
-	# 玩家发表只走 Host 的唯一事务；失败回执由 D 保留原句与选中状态。
-	var result: Dictionary = _plan_b_host.publish_word("player", word_id, unit_id)
-	_battle_hud.call("resolve_publish_request", word_id, unit_id, result)
+func _on_plan_b_publish_requested(word_id: String, spawn_position: Vector2) -> void:
+	# 玩家以中央棋盘场景坐标提交整批发表；失败回执由 D 保留原句与选中状态。
+	var result: Dictionary = _plan_b_host.publish_word("player", word_id, spawn_position)
+	_battle_hud.call("resolve_publish_request", word_id, spawn_position, result)
 
 
 func _on_plan_b_hand_changed(hand: Array) -> void:

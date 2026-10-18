@@ -225,15 +225,15 @@ func _publish_first_word_with_pointer(sandbox) -> void:
 		_check(false, "C提供的手牌不能为空")
 		return
 	var word_id: String = str(hand[0].get("word_id", ""))
-	var neutral: Dictionary = _find_neutral_snapshot(host)
 	var card_button := ui.find_child("WordCard1", true, false) as Control
-	_check(card_button != null and not word_id.is_empty() and not neutral.is_empty(), "真实UI手牌和中立棋子可点击")
-	if card_button == null or neutral.is_empty():
+	var spawn_position: Vector2 = ui.call("get_board_world_bounds").get_center()
+	_check(card_button != null and not word_id.is_empty(), "真实UI手牌和棋盘落点可点击")
+	if card_button == null:
 		return
 	await _click_canvas_point(card_button.get_global_rect().get_center())
-	await _click_canvas_point(Vector2(neutral.get("position", Vector2.ZERO)))
+	await _click_canvas_point(spawn_position)
 	await _wait(func(): return host.get_used_word_ids().has(word_id), "D点击事件经A Host成功播种")
-	_check(int(host.get_faction_counts().get("player", 0)) >= 1, "成功发表把现有中立观众转为玩家信徒")
+	_check(int(host.get_faction_counts().get("player", 0)) >= 2, "成功发表按强度创建完整玩家棋子批次")
 	_check(catalog.call("get_player_hand").size() == 4, "成功发表后C从词池补一张手牌")
 
 
@@ -260,17 +260,17 @@ func _fill_player_population(sandbox, target_count: int) -> int:
 				break
 		var definition: Dictionary = hand[selected_index]
 		var word_id: String = str(definition.get("word_id", ""))
-		var neutral: Dictionary = _find_neutral_snapshot(host)
-		if word_id.is_empty() or neutral.is_empty():
+		var spawn_position: Vector2 = ui.call("get_board_world_bounds").get_center()
+		if word_id.is_empty():
 			break
 		var result: Dictionary = host.publish_word(
-			"player", word_id, str(neutral.get("unit_id", ""))
+			"player", word_id, spawn_position
 		)
 		_check(bool(result.get("ok", false)), "A唯一发表入口成功播种: " + word_id)
 		if not bool(result.get("ok", false)):
 			break
 		seen_tendencies[str(definition.get("tendency", ""))] = true
-		ui.call("resolve_publish_request", word_id, str(neutral.get("unit_id", "")), result)
+		ui.call("resolve_publish_request", word_id, spawn_position, result)
 		publishes += 1
 	var final_counts: Dictionary = host.get_faction_counts()
 	_check(int(final_counts.get("player", 0)) >= target_count, "测试夹具以B真实种子构造玩家人口优势")
@@ -302,13 +302,6 @@ func _advance_to_tier(sandbox, target_tier: int) -> void:
 			"旧CombatStage升档与D突破演出完成", 30.0
 		)
 		_check(host.get_current_tier() == flow.get_current_tier(), "Host Tier 显示复用旧 CombatStage 来源")
-
-
-func _find_neutral_snapshot(host: PlanBBattleHost) -> Dictionary:
-	for snapshot: Dictionary in host.get_unit_snapshots():
-		if str(snapshot.get("team", "")) == "neutral":
-			return snapshot.duplicate(true)
-	return {}
 
 
 func _click_canvas_point(canvas_position: Vector2) -> void:

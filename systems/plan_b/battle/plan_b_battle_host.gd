@@ -238,8 +238,65 @@ func get_publish_cooldown_remaining(team: String) -> float:
 	return maxf(cooldown - elapsed_since_publish, 0.0)
 
 
-func publish_word(team: String, word_id: String, neutral_unit_id: Variant) -> Dictionary:
-	# 只有 B 成功播种后才提交 A 拥有的已用词、阵营冷却和全局顺序号。
+func publish_word(team: String, word_id: String, spawn_request: Variant) -> Dictionary:
+	# 正式游戏传棋盘场景坐标并创建完整批次；旧 PB-01 夹具仍可用中立 ID 验证历史单颗播种。
+	if spawn_request is Vector2:
+		return _publish_word_batch(team, word_id, spawn_request)
+	return _publish_word_to_legacy_target(team, word_id, spawn_request)
+
+
+func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2) -> Dictionary:
+	# B 确认完整批次创建后，A 才提交去重、冷却与顺序号。
+	var failure: Dictionary = {"ok": false, "reason": &"invalid_request"}
+	if _battle_state != BattleState.RUNNING:
+		failure["reason"] = &"battle_not_running"
+		return _report_publish_result(team, word_id, failure)
+	if team != "player" and team != "opponent":
+		failure["reason"] = &"invalid_team"
+		return _report_publish_result(team, word_id, failure)
+	var definition: Dictionary = get_word_definition(word_id)
+	if definition.is_empty():
+		failure["reason"] = &"unknown_word"
+		return _report_publish_result(team, word_id, failure)
+	if _used_word_ids.has(word_id):
+		failure["reason"] = &"word_already_used"
+		return _report_publish_result(team, word_id, failure)
+	var cooldown_remaining: float = get_publish_cooldown_remaining(team)
+	if cooldown_remaining > 0.0:
+		failure["reason"] = &"cooldown"
+		failure["cooldown_remaining"] = cooldown_remaining
+		return _report_publish_result(team, word_id, failure)
+	if _simulation == null or not _simulation.has_method("spawn_word_batch"):
+		failure["reason"] = &"batch_unavailable"
+		return _report_publish_result(team, word_id, failure)
+	var spawn_count: int = {1: 2, 2: 4, 3: 8}.get(int(definition.get("strength", 0)), 0)
+	if spawn_count <= 0:
+		failure["reason"] = &"invalid_strength"
+		return _report_publish_result(team, word_id, failure)
+	var candidate_order: int = _next_word_order
+	var batch_result: Dictionary = _simulation.call(
+		"spawn_word_batch", spawn_position, StringName(team), definition, candidate_order, spawn_count
+	)
+	if not bool(batch_result.get("ok", false)):
+		failure["reason"] = StringName(str(batch_result.get("reason", "batch_failed")))
+		failure["spawn_count"] = spawn_count
+		return _report_publish_result(team, word_id, failure)
+	_used_word_ids.append(word_id)
+	_last_published_at[team] = _battle_elapsed
+	_next_word_order += 1
+	var success: Dictionary = {
+		"ok": true,
+		"reason": &"published",
+		"word_order": candidate_order,
+		"spawn_count": spawn_count,
+		"spawn_position": spawn_position,
+		"unit_ids": batch_result.get("unit_ids", []).duplicate(),
+	}
+	return _report_publish_result(team, word_id, success)
+
+
+func _publish_word_to_legacy_target(team: String, word_id: String, neutral_unit_id: Variant) -> Dictionary:
+	# 仅为旧 PB-01 主机夹具保留原子单颗入口；正式 PB-06 UI 始终提交 Vector2 坐标。
 	var failure: Dictionary = {"ok": false, "reason": &"invalid_request"}
 	if _battle_state != BattleState.RUNNING:
 		failure["reason"] = &"battle_not_running"
@@ -271,8 +328,13 @@ func publish_word(team: String, word_id: String, neutral_unit_id: Variant) -> Di
 	_used_word_ids.append(word_id)
 	_last_published_at[team] = _battle_elapsed
 	_next_word_order += 1
-	var success: Dictionary = {"ok": true, "reason": &"published", "word_order": candidate_order}
-	return _report_publish_result(team, word_id, success)
+	return _report_publish_result(team, word_id, {
+		"ok": true,
+		"reason": &"published",
+		"word_order": candidate_order,
+		"spawn_count": 1,
+		"unit_ids": [target_id],
+	})
 
 
 func update_pk(delta: float) -> void:
@@ -518,8 +580,20 @@ func _report_publish_result(team: String, word_id: String, result: Dictionary) -
 
 
 func _on_opponent_publish_requested(word_id: String, neutral_unit_id: String) -> void:
-	# C 的请求仍必须通过 A 统一校验和 B 播种。
-	publish_word("opponent", word_id, neutral_unit_id)
+	# C 仍以最近中立目标提出意图；A 将其真实棋盘位置交给统一批次发表入口。
+	if _simulation == null:
+		_report_publish_result("opponent", word_id, {"ok": false, "reason": &"invalid_target"})
+		return
+	var target_id: Variant = _normalize_unit_id(neutral_unit_id)
+	var target: Dictionary = _simulation.call("get_unit_snapshot", target_id)
+	if target.is_empty() or str(target.get("team", "")) != "neutral":
+		_report_publish_result("opponent", word_id, {"ok": false, "reason": &"invalid_target"})
+		return
+	var spawn_position: Variant = target.get("position", Vector2.ZERO)
+	if not spawn_position is Vector2:
+		_report_publish_result("opponent", word_id, {"ok": false, "reason": &"invalid_position"})
+		return
+	publish_word("opponent", word_id, spawn_position)
 
 
 func _on_counterattack_windup_started(request: Dictionary) -> void:
