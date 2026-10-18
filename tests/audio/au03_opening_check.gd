@@ -22,7 +22,7 @@ func _run() -> void:
 		assert(audio.get_music_event_id() == &"music_comic_street")
 		var expected_count: int = 19 if button_name == "ReplayFullOpeningButton" else (6 if button_name == "ReplayEndingButton" else 13)
 		assert(comic.get_playback_control().panel_count == expected_count)
-		assert(audio.get_music_position() > 33.0 if button_name == "ReplayEndingButton" else audio.get_music_position() < 2.0)
+		assert(audio.get_music_position() > 40.0 if button_name == "ReplayEndingButton" else audio.get_music_position() < 2.0)
 		await create_timer(0.2).timeout
 		comic.set_playback_paused(true)
 		var before: float = audio.get_music_position()
@@ -32,7 +32,9 @@ func _run() -> void:
 		await create_timer(0.2).timeout
 		assert(audio.get_music_position() > before)
 		# 公开快进接口完成演出，检查返回菜单与淡出。
-		for index in range(expected_count):
+		for index in range(expected_count * 2):
+			if not is_instance_valid(comic) or comic.is_queued_for_deletion() or not comic.is_inside_tree():
+				break
 			comic.advance()
 		await process_frame
 		await create_timer(0.4).timeout
