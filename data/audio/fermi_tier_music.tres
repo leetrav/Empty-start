@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TierMusicProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/audio/tier_music_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+streamer_id = &"alien"
+event_ids = Array[StringName]([&"music_alien_low", &"music_alien_mid", &"music_alien_high"])
+tier_groups = Array[int]([0, 0, 1, 1, 2, 2])
+bpm = 100.0
+beats_per_bar = 4
+downgrade_hold_seconds = 2.0
+cross_fade_seconds = 0.6

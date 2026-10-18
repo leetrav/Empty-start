@@ -1,3 +1,21 @@
+## AU-03 费米三段音乐接入（2026-10-18）
+
+费米使用《Teek Teek Teek》：T0/T1低、T2/T3中、T4/T5高。资源在 `assets/audio/music/fermi/`，来源和署名见该目录README；正式结尾页和试听场景已有署名。17表新增 `music_alien_low/mid/high` 三个Music事件，Resource配置保留相同引用作为兼容；共76行，26行有资源、50行仍空。旧泛用 `music_battle_t0～t5` 未填费米曲，其他Boss不会误用。
+
+`TierMusicProfile` Resource 保存ID映射、100BPM/4拍、降档2秒、费米交叉淡化0.6秒；`TierMusicPresenter` 是场景拥有的消费者，不创建播放器、不计算PK。组合根创建后调用 `bind_host(host)` 接入 `tier_changed`、`battle_state_changed`、`battle_ended`，用于当前可运行费米原型。正式Plan B合入时按同样公开事实组合，并协调旧CombatStage音乐请求，不能将当前原型接线冒充四关已完成。
+
+- 同组保持播放；跨组用实际音频位置等待下一小节；帧越界小偏移带入新段，属于帧级调度，不宣称采样级无缝同步。
+- 降档稳定2秒，等待期间进一步降低目标保留稳定时间；重新上升到正在播放的组取消。等待中只保留最新目标。
+- 暂停音乐与过渡一起暂停并冻结等待；恢复接着播。重开清理旧请求并从低段开头播放。
+- 满PK停止响应Tier，使用高段；正式矛盾击破继续调用原 `fade_to_silence()`。当前独立原型只发进入矛盾事实，完整击破演出仍待正式流程交付。
+- 失败淡出；场景释放停止；其他阶段接管/停止音乐会使旧消费者失效，不再抢播。
+
+AudioManager的兼容扩展：`change_music(event_id, cross_fade_seconds=-1, from_position=0)`；省略参数保留原默认。新增 `get_music_event_id()`、`get_music_position()`、`get_music_length()`、`set_music_paused(bool)` 与 `music_changed` 事实信号。`Music`事件音量增益和淡化/duck分别计算，换播放器时不丢失表中音量；SFX/UI保持原入口。
+
+试听：Godot打开 `scenes/demos/au03_fermi_music_preview.tscn` 按F6，点击T0～T5；可测试暂停、重开、满PK、击破和失败。正式项目F5入口未更改。`scenes/plan_b/fermi_battle_demo.tscn` 启动战斗后也接入真实主控事实。其他Boss与开场/休息/终局仍待选曲实施。
+
+验证见 `tests/audio/README.md` 和 AU-03日志。程序检查通过不等于已经完成人耳循环接缝与新玩法四关验收。
+
 # Audio 共用音频接入
 
 ## INT-18D 实际事件覆盖（2026-10-16）
@@ -105,7 +123,7 @@ assets/audio/
 | --- | --- | --- |
 | AU-01 | 游戏音频事件配置与播放入口 | 无 |
 | AU-02 | 音乐状态切换 | 无 |
-| [AU-03](tasks/AU-03_bgm-assets-and-planb-integration.md) | 正式BGM与Plan B接入；费米三段/六档方案已确认，尚未程序接入 | 人工试听与运行验收 |
+| [AU-03](tasks/AU-03_bgm-assets-and-planb-integration.md) | 正式BGM与Plan B接入；费米局部已实现，其他场景待定 | 人工试听与运行验收 |
 
 玩法系统完成自己的核心逻辑以后，在对应表现联调卡里调用这里已经存在的公开接口。
 

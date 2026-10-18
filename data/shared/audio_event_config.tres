@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="AudioEventConfig" load_steps=27 format=3]
+[gd_resource type="Resource" script_class="AudioEventConfig" load_steps=33 format=3]
 
 [ext_resource type="Script" path="res://core/audio/audio_event_config.gd" id="1_config"]
 [ext_resource type="Script" path="res://core/audio/audio_event.gd" id="2_event"]
@@ -15,6 +15,10 @@
 
 [ext_resource type="AudioStreamWAV" path="res://assets/audio/sfx/comic/typewriter.wav" id="comic_typing"]
 [ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/comic/book_flip.ogg" id="comic_book"]
+
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/fermi/teek_low.ogg" id="teek_low"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/fermi/teek_mid.ogg" id="teek_mid"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/fermi/teek_high.ogg" id="teek_high"]
 
 [sub_resource type="Resource" id="event_comic_write"]
 script = ExtResource("2_event")
@@ -94,6 +98,30 @@ event_id = &"divine_descent_lock"
 audio_type = 1
 stream = ExtResource("8_magical_6")
 
+[sub_resource type="Resource" id="event_music_alien_low"]
+script = ExtResource("2_event")
+event_id = &"music_alien_low"
+audio_type = 0
+stream = ExtResource("teek_low")
+loop = true
+transition_group = "battle_alien"
+
+[sub_resource type="Resource" id="event_music_alien_mid"]
+script = ExtResource("2_event")
+event_id = &"music_alien_mid"
+audio_type = 0
+stream = ExtResource("teek_mid")
+loop = true
+transition_group = "battle_alien"
+
+[sub_resource type="Resource" id="event_music_alien_high"]
+script = ExtResource("2_event")
+event_id = &"music_alien_high"
+audio_type = 0
+stream = ExtResource("teek_high")
+loop = true
+transition_group = "battle_alien"
+
 [resource]
 script = ExtResource("1_config")
 music_fade_in_seconds = 0.5
@@ -103,4 +131,4 @@ music_duck_seconds = 0.2
 music_restore_seconds = 0.3
 music_silence_seconds = 0.25
 music_duck_volume = 0.25
-events = Array[ExtResource("2_event")]([SubResource("event_comic_write"), SubResource("event_comic_page"), SubResource("event_attack_charge"), SubResource("event_attack_ready"), SubResource("event_attack_fire"), SubResource("event_hit_normal"), SubResource("event_hit_trap"), SubResource("event_tier_up"), SubResource("event_contradiction_start"), SubResource("event_contradiction_break"), SubResource("event_oracle_confirm"), SubResource("event_divine_descent_start"), SubResource("event_divine_descent_lock")])
+events = Array[ExtResource("2_event")]([SubResource("event_music_alien_low"), SubResource("event_music_alien_mid"), SubResource("event_music_alien_high"), SubResource("event_comic_write"), SubResource("event_comic_page"), SubResource("event_attack_charge"), SubResource("event_attack_ready"), SubResource("event_attack_fire"), SubResource("event_hit_normal"), SubResource("event_hit_trap"), SubResource("event_tier_up"), SubResource("event_contradiction_start"), SubResource("event_contradiction_break"), SubResource("event_oracle_confirm"), SubResource("event_divine_descent_start"), SubResource("event_divine_descent_lock")])

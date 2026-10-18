@@ -109,3 +109,8 @@ autowrap_mode = 3
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
+
+[node name="MusicCredit" type="Label" parent="Margin/PageScroll/Content"]
+layout_mode = 2
+autowrap_mode = 3
+text = "音乐《Teek Teek Teek》\n煉獄庭園（作曲・編曲：煉獄小僧）\nhttps://note.com/rengokuteien/n/n9de199487005"

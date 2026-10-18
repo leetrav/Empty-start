@@ -72,3 +72,6 @@ ui_error,ui,assets/audio/sfx/kenney_interface-sounds/Audio/error_004.ogg,0,1,1,f
 comic_write,ui,assets/audio/sfx/comic/typewriter.wav,0,1,1,false,,2026-10-15 从现有已合并INT-11的Godot audio_event_config.tres 回读，漫画打字音，已接入。
 comic_page,ui,assets/audio/sfx/comic/book_flip.ogg,0,1,1,false,,2026-10-15 从现有已合并INT-11的Godot audio_event_config.tres 回读，漫画翻页声，已接入。
 divine_descent_start,sfx,assets/audio/sfx/magical/magical_7.ogg,0,1,1,false,,2026-10-15 从现有Godot audio_event_config.tres回读，神降临开始事件已有绑定。
+music_alien_low,music,assets/audio/music/fermi/teek_low.ogg,0,1,1,true,battle_alien,AU-03 费米Teek Teek Teek三段循环
+music_alien_mid,music,assets/audio/music/fermi/teek_mid.ogg,0,1,1,true,battle_alien,AU-03 费米Teek Teek Teek三段循环
+music_alien_high,music,assets/audio/music/fermi/teek_high.ogg,0,1,1,true,battle_alien,AU-03 费米Teek Teek Teek三段循环
