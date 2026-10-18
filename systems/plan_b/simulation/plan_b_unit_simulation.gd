@@ -171,8 +171,11 @@ func spawn_word_batch(
 	# 先完整实例化整批；预检失败时释放预备节点，ID和随机流均保持原值。
 	var pending_units: Array[PlanBUnit] = []
 	for child_index: int in expected_count:
-		var unit := UNIT_SCENE.instantiate() as PlanBUnit
+		var unit_instance: Node = UNIT_SCENE.instantiate()
+		var unit := unit_instance as PlanBUnit
 		if unit == null:
+			if is_instance_valid(unit_instance):
+				unit_instance.free()
 			for pending_unit: PlanBUnit in pending_units:
 				pending_unit.free()
 			return _batch_spawn_failure(&"unit_scene_unavailable")
@@ -808,8 +811,11 @@ func _register_spawn_unit(unit: PlanBUnit, unit_id: int) -> void:
 
 ## 中立补充、split和其它单体出生仍沿用同一初始化和ID登记路径。
 func _spawn_unit(team_value: StringName, word_definition: Dictionary, new_word_order: int, spawn_position: Vector2) -> PlanBUnit:
-	var unit := UNIT_SCENE.instantiate() as PlanBUnit
+	var unit_instance: Node = UNIT_SCENE.instantiate()
+	var unit := unit_instance as PlanBUnit
 	if unit == null:
+		if is_instance_valid(unit_instance):
+			unit_instance.free()
 		return null
 	var wander := Vector2.from_angle(_rng.randf_range(0.0, TAU))
 	var lifetime: float = _rng.randf_range(minf(lifespan_min_seconds, lifespan_max_seconds), maxf(lifespan_min_seconds, lifespan_max_seconds))
