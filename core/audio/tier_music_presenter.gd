@@ -8,6 +8,7 @@ signal group_changed(group: int)
 var _host: Node
 var _active: bool = false
 var _paused: bool = false
+var _opening_active: bool = false
 var _group: int = -1
 var _target: int = -1
 var _lower_elapsed: float = 0.0
@@ -34,16 +35,18 @@ func _ready() -> void:
 	AudioManager.music_changed.connect(_on_music_changed)
 
 
-# 新局从T0黑屏铺垫开始；中途绑定恢复当前真实Tier。
+# 新局T0等待时静音；中途恢复非T0时从实际战斗组开始。
 func start_battle(tier: int = 0) -> void:
 	_active = true
 	_paused = false
+	_opening_active = false
 	_group = -1
 	_target = profile.group_for_tier(tier)
 	_lower_elapsed = 0.0
 	_boundary_remaining = -1.0
 	AudioManager.stop_music()
-	_play_group(_target, 0.0, true)
+	if tier > 0:
+		_play_group(_target, 0.0, true)
 
 
 # 同组信号不重播；向更低组连续计时，取消时只保留最新目标。
@@ -51,6 +54,25 @@ func request_tier(tier: int) -> void:
 	if not _active:
 		return
 	var target: int = profile.group_for_tier(tier)
+	if tier == 0:
+		# 对手离线/等待时撤销引子和所有延迟切曲，保留普通操作音效。
+		var owned: bool = owns_music()
+		_group = -1
+		_target = target
+		_opening_active = false
+		_lower_elapsed = 0.0
+		_boundary_remaining = -1.0
+		if owned:
+			AudioManager.stop_music()
+		return
+	if _opening_active:
+		# 对白结束前只更新后续战斗目标，不让Tier覆盖柔和引子。
+		_target = target
+		return
+	if _group < 0:
+		_target = target
+		_play_group(target, 0.0, true)
+		return
 	if target == _target:
 		return
 	var was_lower: bool = _target < _group
@@ -61,6 +83,33 @@ func request_tier(tier: int) -> void:
 		_boundary_remaining = -1.0
 	elif target < _group and not was_lower:
 		_boundary_remaining = -1.0
+
+
+# 连线演出开始时调用，先播柔和引子；开场对白完成前持续保持。
+func begin_connection() -> void:
+	if not _active or _opening_active:
+		return
+	_opening_active = true
+	_play_group(0, 0.0, true)
+
+
+# 仅由本次真实开场对白完成事实放行，空对白也走同一完成路径。
+func finish_connection_dialogue() -> void:
+	if not _active or not _opening_active:
+		return
+	_opening_active = false
+	if _target == 0:
+		_target = profile.group_for_tier(1)
+	_boundary_remaining = -1.0
+	_last_position = AudioManager.get_music_position()
+
+
+func is_waiting_for_connection() -> bool:
+	return _active and _group < 0
+
+
+func is_opening_dialogue_active() -> bool:
+	return _opening_active
 
 
 # 暂停同时冻结播放与稳定计时；用于局部暂停和整棵树暂停。
@@ -91,7 +140,7 @@ func _process(delta: float) -> void:
 		audio_delta += AudioManager.get_music_length()
 	audio_delta = maxf(audio_delta, 0.0)
 	_last_position = position
-	if _target == _group:
+	if _opening_active or _target == _group:
 		return
 	if _target < _group:
 		_lower_elapsed += delta
@@ -109,12 +158,13 @@ func _process(delta: float) -> void:
 
 func _play_group(group: int, from_position: float = 0.0, initial: bool = false) -> void:
 	_group = group
-	# 黑屏等待组用一小节淡入；连线后的战斗段保持原交叉淡化。
+	# 连线柔和引子用一小节淡入；对白完成后切正常战斗段。
 	var fade_in: float = profile.intro_fade_seconds if initial and group == 0 else -1.0
 	if not AudioManager.change_music(profile.event_ids[group], profile.cross_fade_seconds, from_position, fade_in):
 		_active = false
 		_group = -1
 		return
+	AudioManager.set_music_paused(_paused)
 	_last_position = from_position
 	_lower_elapsed = 0.0
 	_boundary_remaining = -1.0
@@ -126,17 +176,16 @@ func finish_battle(result: StringName) -> void:
 	if not _active:
 		return
 	_active = false
+	_opening_active = false
 	_boundary_remaining = -1.0
 	_lower_elapsed = 0.0
 	set_paused(false)
-	if not owns_music():
-		return
 	if result == &"enter_contradiction":
 		var high_group: int = profile.group_for_tier(5)
 		if _group != high_group:
 			_target = high_group
 			_play_group(high_group)
-	else:
+	elif owns_music():
 		AudioManager.fade_out_music()
 
 

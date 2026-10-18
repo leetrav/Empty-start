@@ -226,6 +226,8 @@ func _ready() -> void:
 # CombatStage 的起始 Tier 通知早于 attempt_started；延后一帧避免新场误播升降档动作。
 func _queue_pk_tier_visual(current_tier: int, _player_pk: float) -> void:
 	if is_instance_valid(_fermi_music):
+		if current_tier > 0 and _fermi_music.is_waiting_for_connection():
+			_fermi_music.begin_connection()
 		_fermi_music.request_tier(current_tier)
 	# 延迟只保存来源和档位，PK在执行时读取，避免旧回调覆盖回拉或新尝试。
 	_deliver_pk_tier_visual.call_deferred(_battle_attempt_flow.get_combat_stage(), current_tier)
@@ -341,7 +343,9 @@ func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: Hit
 func _on_dialogue_event_sequence_completed(event_id: StringName, sequence_id: StringName, side: int) -> void:
 	if event_id == &"combat_connected":
 		_pa11_connection_dialogue_active = false
-		_battle_attempt_flow.resume_after_tier1_dialogue()
+		var resumed: bool = _battle_attempt_flow.resume_after_tier1_dialogue()
+		if is_instance_valid(_fermi_music) and (resumed or _battle_attempt_flow.get_current_tier() > 1):
+			_fermi_music.finish_connection_dialogue()
 		_refresh_mobile_touch_phase()
 	dialogue_event_sequence_completed.emit(event_id, sequence_id, side)
 

@@ -27,11 +27,15 @@ func _ready() -> void:
 	margin.add_child(rows)
 	_label(rows, "费米 · Teek Teek Teek", 38)
 	_label(rows, "音乐试听场景：手动选择Tier；不运行或修改PK、感染规则。", 24)
-	_label(rows, "T0 黑屏铺垫   ·   T1 低段   ·   T2/T3 中段   ·   T4/T5 高段", 24)
+	_label(rows, "T0 静音等待   ·   连线/开场对白 柔和引子   ·   对白后 T1低 / T2-T3中 / T4-T5高", 24)
 	var buttons := HBoxContainer.new()
 	rows.add_child(buttons)
 	for tier in range(6):
 		_button(buttons, "T%d" % tier, _set_tier.bind(tier))
+	var opening := HBoxContainer.new()
+	rows.add_child(opening)
+	_button(opening, "开始连线/开场对白", _begin_connection)
+	_button(opening, "开场对白结束", _finish_connection)
 	var actions := HBoxContainer.new()
 	rows.add_child(actions)
 	_button(actions, "暂停 / 继续", _toggle_pause)
@@ -51,11 +55,16 @@ https://note.com/rengokuteien/n/n9de199487005", 21)
 # 显示实际音乐组及阶段，避免把矛盾/结束状态误认为Tier请求已生效。
 func _process(_delta: float) -> void:
 	if _status != null:
-		var names: Array[String] = ["黑屏铺垫", "低段", "中段", "高段"]
+		var names: Array[String] = ["柔和引子", "低段", "中段", "高段"]
 		var current: String = names[clampi(_music.get_current_group(), 0, 3)]
 		var target: String = names[clampi(_music.get_target_group(), 0, 3)]
 		if AudioManager.get_music_event_id() == &"":
 			current = "静音"
+		if _music.is_waiting_for_connection():
+			_phase = "黑屏等待：BGM静音"
+			target = "等待连线"
+		elif _music.is_opening_dialogue_active():
+			_phase = "连线/开场对白：柔和引子，等待对白完成"
 		var selection: String = "当前选择 T%d" % _tier if _normal_pk else "点任一Tier可重新试听"
 		_status.text = "%s  |  %s%s\n正在播放：%s → 目标：%s  |  音乐位置 %.2fs" % [
 			selection, _phase, "（已暂停）" if _paused else "", current, target,
@@ -72,6 +81,21 @@ func _set_tier(tier: int) -> void:
 		_music.start_battle(tier)
 	else:
 		_music.request_tier(tier)
+
+
+# 试听专用剧情事件，生产场景由实际连线与对白完成信号驱动。
+func _begin_connection() -> void:
+	if not _normal_pk:
+		_restart()
+	_tier = 1
+	_phase = "开场对白"
+	_music.begin_connection()
+	_music.request_tier(1)
+
+
+func _finish_connection() -> void:
+	_phase = "普通PK试听"
+	_music.finish_connection_dialogue()
 
 
 func _toggle_pause() -> void:
