@@ -178,7 +178,10 @@ if ($Platform -in @('Windows', 'Both')) {
         'Windows 10/11 x64: Unzip ALL files then run GameJam_Playtest.exe.'
         'Keep GameJam_Playtest.pck in the SAME folder as GameJam_Playtest.exe.'
         'Default display is a centered 1280x720 window using a 1920x1080 logical canvas; toggle fullscreen in Settings.'
-        'In Plan B battle, press 1-3 or click a speech card, then click any position on the center board to publish 2, 4, or 8 units.'
+        'In Plan B battle, choose one of 3 speech cards with keys 1-3 or click a card; then click any valid point inside the central board.'
+        'Speech strength deploys 2, 4, or 8 units. Each used card refreshes independently after 5 seconds; the other slots remain available.'
+        'Same-team pieces repeating the same word share one speech bubble while remaining separate pieces.'
+        'At PK 100%, follow the on-screen prompt for the original six-choice charge-shot contradiction phase.'
         'First launch may play the opening comic, followed by the main menu.'
         'Internal build only. Please report reproduction steps and screenshots for bugs.'
     )
