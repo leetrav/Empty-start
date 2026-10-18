@@ -80,7 +80,7 @@ func _run() -> void:
 		_check(int(initial_counts.get("opponent", 0)) == 2, "A 用两名费米初始棋子播种")
 		_check(int(initial_counts.get("neutral", 0)) == 76, "开局保留76名中立观众")
 		_check(host.get_used_word_ids().size() == 2, "两条开局费米词进入 A 已用集合")
-		_check(catalog.call("get_player_hand").size() == 4, "C 开局提供四句玩家手牌")
+		_check(catalog.call("get_player_hand").size() == 3, "C 开局提供三个固定话语槽")
 		print("PB06_LEVEL_BEGIN ", level.level_id, " ", level.streamer_id)
 		await _capture("level_%d_start" % order)
 
@@ -102,7 +102,7 @@ func _run() -> void:
 			var restarted_counts: Dictionary = host.get_faction_counts()
 			_check(int(restarted_counts.get("player", 0)) == 0 and int(restarted_counts.get("opponent", 0)) == 2,
 				"重开重置 B 人口与费米播种")
-			_check(catalog.call("get_player_hand").size() == 4, "重开重置 C 四句手牌")
+			_check(catalog.call("get_player_hand").size() == 3, "重开重置 C 三个话语槽")
 
 		await _publish_first_word_with_pointer(sandbox)
 		var player_count := await _fill_player_population(sandbox, CAMPAIGN_PLAYER_UNIT_TARGET)
@@ -234,7 +234,7 @@ func _publish_first_word_with_pointer(sandbox) -> void:
 	await _click_canvas_point(spawn_position)
 	await _wait(func(): return host.get_used_word_ids().has(word_id), "D点击事件经A Host成功播种")
 	_check(int(host.get_faction_counts().get("player", 0)) >= 2, "成功发表按强度创建完整玩家棋子批次")
-	_check(catalog.call("get_player_hand").size() == 4, "成功发表后C从词池补一张手牌")
+	_check(catalog.call("get_player_hand").size() == 3, "成功发表保留固定三槽")
 
 
 func _fill_player_population(sandbox, target_count: int) -> int:
@@ -252,25 +252,51 @@ func _fill_player_population(sandbox, target_count: int) -> int:
 		var hand: Array[Dictionary] = catalog.call("get_player_hand")
 		if hand.is_empty():
 			break
-		var selected_index: int = 0
+		var selected_index: int = -1
+		var available_slot_states: Array[Dictionary] = host.get_player_slot_states()
 		for hand_index: int in range(hand.size()):
+			var candidate_id: String = str(hand[hand_index].get("word_id", ""))
+			if candidate_id.is_empty() or hand_index >= available_slot_states.size():
+				continue
+			if not bool(available_slot_states[hand_index].get("available", false)):
+				continue
 			var tendency: String = str(hand[hand_index].get("tendency", ""))
 			if not tendency.is_empty() and not seen_tendencies.has(tendency):
 				selected_index = hand_index
 				break
+		if selected_index < 0:
+			for hand_index: int in range(hand.size()):
+				if (hand_index < available_slot_states.size()
+						and bool(available_slot_states[hand_index].get("available", false))
+						and not str(hand[hand_index].get("word_id", "")).is_empty()):
+					selected_index = hand_index
+					break
+		if selected_index < 0:
+			var wait_seconds: float = 5.0
+			var has_cooling_slot: bool = false
+			for state: Dictionary in available_slot_states:
+				var remaining: float = float(state.get("remaining", 0.0))
+				if remaining > 0.0:
+					has_cooling_slot = true
+					wait_seconds = minf(wait_seconds, remaining)
+			if not has_cooling_slot:
+				break
+			await get_tree().create_timer(wait_seconds + 0.1).timeout
+			continue
 		var definition: Dictionary = hand[selected_index]
 		var word_id: String = str(definition.get("word_id", ""))
 		var spawn_position: Vector2 = ui.call("get_board_world_bounds").get_center()
+		var slot_id: int = int(definition.get("slot_id", selected_index))
 		if word_id.is_empty():
 			break
 		var result: Dictionary = host.publish_word(
-			"player", word_id, spawn_position
+			"player", word_id, spawn_position, slot_id
 		)
 		_check(bool(result.get("ok", false)), "A唯一发表入口成功播种: " + word_id)
 		if not bool(result.get("ok", false)):
 			break
 		seen_tendencies[str(definition.get("tendency", ""))] = true
-		ui.call("resolve_publish_request", word_id, spawn_position, result)
+		ui.call("resolve_publish_request", slot_id, word_id, spawn_position, result)
 		publishes += 1
 	var final_counts: Dictionary = host.get_faction_counts()
 	_check(int(final_counts.get("player", 0)) >= target_count, "测试夹具以B真实种子构造玩家人口优势")

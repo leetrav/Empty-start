@@ -61,6 +61,7 @@ var _plan_b_simulation: Node2D
 var _plan_b_content_catalog: Object
 var _plan_b_opponent_director: Object
 var _plan_b_level_ready: bool = false
+var _plan_b_slot_state_sync_elapsed: float = 0.0
 var _rest_session: RestSession
 var _rest_result_view: RestResultView
 var _contradiction_oracle_flow: ContradictionOracleFlow
@@ -505,8 +506,14 @@ func _refresh_plan_b_hand(hand: Array[Dictionary]) -> void:
 	if _battle_hud == null or _plan_b_host == null or not _battle_hud.has_method("set_word_hand"):
 		return
 	var available_ids: Array[String] = _plan_b_host.get_available_word_ids("player")
-	var draw_pool_remaining: int = maxi(0, available_ids.size() - hand.size())
+	var occupied_slot_count: int = 0
+	for card: Dictionary in hand:
+		if not str(card.get("word_id", "")).is_empty():
+			occupied_slot_count += 1
+	var draw_pool_remaining: int = maxi(0, available_ids.size() - occupied_slot_count)
 	_battle_hud.call("set_word_hand", hand, draw_pool_remaining)
+	if _battle_hud.has_method("set_player_slot_states"):
+		_battle_hud.call("set_player_slot_states", _plan_b_host.get_player_slot_states())
 
 
 func _on_plan_b_pk_changed(_pk_percent: float) -> void:
@@ -533,19 +540,16 @@ func _on_plan_b_publish_result(team: String, word_id: String, result: Dictionary
 			push_error("Sandbox: Plan B 玩家发表缺少旧结算所需话语字段：%s" % word_id)
 		_hit_echo_presenter.call("on_plan_b_player_publication", definition)
 		_specific_sentence_reply_presenter.call("on_plan_b_player_publication", definition)
-		_plan_b_content_catalog.call(
-			"consume_player_hand_word", word_id, _plan_b_host.get_used_word_ids()
-		)
 		SaveManager.data.live_session.record_generated_comments(1)
 	elif team == "opponent" and _opponent_live != null:
 		_opponent_live.record_normal_hit_live_rule()
 		_opponent_live.record_generated_comments(1)
 
 
-func _on_plan_b_publish_requested(word_id: String, spawn_position: Vector2) -> void:
+func _on_plan_b_publish_requested(slot_id: int, word_id: String, spawn_position: Vector2) -> void:
 	# 玩家以中央棋盘场景坐标提交整批发表；失败回执由 D 保留原句与选中状态。
-	var result: Dictionary = _plan_b_host.publish_word("player", word_id, spawn_position)
-	_battle_hud.call("resolve_publish_request", word_id, spawn_position, result)
+	var result: Dictionary = _plan_b_host.publish_word("player", word_id, spawn_position, slot_id)
+	_battle_hud.call("resolve_publish_request", slot_id, word_id, spawn_position, result)
 
 
 func _on_plan_b_hand_changed(hand: Array) -> void:
@@ -785,6 +789,11 @@ func _process(delta: float) -> void:
 		elif _battle_attempt_flow.is_normal_combat_active():
 			_tutorial_runner.observe_combat_frame(_barrage_area, _aim_reticle, _attack_charge_input)
 	_battle_hud.refresh_attack(_attack_charge_input.get_charge_progress(), _attack_charge_input.get_attack_phase())
+	if use_plan_b_campaign and _plan_b_host != null and _battle_hud.has_method("set_player_slot_states"):
+		_plan_b_slot_state_sync_elapsed += delta
+		if _plan_b_slot_state_sync_elapsed >= 0.1:
+			_plan_b_slot_state_sync_elapsed = 0.0
+			_battle_hud.call("set_player_slot_states", _plan_b_host.get_player_slot_states())
 
 
 # DEBUG 面板每次刷新时从现有系统即时收集快照，不把可变业务值保存在 UI。

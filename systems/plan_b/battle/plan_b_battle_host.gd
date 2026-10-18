@@ -15,6 +15,8 @@ signal counterattack_windup_started(request: Dictionary)
 signal counterattack_resolved(result: Dictionary)
 
 const TIER_CATALOG: Resource = preload("res://data/combat_stage/tier_catalog.tres")
+const PLAYER_WORD_SLOT_COUNT: int = 3
+const PLAYER_WORD_SLOT_REFILL_SECONDS: float = 5.0
 
 @export_range(0.0, 5.0, 0.01) var pk_rate_pp_per_second: float = 0.85
 @export_range(0.0, 60.0, 0.1) var player_publish_cooldown_seconds: float = 5.0
@@ -37,6 +39,8 @@ var _current_tier: int = 0
 var _next_word_order: int = 1
 var _used_word_ids: Array[String] = []
 var _last_published_at: Dictionary = {"player": -1000000.0, "opponent": -1000000.0}
+var _player_slot_refresh_remaining: Array[float] = [0.0, 0.0, 0.0]
+var _player_slot_refresh_word_ids: Array[String] = ["", "", ""]
 var _simulation_uses_integer_unit_ids: bool = false
 
 
@@ -81,6 +85,9 @@ func start_battle(arena_size: Vector2, arena_origin: Vector2 = Vector2.ZERO) -> 
 	_next_word_order = 1
 	_used_word_ids.clear()
 	_last_published_at = {"player": -1000000.0, "opponent": -1000000.0}
+	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
+		_player_slot_refresh_remaining[slot_id] = 0.0
+		_player_slot_refresh_word_ids[slot_id] = ""
 	_configure_simulation_type_matchups()
 	if not _configure_opponent_director():
 		push_error("PlanBBattleHost 无法配置费米发言模块。")
@@ -233,19 +240,50 @@ func get_word_definition(word_id: String) -> Dictionary:
 func get_publish_cooldown_remaining(team: String) -> float:
 	if team != "player" and team != "opponent":
 		return 0.0
-	var cooldown: float = player_publish_cooldown_seconds if team == "player" else opponent_publish_cooldown_seconds
+	if team == "player":
+		return 0.0
+	var cooldown: float = opponent_publish_cooldown_seconds
 	var elapsed_since_publish: float = _battle_elapsed - float(_last_published_at.get(team, -1000000.0))
 	return maxf(cooldown - elapsed_since_publish, 0.0)
 
 
-func publish_word(team: String, word_id: String, spawn_request: Variant) -> Dictionary:
+func get_player_slot_states() -> Array[Dictionary]:
+	var states: Array[Dictionary] = []
+	var hand: Array = _word_catalog.call("get_player_hand") if _word_catalog != null else []
+	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
+		var entry: Dictionary = {}
+		for value: Variant in hand:
+			if value is Dictionary and int(value.get("slot_id", -1)) == slot_id:
+				entry = value
+				break
+		var word_id: String = str(entry.get("word_id", ""))
+		var remaining: float = _player_slot_refresh_remaining[slot_id]
+		states.append({
+			"slot_id": slot_id,
+			"word_id": word_id,
+			"remaining": remaining,
+			"progress": clampf(1.0 - remaining / PLAYER_WORD_SLOT_REFILL_SECONDS, 0.0, 1.0),
+			"available": not word_id.is_empty() and remaining <= 0.0 and not _used_word_ids.has(word_id),
+			"cooling_word_id": _player_slot_refresh_word_ids[slot_id],
+		})
+	return states
+
+
+func _get_player_slot_state(slot_id: int) -> Dictionary:
+	for state: Dictionary in get_player_slot_states():
+		if int(state.get("slot_id", -1)) == slot_id:
+			return state
+	return {}
+
+
+func publish_word(team: String, word_id: String, spawn_request: Variant, slot_id: int = -1) -> Dictionary:
 	# 正式游戏传棋盘场景坐标并创建完整批次；旧 PB-01 夹具仍可用中立 ID 验证历史单颗播种。
 	if spawn_request is Vector2:
-		return _publish_word_batch(team, word_id, spawn_request)
+		return _publish_word_batch(team, word_id, spawn_request, slot_id)
 	return _publish_word_to_legacy_target(team, word_id, spawn_request)
 
 
-func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2) -> Dictionary:
+func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2, slot_id: int) -> Dictionary:
 	# B 确认完整批次创建后，A 才提交去重、冷却与顺序号。
 	var failure: Dictionary = {"ok": false, "reason": &"invalid_request"}
 	if _battle_state != BattleState.RUNNING:
@@ -261,11 +299,24 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2)
 	if _used_word_ids.has(word_id):
 		failure["reason"] = &"word_already_used"
 		return _report_publish_result(team, word_id, failure)
-	var cooldown_remaining: float = get_publish_cooldown_remaining(team)
-	if cooldown_remaining > 0.0:
-		failure["reason"] = &"cooldown"
-		failure["cooldown_remaining"] = cooldown_remaining
-		return _report_publish_result(team, word_id, failure)
+	if team == "player":
+		var slot_state: Dictionary = _get_player_slot_state(slot_id)
+		if slot_state.is_empty():
+			failure["reason"] = &"invalid_slot"
+			return _report_publish_result(team, word_id, failure)
+		if str(slot_state.get("word_id", "")) != word_id:
+			failure["reason"] = &"slot_word_mismatch"
+			return _report_publish_result(team, word_id, failure)
+		if not bool(slot_state.get("available", false)):
+			failure["reason"] = &"slot_cooldown"
+			failure["cooldown_remaining"] = float(slot_state.get("remaining", 0.0))
+			return _report_publish_result(team, word_id, failure)
+	else:
+		var cooldown_remaining: float = get_publish_cooldown_remaining(team)
+		if cooldown_remaining > 0.0:
+			failure["reason"] = &"cooldown"
+			failure["cooldown_remaining"] = cooldown_remaining
+			return _report_publish_result(team, word_id, failure)
 	if _simulation == null or not _simulation.has_method("spawn_word_batch"):
 		failure["reason"] = &"batch_unavailable"
 		return _report_publish_result(team, word_id, failure)
@@ -282,7 +333,11 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2)
 		failure["spawn_count"] = spawn_count
 		return _report_publish_result(team, word_id, failure)
 	_used_word_ids.append(word_id)
-	_last_published_at[team] = _battle_elapsed
+	if team == "player":
+		_player_slot_refresh_remaining[slot_id] = PLAYER_WORD_SLOT_REFILL_SECONDS
+		_player_slot_refresh_word_ids[slot_id] = word_id
+	else:
+		_last_published_at[team] = _battle_elapsed
 	_next_word_order += 1
 	var success: Dictionary = {
 		"ok": true,
@@ -290,6 +345,7 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2)
 		"word_order": candidate_order,
 		"spawn_count": spawn_count,
 		"spawn_position": spawn_position,
+		"slot_id": slot_id,
 		"unit_ids": batch_result.get("unit_ids", []).duplicate(),
 	}
 	return _report_publish_result(team, word_id, success)
@@ -311,7 +367,7 @@ func _publish_word_to_legacy_target(team: String, word_id: String, neutral_unit_
 	if _used_word_ids.has(word_id):
 		failure["reason"] = &"word_already_used"
 		return _report_publish_result(team, word_id, failure)
-	var cooldown_remaining: float = get_publish_cooldown_remaining(team)
+	var cooldown_remaining: float = _get_legacy_publish_cooldown_remaining(team)
 	if cooldown_remaining > 0.0:
 		failure["reason"] = &"cooldown"
 		failure["cooldown_remaining"] = cooldown_remaining
@@ -366,6 +422,7 @@ func update_battle(delta: float) -> void:
 	update_pk(delta)
 	if _battle_state != BattleState.RUNNING:
 		return
+	_update_player_slot_refills(delta)
 	if opponent_auto_publish_enabled:
 		_update_opponent_speech(delta)
 	if opponent_counterattack_enabled:
@@ -374,6 +431,33 @@ func update_battle(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	update_battle(delta)
+
+
+## 只在运行战斗期间推进玩家各自的补牌计时；替换词仍由 C 从可用池抽取。
+func _update_player_slot_refills(delta: float) -> void:
+	if _word_catalog == null or not _word_catalog.has_method("replace_player_hand_slot"):
+		return
+	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
+		if _player_slot_refresh_remaining[slot_id] <= 0.0:
+			continue
+		_player_slot_refresh_remaining[slot_id] = maxf(
+			0.0, _player_slot_refresh_remaining[slot_id] - maxf(delta, 0.0)
+		)
+		if _player_slot_refresh_remaining[slot_id] > 0.0:
+			continue
+		var expected_word_id: String = _player_slot_refresh_word_ids[slot_id]
+		if expected_word_id.is_empty():
+			continue
+		_word_catalog.call("replace_player_hand_slot", slot_id, expected_word_id, _used_word_ids)
+		_player_slot_refresh_word_ids[slot_id] = ""
+
+
+func _get_legacy_publish_cooldown_remaining(team: String) -> float:
+	if team != "player" and team != "opponent":
+		return 0.0
+	var cooldown: float = player_publish_cooldown_seconds if team == "player" else opponent_publish_cooldown_seconds
+	var elapsed_since_publish: float = _battle_elapsed - float(_last_published_at.get(team, -1000000.0))
+	return maxf(cooldown - elapsed_since_publish, 0.0)
 
 
 func _update_tier() -> void:
