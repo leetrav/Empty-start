@@ -5,6 +5,8 @@ var _music: TierMusicPresenter
 var _status: Label
 var _tier: int = 0
 var _paused: bool = false
+var _normal_pk: bool = true
+var _phase: String = "普通PK试听"
 
 
 func _ready() -> void:
@@ -34,9 +36,9 @@ func _ready() -> void:
 	rows.add_child(actions)
 	_button(actions, "暂停 / 继续", _toggle_pause)
 	_button(actions, "重开", _restart)
-	_button(actions, "PK满 → 矛盾", _music.finish_battle.bind(&"enter_contradiction"))
-	_button(actions, "击破静音", AudioManager.fade_to_silence)
-	_button(actions, "失败淡出", _music.finish_battle.bind(&"failed"))
+	_button(actions, "PK满 → 矛盾", _finish.bind(&"enter_contradiction"))
+	_button(actions, "击破静音", _silence)
+	_button(actions, "失败淡出", _finish.bind(&"failed"))
 	_button(actions, "命中音效", AudioManager.play_event.bind(&"hit_normal"))
 	_status = _label(rows, "", 26)
 	_label(rows, "升档跨组等下一小节；降档稳定2秒后等下一小节；交叉淡化0.6秒。", 22)
@@ -46,16 +48,30 @@ https://note.com/rengokuteien/n/n9de199487005", 21)
 	_music.start_battle()
 
 
+# 显示实际音乐组及阶段，避免把矛盾/结束状态误认为Tier请求已生效。
 func _process(_delta: float) -> void:
 	if _status != null:
-		_status.text = "当前选择 T%d  |  播放组 %d → 目标组 %d  |  音乐位置 %.2fs%s" % [
-			_tier, _music.get_current_group(), _music.get_target_group(),
-			AudioManager.get_music_position(), "  已暂停" if _paused else ""]
+		var names: Array[String] = ["低段", "中段", "高段"]
+		var current: String = names[clampi(_music.get_current_group(), 0, 2)]
+		var target: String = names[clampi(_music.get_target_group(), 0, 2)]
+		if AudioManager.get_music_event_id() == &"":
+			current = "静音"
+		var selection: String = "当前选择 T%d" % _tier if _normal_pk else "点任一Tier可重新试听"
+		_status.text = "%s  |  %s%s\n正在播放：%s → 目标：%s  |  音乐位置 %.2fs" % [
+			selection, _phase, "（已暂停）" if _paused else "", current, target,
+			AudioManager.get_music_position()]
 
 
+# 矛盾、失败或静音后点Tier启动新一轮试听；正式战斗仍不接受结束后的Tier事件。
 func _set_tier(tier: int) -> void:
 	_tier = tier
-	_music.request_tier(tier)
+	if not _normal_pk or not _music.owns_music():
+		_normal_pk = true
+		_phase = "普通PK试听"
+		_paused = false
+		_music.start_battle(tier)
+	else:
+		_music.request_tier(tier)
 
 
 func _toggle_pause() -> void:
@@ -66,7 +82,30 @@ func _toggle_pause() -> void:
 func _restart() -> void:
 	_tier = 0
 	_paused = false
+	_normal_pk = true
+	_phase = "普通PK试听"
 	_music.start_battle()
+
+
+func _finish(result: StringName) -> void:
+	var was_normal: bool = _normal_pk
+	if not was_normal and result == &"enter_contradiction":
+		_music.start_battle(5)
+	_normal_pk = false
+	_paused = false
+	_phase = "矛盾阶段：沿用高段" if result == &"enter_contradiction" else "失败：淡出音乐"
+	_music.finish_battle(result)
+	if not was_normal and result != &"enter_contradiction":
+		_music.set_paused(false)
+		AudioManager.fade_out_music()
+
+
+func _silence() -> void:
+	_normal_pk = false
+	_paused = false
+	_phase = "击破：静音"
+	_music.set_paused(false)
+	AudioManager.fade_to_silence()
 
 
 func _button(parent: Node, text: String, callback: Callable) -> void:
