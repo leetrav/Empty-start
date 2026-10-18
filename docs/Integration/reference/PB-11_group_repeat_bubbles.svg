@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 435" width="1200" height="435" role="img" aria-label="Plan B 团体复读气泡程序绘制示意：P1单人单尾、P2三人三尾、八人五条抽样尾巴">
+  <title>Plan B 团体共享复读气泡 · 程序化几何参考</title>
+  <desc>仅用于结构说明，不是裁剪素材、不是实际游戏贴图。游戏端按团体人数与全文本长度动态计算尺寸、尾巴和字体。</desc>
+  <rect width="1200" height="435" fill="#17161c"/>
+  <g stroke="#f7d7ce" stroke-width="8" stroke-linejoin="round" fill="none" stroke-linecap="round">
+    <!-- P1: 单人椭圆气泡 + 1根尾巴 -->
+    <path d="M45 90 Q45 54 93 54 L193 54 Q249 54 249 101 Q249 151 191 155 L146 155 L143 192 L116 156 L92 156 Q45 153 45 115 Z"/>
+    <!-- P2: 3人共用一个椭圆 + 3根尾巴 -->
+    <path d="M333 79 Q344 51 386 48 Q493 30 633 57 Q683 72 683 113 Q679 165 621 166 L389 166 Q330 163 333 119 Z"/>
+    <path d="M397 165 L396 206 L423 166"/>
+    <path d="M499 165 L510 214 L528 165"/>
+    <path d="M600 165 L627 205 L626 164"/>
+    <!-- 8人团体：共享一只更宽的气泡，5根抽样尾巴 -->
+    <path d="M747 69 Q774 32 841 40 L1101 43 Q1160 53 1165 106 Q1167 157 1107 162 L818 163 Q746 154 747 118 Z"/>
+    <path d="M801 160 L799 208 L823 162"/>
+    <path d="M865 162 L871 206 L891 164"/>
+    <path d="M951 162 L960 216 L976 162"/>
+    <path d="M1045 161 L1057 207 L1071 160"/>
+    <path d="M1110 160 L1137 206 L1136 157"/>
+  </g>
+  <g fill="#fffaf7" font-family="sans-serif" text-anchor="middle">
+    <text x="147" y="112" font-size="23">鼠即全知！</text>
+    <text x="508" y="114" font-size="30">鼠即全知！</text>
+    <text x="960" y="111" font-size="35">鼠即全知！</text>
+  </g>
+  <g fill="#f5f3ee">
+    <rect x="125" y="215" width="42" height="42" rx="5"/>
+    <rect x="381" y="230" width="39" height="39" rx="5"/><rect x="491" y="231" width="39" height="39" rx="5"/><rect x="611" y="230" width="39" height="39" rx="5"/>
+    <rect x="778" y="235" width="34" height="34" rx="5"/><rect x="828" y="240" width="34" height="34" rx="5"/>
+    <rect x="875" y="232" width="34" height="34" rx="5"/><rect x="922" y="240" width="34" height="34" rx="5"/>
+    <rect x="965" y="231" width="34" height="34" rx="5"/><rect x="1008" y="242" width="34" height="34" rx="5"/>
+    <rect x="1052" y="229" width="34" height="34" rx="5"/><rect x="1102" y="241" width="34" height="34" rx="5"/>
+  </g>
+  <g font-family="sans-serif" text-anchor="middle" fill="#d6d4dc">
+    <text x="146" y="335" font-size="24">P1 · 1人 / 1条尾巴</text>
+    <text x="505" y="335" font-size="24">P2 · 3人 / 2–3条尾巴</text>
+    <text x="958" y="335" font-size="24">8人 / 抽样4–5条尾巴</text>
+    <text x="600" y="394" font-size="18">结构示意 · Godot中实时绘制，全文本自动缩字、缩行高、换行与扩展气泡高度</text>
+  </g>
+</svg>
