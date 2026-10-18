@@ -522,8 +522,12 @@ func _update_cached_steering(unit: PlanBUnit, delta: float) -> void:
 	var interval: float = maxf(target_decision_refresh_seconds, 0.01)
 	var refresh_remaining: float = float(cached.get("refresh_remaining_seconds", 0.0)) - delta
 	if refresh_remaining <= 0.0:
-		var search_radius: float = maxf(detection_radius, ally_detection_radius)
-		var decision: Dictionary = _get_steering(unit, _get_neighbor_units(unit.position, search_radius))
+		var nearby_units: Array[PlanBUnit] = []
+		# 中立棋子只会游荡；略过永远不会被它们使用的邻域扫描。
+		if unit.team != NEUTRAL_TEAM:
+			var search_radius: float = maxf(detection_radius, ally_detection_radius)
+			nearby_units = _get_neighbor_units(unit.position, search_radius)
+		var decision: Dictionary = _get_steering(unit, nearby_units)
 		cached["direction"] = decision.get("direction", unit.wander_direction)
 		cached["intent"] = decision.get("intent", &"wander")
 		if _performance_tracker != null:
