@@ -13,6 +13,9 @@ const TEAM_COLORS := {
 }
 const UNIT_VISUAL_RADIUS: float = 64.0
 const UNIT_VISUAL_CLIP_MARGIN: float = 20.0
+const GROUP_BUBBLE_WIDTH_SINGLE: float = 100.0
+const GROUP_BUBBLE_WIDTH_TWO: float = 150.0
+const GROUP_BUBBLE_WIDTH_EIGHT: float = 500.0
 
 var world_bounds := Rect2(Vector2.ZERO, Vector2(900.0, 490.0))
 var density_profile := "clear"
@@ -589,13 +592,14 @@ func _get_group_bubble_style(team: String) -> StyleBoxFlat:
 	return style
 
 func _bubble_base_width(member_count: int) -> float:
+	# 团体人数决定固定宽度；句子长度只参与纵向排版和高度。
 	if member_count <= 1:
-		return 100.0
+		return GROUP_BUBBLE_WIDTH_SINGLE
 	if member_count == 2:
-		return 150.0
+		return GROUP_BUBBLE_WIDTH_TWO
 	if member_count >= 8:
-		return 500.0
-	return 150.0 + float(member_count - 2) * 350.0 / 6.0
+		return GROUP_BUBBLE_WIDTH_EIGHT
+	return GROUP_BUBBLE_WIDTH_TWO + float(member_count - 2) * (GROUP_BUBBLE_WIDTH_EIGHT - GROUP_BUBBLE_WIDTH_TWO) / 6.0
 
 
 func _bubble_tail_count(member_count: int) -> int:
