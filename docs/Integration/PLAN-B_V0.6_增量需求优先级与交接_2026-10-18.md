@@ -40,3 +40,10 @@
 - 主动移动默认同阵营侦测160px、理想间距36px、同话吸引0.45、同阵营不同话吸引0.225、分离0.65。可感染目标追击与克制威胁回避优先于团体靠拢；无优先目标时向同伴移动。
 - 敌我/中立接触反冲持续0.18秒并沿用原接触裁决；同阵营贴碰使用轻量软分离并保留 `word_order` 改口规则。团体始终保留独立 `unit_id`、人口、寿命和PK统计。
 - lane D 负责将这些团体快照绘制为共享气泡及尾巴。PB-14 会补充单位物理帧位置事实信号供绘制插值。
+
+### Lane B 当前已实现的 PB-14 决策与位置事实
+- `target_decision_refresh_seconds` 默认0.1秒。目标、威胁与同伴查询复用同一邻居网格；棋子按稳定 `unit_id` 错峰刷新决策缓存。
+- 单位位置积分、真实 Area2D 接触、感染/改口、反冲和边缘反射继续每个物理步运行。物理步之间沿缓存方向和当前速度运动；碰撞反冲期间不由寻敌改写速度。
+- 接触、出生、播种、感染、改口和单位离场会标记周围决策缓存失效；单位在下一个自己的错峰时隙重新读取邻域。网格默认0.1秒刷新，团体拓扑默认0.2秒刷新。
+- `unit_physics_positions_updated(unit_ids: PackedInt32Array, previous_positions: PackedVector2Array, current_positions: PackedVector2Array)` 每个物理步发出一次。三组数组按升序 Unit ID 对齐，位置使用 scene-global 坐标，新生首帧的前后位置相同；D 可在渲染帧之间据此插值。
+- PB-14 的 pre-optimization 正式 Sandbox CLI profile 与后续同场景 post-optimization 结果记录在 `evidence/PB-14_2026-10-18/`。Engine `TIME_PROCESS/TIME_PHYSICS_PROCESS` 与 CLI GPU/FPS 值按各自计量名记录；GUI Profiler 的 Script/Idle 函数明细及窗口截图需人工验收。
