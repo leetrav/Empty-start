@@ -1037,6 +1037,7 @@ func _build_field(parent: Container) -> void:
 	field_host.custom_minimum_size = Vector2(1024.0, 828.0)
 	field_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	field_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	field_host.clip_contents = true
 	parent.add_child(field_host)
 
 	_field = UnitFieldScript.new()
