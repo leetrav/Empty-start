@@ -45,3 +45,10 @@
 - `word_groups_changed(groups)` 在团体成员、阵营、话语关系或清场事实改变时发出完整组快照；实时位置由按需读取接口提供。`unit_physics_positions_updated(unit_ids, previous_positions, current_positions)` 提供物理 tick 插值点。
 - B 负责邻域判定与团体拓扑，默认72px加入、90px离开、中心半径上限180px，刷新间隔0.2秒；同阵营改口和敌我碰撞裁决保持原规则，结群不改变人数/寿命/PK。
 - Lane D 负责共享气泡绘制，不在 UI 重算连通关系。
+
+### Lane B 当前已实现的 PB-14 决策与位置事实
+
+- `target_decision_refresh_seconds` 默认0.1秒；按稳定 `unit_id` 分成6个时间相位，错峰刷新目标方向和团体靠拢决策，邻域查询复用同一空间网格。
+- 每个物理步仍推进移动、Area2D 接触、感染/改口、反冲和边缘反射；新事实会失效附近决策缓存，下一决策时隙再重算目标。
+- `unit_physics_positions_updated(unit_ids, previous_positions, current_positions)` 每个物理步发一次；三个同长数组按升序 Unit ID 对齐，坐标为 scene-global，新生位置以前后相同坐标初始化。
+- B 的 PB-14 probe / decision smoke 覆盖错峰频率、位置事件频率及坐标连续性；正式优化后前后性能与人口容量分档仍由 E 按真实 Sandbox profiler 记录。
