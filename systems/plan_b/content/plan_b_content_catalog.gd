@@ -1,15 +1,12 @@
 class_name PlanBContentCatalog
 extends RefCounted
 
-signal player_hand_changed(hand: Array)
-
 const WORD_POOL_PATH := "res://data/plan_b/word_pool.csv"
 const TYPE_MATCHUPS_PATH := "res://data/plan_b/battle_type_matchups.csv"
 const STRENGTH_RATES_PATH := "res://data/plan_b/strength_success_rates.csv"
 const OPPONENT_CONFIG_PATH := "res://data/plan_b/opponent_config.csv"
 const RETALIATION_MAP_PATH := "res://data/plan_b/retaliation_skill_map.csv"
 const DEFAULT_LEVEL_ID := "level_001"
-const PLAYER_HAND_SIZE := 4
 const DEFAULT_RANDOM_SEED := 20261017
 const LEVEL_PROFILE_PATHS := {
 	"level_001": "res://data/level_configuration/level_001.tres",
@@ -24,10 +21,10 @@ var _word_definitions: Dictionary = {}
 var _word_ids_in_source_order: Array[String] = []
 var _type_relations: Dictionary = {}
 var _strength_probabilities: Dictionary = {}
+var _strength_batch_spawn_counts: Dictionary = {}
 var _opponent_configs: Dictionary = {}
 var _retaliation_mappings: Array[Dictionary] = []
 var _active_level_context: Dictionary = {}
-var _player_hand_word_ids: Array[String] = []
 var _random_seed: int = DEFAULT_RANDOM_SEED
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _loaded: bool = false
@@ -40,10 +37,10 @@ func load_configuration() -> bool:
 	_word_ids_in_source_order.clear()
 	_type_relations.clear()
 	_strength_probabilities.clear()
+	_strength_batch_spawn_counts.clear()
 	_opponent_configs.clear()
 	_retaliation_mappings.clear()
 	_active_level_context.clear()
-	_player_hand_word_ids.clear()
 
 	var raw_matchups: Array[Dictionary] = _read_csv_rows(TYPE_MATCHUPS_PATH)
 	var raw_strengths: Array[Dictionary] = _read_csv_rows(STRENGTH_RATES_PATH)
@@ -70,15 +67,20 @@ func load_configuration() -> bool:
 	for row: Dictionary in raw_strengths:
 		var strength_text: String = str(row.get("strength", "")).strip_edges()
 		var chance_text: String = str(row.get("conversion_probability", "")).strip_edges()
-		if not strength_text.is_valid_int() or not chance_text.is_valid_float():
+		var batch_count_text: String = str(row.get("batch_spawn_count", "")).strip_edges()
+		if not strength_text.is_valid_int() or not chance_text.is_valid_float() \
+			or not batch_count_text.is_valid_int():
 			return false
 		var strength: int = int(strength_text)
 		var chance: float = float(chance_text)
+		var batch_count: int = int(batch_count_text)
 		if strength < 1 or strength > 3 or chance < 0.0 or chance > 1.0 \
-			or _strength_probabilities.has(strength):
+			or batch_count < 1 or batch_count > 8 \
+			or _strength_probabilities.has(strength) or _strength_batch_spawn_counts.has(strength):
 			return false
 		_strength_probabilities[strength] = chance
-	if _strength_probabilities.size() != 3:
+		_strength_batch_spawn_counts[strength] = batch_count
+	if _strength_probabilities.size() != 3 or _strength_batch_spawn_counts.size() != 3:
 		return false
 
 	for row: Dictionary in raw_words:
@@ -107,6 +109,7 @@ func load_configuration() -> bool:
 			"text": text,
 			"battle_type": StringName(battle_type),
 			"strength": int(strength_text),
+			"batch_spawn_count": int(_strength_batch_spawn_counts.get(int(strength_text), 0)),
 			"traits": _parse_trait_ids(str(row.get("traits", ""))),
 			"tendency": tendency,
 			"tendency_id": tendency,
@@ -166,75 +169,48 @@ func load_test_configuration() -> bool:
 	return load_configuration()
 
 
-## 依 A 提供的正式 LevelProfile 建立本关词池，并重置本局手牌及抽取序列。
+## 依 A 提供的正式 LevelProfile 建立本关词池，并重置本局随机序列。
 func configure_level(level: LevelProfile) -> bool:
 	_active_level_context.clear()
-	_player_hand_word_ids.clear()
 	if not _loaded or level == null:
-		player_hand_changed.emit([])
 		return false
 
 	var context: Dictionary = _context_from_level_profile(level)
 	if context.is_empty() or _get_opponent_config_for_context(context).is_empty():
-		player_hand_changed.emit([])
 		return false
 	if _get_word_ids_for_context(context, "player").is_empty() \
 		or _get_word_ids_for_context(context, "opponent").is_empty():
-		player_hand_changed.emit([])
 		return false
 
 	_active_level_context = context
-	reset_player_hand()
+	_rng.seed = _random_seed
 	return true
 
 
-## 设置后续手牌重置所用的种子，不改动当前手牌。
+## 设置后续候选抽取的固定种子，不改动任何卡槽内容。
 func set_random_seed(seed_value: int) -> void:
 	_random_seed = seed_value
 	_rng.seed = seed_value
 
 
-## 为新局按 A 的已用词记录重新抽取最多四句；A 的记录仍是去重权威。
-func reset_player_hand(used_word_ids: Array[String] = []) -> Array[Dictionary]:
-	_player_hand_word_ids.clear()
-	_rng.seed = _random_seed
-	if _loaded and not _active_level_context.is_empty():
-		var candidates: Array[String] = get_available_word_ids("player", used_word_ids, _active_level_context)
-		while _player_hand_word_ids.size() < PLAYER_HAND_SIZE and not candidates.is_empty():
-			var selected_index: int = _rng.randi_range(0, candidates.size() - 1)
-			_player_hand_word_ids.append(candidates[selected_index])
-			candidates.remove_at(selected_index)
-	return _emit_player_hand_changed()
-
-
-## 返回按显示顺序排列的值副本，D 可直接绘制四张卡片。
-func get_player_hand() -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
+## 按 A 的本局已用词和其他卡槽占用词抽一条玩家候选；槽位状态归 D / A 管理。
+func draw_player_speech_word(
+	used_word_ids: Array[String],
+	occupied_word_ids: Array[String],
+	level_context: Variant = null
+) -> Dictionary:
 	if not _loaded:
-		return result
-	for word_id: String in _player_hand_word_ids:
-		var definition: Dictionary = get_word_definition(word_id)
-		if not definition.is_empty():
-			result.append(definition)
-	return result
-
-
-## 仅在 A 已成功播种并把 word_id 写入已用列表后调用；失败与选择不会改变手牌。
-func consume_player_hand_word(word_id: String, used_word_ids: Array[String]) -> Array[Dictionary]:
-	var hand_index: int = _player_hand_word_ids.find(word_id)
-	if hand_index < 0 or not used_word_ids.has(word_id):
-		return get_player_hand()
-	_player_hand_word_ids.remove_at(hand_index)
-	var replacement_exclusions: Array[String] = used_word_ids.duplicate()
-	for held_word_id: String in _player_hand_word_ids:
-		if not replacement_exclusions.has(held_word_id):
-			replacement_exclusions.append(held_word_id)
-	var replacement_ids: Array[String] = get_available_word_ids(
-		"player", replacement_exclusions, _active_level_context
-	)
-	if not replacement_ids.is_empty():
-		_player_hand_word_ids.append(replacement_ids[_rng.randi_range(0, replacement_ids.size() - 1)])
-	return _emit_player_hand_changed()
+		return {}
+	var excluded_word_ids: Array[String] = used_word_ids.duplicate()
+	for occupied_word_id: String in occupied_word_ids:
+		if not excluded_word_ids.has(occupied_word_id):
+			excluded_word_ids.append(occupied_word_id)
+	var context: Variant = _active_level_context if level_context == null else level_context
+	var candidates: Array[String] = get_available_word_ids("player", excluded_word_ids, context)
+	if candidates.is_empty():
+		return {}
+	var selected_index: int = _rng.randi_range(0, candidates.size() - 1)
+	return get_word_definition(candidates[selected_index])
 
 
 ## 返回指定正式关卡、主播或 LevelProfile 对应的可用词条 ID。
@@ -288,6 +264,11 @@ func get_strength_success_probability(strength: int) -> float:
 	return float(_strength_probabilities.get(strength, 0.0)) if _loaded else 0.0
 
 
+## 根据正式强度表返回一次话语批次应生成的棋子数量。
+func get_strength_batch_spawn_count(strength: int) -> int:
+	return int(_strength_batch_spawn_counts.get(strength, 0)) if _loaded else 0
+
+
 ## 无参数读取当前 LevelProfile 对应配置；传 ID 时兼容按关卡或主播查询。
 func get_opponent_config(opponent_id: String = "") -> Dictionary:
 	if not _loaded:
@@ -329,12 +310,6 @@ func get_retaliation_skill_mappings(streamer_id: String = "") -> Array[Dictionar
 
 func is_loaded() -> bool:
 	return _loaded
-
-
-func _emit_player_hand_changed() -> Array[Dictionary]:
-	var hand: Array[Dictionary] = get_player_hand()
-	player_hand_changed.emit(hand.duplicate(true))
-	return hand
 
 
 func _get_word_ids_for_context(context: Dictionary, audience: String) -> Array[String]:

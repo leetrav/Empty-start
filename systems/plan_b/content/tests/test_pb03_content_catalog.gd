@@ -50,6 +50,7 @@ func _init() -> void:
 	assert(definition["source_tendency"] == &"heresy")
 	assert(definition["original_sentence_id"] == "w_0001")
 	assert(definition["available_level"] == &"all")
+	assert(definition["batch_spawn_count"] == 2)
 	assert(definition["source_pool_id"] == "pool_streamer_a")
 	assert(not definition["test_only"])
 	assert(definition["traits"].is_empty())
@@ -65,10 +66,14 @@ func _init() -> void:
 	assert(catalog.get_type_matchup("type_c", "type_a") == &"advantage")
 	assert(catalog.get_type_matchup("type_a", "type_a") == &"same")
 	assert(catalog.get_type_matchup("type_b", "type_a") == &"disadvantage")
-	assert(is_equal_approx(catalog.get_strength_success_probability(1), 0.20))
-	assert(is_equal_approx(catalog.get_strength_success_probability(2), 0.35))
-	assert(is_equal_approx(catalog.get_strength_success_probability(3), 0.50))
+	assert(is_equal_approx(catalog.get_strength_success_probability(1), 0.50))
+	assert(is_equal_approx(catalog.get_strength_success_probability(2), 0.60))
+	assert(is_equal_approx(catalog.get_strength_success_probability(3), 0.70))
 	assert(catalog.get_strength_success_probability(4) == 0.0)
+	assert(catalog.get_strength_batch_spawn_count(1) == 2)
+	assert(catalog.get_strength_batch_spawn_count(2) == 4)
+	assert(catalog.get_strength_batch_spawn_count(3) == 8)
+	assert(catalog.get_strength_batch_spawn_count(4) == 0)
 
 	var opponent_definition: Dictionary = catalog.get_word_definition(alien_opponent_word_ids[0])
 	assert(opponent_definition["available_to"] == &"opponent")
@@ -90,61 +95,57 @@ func _init() -> void:
 	alien_config["speech_cooldown_seconds"] = 0.0
 	assert(is_equal_approx(float(catalog.get_opponent_config("alien")["speech_cooldown_seconds"]), 11.5))
 
-	_test_hand_lifecycle(catalog)
-	print("PB08_CONTENT_TEST_OK")
+	_test_slot_draw(catalog)
+	print("PB12_CONTENT_TEST_OK")
 	quit()
 
 
-func _test_hand_lifecycle(catalog: Object) -> void:
+func _test_slot_draw(catalog: Object) -> void:
 	var level: LevelProfile = load(LEVEL_PATHS[0]) as LevelProfile
 	catalog.set_random_seed(731)
 	assert(catalog.configure_level(level))
-	var first_hand: Array[Dictionary] = catalog.get_player_hand()
-	assert(first_hand.size() == 4)
-	var first_ids: Array[String] = _hand_ids(first_hand)
+	var first_ids: Array[String] = _draw_three_cards(catalog, level)
+	assert(first_ids.size() == 3)
 	assert(_has_unique_ids(first_ids))
 
-	# 未确认消耗的调用代表失败路径，既有手牌顺序保持原样。
-	var no_used_word_ids: Array[String] = []
-	var failed_result: Array[Dictionary] = catalog.consume_player_hand_word(first_ids[0], no_used_word_ids)
-	assert(_hand_ids(failed_result) == first_ids)
-	assert(_hand_ids(catalog.get_player_hand()) == first_ids)
+	# 新卡候选同时排除已发表词和仍占用另两个卡位的词。
+	var used_word_ids: Array[String] = [first_ids[0]]
+	var occupied_word_ids: Array[String] = [first_ids[1], first_ids[2]]
+	var replacement: Dictionary = catalog.draw_player_speech_word(used_word_ids, occupied_word_ids)
+	assert(not replacement.is_empty())
+	assert(str(replacement["word_id"]) not in used_word_ids)
+	assert(str(replacement["word_id"]) not in occupied_word_ids)
 
-	# 只有 A 的已用列表包含成功句时才消耗并补入一张新牌。
-	var used_after_success: Array[String] = [first_ids[0]]
-	var replenished: Array[Dictionary] = catalog.consume_player_hand_word(first_ids[0], used_after_success)
-	var replenished_ids: Array[String] = _hand_ids(replenished)
-	assert(replenished.size() == 4)
-	assert(not replenished_ids.has(first_ids[0]))
-	assert(_has_unique_ids(replenished_ids))
-	assert(catalog.consume_player_hand_word(first_ids[0], used_after_success).size() == 4)
+	# 同一 seed 与关卡的三次初始抽取次序可复现。
+	var replay_catalog = ContentCatalogScript.new()
+	assert(replay_catalog.load_configuration())
+	replay_catalog.set_random_seed(731)
+	assert(replay_catalog.configure_level(level))
+	assert(_draw_three_cards(replay_catalog, level) == first_ids)
 
-	# 同一 seed 与关卡重置回相同的可复现初始牌序。
-	var reset_hand: Array[Dictionary] = catalog.reset_player_hand()
-	assert(_hand_ids(reset_hand) == first_ids)
-
-	# 最后两句可用时手牌按剩余数显示；耗尽后返回空列表。
+	# 池尾只剩一条时能补入该句；该句被占用后返回耗尽状态。
 	var all_player_ids: Array[String] = catalog.get_word_ids(level, "player")
 	var used_except_two: Array[String] = []
 	for word_id: String in all_player_ids:
 		if word_id not in ["w_0001", "w_0002"]:
 			used_except_two.append(word_id)
-	var two_word_hand: Array[Dictionary] = catalog.reset_player_hand(used_except_two)
-	assert(two_word_hand.size() == 2)
-	var final_used_ids: Array[String] = used_except_two.duplicate()
-	final_used_ids.append(str(two_word_hand[0]["word_id"]))
-	var one_word_hand: Array[Dictionary] = catalog.consume_player_hand_word(
-		str(two_word_hand[0]["word_id"]), final_used_ids
-	)
-	assert(one_word_hand.size() == 1)
-	final_used_ids.append(str(one_word_hand[0]["word_id"]))
-	assert(catalog.consume_player_hand_word(str(one_word_hand[0]["word_id"]), final_used_ids).is_empty())
+	var occupied_w1: Array[String] = ["w_0001"]
+	var occupied_w1_w2: Array[String] = ["w_0001", "w_0002"]
+	var last_candidate: Dictionary = catalog.draw_player_speech_word(used_except_two, occupied_w1)
+	assert(last_candidate.get("word_id", "") == "w_0002")
+	assert(catalog.draw_player_speech_word(used_except_two, occupied_w1_w2).is_empty())
 
 
-func _hand_ids(hand: Array[Dictionary]) -> Array[String]:
+func _draw_three_cards(catalog: Object, level: LevelProfile) -> Array[String]:
 	var result: Array[String] = []
-	for definition: Dictionary in hand:
-		result.append(str(definition.get("word_id", "")))
+	var used_word_ids: Array[String] = []
+	var occupied_word_ids: Array[String] = []
+	for _slot_index: int in range(3):
+		var definition: Dictionary = catalog.draw_player_speech_word(used_word_ids, occupied_word_ids, level)
+		assert(not definition.is_empty())
+		var word_id: String = str(definition["word_id"])
+		result.append(word_id)
+		occupied_word_ids.append(word_id)
 	return result
 
 
