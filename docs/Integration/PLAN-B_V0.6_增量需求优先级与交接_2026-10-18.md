@@ -38,3 +38,10 @@
 - `PlanBUnitField.board_position_clicked(spawn_position)`：中央棋盘内任意有效位置发出坐标，单位位置不作为点击合法性的条件。
 - D 消费 B 的 `word_batch_spawned(batch)`、`word_groups_changed(groups)` 与 `unit_physics_positions_updated(unit_ids, previous_positions, current_positions)`；`group_id/team/word_id/member_ids/center_position/member_positions/word_snapshot` 由 B 提供。
 - D 使用物理 tick 的位置对和引擎插值绘制平滑位置；接触、发表落点和模拟结果仍读取真实位置。
+
+### Lane B 当前已实现的 PB-11 团体与运动接口
+
+- `PlanBUnitSimulation.get_word_groups() -> Array[Dictionary]` 返回按稳定 `group_id` 排序的同阵营、同当前 `word_id` 空间连通组；字段含 `group_id/team/word_id/word_order/member_ids/word_snapshot/member_positions/center_position`，均为 scene-global 坐标。
+- `word_groups_changed(groups)` 在团体成员、阵营、话语关系或清场事实改变时发出完整组快照；实时位置由按需读取接口提供。`unit_physics_positions_updated(unit_ids, previous_positions, current_positions)` 提供物理 tick 插值点。
+- B 负责邻域判定与团体拓扑，默认72px加入、90px离开、中心半径上限180px，刷新间隔0.2秒；同阵营改口和敌我碰撞裁决保持原规则，结群不改变人数/寿命/PK。
+- Lane D 负责共享气泡绘制，不在 UI 重算连通关系。
