@@ -989,6 +989,10 @@ func _on_divine_descent_entered(session: DivineDescentSession) -> void:
 	_contradiction_oracle_flow.stop()
 	_rest_result_view.hide_result()
 	_rest_session = null
+	if use_plan_b_campaign:
+		# 神降临复用旧弹幕记录收束占比；Plan B 普通战斗隐藏该视图，进入终局时恢复。
+		_barrage_area.visible = true
+		_oracle_candidate_display.visible = false
 	_battle_hud.show_battle_state("神降临")
 	divine_descent_entered.emit(session)
 

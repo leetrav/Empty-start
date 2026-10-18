@@ -293,6 +293,12 @@ PB-10 配置核对发现 `data/plan_b/` 的五份战斗 CSV 缺少 Keep File sid
 - **条件**：外部 PK 同步先发出 `pk_feedback_changed`，Plan B UI 按 T0 禁用对手侧队列；随后 `attempt_failed` 消费者提交对手侧失败剧情。
 - **处理**：Plan B UI 在失败演出开始时重新启用对手立绘与对白侧，再提交后续失败序列；重开仍由 `reset_for_attempt()` 清理活动对白。
 
+### KT-47：Plan B 隐藏的弹幕视图被 DivineDescent 收束查询复用
+
+- **现象**：神降临进入锁句阶段后可持续显示 `locked`，可见占比无法达到收束阈值，Ending 不会开始。
+- **条件**：Plan B 普通战斗隐藏旧 `BarrageArea`；`DivineDescentSpread` 仍用其中 `BarrageView.is_visible_in_tree()` 通过的记录计算锁句占比。
+- **处理**：Plan B 进入 DivineDescent 时恢复 `_barrage_area.visible`，并隐藏旧神谕候选层；可见弹幕事实仍由 `BarrageArea` 提供。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。
@@ -307,6 +313,7 @@ PB-10 配置核对发现 `data/plan_b/` 的五份战斗 CSV 缺少 Keep File sid
 - 源工程可读 CSV、导出包缺表：KT-43。
 - 新 worktree 首次字体 / 音频 loader 报错：KT-45。
 - Plan B 到 0% 后失败对白未入队：KT-46。
+- Plan B 神降临锁句占比不收束：KT-47。
 
 ## 附录 A：Godot 生命周期提醒
 
