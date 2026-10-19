@@ -11,7 +11,7 @@
 - `docs/Integration/tasks/PB-13_planb_burst-publish-and-emergent-traits.md`、`docs/Integration/tasks/PB-14_planb_performance_frame-pacing.md`
 
 ## 已经实现的功能
-当前 C 配置 `data/plan_b/population_config.csv` 的工程首值为 `initial_neutral_count=30`、C 自有 `initial_seed_slot_count=0`、`neutral_spawn_interval_seconds=0.75` 与 `neutral_spawn_jitter_ratio=0.25`。A 独立拥有 `initial_opponent_seed_count=2`；B 按30个中立加A传入的2个预留槽创建，A播种后保留30个中立。B模拟当前最大人数仍为可调配置，96是性能基准；B自然补人暂留8个名额为完整强度3批次让位。刷新抖动与8名额留白都是**工程首值，尚待实机调节**。
+待合入的 PR #274 C 候选配置 `data/plan_b/population_config.csv` 提供工程首值：`initial_neutral_count=30`、C 自有 `initial_seed_slot_count=0`、`neutral_spawn_interval_seconds=0.75` 与 `neutral_spawn_jitter_ratio=0.25`；该 CSV 尚未进入 main。A 独立拥有 `initial_opponent_seed_count=2`；B 按30个中立加A传入的2个预留槽创建，A播种后保留30个中立。B模拟当前最大人数仍为可调配置，96是性能基准；B自然补人暂留8个名额为完整强度3批次让位。刷新抖动与8名额留白都是**工程首值，尚待实机调节**。
 
 ## 本次任务
 ### 1. 修改开局人口
