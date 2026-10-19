@@ -48,6 +48,7 @@ var _run_state: LevelRunState
 var _battle_attempt_flow: BattleAttemptFlow
 var _rest_session: RestSession
 var _rest_result_view: RestResultView
+var _ending_music: EndingMusicPresenter
 var _contradiction_oracle_flow: ContradictionOracleFlow
 var _divine_descent_flow: DivineDescentFlow
 var _hit_echo_presenter: Node
@@ -125,6 +126,8 @@ func _ready() -> void:
 	_battle_hud.bind_portrait_attack(_attack_charge_input)
 	_rest_result_view = REST_RESULT_VIEW_SCENE.instantiate() as RestResultView
 	add_child(_rest_result_view)
+	_ending_music = EndingMusicPresenter.new()
+	add_child(_ending_music)
 	# 创建时注入一次准心，休息及历史页面统一冻结输入，隐藏时恢复。
 	_rest_result_view.configure_battle_aim(_aim_reticle)
 	_rest_result_view.continue_requested.connect(_on_rest_continue_requested)
@@ -250,6 +253,8 @@ func _deliver_pk_tier_visual(source: CombatStage, tier: int) -> void:
 
 ## C的公开入口只撤销当前指针蓄力，保留已发射言弹及硬直计时。
 func _on_pause_changed(paused: bool) -> void:
+	if is_instance_valid(_ending_music):
+		_ending_music.set_paused(paused)
 	if is_instance_valid(_rest_result_view):
 		_rest_result_view.set_music_paused(paused)
 	if is_instance_valid(_battle_music):
@@ -683,6 +688,7 @@ func _enter_divine_descent() -> void:
 	add_child(_divine_descent_flow)
 	_divine_descent_flow.entered.connect(_on_divine_descent_entered)
 	_divine_descent_flow.completed.connect(_finish_divine_descent)
+	_divine_descent_flow.phase_changed.connect(_ending_music.on_divine_phase)
 	_battle_hud.bind_audio_flows(_contradiction_oracle_flow, _divine_descent_flow)
 	if not _divine_descent_flow.configure_formal_parameters(
 			divine_decay_config.auto_repeat_interval_min_seconds, divine_decay_config.auto_repeat_interval_max_seconds,
@@ -731,8 +737,11 @@ func _finish_divine_descent(result: EndingSession) -> void:
 		SaveManager.data.completed_normal_level_ids.append(last_id)
 	if SaveManager.save_game() != OK:
 		push_error("Sandbox: 终局成果存盘失败。")
+	# 结局页面接管同曲，不让旧场景退出在淡入途中把音乐停掉。
+	_ending_music.set_handoff(true)
 	var error := SceneRouter.goto_ending(result)
 	if error != OK:
+		_ending_music.set_handoff(false)
 		push_error("Sandbox: Ending 顶层路由失败：%s" % error_string(error))
 
 

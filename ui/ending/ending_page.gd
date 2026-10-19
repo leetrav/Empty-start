@@ -4,6 +4,7 @@ extends Control
 const SCRIPTURE_ROW: PackedScene = preload("res://ui/ending/ending_scripture_row.tscn")
 
 var _display_data: Dictionary = {}
+var _ending_music: EndingMusicPresenter
 
 @onready var _main_art: TextureRect = %MainArt
 @onready var _religion_name: Label = %ReligionName
@@ -16,6 +17,9 @@ var _display_data: Dictionary = {}
 
 # 初始化完成后呈现已收到的数据；单独启动时采用空资源的安全显示状态。
 func _ready() -> void:
+	_ending_music = EndingMusicPresenter.new()
+	add_child(_ending_music)
+	_ending_music.start()
 	_apply_display_data()
 
 

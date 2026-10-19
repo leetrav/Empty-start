@@ -1,5 +1,7 @@
 # 游戏音乐与署名
 
+结尾与鸣谢：天導 -Tendoh-／煉獄庭園（作曲・編曲：煉獄小僧）。来源：https://note.com/rengokuteien/n/n3d37a334579a 。完整转码与循环说明见ending/README.md，沿用下述作者自定义许可及游戏/说明署名要求。
+
 休息房间与战后结算：Pure Soul／煉獄庭園（作曲・編曲：煉獄小僧）。来源：https://note.com/rengokuteien/n/nb7a4c4460931 。完整转码与循环说明见rest/README.md，沿用下述作者自定义许可和游戏/说明署名要求。
 
 本游戏四Boss音乐：Teek Teek Teek、美哀 -Blai-、草原ダンスィング♪-RemakeVer-、FELT LOVE。

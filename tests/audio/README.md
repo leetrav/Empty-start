@@ -1,5 +1,7 @@
 # AU-03 四Boss局部运行验收
 
+结尾音乐：au03_ending_music_check.gd用隔离APPDATA的--script运行，RAM准备末关进度/真实词库命中历史，公开Rest继续后由实际神降临衰减/锁句/强调完成；验证最终进度满起曲一次、暂停、跨页不重播、保存回看和空历史兜底，成功AU03_ENDING_MUSIC_PASS。不是人工通关/奖励E2E。SceneTree测试避免在解析期用EndingPage类型，改为运行期场景路径检查，避免提前编译Autoload依赖。包检查含Tendoh资源/循环/CSV/说明/署名。
+
 休息音乐：au03_rest_music_check.gd以--script运行并使用隔离APPDATA。覆盖真实开局房间→Sandbox、两类公开结果夹具/重复/历史阅读/暂停、原生循环末尾回绕与旧页不误停新曲、战后回房间同曲续播及暂停中回菜单清理。成功AU03_REST_MUSIC_PASS；不代表真实提交奖励整局E2E。包检查另外验证Pure Soul资源、原生循环、17表、说明与署名。
 
 使用Godot 4.7.2。先导入工程，OGG导入侧车必须保留loop=true。无Godot MCP时使用CLI；Windows图形exe用Start-Process -Wait -PassThru -WindowStyle Hidden，核对ExitCode、PASS与stderr。验证进程APPDATA设为独立临时目录，避免覆盖玩家存档。
