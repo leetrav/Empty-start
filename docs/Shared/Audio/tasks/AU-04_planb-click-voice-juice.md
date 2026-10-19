@@ -1,6 +1,6 @@
 # AU-04 · 全流程点击、主播拟声与Plan B关键Juice音效
 
-**状态：2026-10-20最新已确认P0需求；AU-04 接线实现待 Review，实机听感仍待最短验收。**
+**状态：2026-10-20最新已确认P0需求；[Draft PR #313](https://github.com/w7775p/Empty-start/pull/313) 待 Review，实机听感仍待最短验收。**
 
 ## 开始前先阅读以下文档
 - `AGENTS.md`、`project.godot`、`known_traps.md`、`docs/Original/任务卡模板.md`。
