@@ -10,6 +10,7 @@ var _presentation_id: int = 0
 var _battle_aim: AimReticle
 var _aim_input_was_enabled: bool = false
 var _aim_suspended: bool = false
+var _room_music: RoomMusicPresenter
 
 # 只保留当前休息上下文引用，历史事实由 15 / 16 各自持有。
 var _history_scripture: ScriptureData
@@ -37,6 +38,8 @@ var _history_loser_card_catalog: LoserCardCatalog
 
 # 隐藏结果及历史面板，连接查看、返回与继续请求。
 func _ready() -> void:
+	_room_music = RoomMusicPresenter.new()
+	add_child(_room_music)
 	_overlay.hide()
 	_scripture_history.hide()
 	_loser_card_history.hide()
@@ -121,6 +124,7 @@ func show_result(
 	_loser_card_history.hide()
 	_overlay.show()
 	_result_active = true
+	_room_music.start()
 	_suspend_battle_aim()
 	_presentation_id += 1
 	_set_menu_input_enabled(false)
@@ -147,6 +151,7 @@ func _render_live_result(result: Dictionary) -> void:
 
 # 重开时同步收起结果与历史面板，释放本次上下文引用。
 func hide_result() -> void:
+	_room_music.stop()
 	_result_active = false
 	_restore_battle_aim()
 	_presentation_id += 1
@@ -159,6 +164,11 @@ func hide_result() -> void:
 	_history_level_catalog = null
 	_history_loser_cards = null
 	_history_loser_card_catalog = null
+
+
+# 共享暂停菜单由组合根转发，历史页面仍属于同一次休息音乐上下文。
+func set_music_paused(paused: bool) -> void:
+	_room_music.set_paused(paused)
 
 
 # 主动查看当前周目正式圣典，子面板复用现成章节适配与显示组件。

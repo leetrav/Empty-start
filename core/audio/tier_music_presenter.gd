@@ -46,7 +46,12 @@ func start_battle(tier: int = 0) -> void:
 	_target = profile.group_for_tier(tier)
 	_lower_elapsed = 0.0
 	_boundary_remaining = -1.0
-	AudioManager.stop_music()
+	# 房间离开时的尾音允许在T0淡完，新的Boss起曲会自动取消旧淡出回调。
+	if tier == 0 and AudioManager.get_music_event_id() == &"music_rest_room":
+		AudioManager.set_music_paused(false)
+		AudioManager.fade_out_music()
+	else:
+		AudioManager.stop_music()
 	if tier > 0:
 		_play_group(_target, 0.0, true)
 

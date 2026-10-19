@@ -1,4 +1,7 @@
 ## 当前采用：五次升档、三组音乐（2026-10-19）
+
+休息音乐也已接入：Pure Soul（music_rest_room，-12dB、1.5秒淡入、原生OGG循环）。有效开局/关间房间和战后结算共用，历史阅读不重播，暂停续播，隐藏/离场淡出。页面持有RoomMusicPresenter并复用AudioManager；未制作休息转场动画。
+
 四Boss统一使用hold_intro_through_first_tier=true，以下规则优先于后文历史记录。
 
 | PK / 档位 | 正常开局音乐 |

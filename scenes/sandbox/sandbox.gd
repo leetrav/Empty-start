@@ -250,6 +250,8 @@ func _deliver_pk_tier_visual(source: CombatStage, tier: int) -> void:
 
 ## C的公开入口只撤销当前指针蓄力，保留已发射言弹及硬直计时。
 func _on_pause_changed(paused: bool) -> void:
+	if is_instance_valid(_rest_result_view):
+		_rest_result_view.set_music_paused(paused)
 	if is_instance_valid(_battle_music):
 		_battle_music.set_paused(paused)
 	if paused and _attack_charge_input.has_method("cancel_pointer_attack"):

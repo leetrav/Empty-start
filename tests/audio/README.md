@@ -1,5 +1,7 @@
 # AU-03 四Boss局部运行验收
 
+休息音乐：au03_rest_music_check.gd以--script运行并使用隔离APPDATA。覆盖真实开局房间→Sandbox、两类公开结果夹具/重复/历史阅读/暂停、原生循环末尾回绕与旧页不误停新曲、战后回房间同曲续播及暂停中回菜单清理。成功AU03_REST_MUSIC_PASS；不代表真实提交奖励整局E2E。包检查另外验证Pure Soul资源、原生循环、17表、说明与署名。
+
 使用Godot 4.7.2。先导入工程，OGG导入侧车必须保留loop=true。无Godot MCP时使用CLI；Windows图形exe用Start-Process -Wait -PassThru -WindowStyle Hidden，核对ExitCode、PASS与stderr。验证进程APPDATA设为独立临时目录，避免覆盖玩家存档。
 
 - `au03_runtime_smoke.tscn`：约40秒，真实AudioManager播放器和真实费米主控生命周期，检查同组保持、跨档最新目标、短暂下降取消、暂停恢复、持续下降、失败/离场取消、重开、满PK及击破、玩家Music音量/静音。成功输出AU03_RUNTIME_PASS。
