@@ -3,7 +3,7 @@ God rays — pend00
 https://godotshaders.com/shader/god-rays/
 Code license: CC0, as declared on the source page.
 Godot 4 adaptation: hint_color -> source_color; explicit SCREEN_TEXTURE uniform.
-Original algorithm and default parameters retained for this standalone preview.
+Original algorithm and default parameters retained in the production main menu.
 */
 shader_type canvas_item;
 
