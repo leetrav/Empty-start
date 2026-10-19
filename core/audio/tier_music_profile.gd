@@ -10,8 +10,8 @@ extends Resource
 @export_range(0.0, 10.0) var entrance_fade_seconds: float = 0.25
 @export_range(0.0, 10.0) var dialogue_mix_seconds: float = 0.3
 @export var overlap_battle: bool = true
-# 可选保持首档引子，真实跨音乐组后才换段；不影响其他Boss的对白接低段。
-@export var hold_intro_until_tier_change: bool = false
+# 费米从T0铺垫开始，升档换段等待真实箭头淡出事实；其他Boss沿用对白引子。
+@export var intro_before_connection: bool = false
 @export var tier_groups: Array[int] = [0, 1, 2, 2, 3, 3]
 @export_range(1.0, 300.0) var bpm: float = 100.0
 @export_range(1, 16) var beats_per_bar: int = 4

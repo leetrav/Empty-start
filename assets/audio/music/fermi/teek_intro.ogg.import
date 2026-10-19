@@ -13,7 +13,7 @@ dest_files=["res://.godot/imported/teek_intro.ogg-ab39ec72ab402e089f75c9e1079f3b
 [params]
 
 loop=true
-loop_offset=0
+loop_offset=4.8
 bpm=100
 beat_count=32
 bar_beats=4

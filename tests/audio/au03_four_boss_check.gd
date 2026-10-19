@@ -4,6 +4,18 @@ extends SceneTree
 var _failures: int = 0
 var _dialogue_completed: bool = false
 var _dialogue_started: bool = false
+var _first_low_us: int = 0
+var _first_arrow_us: int = 0
+
+
+func _on_music_event(event_id: StringName) -> void:
+	if event_id == &"music_alien_low" and _first_low_us == 0:
+		_first_low_us = Time.get_ticks_usec()
+
+
+func _on_arrow_fading(previous_tier: int, current_tier: int) -> void:
+	if previous_tier == 0 and current_tier == 1:
+		_first_arrow_us = Time.get_ticks_usec()
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -33,6 +45,7 @@ func _run() -> void:
 	create_timer(200.0).timeout.connect(func(): quit(2))
 	var save: Node = root.get_node("SaveManager")
 	var audio: Node = root.get_node("AudioManager")
+	audio.music_changed.connect(_on_music_event)
 	save.new_game()
 	var catalog: LevelCatalog = load("res://data/level_configuration/level_catalog.tres")
 	for index: int in range(4):
@@ -46,9 +59,10 @@ func _run() -> void:
 			save.data.completed_normal_level_ids.append(catalog.profiles[previous].level_id)
 		var scene: Node = load("res://scenes/sandbox/sandbox.tscn").instantiate()
 		root.add_child(scene)
+		scene.get_node("BattleHud").tier_breakthrough_fading.connect(_on_arrow_fading)
 		await create_timer(0.2).timeout
 		var flow: BattleAttemptFlow = scene.get_battle_attempt_flow()
-		_check(flow.get_current_level_profile().streamer_id == id and audio.get_music_event_id() == &"", id + " 身份与T0静音")
+		_check(flow.get_current_level_profile().streamer_id == id and audio.get_music_event_id() == (profile.event_ids[0] if profile.intro_before_connection else &""), id + " 身份与T0专属策略")
 		if OS.get_cmdline_user_args().has("--terminal-only"):
 			scene.debug_set_player_pk(1.0)
 			var terminal_wait: float = 7.0
@@ -87,18 +101,21 @@ func _run() -> void:
 		while not _dialogue_started and start_remaining > 0.0:
 			await create_timer(0.1).timeout
 			start_remaining -= 0.1
-		_check(_dialogue_started and audio.get_music_event_id() == profile.event_ids[0], id + " 真实气泡触发对白混音")
+		var dialogue_group: int = 1 if profile.intro_before_connection else 0
+		_check(_dialogue_started and audio.get_music_event_id() == profile.event_ids[dialogue_group], id + " 真实气泡时已按箭头/对白策略播放")
+		if id == "alien":
+			_check(_first_low_us > 0 and _first_arrow_us > 0 and absi(_first_low_us - _first_arrow_us) < 10000, "alien 首次切低段与真实箭头淡出同帧")
 		if id == "fox":
 			_check(audio.get_music_position() >= before_dialogue, "fox 原色出场转对白不重播开头")
 		await create_timer(1.0).timeout
-		_check(not _dialogue_completed and audio.get_music_event_id() == profile.event_ids[0], id + " 白未说完不进战斗段")
+		_check(not _dialogue_completed and audio.get_music_event_id() == profile.event_ids[dialogue_group], id + " 对白期间音乐不额外切段")
 		var remaining: float = 40.0
 		while not _dialogue_completed and remaining > 0.0:
 			await create_timer(0.2).timeout
 			remaining -= 0.2
 		_check(_dialogue_completed, id + " 真实对白完成")
 		await create_timer(profile.bar_seconds() + 0.8).timeout
-		var after_dialogue: int = 0 if profile.hold_intro_until_tier_change else 1
+		var after_dialogue: int = 1
 		_check(audio.get_music_event_id() == profile.event_ids[after_dialogue], id + " 对白结束按配置保持引子/切低段")
 		scene.debug_set_player_pk(0.66)
 		await create_timer(profile.bar_seconds() + 0.8).timeout
@@ -122,7 +139,7 @@ func _run() -> void:
 		_check(audio.get_music_event_id() == profile.event_ids[1], id + " 持续降档低段")
 		scene.restart_current_attempt()
 		await create_timer(0.15).timeout
-		_check(audio.get_music_event_id() == &"", id + " 重开静音无旧曲")
+		_check(audio.get_music_event_id() == (profile.event_ids[0] if profile.intro_before_connection else &""), id + " 重开还原T0无旧曲")
 		scene.debug_set_player_pk(0.92)
 		await create_timer(0.8).timeout
 		_check(audio.get_music_event_id() == profile.event_ids[3], id + " T0直接F3无对白不等待")

@@ -9,7 +9,7 @@ var _host: Node
 var _active: bool = false
 var _paused: bool = false
 var _opening_active: bool = false
-var _intro_hold_group: int = -1
+var _waiting_for_tier_visual: bool = false
 var _group: int = -1
 var _target: int = -1
 var _lower_elapsed: float = 0.0
@@ -36,12 +36,12 @@ func _ready() -> void:
 	AudioManager.music_changed.connect(_on_music_changed)
 
 
-# 新局T0等待时静音；中途恢复非T0时从实际战斗组开始。
+# 新局按Profile选择T0引子或静音；中途恢复非T0时从实际战斗组开始。
 func start_battle(tier: int = 0) -> void:
 	_active = true
 	_paused = false
 	_opening_active = false
-	_intro_hold_group = -1
+	_waiting_for_tier_visual = false
 	_group = -1
 	_target = profile.group_for_tier(tier)
 	_lower_elapsed = 0.0
@@ -49,20 +49,30 @@ func start_battle(tier: int = 0) -> void:
 	AudioManager.stop_music()
 	if tier > 0:
 		_play_group(_target, 0.0, true)
+	elif profile.intro_before_connection:
+		_opening_active = true
+		_play_group(0, 0.0, true)
 
 
 # 同组信号不重播；向更低组连续计时，取消时只保留最新目标。
-func request_tier(tier: int) -> void:
+func request_tier(tier: int, wait_for_visual: bool = false) -> void:
 	if not _active:
 		return
 	var target: int = profile.group_for_tier(tier)
 	if tier == 0:
+		if profile.intro_before_connection:
+			_target = 0
+			_opening_active = true
+			_waiting_for_tier_visual = false
+			if _group != 0 or not owns_music():
+				_play_group(0, 0.0, true)
+			return
 		# 对手离线/等待时撤销引子和所有延迟切曲，保留普通操作音效。
 		var owned: bool = owns_music()
 		_group = -1
 		_target = target
 		_opening_active = false
-		_intro_hold_group = -1
+		_waiting_for_tier_visual = false
 		_lower_elapsed = 0.0
 		_boundary_remaining = -1.0
 		if owned:
@@ -71,10 +81,9 @@ func request_tier(tier: int) -> void:
 	if _opening_active:
 		# 对白结束前只更新后续战斗目标，不让Tier覆盖柔和引子。
 		_target = target
+		_waiting_for_tier_visual = wait_for_visual
 		return
-	# 开场对白完成本身不换段；首档实际跨组后解除保持，后续降档照常。
-	if _intro_hold_group >= 0 and target != _intro_hold_group:
-		_intro_hold_group = -1
+	_waiting_for_tier_visual = wait_for_visual and target > _group
 	if _group < 0:
 		_target = target
 		_play_group(target, 0.0, true)
@@ -118,8 +127,9 @@ func finish_connection_dialogue() -> void:
 	_opening_active = false
 	if _target == 0:
 		_target = profile.group_for_tier(1)
-	if profile.hold_intro_until_tier_change and _target == profile.group_for_tier(1):
-		_intro_hold_group = _target
+	if profile.intro_before_connection:
+		# 费米仅由真实箭头放行，不能拿对白完成替代升档视觉。
+		_opening_active = true
 	_boundary_remaining = -1.0
 	_last_position = AudioManager.get_music_position()
 
@@ -130,6 +140,29 @@ func is_waiting_for_connection() -> bool:
 
 func is_opening_dialogue_active() -> bool:
 	return _opening_active
+
+
+# 当前真实升档箭头开始淡出后才启动音乐淡变，不再额外等待小节。
+func release_tier_visual(tier: int) -> void:
+	if not _active or not profile.intro_before_connection or tier <= 0:
+		return
+	if profile.group_for_tier(tier) != _target:
+		return
+	_opening_active = false
+	_waiting_for_tier_visual = false
+	if _group != _target:
+		_play_group(_target)
+
+
+# F3无命中清场和箭头链路，显式直接试听当前档，避免卡在待放行状态。
+func skip_connection_for_debug(tier: int) -> void:
+	if not _active or not profile.intro_before_connection or tier <= 0:
+		return
+	_opening_active = false
+	_waiting_for_tier_visual = false
+	_target = profile.group_for_tier(tier)
+	if _group != _target:
+		_play_group(_target, 0.0, true)
 
 
 # 暂停同时冻结播放与稳定计时；用于局部暂停和整棵树暂停。
@@ -163,7 +196,7 @@ func _process(delta: float) -> void:
 		audio_delta += AudioManager.get_music_length() - AudioManager.get_music_loop_offset()
 	audio_delta = maxf(audio_delta, 0.0)
 	_last_position = position
-	if _opening_active or _intro_hold_group >= 0 or _target == _group:
+	if _opening_active or _waiting_for_tier_visual or _target == _group:
 		return
 	if _target < _group:
 		_lower_elapsed += delta
@@ -182,7 +215,7 @@ func _process(delta: float) -> void:
 func _play_group(group: int, from_position: float = 0.0, initial: bool = false) -> void:
 	var leaving_intro: bool = _group == 0 and group > 0
 	_group = group
-	# 连线柔和引子用一小节淡入；对白完成后切正常战斗段。
+	# 柔和引子单独淡入；战斗段由对应对白/箭头事实放行。
 	var fade_in: float = profile.intro_fade_seconds if initial and group == 0 else -1.0
 	var event_id: StringName = profile.event_ids[group]
 	if initial and group == 0 and profile.entrance_event_id != &"":

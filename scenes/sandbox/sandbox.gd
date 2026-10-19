@@ -172,6 +172,7 @@ func _ready() -> void:
 	_paradox_comic.result_feedback_finished.connect(_on_paradox_result_feedback_finished)
 	_battle_attempt_flow.tier_transition_cleared.connect(_on_tier_transition_cleared)
 	_battle_hud.tier_breakthrough_finished.connect(_on_tier_breakthrough_finished)
+	_battle_hud.tier_breakthrough_fading.connect(_on_tier_breakthrough_fading)
 	# 由新消费者读取正式逐目标结算，再通过 HUD 公开队列入口提交玩家复述。
 	_hit_echo_presenter = HIT_ECHO_PRESENTER_SCRIPT.new()
 	_hit_echo_presenter.name = "StreamerBubbleHitEchoPresenter"
@@ -231,7 +232,9 @@ func _queue_pk_tier_visual(current_tier: int, _player_pk: float) -> void:
 	if is_instance_valid(_battle_music):
 		if current_tier > 0 and _battle_music.is_waiting_for_connection() and not _debug_pk_update_active:
 			_battle_music.begin_connection()
-		_battle_music.request_tier(current_tier)
+		if _debug_pk_update_active:
+			_battle_music.skip_connection_for_debug(current_tier)
+		_battle_music.request_tier(current_tier, _battle_music.profile.intro_before_connection and not _debug_pk_update_active)
 	# 延迟只保存来源和档位，PK在执行时读取，避免旧回调覆盖回拉或新尝试。
 	_deliver_pk_tier_visual.call_deferred(_battle_attempt_flow.get_combat_stage(), current_tier)
 
@@ -374,11 +377,19 @@ func _on_tier_transition_cleared(previous_tier: int, current_tier: int, _cleared
 
 
 # 转场结束后先恢复 T1 立绘，再让公开 Tier 完成事件触发对白 / 战斗恢复。
+func _on_tier_breakthrough_fading(_previous_tier: int, current_tier: int) -> void:
+	# 对齐实际箭头淡出，过期档位不放行音乐。
+	if is_instance_valid(_battle_music) and _battle_attempt_flow.get_current_tier() == current_tier:
+		_battle_music.release_tier_visual(current_tier)
+
+
 func _on_tier_breakthrough_finished(
 		previous_tier: int, current_tier: int, completed: bool
 ) -> void:
 	if not completed or _battle_attempt_flow.get_current_tier() != current_tier:
 		return
+	# 没有可播放的箭头时，沿用真实完成入口兜底；已经换段时不重播。
+	_on_tier_breakthrough_fading(previous_tier, current_tier)
 	if previous_tier == CombatStage.INITIAL_TIER and current_tier > CombatStage.INITIAL_TIER:
 		_battle_hud.set_opponent_portrait_connected(true)
 	# 空配置可能同步完播，所以必须在完成入口发出通知前设置此标记。

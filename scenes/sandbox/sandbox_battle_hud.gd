@@ -6,6 +6,7 @@ signal failure_presentation_finished()
 signal dialogue_sequence_completed(sequence_id: StringName, side: int)
 signal dialogue_bubble_presented(side: int, event_id: StringName, text: String)
 signal tier_breakthrough_finished(previous_tier: int, current_tier: int, completed: bool)
+signal tier_breakthrough_fading(previous_tier: int, current_tier: int)
 signal opponent_result_presentation_finished(broken: bool)
 
 const PortraitMotion = preload("res://systems/presentation/streamer_portrait_motion.gd")
@@ -201,6 +202,7 @@ func _ready() -> void:
 	barrage_area.add_child(_stage_arrow)
 	_stage_arrow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_stage_arrow.animation_finished.connect(_on_stage_arrow_finished)
+	_stage_arrow.fade_started.connect(_on_stage_arrow_fading)
 	_crt_connection = CrtConnection.new() as CrtConnectionFx
 	_crt_connection.blackout_color = pa11_crt_blackout_color
 	_crt_connection.beam_color = pa11_crt_beam_color
@@ -650,7 +652,14 @@ func cancel_tier_breakthrough() -> void:
 	tier_breakthrough_finished.emit(previous_tier, current_tier, false)
 
 
-# 上箭头结束后，首次连线继续 CRT；普通升档直接交回现有流程。
+# 升档箭头淡出事实独立于后续CRT和对白，供组合根对齐音乐。
+func _on_stage_arrow_fading(direction: int) -> void:
+	# 只报告当前有效升档箭头，降档保持现有稳定等待规则。
+	if direction > 0 and _tier_breakthrough_active:
+		tier_breakthrough_fading.emit(_tier_breakthrough_previous_tier, _tier_breakthrough_current_tier)
+
+
+# 上箭头结束后，首次连线继续CRT；普通升档交回现有流程。
 func _on_stage_arrow_finished(direction: int) -> void:
 	if direction < 0 or not _tier_breakthrough_active:
 		return

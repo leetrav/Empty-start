@@ -184,3 +184,9 @@ AudioManager.get_music_loop_offset()返回当前OGG循环起点（非OGG或不�
 - 费米正常流程：T0静音；T1连线/对白及对白后均保持teek_intro；到T2/T3用mid，T4/T5用high。100%击破与暂停/失败规则保持；从中高段稳定降回T1仍用low。F3从静音直接跳T1仍按战斗映射low试听，不冒充正常连线流程。
 - start_battle/T0清除保持；真实跨组时解除一次性保持，避免后续降档被旧首档保持卡住。没有重剪、重编码素材或修改PK/Tier阈值。原5191c59首档对白结束接low的行为由本轮要求替代。
 - 更新au03_runtime_smoke为对白完成后真实等待20秒（超过19.2秒片段一整轮）仍是intro，再请求T2检查顺序淡变；四Boss真实场景检查按Profile分别验首档规则，保留升档、降档、F3、暂停、重开、击破和失败回归。
+## 2026-10-19 用户澄清：开场保留到56%首次升档，循环不重播静音
+- 用户明确“第一次升档”是PK56%/T0→T1、费米开屏，指出Teek开头约四秒静音不应重复。此决定替代上一轮误解的“T1保持引子到64%”，也替代此前费米T0静音到连线才起曲的规则。
+- 本地解码teek_intro确认0.25～3.75秒为静音，3.75秒后起声。OGG本体仍是原19.2秒，不改字节；导入loop_offset=4.8，第一次从0秒保留原静音前缀，之后从4.8秒（100BPM两小节位置）回绕，循环跨度14.4秒，不再回到静音头。
+- Fermi Profile用intro_before_connection=true；T0从开场段开始，等待多久都只循环有声后段，56%首次升档箭头进入淡出时接low，64%/T2接mid，79%/T4接high。对白完成不另换段，T3/T5同组不重播。
+- StageArrowFx新增fade_started(direction)，在自身真实淡出首帧发出一次；HUD转发tier_breakthrough_fading(previous,current)。Sandbox在正常升档请求时锁住费米目标，到该信号才release_tier_visual，直接开始既有0.6秒淡变，不再额外等小节；旧档回调拒绝。不可播放箭头时由现有完成入口兜底，重复回调不重播。其他三Boss保持原音乐策略。
+- F3没有真实命中清场箭头，用skip_connection_for_debug直接试听目标档；T0重开/回拉重置引子状态，暂停仍冻结音频；终局高段、失败清理不变。删除已被本轮决定替代的hold_intro_until_tier_change属性，未修改PK阈值/箭头时长或重剪战斗低中高。

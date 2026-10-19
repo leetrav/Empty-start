@@ -18,6 +18,8 @@ func _check_pack() -> void:
 					var path: String = line.get_slice(",", 2)
 					var stream: AudioStreamOggVorbis = load("res://" + path)
 					assert(stream != null and stream.loop and stream.get_length() > 1.0)
+					if id == &"alien" and event_id == &"music_alien_intro":
+						assert(absf(stream.loop_offset - 4.8) < 0.001)
 					if id == &"fox" and event_id in [&"music_fox_intro", &"music_fox_entrance"]:
 						assert(absf(stream.loop_offset - 7.432290249433106) < 0.001)
 					found = true
