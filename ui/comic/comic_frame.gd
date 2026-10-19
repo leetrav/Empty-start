@@ -12,3 +12,9 @@ extends Resource
 @export var text_size: Vector2 = Vector2(1720, 160)
 @export var characters_per_second: float = 20.0
 @export var writing_event: StringName = &"comic_write"
+
+# 每格只配置一个主要情绪效果；图层、镜头及文字状态由播放器持有。
+@export_enum("none", "tremble", "zeros", "impact", "halo", "push") var effect: String = "none"
+@export var effect_layer: int = -1
+@export var captions: Array[ComicCaption] = []
+@export var transition_seconds: float = 0.0

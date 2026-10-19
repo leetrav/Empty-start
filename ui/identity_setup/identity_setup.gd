@@ -36,12 +36,15 @@ var _player_presentation_status: Label
 var _room_transition_status: Label
 var _room_transition_action: Button
 var _status_label: Label
+var _room_music: RoomMusicPresenter
 
 @onready var _selection: Control = $IdentitySelection
 
 
 # 所有步骤由同一场景持有，回退仅切换页面并保留名称、卡片与身份选择。
 func _ready() -> void:
+	_room_music = RoomMusicPresenter.new()
+	add_child(_room_music)
 	opening_saved.connect(_on_opening_saved)
 	_run_data = SaveManager.data
 	_identity_back = $IdentitySelection.get_node("%BackButton")
@@ -234,6 +237,11 @@ func _build_name_page(node_name: String, title_text: String) -> Control:
 # 每个步骤切换只隐藏其他视图，保留名称、身份卡翻开状态和当前选择。
 func _show_step(step: Step) -> void:
 	_step = step
+	# 身份确认后的房间与命名共用休息曲；回退离开房间时只淡出自己持有的音乐。
+	if step in [Step.ROOM_TRANSITION, Step.FAN_GROUP] and _run_data != null and _selected_option != null:
+		_room_music.start(_run_data.next_normal_level_order > 1)
+	else:
+		_room_music.stop()
 	_streamer_page.visible = step == Step.STREAMER
 	_player_presentation_page.visible = step == Step.PLAYER_PRESENTATION
 	_selection.visible = step == Step.IDENTITY

@@ -66,6 +66,7 @@ var _plan_b_level_ready: bool = false
 var _plan_b_slot_state_sync_elapsed: float = 0.0
 var _rest_session: RestSession
 var _rest_result_view: RestResultView
+var _ending_music: EndingMusicPresenter
 var _contradiction_oracle_flow: ContradictionOracleFlow
 var _divine_descent_flow: DivineDescentFlow
 var _hit_echo_presenter: Node
@@ -84,6 +85,9 @@ var _paradox_entry_repeat_stats: RepeatGenerationStats
 var _pending_oracle_session: FinalOracleSession
 var _pending_rest_session: RestSession
 var _result_feedback_active: bool = false
+var _battle_music: TierMusicPresenter
+# F3直接改PK不产生命中清场/连线对白，音乐不应等待不存在的完成事件。
+var _debug_pk_update_active: bool = false
 var _formal_sheet_consumer
 var _active_dialogue_config: BubbleDialogueConfig
 var _trait_catalog: BarrageTraitCatalog
@@ -162,6 +166,8 @@ func _ready() -> void:
 	_battle_hud.bind_portrait_attack(_attack_charge_input)
 	_rest_result_view = REST_RESULT_VIEW_SCENE.instantiate() as RestResultView
 	add_child(_rest_result_view)
+	_ending_music = EndingMusicPresenter.new()
+	add_child(_ending_music)
 	# 创建时注入一次准心，休息及历史页面统一冻结输入，隐藏时恢复。
 	_rest_result_view.configure_battle_aim(_aim_reticle)
 	_rest_result_view.continue_requested.connect(_on_rest_continue_requested)
@@ -240,6 +246,7 @@ func _ready() -> void:
 	_paradox_comic.result_feedback_finished.connect(_on_paradox_result_feedback_finished)
 	_battle_attempt_flow.tier_transition_cleared.connect(_on_tier_transition_cleared)
 	_battle_hud.tier_breakthrough_finished.connect(_on_tier_breakthrough_finished)
+	_battle_hud.tier_breakthrough_fading.connect(_on_tier_breakthrough_fading)
 	# 由新消费者读取正式逐目标结算，再通过 HUD 公开队列入口提交玩家复述。
 	_hit_echo_presenter = HIT_ECHO_PRESENTER_SCRIPT.new()
 	_hit_echo_presenter.name = "StreamerBubbleHitEchoPresenter"
@@ -278,6 +285,7 @@ func _ready() -> void:
 	_combat_state_dialogue_presenter.connect(
 		"event_sequence_completed", Callable(self, "_on_dialogue_event_sequence_completed")
 	)
+	_battle_hud.dialogue_bubble_presented.connect(_on_dialogue_bubble_presented)
 	# 定时闲聊由可暂停的独立消费者计时，并提交 HUD 已有的低优先级入口。
 	_timed_opponent_dialogue_presenter = TIMED_OPPONENT_DIALOGUE_PRESENTER_SCRIPT.new()
 	_timed_opponent_dialogue_presenter.name = "StreamerBubbleTimedOpponentDialoguePresenter"
@@ -405,6 +413,12 @@ func _create_plan_b_runtime() -> bool:
 func _queue_pk_tier_visual(current_tier: int, _player_pk: float) -> void:
 	if _plan_b_host != null:
 		_plan_b_host.notify_external_tier_changed(current_tier)
+	if is_instance_valid(_battle_music):
+		if current_tier > 0 and _battle_music.is_waiting_for_connection() and not _debug_pk_update_active:
+			_battle_music.begin_connection()
+		if _debug_pk_update_active:
+			_battle_music.skip_connection_for_debug(current_tier)
+		_battle_music.request_tier(current_tier, _battle_music.profile.hold_intro_through_first_tier and not _debug_pk_update_active)
 	# 延迟只保存来源和档位，PK在执行时读取，避免旧回调覆盖回拉或新尝试。
 	_deliver_pk_tier_visual.call_deferred(_battle_attempt_flow.get_combat_stage(), current_tier)
 
@@ -420,6 +434,12 @@ func _deliver_pk_tier_visual(source: CombatStage, tier: int) -> void:
 
 ## C的公开入口只撤销当前指针蓄力，保留已发射言弹及硬直计时。
 func _on_pause_changed(paused: bool) -> void:
+	if is_instance_valid(_ending_music):
+		_ending_music.set_paused(paused)
+	if is_instance_valid(_rest_result_view):
+		_rest_result_view.set_music_paused(paused)
+	if is_instance_valid(_battle_music):
+		_battle_music.set_paused(paused)
 	if paused and _attack_charge_input.has_method("cancel_pointer_attack"):
 		_attack_charge_input.call("cancel_pointer_attack")
 	_refresh_mobile_touch_phase()
@@ -445,6 +465,17 @@ func restart_current_attempt() -> void:
 
 # 当前关的角色和素材由一次尝试启动事实提供；HUD 只呈现组合方状态。
 func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage: CombatStage, _queue: RepeatDelayQueue) -> void:
+	# 每次尝试先清理旧消费者，再按真实主播选择配置，旧退出回调不能停新曲。
+	if is_instance_valid(_battle_music):
+		remove_child(_battle_music)
+		_battle_music.queue_free()
+		_battle_music = null
+	var music_profile: TierMusicProfile = BossMusicCatalog.find_profile(StringName(current_level.streamer_id))
+	if music_profile != null:
+		_battle_music = TierMusicPresenter.new()
+		_battle_music.profile = music_profile
+		add_child(_battle_music)
+		_battle_music.start_battle(stage.get_current_tier())
 	%PauseMenu.set_restart_available(true)
 	_refresh_mobile_touch_phase()
 	_pa11_connection_dialogue_active = false
@@ -613,6 +644,8 @@ func _on_opponent_word_pool_exhausted(_level_id: String, streamer_id: String) ->
 
 # 正式失败先播放 PA-18 局部演出，完成通知后再显示既有失败界面。
 func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: HitResolution, _repeat_stats: RepeatGenerationStats) -> void:
+	if is_instance_valid(_battle_music):
+		_battle_music.finish_battle(&"failed")
 	if is_instance_valid(_mobile_touch):
 		_mobile_touch.call("set_enabled", false)
 	if opponent_reaction_preview_enabled and _opponent_live != null:
@@ -625,12 +658,22 @@ func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: Hit
 	_battle_hud.play_failure_presentation()
 
 
+# HUD已公开真实气泡呈现事实；列巴在开口时才柔化出场音乐。
+func _on_dialogue_bubble_presented(side: int, event_id: StringName, _text: String) -> void:
+	if side == BubbleDialogueEntry.SpeakerSide.OPPONENT and event_id == &"combat_connected":
+		if is_instance_valid(_battle_music):
+			_battle_music.begin_connection_dialogue()
+
+
 # T1 连线对白完整结束后恢复本档战斗，再向外转发已完成事实。
 func _on_dialogue_event_sequence_completed(event_id: StringName, sequence_id: StringName, side: int) -> void:
 	if event_id == &"combat_connected":
 		_pa11_connection_dialogue_active = false
-		if _battle_attempt_flow.resume_after_tier1_dialogue():
+		var resumed: bool = _battle_attempt_flow.resume_after_tier1_dialogue()
+		if resumed:
 			_resume_plan_b_after_tier_transition()
+		if is_instance_valid(_battle_music) and (resumed or _battle_attempt_flow.get_current_tier() > 1):
+			_battle_music.finish_connection_dialogue()
 		_refresh_mobile_touch_phase()
 	dialogue_event_sequence_completed.emit(event_id, sequence_id, side)
 
@@ -651,11 +694,19 @@ func _on_tier_transition_cleared(previous_tier: int, current_tier: int, _cleared
 
 
 # 转场结束后先恢复 T1 立绘，再让公开 Tier 完成事件触发对白 / 战斗恢复。
+func _on_tier_breakthrough_fading(_previous_tier: int, current_tier: int) -> void:
+	# 对齐实际箭头淡出，过期档位不放行音乐。
+	if is_instance_valid(_battle_music) and _battle_attempt_flow.get_current_tier() == current_tier:
+		_battle_music.release_tier_visual(current_tier)
+
+
 func _on_tier_breakthrough_finished(
 		previous_tier: int, current_tier: int, completed: bool
 ) -> void:
 	if not completed or _battle_attempt_flow.get_current_tier() != current_tier:
 		return
+	# 没有可播放的箭头时，沿用真实完成入口兜底；已经换段时不重播。
+	_on_tier_breakthrough_fading(previous_tier, current_tier)
 	if previous_tier == CombatStage.INITIAL_TIER and current_tier > CombatStage.INITIAL_TIER:
 		_battle_hud.set_opponent_portrait_connected(true)
 	# 空配置可能同步完播，所以必须在完成入口发出通知前设置此标记。
@@ -675,6 +726,9 @@ func _resume_plan_b_after_tier_transition() -> void:
 
 # 真实矛盾流程发出进入事实后，HUD 才展示 T6 / Paradox。
 func _on_contradiction_stage_entered(_system: ContradictionBreakSystem) -> void:
+	# 转场结束进入可操作矛盾窗口，恢复高段，结果锁定仍按原流程淡出。
+	if is_instance_valid(_battle_music) and _battle_music.owns_music():
+		AudioManager.restore_music()
 	_battle_hud.set_paradox_stage_active(true, _battle_attempt_flow.get_current_tier())
 	if _battle_attempt_flow.uses_external_pk_source():
 		_battle_hud.set_final_oracle_stage_active(false)
@@ -715,6 +769,11 @@ func _on_final_oracle_opened(session: FinalOracleSession) -> void:
 func _on_normal_combat_completed(
 		level: LevelProfile, hit_resolution: HitResolution, repeat_stats: RepeatGenerationStats
 ) -> void:
+	if is_instance_valid(_battle_music):
+		_battle_music.finish_battle(&"enter_contradiction")
+		# 击破标题/斜切出现时压至25%，让演出与音效先被听见。
+		if _battle_music.owns_music():
+			AudioManager.duck_music()
 	_reset_paradox_presentation()
 	if is_instance_valid(_mobile_touch):
 		_mobile_touch.call("set_enabled", false)
@@ -743,6 +802,8 @@ func _on_contradiction_outcome_resolved(outcome: int) -> void:
 		_mobile_touch.call("set_enabled", false)
 	if _result_feedback_active:
 		return
+	if is_instance_valid(_battle_music) and _battle_music.owns_music():
+		AudioManager.fade_to_silence()
 	_result_feedback_active = true
 	_result_feedback_system = _contradiction_oracle_flow.get_contradiction_system()
 	_contradiction_oracle_flow.hold_result_presentation()
@@ -882,7 +943,10 @@ func debug_set_player_pk(player_pk: float) -> float:
 	var hit_resolution: HitResolution = _battle_attempt_flow.get_hit_resolution()
 	if hit_resolution == null:
 		return 0.0
-	return hit_resolution.set_player_pk_for_debug(player_pk)
+	_debug_pk_update_active = true
+	var applied_pk: float = hit_resolution.set_player_pk_for_debug(player_pk)
+	_debug_pk_update_active = false
+	return applied_pk
 
 
 # 直播调试值仍写入本场 LiveSessionData，由 Resource.changed 刷新当前 HUD。
@@ -924,6 +988,9 @@ func debug_set_normal_generation_enabled(enabled: bool) -> bool:
 
 # 流程已经提交成果并准备好 Rest；根场景只展示同一结果对象。
 func _on_rest_ready(result: RestSession) -> void:
+	if is_instance_valid(_battle_music) and _battle_music.owns_music():
+		_battle_music.set_paused(false)
+		AudioManager.fade_out_music()
 	if _result_feedback_active:
 		_pending_rest_session = result
 		return
@@ -987,6 +1054,7 @@ func _enter_divine_descent() -> void:
 	add_child(_divine_descent_flow)
 	_divine_descent_flow.entered.connect(_on_divine_descent_entered)
 	_divine_descent_flow.completed.connect(_finish_divine_descent)
+	_divine_descent_flow.phase_changed.connect(_ending_music.on_divine_phase)
 	if use_plan_b_campaign:
 		_battle_audio.call("bind_flows", _contradiction_oracle_flow, _divine_descent_flow)
 	else:
@@ -1042,8 +1110,11 @@ func _finish_divine_descent(result: EndingSession) -> void:
 		SaveManager.data.completed_normal_level_ids.append(last_id)
 	if SaveManager.save_game() != OK:
 		push_error("Sandbox: 终局成果存盘失败。")
+	# 结局页面接管同曲，不让旧场景退出在淡入途中把音乐停掉。
+	_ending_music.set_handoff(true)
 	var error := SceneRouter.goto_ending(result)
 	if error != OK:
+		_ending_music.set_handoff(false)
 		push_error("Sandbox: Ending 顶层路由失败：%s" % error_string(error))
 
 

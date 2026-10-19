@@ -1,3 +1,75 @@
+## 当前采用：五次升档、三组音乐（2026-10-19）
+
+结尾音乐已接入《天導 -Tendoh-》：music_ending_tendoh，-10dB、2.5秒淡入、原生循环。EndingMusicPresenter在神降临最终emphasis/completed阶段进度=1时起曲；普通神谕/刚进入神降临不起曲，结局页接管同曲不断播。保存结局回看可起曲，离开淡出。来源与加工见assets/audio/music/ending/README.md。
+
+当前休息音乐：首次开播前房间保留Pure Soul（-12dB、0.6秒淡入，从2.35秒起播/循环跳过空白）；每场PK后休息改为夢灯 -YumeAkari-（music_rest_after_pk，-12dB、0.6秒淡入、0秒播放/原生循环）。后续开播房间以已提交next_normal_level_order>1选择夢灯并续播；重复结果、历史往返不重播，暂停续播，离开/下场T0淡出。复用RoomMusicPresenter和AudioManager，不改变奖励、关卡流程或结尾天導2.5秒淡入。
+
+四Boss统一使用hold_intro_through_first_tier=true，以下规则优先于后文历史记录。
+
+| PK / 档位 | 正常开局音乐 |
+| --- | --- |
+| T0等待 | 静音 |
+| 56% / T1第一次箭头开屏 | 开场段起播，开场对白结束不换段 |
+| 64% / T2第二次箭头淡出 | 切中段 |
+| 71% / T3第三次箭头 | 中段继续，不重播 |
+| 79% / T4第四次箭头淡出 | 切高段 |
+| 90% / T5第五次箭头 | 高段继续，不重播 |
+
+费米首次起播保留原约四秒静音，循环从4.8秒起；列巴原色出场在真实开口时切同进度柔和版，两版均从约7.432秒循环伴奏。其他原有音频片段不改。降档回T1、从中途恢复或F3直接试听T1仍可使用low；正常新局T1保持开场而不自动切low。升档同步真实箭头淡出，降档仍稳定2秒后等待小节。独立试听点Tier模拟视觉放行，不运行PK/箭头动画。
+
+> 列巴长对白修复（2026-10-19）：原色出场版与对白柔和版首次仍从0秒播放，后续只循环原曲约7.432～14.868秒的伴奏，不再回到0秒重复开头。仍等真实对白完成再接战斗段。使用Godot原生OGG loop_offset，未重剪/改速或新增对白定时器；长等待、真实列巴场景、通用回归及新PCK检查通过。
+
+> **P1程序接入已完成（2026-10-19）**：当前旧版Sandbox已按alien/kiwi/frog/fox接入四Boss配置，费米保留确认效果；奥格尔v1、咕拉v1、列巴原曲开头v2已入库。真实四关场景、最终击破淡出、17段循环、独立PCK验证通过。用户实际四关听感/完整结算回房间试玩仍待确认，正式PlanB为P2待适配，未推送。
+>
+> 快速比较：打开scenes/demos/au03_boss_music_preview.tscn按F6，下拉选Boss；列巴先“开始连线”，再“对白开始”听同进度柔化。真实游戏从scenes/sandbox/sandbox.tscn按F6进入当前关，F5保留原菜单/开场/房间流程。独立试听不替代游戏联调。
+
+## 四Boss共用接线
+BossMusicCatalog强引用四份data/audio配置，Sandbox每次attempt_started先释放旧消费者，再按正式主播主键创建同一TierMusicPresenter。BattleAttemptFlow对这些已配置Boss关闭旧music_battle_t*请求，升档SFX保留。17表现在90行、40行有资源、50行仍空；本轮增加13个事件/OGG，和费米4段共17份。
+
+配置新增overlap_battle、entrance_event_id、entrance_fade_seconds和dialogue_mix_seconds。费米保持原战斗组交叉淡化；其他三曲采用顺序0.3秒淡出/0.3秒淡入。列巴begin_connection先用原色开头，HUD现有dialogue_bubble_presented中真实combat_connected显示时调用begin_connection_dialogue()，切同位置柔和版本，不重播、不新增对白计时器。
+
+四曲来源/加工见assets/audio/music各目录，结尾页已列四曲署名；总README与分曲README纳入导出include_filter，并提供随游戏音乐说明。来源页加载限制与人工验证边界见AU-03日志。
+
+## 费米阶段历史记录（后文描述原局部接入过程，当前以顶部四Boss状态为准）
+
+> AU-03范围已更新：当前实施目标为四Boss统一音乐接入，先完成旧版Sandbox四关（P1），上游正式PlanB可运行后适配同一音乐消费者并重新联调（P2）。当前仍只有费米接入；其余裁剪/确认状态不等于游戏完成。列巴v2待试听，开场/休息/终局选曲实施另列后续。
+
+> 最新裁剪进度：费米游戏版5191c59已确认；奥格尔《美哀》v1已确认、待统一接入；咕拉《草原》v1已确认；列巴《FELT LOVE》按反馈改为原曲开头出场的v2（outputs/khleb-felt-love-preview-v2），低中高保留v1，待用户试听。按用户意愿先裁完Boss，再统一接入。
+
+> 用户确认基线（2026-10-19）：费米5191c59试听版已获认可，保留当前效果。奥格尔《美哀》v1已裁出四段及86.4秒独立试听演示，见AU-03第3.5节和任务outputs/augur-biai-preview；已获用户确认，按批次安排尚未接入奥格尔。
+
+> 2026-10-19最新费米开局：T0黑屏等待静音；开始连线后播放原曲开头的柔和引子（比战斗基准低约6dB、3500Hz低通、首次淡入2.4秒），开场对白期间保持。真实combat_connected对白完成后，下个小节进入正常战斗段。T1低、T2/T3中、T4/T5高；退回T0恢复静音。共四个片段，17表77行、27行有资源。旧79.2秒预览仅作历史参考。
+
+## AU-03 当前已实现部分：费米（四Boss扩展待实施）
+
+### 当前可运行正式第一关（2026-10-18追加）
+用户要求先在第一名Boss实际战斗中试听，已将同一TierMusicPresenter接到当前main的Sandbox费米关。F5走原菜单/开场/房间后，进入费米T0静音等待；也可直接打开 `scenes/sandbox/sandbox.tscn` 按F6进入首关。主场景路径与玩法规则均未改变，仍是上游已提交的旧战斗流程。
+
+F3调PK时使用真实Tier选择战斗段，但不等待调试操作没有触发的连线对白；正常命中路径仍保留对白引子。换组仍等待音乐小节，升档最长约2.4秒（同组不换曲），降档还需2秒稳定等待。
+
+Sandbox已从attempt_started选择四Boss各自配置，读取真实Tier变化、暂停、失败、满PK、矛盾结果与休息事实；重开恢复T0静音等待。CombatStage.bind_audio_manager的enable_music_requests保持兼容，BattleAttemptFlow对目录内四Boss关闭旧Tier切曲，升档音效保留。
+
+真实正式场景验证通过开局、PK66%中段、92%高段、暂停续播、重开、失败淡出、100%高段及退出清理。完整Plan B四关仍未交付，不能把这次旧流程首关接线当成新玩法完整集成。
+
+
+费米使用《Teek Teek Teek》：T0静音，连线/对白柔和引子，完成后T1低、T2/T3中、T4/T5高。资源在 `assets/audio/music/fermi/`，来源和署名见该目录README；正式结尾页和试听场景已有署名。17表新增 `music_alien_intro/low/mid/high` 四个Music事件，Resource配置保留相同引用作为兼容；本阶段原77行/27有资源，现扩展为90行/40有资源、50行仍空。旧泛用 `music_battle_t0～t5` 未填费米曲，其他Boss不会误用。
+
+Sandbox调用begin_connection()与finish_connection_dialogue()，分别对应连线开始和本次真实对白完成；对白期间Tier请求只更新后续目标，不抢占引子。引子切战斗段采用顺序淡变：0.3秒淡出并停止引子，再0.3秒淡入战斗段，不同时混入不同旋律；其余战斗组仍用原0.6秒交叉淡化。无对白演出的独立Plan B原型仍按Tier直接试听战斗段。
+
+`TierMusicProfile` Resource 保存ID映射、100BPM/4拍、降档2秒、费米交叉淡化0.6秒；`TierMusicPresenter` 是场景拥有的消费者，不创建播放器、不计算PK。组合根创建后调用 `bind_host(host)` 接入 `tier_changed`、`battle_state_changed`、`battle_ended`，用于当前可运行费米原型。正式Plan B合入时按同样公开事实组合，并协调旧CombatStage音乐请求，不能将当前原型接线冒充四关已完成。
+
+- 同组保持播放；跨组用实际音频位置等待下一小节；帧越界小偏移带入新段，属于帧级调度，不宣称采样级无缝同步。
+- 降档稳定2秒，等待期间进一步降低目标保留稳定时间；重新上升到正在播放的组取消。等待中只保留最新目标。
+- 暂停音乐与过渡一起暂停并冻结等待；恢复接着播。重开清理旧请求并在T0静音等待。
+- 满PK停止响应Tier，使用高段；矛盾击破转场标题/斜切出现时用原duck配置在0.2秒压到25%，转场结束进入可操作矛盾窗口后0.3秒恢复，不修改玩家Music总线。正式矛盾击破继续调用原 `fade_to_silence()`。当前独立原型只发进入矛盾事实，完整击破演出仍待正式流程交付。
+- 失败淡出；场景释放停止；其他阶段接管/停止音乐会使旧消费者失效，不再抢播。
+
+AudioManager的兼容扩展：`change_music(event_id, cross_fade_seconds=-1, from_position=0, fade_in_seconds=-1, overlap=true)`；省略参数保留原默认。新增 `get_music_event_id()`、`get_music_position()`、`get_music_length()`、`set_music_paused(bool)` 与 `music_changed` 事实信号。`Music`事件音量增益和淡化/duck分别计算，换播放器时不丢失表中音量；SFX/UI保持原入口。
+
+试听：Godot打开 `scenes/demos/au03_fermi_music_preview.tscn` 按F6，先点“开始连线/开场对白”，再点“开场对白结束”查看阶段衔接；直接点击T1～T5用于跳过对白快速试听战斗段。可测试暂停、重开、满PK、击破和失败。正式项目F5入口未更改。`scenes/plan_b/fermi_battle_demo.tscn` 启动战斗后也接入真实主控事实。奥格尔/咕拉已确认裁剪，列巴v2待试听，三者已接入旧版Sandbox，游戏内听感待确认；开场/休息/终局继续后续规划。
+
+验证见 `tests/audio/README.md` 和 AU-03日志。程序检查通过不等于已经完成人耳循环接缝与新玩法四关验收。
+
 # Audio 共用音频接入
 
 ## INT-18D 实际事件覆盖（2026-10-16）
@@ -105,6 +177,7 @@ assets/audio/
 | --- | --- | --- |
 | AU-01 | 游戏音频事件配置与播放入口 | 无 |
 | AU-02 | 音乐状态切换 | 无 |
+| [AU-03](tasks/AU-03_bgm-assets-and-planb-integration.md) | 正式BGM与Plan B接入；费米局部已实现，其他场景待定 | 人工试听与运行验收 |
 
 玩法系统完成自己的核心逻辑以后，在对应表现联调卡里调用这里已经存在的公开接口。
 
@@ -115,3 +188,29 @@ assets/audio/
 ## SHEET-C 正式音频字段消费（2026-10-15）
 
 `AudioEvent` 同时保存 `volume_db`、`pitch_min`、`pitch_max`、`loop` 和 `transition_group`。正式事件注册时由 CSV 映射这些字段；SFX/UI 播放器应用配置音量与随机音高，`loop=true` 的事件在当前播放完成后重播。`transition_group` 保留在事件数据上供同组事件识别；当前没有按组切换/淡出的运行规则。Music 事件沿用现有音乐状态入口。`tests/integration/sheet_c_runtime_consumer_test.gd` 实际加载了 23 个有资源的事件；50 个缺资源事件见 SHEET-C 日志。
+
+AudioManager.get_music_loop_offset()返回当前OGG循环起点（非OGG或不循环返回0），音乐消费者回绕时用length-loop_offset修正音频增量；其他Boss起点仍0，行为保持。
+
+## 2026-10-19 开场《街》正式接入补充
+- 用户确认《街》，已由临时试听扩展到正式ComicPlayer；完整P1～P6、前四幕、后两幕共用music_comic_street事件。完整/前四幕从0秒，后两幕从前四幕自动时长合计33.4秒起播；不变速、不循环，-14dB、1.5秒淡入，暂停同步，退出或完成由AudioManager短淡出。
+- 主菜单新增“重播完整开场”，保留并明确前四幕/后两幕回看。所有回看record_first_view=false，不更改周目或观看记录。
+- Boot原有规则不改：settings.cfg的story/opening_intro_v2_seen为true则启动进菜单；首次自动开场完成或Esc跳过会记录已看过。无需删除真实用户设置或存档即可从菜单完整重看。
+- 新增assets/audio/music/opening/street.ogg及原生loop=false导入，来自用户本地《街》MP3，完整转Vorbis；17表现91行/41有资源（含表头则92），Resource兼容事件同步，音乐说明/游戏内署名补《街》。其他场景与Boss音乐不改。
+- au03_opening_check.gd经隔离APPDATA运行真实菜单按钮，三路分镜数19/13/6、曲目/后半进度、暂停恢复、完成返回菜单与淡出、回看不写观看事实、Boot首次自动开场及Esc后再次启动跳过均通过：OPENING_STREET_INTEGRATION_PASS。音乐听感仍待用户确认。
+## 2026-10-19 费米首档取消对白结束自动换段
+- 用户截图显示PK58%/Tier1，指出开场到下一段衔接不对，期望升档才变换BGM。旧实现并非按固定时间切换，而是finish_connection_dialogue后按下一小节从intro换T1 low；这条对白结束例外与本轮用户要求不符。
+- Fermi Profile启用hold_intro_until_tier_change；默认false，其他三Boss沿用既有对白接低段。Presenter在对白结束且仍为首档组时保持引子，只有后续真实跨音乐组请求才解除；不会用计时器或曲目播放完毕触发换段。对白结束前已经跨档时直接按最新Tier放行。
+- 费米正常流程：T0静音；T1连线/对白及对白后均保持teek_intro；到T2/T3用mid，T4/T5用high。100%击破与暂停/失败规则保持；从中高段稳定降回T1仍用low。F3从静音直接跳T1仍按战斗映射low试听，不冒充正常连线流程。
+- start_battle/T0清除保持；真实跨组时解除一次性保持，避免后续降档被旧首档保持卡住。没有重剪、重编码素材或修改PK/Tier阈值。原5191c59首档对白结束接low的行为由本轮要求替代。
+- 更新au03_runtime_smoke为对白完成后真实等待20秒（超过19.2秒片段一整轮）仍是intro，再请求T2检查顺序淡变；四Boss真实场景检查按Profile分别验首档规则，保留升档、降档、F3、暂停、重开、击破和失败回归。
+## 2026-10-19 用户澄清：开场保留到56%首次升档，循环不重播静音
+- 用户明确“第一次升档”是PK56%/T0→T1、费米开屏，指出Teek开头约四秒静音不应重复。此决定替代上一轮误解的“T1保持引子到64%”，也替代此前费米T0静音到连线才起曲的规则。
+- 本地解码teek_intro确认0.25～3.75秒为静音，3.75秒后起声。OGG本体仍是原19.2秒，不改字节；导入loop_offset=4.8，第一次从0秒保留原静音前缀，之后从4.8秒（100BPM两小节位置）回绕，循环跨度14.4秒，不再回到静音头。
+- Fermi Profile用intro_before_connection=true；T0从开场段开始，等待多久都只循环有声后段，56%首次升档箭头进入淡出时接low，64%/T2接mid，79%/T4接high。对白完成不另换段，T3/T5同组不重播。
+- StageArrowFx新增fade_started(direction)，在自身真实淡出首帧发出一次；HUD转发tier_breakthrough_fading(previous,current)。Sandbox在正常升档请求时锁住费米目标，到该信号才release_tier_visual，直接开始既有0.6秒淡变，不再额外等小节；旧档回调拒绝。不可播放箭头时由现有完成入口兜底，重复回调不重播。其他三Boss保持原音乐策略。
+- F3没有真实命中清场箭头，用skip_connection_for_debug直接试听目标档；T0重开/回拉重置引子状态，暂停仍冻结音频；终局高段、失败清理不变。删除已被本轮决定替代的hold_intro_until_tier_change属性，未修改PK阈值/箭头时长或重剪战斗低中高。
+## 2026-10-19 用户再次更正后的当前规则
+- 用户澄清：第一次56%箭头/Boss露面才开始开场曲，开场保持到第二次64%升档；上一轮“T0先起曲、56%切低段”作废。T0恢复静音。
+- Fermi Profile改为hold_intro_through_first_tier=true：56%连线起曲从0秒保留首次约4秒静音；第一次箭头淡出、对白结束都不切曲/不重播；64%第二次箭头淡出才接中段。后续T3同组、T4/T5高段与稳定降档规则不变。F3直接调档仍走明确试听旁路。
+- teek_intro原生loop_offset=4.8继续保留，等待期间可持续循环有声伴奏，不重放静音前缀；未重编码素材或改变原曲速度/音高。删除已被更正的intro_before_connection属性。
+- 保留StageArrowFx真实淡出事实和过期档位保护，仅首次箭头对仍在开场的费米不放行换段；第二次真实升档才放行。其他三Boss默认false，音乐策略未改。

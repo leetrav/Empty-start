@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TierMusicProfile" load_steps=2 format=3]
+[ext_resource type="Script" path="res://core/audio/tier_music_profile.gd" id="1"]
+[resource]
+script = ExtResource("1")
+streamer_id = &"kiwi"
+event_ids = Array[StringName]([&"music_kiwi_intro", &"music_kiwi_low", &"music_kiwi_mid", &"music_kiwi_high"])
+tier_groups = Array[int]([0, 1, 2, 2, 3, 3])
+hold_intro_through_first_tier = true
+intro_fade_seconds = 2.4
+bpm = 100.0
+beats_per_bar = 4
+downgrade_hold_seconds = 2.0
+cross_fade_seconds = 0.6
+overlap_battle = false

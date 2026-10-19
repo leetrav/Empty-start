@@ -2,6 +2,7 @@ class_name StageArrowFx
 extends Control
 
 signal animation_finished(direction: int)
+signal fade_started(direction: int)
 
 @export var arrow_color: Color = Color(1.0, 0.94, 0.76, 0.78)
 @export var outline_color: Color = Color(0.09, 0.10, 0.17, 0.78)
@@ -17,6 +18,7 @@ signal animation_finished(direction: int)
 var _direction: int = 0
 var _elapsed: float = 0.0
 var _playing: bool = false
+var _fade_reported: bool = false
 
 
 func _ready() -> void:
@@ -32,6 +34,7 @@ func play(direction: int) -> void:
 	_direction = -1 if direction < 0 else 1
 	_elapsed = 0.0
 	_playing = true
+	_fade_reported = false
 	visible = true
 	set_process(true)
 	queue_redraw()
@@ -53,6 +56,10 @@ func is_playing() -> bool:
 func _process(delta: float) -> void:
 	_elapsed += delta
 	var thrust_duration: float = thrust_seconds if _direction > 0 else 0.0
+	# 从显现/上冲/停留进入淡出的真实帧通知音乐，禁止由外部猜延时。
+	if not _fade_reported and _elapsed >= pop_seconds + thrust_duration + hold_seconds:
+		_fade_reported = true
+		fade_started.emit(_direction)
 	if _elapsed >= pop_seconds + thrust_duration + hold_seconds + fade_seconds:
 		var finished_direction: int = _direction
 		reset_effect()

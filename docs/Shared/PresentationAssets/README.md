@@ -266,3 +266,6 @@ Sandbox 接收 `BattleAttemptFlow.attempt_failed` 后调用 HUD 的 `play_failur
 四位对手的idle、Tier1～3与击败图、Alien过渡图由23表进入现有LevelProfile字段；Frog前景进入 `streamer_live_foreground`，程序演出读取 `opponent_defeat_effect_id`。玩家直播桌面已进入 `PresentationAssetConfig.player_live_foreground`。Fox背景、Frog特效ID、结局三主图保留真实缺失；18表状态台账不作路径。
 
 Godot4.7.2实际渲染了生产Resource素材检查图，1920×1080；本机 `D:\tmp\int17e-media-20261016\production-resources-1920x1080.png`，媒体未入Git。该图用于确认贴图加载和空缺，正式HUD布局/击败动画仍由D与INT-16验收。[素材逐项对照](../../Integration/INT-17E_asset_usage_2026-10-16.md)与[日志](../../Integration/生产集成_INT-17E_2026-10-16_log.md)列出真实边界。
+
+## AU-03 费米音乐对齐（2026-10-19）
+StageArrowFx.fade_started(direction)在真实淡出首帧报告一次；HUD以tier_breakthrough_fading(previous_tier,current_tier)转发有效升档。Sandbox协调费米音乐，不改变箭头/CRT时长与玩法。正常费米升档目标仅在此时放行淡变，F3调试不制造动画等待。
