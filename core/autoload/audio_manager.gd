@@ -9,6 +9,15 @@ signal event_played(event_id: StringName, player: AudioStreamPlayer)
 
 const SFX_PLAYER_COUNT: int = 8
 const UI_PLAYER_COUNT: int = 4
+const UI_BUTTON_AUDIO_META := &"audio_manager_ui_event"
+const UI_SLIDER_AUDIO_META := &"audio_manager_ui_slider_event"
+const DIALOGUE_VOICE_SYNTHESIZER: Script = preload("res://core/audio/dialogue_voice_synthesizer.gd")
+const VOICE_PRIORITY_EVENTS: Array[StringName] = [
+	&"ui_error", &"ui_name_confirm", &"ui_identity_confirm", &"oracle_confirm",
+	&"barrage_spawn", &"repeat_batch", &"attack_ready", &"attack_fire", &"hit_trap", &"trait_split",
+	&"tier_up", &"pk_push_big", &"contradiction_start", &"contradiction_break",
+	&"divine_descent_start", &"divine_descent_lock", &"live_like_burst",
+]
 
 const MUSIC_BUS_NAME: StringName = &"Music"
 const SFX_BUS_NAME: StringName = &"SFX"
@@ -43,6 +52,11 @@ var _sfx_players: Array[AudioStreamPlayer] = []
 var _ui_players: Array[AudioStreamPlayer] = []
 var _sfx_play_order: Array[int] = []
 var _ui_play_order: Array[int] = []
+var _dialogue_voice_player: AudioStreamPlayer
+var _dialogue_voice_music_ducked: bool = false
+var _voice_priority_queue: Array[StringName] = []
+var _last_ui_event_frame: int = -1
+var _last_ui_event_stream_path: String = ""
 var _play_sequence: int = 0
 var _loop_events: Dictionary = {}
 
@@ -64,8 +78,17 @@ func _ready() -> void:
 	for index in range(UI_PLAYER_COUNT):
 		_ui_players.append(_create_player("UIPlayer_%d" % (index + 1), UI_BUS_NAME, ui_bus_available))
 		_ui_play_order.append(-1)
+	# 重要主播声音使用独立播放器，不和短点击音效争抢UI池。
+	_dialogue_voice_player = _create_player("DialogueVoicePlayer", SFX_BUS_NAME, sfx_bus_available)
+	_dialogue_voice_player.volume_db = 3.0
+	_dialogue_voice_player.finished.connect(_on_dialogue_voice_finished)
 	# Autoload 先于菜单和身份场景就绪，正式表音效从第一处玩家交互起生效。
 	FormalAudioConsumer.new().register_audio_events(self)
+	# 所有真实按钮统一消费ui_click；节点动态进入场景树时也立即绑定。
+	var scene_tree: SceneTree = get_tree()
+	if not scene_tree.node_added.is_connected(_on_ui_node_added):
+		scene_tree.node_added.connect(_on_ui_node_added)
+	_bind_ui_buttons_in_subtree(scene_tree.root)
 
 
 func play_music(stream: AudioStream) -> void:
@@ -96,6 +119,7 @@ func play_music(stream: AudioStream) -> void:
 
 
 func stop_music() -> void:
+	stop_dialogue_voice()
 	set_music_paused(false)
 	_music_event_id = &""
 	# 显式停止取消全部音乐过渡并清空两播放器，让下一次播放从头开始。
@@ -181,6 +205,8 @@ func get_music_loop_offset() -> float:
 
 # 两首过渡音乐及淡变一起暂停，恢复时不重头播放，不改玩家Music总线。
 func set_music_paused(paused: bool) -> void:
+	if paused:
+		stop_dialogue_voice()
 	_music_paused = paused
 	for player: AudioStreamPlayer in [_music_player, _outgoing_music_player]:
 		if is_instance_valid(player):
@@ -313,6 +339,18 @@ func play_event(event_id: StringName) -> void:
 	if event.stream == null:
 		push_warning("AudioManager: audio event '%s' has no AudioStream." % str(event_id))
 		return
+	if _dialogue_voice_is_playing():
+		# 主播拟声优先；普通点击和感染让位，关键结果等短句结束后补播。
+		if event_id in [&"ui_click", &"ui_identity_switch", &"hit_normal"]:
+			return
+		if event_id in VOICE_PRIORITY_EVENTS:
+			if _voice_priority_queue.size() < 8:
+				_voice_priority_queue.append(event_id)
+			return
+	if event.audio_type == AudioEvent.AudioType.UI:
+		# 供延迟通用按钮绑定识别同帧已播放的专用反馈；独立业务事件仍各自播放。
+		_last_ui_event_frame = Engine.get_process_frames()
+		_last_ui_event_stream_path = event.stream.resource_path
 
 	match event.audio_type:
 		AudioEvent.AudioType.MUSIC:
@@ -340,13 +378,130 @@ func register_event(event: AudioEvent) -> bool:
 
 # UI 拥有者在创建按钮时绑定稳定音效 ID；同一按钮重复绑定保持一次播放。
 func bind_ui_button(button: BaseButton, event_id: StringName = &"ui_click") -> bool:
-	var event: AudioEvent = _audio_config.find_event(event_id)
-	if button == null or event == null or event.stream == null or event.audio_type != AudioEvent.AudioType.UI:
+	if button == null:
 		return false
-	var callback: Callable = play_event.bind(event_id)
-	if not button.pressed.is_connected(callback):
-		button.pressed.connect(callback)
+	var event: AudioEvent = _audio_config.find_event(event_id)
+	if event == null or event.stream == null or event.audio_type != AudioEvent.AudioType.UI:
+		return false
+	# 公共扫描先挂通用音；Owner随后传专用事件时替换同一个监听，避免双播。
+	if button.has_meta(UI_BUTTON_AUDIO_META):
+		var previous: Dictionary = button.get_meta(UI_BUTTON_AUDIO_META, {})
+		if StringName(previous.get("event_id", "")) == event_id:
+			return true
+		var previous_callback: Callable = previous.get("callback", Callable())
+		if previous_callback.is_valid() and button.pressed.is_connected(previous_callback):
+			button.pressed.disconnect(previous_callback)
+	var callback: Callable = _on_bound_ui_button_pressed.bind(button, event_id)
+	button.pressed.connect(callback)
+	button.set_meta(UI_BUTTON_AUDIO_META, {"event_id": event_id, "callback": callback})
 	return true
+
+
+## 递归绑定当前界面和后续动态添加的 BaseButton，不碰装饰性Control。
+func _bind_ui_buttons_in_subtree(root: Node) -> void:
+	if root is BaseButton:
+		bind_ui_button(root)
+	elif root is Slider:
+		_bind_ui_slider(root)
+	for child: Node in root.get_children():
+		_bind_ui_buttons_in_subtree(child)
+
+
+func _on_ui_node_added(node: Node) -> void:
+	# SceneTree对进入树的子节点逐一发出node_added；只处理当前节点，避免反复扫描整棵子树。
+	if node is BaseButton:
+		bind_ui_button(node)
+	elif node is Slider:
+		_bind_ui_slider(node)
+
+
+func _bind_ui_slider(slider: Slider) -> void:
+	if slider.has_meta(UI_SLIDER_AUDIO_META):
+		return
+	if not slider.drag_ended.is_connected(_on_ui_slider_drag_ended):
+		slider.drag_ended.connect(_on_ui_slider_drag_ended)
+	slider.set_meta(UI_SLIDER_AUDIO_META, true)
+
+
+func _on_ui_slider_drag_ended(value_changed: bool) -> void:
+	if value_changed:
+		play_ui_click()
+
+
+# 延后一帧业务回调先执行；相同UI事件已播放时，通用音不再重复。
+func _on_bound_ui_button_pressed(_button: BaseButton, event_id: StringName) -> void:
+	var input_frame: int = Engine.get_process_frames()
+	call_deferred("_play_bound_ui_button_event", event_id, input_frame)
+
+
+func _play_bound_ui_button_event(event_id: StringName, input_frame: int) -> void:
+	if event_id == &"ui_click":
+		var event: AudioEvent = _audio_config.find_event(event_id)
+		if event == null or event.stream == null:
+			return
+		if _last_ui_event_frame == input_frame and _last_ui_event_stream_path == event.stream.resource_path:
+			return
+	play_event(event_id)
+
+
+## 自定义点击区域和普通按钮共用同帧去重，覆盖触屏鼠标映射的同一逻辑输入。
+func play_ui_click() -> void:
+	var event: AudioEvent = _audio_config.find_event(&"ui_click")
+	if event == null or event.stream == null:
+		return
+	var input_frame: int = Engine.get_process_frames()
+	if _last_ui_event_frame == input_frame and _last_ui_event_stream_path == event.stream.resource_path:
+		return
+	play_event(&"ui_click")
+
+
+## 按发言文本合成短拟声；新气泡会截断旧声并短暂压低BGM。
+func play_dialogue_voice(speaker_id: StringName, text: String) -> bool:
+	if _music_paused or text.strip_edges().is_empty() or not is_instance_valid(_dialogue_voice_player):
+		return false
+	var stream: AudioStreamWAV = DIALOGUE_VOICE_SYNTHESIZER.build_stream(text, speaker_id)
+	if stream == null or not _ensure_audio_bus(SFX_BUS_NAME):
+		return false
+	if _dialogue_voice_is_playing():
+		# 新句替换旧句，但整段对白连续压低BGM，不在句间突然恢复。
+		_dialogue_voice_player.stop()
+		_dialogue_voice_player.stream = null
+	_dialogue_voice_player.stream = stream
+	_dialogue_voice_player.bus = SFX_BUS_NAME
+	if not _dialogue_voice_music_ducked:
+		_dialogue_voice_music_ducked = true
+		duck_music()
+	_dialogue_voice_player.play()
+	return true
+
+
+## 气泡被切走、暂停、重开或离场时立即停止拟声并恢复BGM。
+func stop_dialogue_voice(flush_priority_events: bool = false) -> void:
+	if is_instance_valid(_dialogue_voice_player):
+		_dialogue_voice_player.stop()
+		_dialogue_voice_player.stream = null
+	if _dialogue_voice_music_ducked:
+		_dialogue_voice_music_ducked = false
+		restore_music()
+	if flush_priority_events:
+		_flush_voice_priority_events()
+	else:
+		_voice_priority_queue.clear()
+
+
+func _dialogue_voice_is_playing() -> bool:
+	return is_instance_valid(_dialogue_voice_player) and _dialogue_voice_player.is_playing()
+
+
+func _on_dialogue_voice_finished() -> void:
+	stop_dialogue_voice(true)
+
+
+func _flush_voice_priority_events() -> void:
+	var queued_events: Array[StringName] = _voice_priority_queue.duplicate()
+	_voice_priority_queue.clear()
+	for event_id: StringName in queued_events:
+		play_event(event_id)
 
 
 func _create_player(player_name: String, bus_name: StringName, bus_available: bool) -> AudioStreamPlayer:

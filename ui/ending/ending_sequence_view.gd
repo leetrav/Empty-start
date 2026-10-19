@@ -123,6 +123,7 @@ func _fit_canvas() -> void:
 func _gui_input(event: InputEvent) -> void:
 	if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		accept_event()
+		AudioManager.play_ui_click()
 		advance()
 
 

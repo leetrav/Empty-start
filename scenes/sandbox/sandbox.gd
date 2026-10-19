@@ -154,6 +154,7 @@ func _ready() -> void:
 		add_child(_battle_audio)
 		_battle_audio.call("bind_sources", _attack_charge_input, _barrage_area)
 		_battle_audio.call("bind_flows", _contradiction_oracle_flow)
+		_battle_audio.call("bind_plan_b_sources", _plan_b_host, _plan_b_simulation)
 	# PA-06 与 PA-09 只订阅战斗事实，材质播放与数值浮字均不写回结算。
 	_barrage_impact_presenter = BARRAGE_IMPACT_SCRIPT.new() as BarrageImpactPresenter
 	_barrage_impact_presenter.name = "BarrageImpactPresenter"
@@ -447,6 +448,8 @@ func _deliver_pk_tier_visual(source: CombatStage, tier: int) -> void:
 
 ## C的公开入口只撤销当前指针蓄力，保留已发射言弹及硬直计时。
 func _on_pause_changed(paused: bool) -> void:
+	if paused:
+		AudioManager.stop_dialogue_voice()
 	if is_instance_valid(_ending_music):
 		_ending_music.set_paused(paused)
 	if is_instance_valid(_rest_result_view):
@@ -463,6 +466,7 @@ func restart_current_attempt() -> void:
 	# 已进入终局后不能通过普通重开入口恢复 PK、档位与矛盾规则。
 	if _divine_descent_flow != null and _divine_descent_flow.get_session() != null:
 		return
+	AudioManager.stop_dialogue_voice()
 	_contradiction_oracle_flow.stop()
 	_reset_paradox_presentation()
 	_rest_session = null
@@ -486,6 +490,7 @@ func debug_restart_current_attempt() -> bool:
 
 # 当前关的角色和素材由一次尝试启动事实提供；HUD 只呈现组合方状态。
 func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage: CombatStage, _queue: RepeatDelayQueue) -> void:
+	AudioManager.stop_dialogue_voice()
 	# 每次尝试先清理旧消费者，再按真实主播选择配置，旧退出回调不能停新曲。
 	if is_instance_valid(_battle_music):
 		remove_child(_battle_music)
@@ -555,6 +560,8 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 		if not _plan_b_level_ready or not _start_plan_b_battle(current_level):
 			_battle_attempt_flow.stop()
 			push_error("Sandbox: 无法启动当前关卡的 Plan B 棋子战斗。")
+		elif _battle_audio != null:
+			_battle_audio.call("reset_plan_b_attempt", stage.get_current_tier(), _plan_b_host.get_pk_fraction())
 	else:
 		%OpponentLiveDataHud.configure_formal_comments(
 			_formal_sheet_consumer.get_comments("opponent", streamer_id),
@@ -609,6 +616,7 @@ func _on_plan_b_pk_changed(_pk_percent: float) -> void:
 
 
 func _on_plan_b_battle_ended(result: StringName) -> void:
+	AudioManager.stop_dialogue_voice(true)
 	if result != &"enter_contradiction":
 		return
 	# 矛盾神谕与神降临按真实玩家复读棋子数排序；统计在旧普通胜利提交前冻结。
@@ -652,8 +660,6 @@ func _on_plan_b_counterattack_windup_started(request: Dictionary) -> void:
 
 
 func _on_plan_b_counterattack_resolved(result: Dictionary) -> void:
-	if bool(result.get("applied", false)) and str(result.get("effect_id", "")) == "split":
-		AudioManager.play_event(&"trait_split")
 	if _battle_hud != null and _battle_hud.has_method("show_counterattack_result"):
 		_battle_hud.call("show_counterattack_result", result.duplicate(true))
 
@@ -665,6 +671,7 @@ func _on_opponent_word_pool_exhausted(_level_id: String, streamer_id: String) ->
 
 # 正式失败先播放 PA-18 局部演出，完成通知后再显示既有失败界面。
 func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: HitResolution, _repeat_stats: RepeatGenerationStats) -> void:
+	AudioManager.stop_dialogue_voice(true)
 	if is_instance_valid(_battle_music):
 		_battle_music.finish_battle(&"failed")
 	if is_instance_valid(_mobile_touch):
@@ -680,7 +687,13 @@ func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: Hit
 
 
 # HUD已公开真实气泡呈现事实；列巴在开口时才柔化出场音乐。
-func _on_dialogue_bubble_presented(side: int, event_id: StringName, _text: String) -> void:
+func _on_dialogue_bubble_presented(side: int, event_id: StringName, text: String) -> void:
+	var speaker_id: StringName = &"hamster"
+	if side == BubbleDialogueEntry.SpeakerSide.OPPONENT:
+		var current_level: LevelProfile = _battle_attempt_flow.get_current_level_profile()
+		if current_level != null:
+			speaker_id = StringName(current_level.streamer_id)
+	AudioManager.play_dialogue_voice(speaker_id, text)
 	if side == BubbleDialogueEntry.SpeakerSide.OPPONENT and event_id == &"combat_connected":
 		if is_instance_valid(_battle_music):
 			_battle_music.begin_connection_dialogue()
@@ -688,6 +701,7 @@ func _on_dialogue_bubble_presented(side: int, event_id: StringName, _text: Strin
 
 # T1 连线对白完整结束后恢复本档战斗，再向外转发已完成事实。
 func _on_dialogue_event_sequence_completed(event_id: StringName, sequence_id: StringName, side: int) -> void:
+	AudioManager.stop_dialogue_voice(true)
 	if event_id == &"combat_connected":
 		_pa11_connection_dialogue_active = false
 		var resumed: bool = _battle_attempt_flow.resume_after_tier1_dialogue()
@@ -701,6 +715,7 @@ func _on_dialogue_event_sequence_completed(event_id: StringName, sequence_id: St
 
 # 升档清屏完成后暂停普通战斗，再播放 HUD 现有 Tier 标签的一次突破提示。
 func _on_tier_transition_cleared(previous_tier: int, current_tier: int, _cleared_count: int) -> void:
+	AudioManager.stop_dialogue_voice(true)
 	if not _battle_attempt_flow.begin_tier_breakthrough_transition(previous_tier, current_tier):
 		return
 	if _plan_b_host != null:
@@ -1346,6 +1361,7 @@ func get_opponent_live_snapshot() -> Dictionary:
 
 # 离开验收场时撤销尚未提交的本场倾向，已有周目成果由 SaveData 保留。
 func _exit_tree() -> void:
+	AudioManager.stop_dialogue_voice()
 	_reset_paradox_presentation()
 	if _trait_runtime != null:
 		_trait_runtime.unbind()

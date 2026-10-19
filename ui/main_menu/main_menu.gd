@@ -28,7 +28,7 @@ func _ready() -> void:
 	for group: Control in [_menu_actions, _replays]:
 		for child: Node in group.get_children():
 			if child is Button:
-				AudioManager.bind_ui_button(child, &"ui_confirm")
+				AudioManager.bind_ui_button(child)
 	for title: Control in [$CoverCanvas/Titles/Bo, $CoverCanvas/Titles/Lai, $CoverCanvas/Titles/Shu]:
 		_titles.append(title)
 		_title_origins.append(title.position)

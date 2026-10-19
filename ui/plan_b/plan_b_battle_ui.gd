@@ -1865,6 +1865,7 @@ func _select_hand_slot(index: int) -> void:
 
 
 func _on_board_position_clicked(spawn_position: Vector2) -> void:
+	AudioManager.play_ui_click()
 	if _battle_over:
 		_set_status("本场已经结束，无法继续发表。", "warning")
 		return

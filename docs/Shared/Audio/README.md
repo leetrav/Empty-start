@@ -72,6 +72,17 @@ AudioManager的兼容扩展：`change_music(event_id, cross_fade_seconds=-1, fro
 
 # Audio 共用音频接入
 
+## AU-04 点击、主播拟声与 Plan B 反馈音（2026-10-20）
+
+- `AudioManager._ready()` 通过 `FormalSheetRuntimeConsumer.register_audio_events()` 加载17表；`ui_click` 已由 `data/source_tables/17_音频事件.csv` 的既有行动态注册，`audio_event_config.tres` 无需重复添加相同素材。
+- AudioManager 扫描当前 SceneTree 并监听后续 `BaseButton`，统一接入一次 `ui_click`；非按钮装饰 `Control` 不会误播。Owner绑定专用UI事件时替换该按钮的通用绑定；同帧相同素材去重。Slider只在值改变后的 `drag_ended` 播放一次；漫画、结算页和Plan B棋盘的自定义点击区通过 `play_ui_click()` 共用去重。
+- `AudioManager.play_dialogue_voice(speaker_id, text)` 通过 `DialogueVoiceSynthesizer` 按真实文本生成非语言短音节；中文标点提供停顿，单句不超过1.2秒。hamster/alien/kiwi/frog/fox使用不同音高与谐波配置。单一独占播放器走SFX Bus，主播拟声期间降低Music Bus。
+- Sandbox的`dialogue_bubble_presented`主角/对手气泡触发拟声，棋盘观众复读不触发。新句替换旧声；暂停、重开、阶段切换、失败、结算与离场停止旧声。对白期间普通点击/感染反馈让位，关键结果SFX在对白结束后补播。
+- `BattleAudioPresenter.bind_plan_b_sources()` 消费Host `publish_result`、`counterattack_*`、`tier_changed`、`pk_changed`及Simulation `contact_resolved`事实；发表音按整批事务一次播放，感染音全局限流，优势提示复用06表 `positive_pk_shot_cap`。
+- 当前共同基线未提供独立S1改口成功信号；本次只按现有`contact_resolved(converted)`确认感染成功，不提前假设PB-23/24接口。
+
+AU-04 本次只完成源码接线；当前机器没有可调用的Godot运行时，也未做完整场景试玩。听感、触屏输入与全流程入口仍待最短人工试听验收。
+
 ## INT-18D 实际事件覆盖（2026-10-16）
 
 - 生产菜单按钮已绑定 ui_click；身份姓名确认、选卡、身份确认、无选择错误分别消费正式稳定 ID。没有修改路由/Boot 或存档规则。

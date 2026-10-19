@@ -7,8 +7,12 @@ var _area: BarrageArea
 var _held: bool = false
 var _full: bool = false
 var _spawn_remaining: float = 0.0
+var _infection_feedback_remaining: float = 0.0
 var _audio: Node
 var _flow_connections: Array[Dictionary] = []
+var _plan_b_connections: Array[Dictionary] = []
+var _last_plan_b_tier: int = 0
+var _plan_b_pk_feedback_anchor: float = 0.5
 var _trait_runtime: BarrageTraitRuntime
 var _numerics: CombatNumericsConfig = preload("res://data/combat_stage/combat_numerics.tres")
 
@@ -35,6 +39,7 @@ func bind_sources(attack: AttackChargeInput, area: BarrageArea) -> void:
 # 输入当前没有蓄力信号，直接读现有公开状态，按上升沿各播放一次。
 func _process(delta: float) -> void:
 	_spawn_remaining = maxf(0.0, _spawn_remaining - delta)
+	_infection_feedback_remaining = maxf(0.0, _infection_feedback_remaining - delta)
 	if not is_instance_valid(_attack):
 		return
 	var held: bool = _attack.is_charge_held()
@@ -91,6 +96,101 @@ func bind_trait_runtime(runtime: BarrageTraitRuntime) -> void:
 	_trait_runtime = runtime
 	if _trait_runtime != null:
 		_trait_runtime.split_children_spawned.connect(_on_split_children)
+
+
+## PB-19/Plan B 音效只订阅 Host/Simulation 已有事实，不修改任何战斗状态。
+func bind_plan_b_sources(host: Node, simulation: Node) -> void:
+	_disconnect_plan_b_sources()
+	if host != null:
+		_connect_plan_b_signal(host, &"publish_result", _on_plan_b_publish_result)
+		_connect_plan_b_signal(host, &"counterattack_windup_started", _on_plan_b_counterattack_windup_started)
+		_connect_plan_b_signal(host, &"counterattack_resolved", _on_plan_b_counterattack_resolved)
+		_connect_plan_b_signal(host, &"tier_changed", _on_plan_b_tier_changed)
+		_connect_plan_b_signal(host, &"pk_changed", _on_plan_b_pk_changed)
+		if host.has_method("get_current_tier"):
+			_last_plan_b_tier = int(host.call("get_current_tier"))
+		if host.has_method("get_pk_fraction"):
+			_plan_b_pk_feedback_anchor = float(host.call("get_pk_fraction"))
+		elif host.has_method("get_pk"):
+			# 兼容旧快照接口；get_pk() 返回百分数，内部优势阈值按0～1计算。
+			_plan_b_pk_feedback_anchor = float(host.call("get_pk")) / 100.0
+	if simulation != null:
+		_connect_plan_b_signal(simulation, &"contact_resolved", _on_plan_b_contact_resolved)
+
+
+## 每次普通尝试从权威 Host 当前快照重新开始音效限流与优势累计。
+func reset_plan_b_attempt(current_tier: int, current_pk_fraction: float) -> void:
+	_last_plan_b_tier = current_tier
+	_plan_b_pk_feedback_anchor = current_pk_fraction
+	_infection_feedback_remaining = 0.0
+
+
+func _connect_plan_b_signal(source: Object, signal_name: StringName, callback: Callable) -> void:
+	if not source.has_signal(signal_name) or source.is_connected(signal_name, callback):
+		return
+	if source.connect(signal_name, callback) == OK:
+		_plan_b_connections.append({"source": source, "signal": signal_name, "callback": callback})
+
+
+func _disconnect_plan_b_sources() -> void:
+	for connection: Dictionary in _plan_b_connections:
+		var source: Object = connection["source"]
+		var signal_name: StringName = connection["signal"]
+		var callback: Callable = connection["callback"]
+		if is_instance_valid(source) and source.is_connected(signal_name, callback):
+			source.disconnect(signal_name, callback)
+	_plan_b_connections.clear()
+
+
+## 一次成功的2/4/8发表事务只播一次；失败回执没有成功音。
+func _on_plan_b_publish_result(team: String, _word_id: String, result: Dictionary) -> void:
+	if not bool(result.get("ok", false)):
+		if team == "player":
+			_play(&"ui_error")
+		return
+	if int(result.get("spawn_count", 0)) <= 0:
+		return
+	_play(&"repeat_batch" if team == "player" else &"barrage_spawn")
+
+
+## 感染成功由模拟接触结果确认，使用全局声音冷却抑制连续碰撞噪声。
+func _on_plan_b_contact_resolved(_first_unit_id: int, _second_unit_id: int, outcome: StringName) -> void:
+	if outcome != &"converted" or _infection_feedback_remaining > 0.0:
+		return
+	_play(&"hit_normal")
+	_infection_feedback_remaining = maxf(spawn_sound_interval_seconds, 0.35)
+
+
+func _on_plan_b_counterattack_windup_started(_request: Dictionary) -> void:
+	_play(&"attack_ready")
+
+
+func _on_plan_b_counterattack_resolved(result: Dictionary) -> void:
+	if not bool(result.get("applied", false)):
+		return
+	if str(result.get("effect_id", "")) == "split":
+		_play(&"trait_split")
+	else:
+		_play(&"hit_trap")
+
+
+func _on_plan_b_tier_changed(current_tier: int) -> void:
+	if current_tier > _last_plan_b_tier and current_tier > 0:
+		_play(&"tier_up")
+	_last_plan_b_tier = current_tier
+
+
+## 使用现有单发正PK上限作为显著优势的累计提示边界，不新增玩法阈值。
+func _on_plan_b_pk_changed(value: float) -> void:
+	# Host 的 pk_changed 为0～100；06表单发上限与单次PK变化同为0～1比例。
+	var pk_fraction: float = value / 100.0
+	if pk_fraction <= _plan_b_pk_feedback_anchor:
+		_plan_b_pk_feedback_anchor = pk_fraction
+		return
+	var advantage_cap: float = _numerics.positive_pk_shot_cap
+	if advantage_cap > 0.0 and pk_fraction - _plan_b_pk_feedback_anchor >= advantage_cap:
+		_play(&"pk_push_big")
+		_plan_b_pk_feedback_anchor = pk_fraction
 
 
 # 多个子体来自同一次分裂，整次仅播放一次已批准声音。
@@ -183,4 +283,5 @@ func _on_sentence_locked(_candidate: Dictionary) -> void:
 func _exit_tree() -> void:
 	bind_trait_runtime(null)
 	_disconnect_flows()
+	_disconnect_plan_b_sources()
 	bind_sources(null, null)
