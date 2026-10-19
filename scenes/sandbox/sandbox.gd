@@ -103,6 +103,8 @@ var _mobile_touch: Control
 
 # 场景只创建生命周期对象并接线；PK、Tier、倾向等状态留在各自所有者。
 func _ready() -> void:
+	# 在组合流程前绑定 Sandbox，让初始化中断时 F3 仍能显示等待状态。
+	_debug_panel.call("bind_sandbox", self)
 	if use_plan_b_campaign:
 		if not _initialize_plan_b_battle_ui():
 			push_error("Sandbox: 无法实例化 PB-09 正式界面。")
@@ -219,8 +221,6 @@ func _ready() -> void:
 	%PauseMenu.paused_changed.connect(_on_pause_changed)
 	if use_plan_b_campaign:
 		_debug_panel.hide()
-	else:
-		_debug_panel.call("bind_sandbox", self)
 	if not _battle_attempt_flow.configure(
 			SaveManager.data, level_catalog, _run_state, battle_config, SAMPLE_TIER_CATALOG,
 			_barrage_area, _aim_reticle, _attack_charge_input, opponent_pk_bar,
@@ -474,6 +474,14 @@ func restart_current_attempt() -> void:
 	if not _battle_attempt_flow.restart_current_attempt():
 		push_error("Sandbox: 无法重建当前战斗尝试。")
 	_refresh_mobile_touch_phase()
+
+
+## DebugPanel 重开后读取真实 Host / Flow 状态，避免把无效请求提示为成功。
+func debug_restart_current_attempt() -> bool:
+	restart_current_attempt()
+	if use_plan_b_campaign:
+		return _plan_b_host != null and _plan_b_host.get_battle_state() == &"running"
+	return _battle_attempt_flow != null and _battle_attempt_flow.is_normal_combat_active()
 
 
 # 当前关的角色和素材由一次尝试启动事实提供；HUD 只呈现组合方状态。
@@ -916,12 +924,26 @@ func get_debug_snapshot() -> Dictionary:
 	var live_session: LiveSessionData = SaveManager.data.live_session
 	var tendency_state: TendencyState = SaveManager.data.tendency_state
 	var barrage_counts: Dictionary = _barrage_area.get_current_barrage_counts()
-	var battle_phase: String = "普通战斗中（NORMAL_COMBAT）" if _battle_attempt_flow.is_normal_combat_active() else "普通战斗未运行（INACTIVE）"
+	var normal_combat_active: bool = _battle_attempt_flow.is_normal_combat_active()
+	var contradiction_active: bool = (
+		_contradiction_oracle_flow != null and _contradiction_oracle_flow.is_contradiction_active()
+	)
+	var plan_b_snapshot: Dictionary = {}
+	if use_plan_b_campaign and _plan_b_host != null:
+		plan_b_snapshot = _plan_b_host.get_debug_snapshot()
+	var battle_phase: String = "普通战斗中（NORMAL_COMBAT）" if normal_combat_active else "普通战斗未运行（INACTIVE）"
+	if use_plan_b_campaign:
+		match str(plan_b_snapshot.get("battle_state", "unavailable")):
+			"running": battle_phase = "Plan B 棋子战斗中（RUNNING）"
+			"paused": battle_phase = "Plan B 棋子战斗暂停（PAUSED）"
+			"ended": battle_phase = "Plan B 棋子战斗已结束（ENDED）"
+			"idle": battle_phase = "Plan B 棋子战斗等待启动（IDLE）"
+			_: battle_phase = "Plan B 主机尚未就绪"
 	if _divine_descent_flow != null and _divine_descent_flow.get_session() != null:
 		battle_phase = "神降临（DIVINE_DESCENT）"
-	elif _contradiction_oracle_flow.is_contradiction_active():
+	elif contradiction_active:
 		battle_phase = "矛盾击破（CONTRADICTION_BREAK）"
-	elif _contradiction_oracle_flow.get_oracle_session() != null and _rest_session == null:
+	elif _contradiction_oracle_flow != null and _contradiction_oracle_flow.get_oracle_session() != null and _rest_session == null:
 		battle_phase = "终结神谕（FINAL_ORACLE）"
 	elif _rest_session != null and _rest_session.is_open():
 		battle_phase = "休息时刻（REST）"
@@ -929,18 +951,45 @@ func get_debug_snapshot() -> Dictionary:
 		battle_phase = "普通战斗完成（NORMAL_COMBAT_COMPLETE）"
 	if get_tree().paused:
 		battle_phase += " · 暂停中"
+	var can_set_player_pk: bool = normal_combat_active
+	var hit_resolution_accepts_debug_pk: bool = hit_resolution.allows_normal_pk_resolution()
+	can_set_player_pk = can_set_player_pk and hit_resolution_accepts_debug_pk
+	if use_plan_b_campaign:
+		can_set_player_pk = (
+			can_set_player_pk and str(plan_b_snapshot.get("battle_state", "")) == "running"
+		)
+	var can_run_legacy_barrage: bool = not use_plan_b_campaign and normal_combat_active
+	var director_snapshot: Dictionary = plan_b_snapshot.get("opponent_director", {})
+	var can_toggle_opponent_publish: bool = (
+		use_plan_b_campaign
+		and str(plan_b_snapshot.get("battle_state", "")) == "running"
+		and bool(director_snapshot.get("speech_enabled", false))
+	)
 	return {
+		"is_plan_b_campaign": use_plan_b_campaign,
 		"level": "第%d关" % current_level.level_order if current_level != null else "无关卡",
 		"player_streamer": SaveManager.data.streamer_name if not SaveManager.data.streamer_name.is_empty() else "玩家主播",
 		"opponent_streamer": current_level.streamer_name if current_level != null else "无对手",
 		"battle_phase": battle_phase,
 		"player_pk": hit_resolution.get_player_pk(),
 		"tier": combat_stage.get_current_tier(),
+		"plan_b": plan_b_snapshot,
 		"attack_phase": _attack_charge_input.get_attack_phase(),
 		"is_charging": _attack_charge_input.is_charge_held(),
 		"normal_barrage_count": int(barrage_counts.get("normal", 0)),
 		"repeat_barrage_count": int(barrage_counts.get("repeat", 0)),
 		"normal_generation_enabled": _barrage_area.is_normal_generation_enabled(),
+		"normal_combat_active": normal_combat_active,
+		"can_set_player_pk": can_set_player_pk,
+		"can_restart": current_level != null and (_divine_descent_flow == null or _divine_descent_flow.get_session() == null),
+		"can_clear_barrages": contradiction_active or can_run_legacy_barrage,
+		"can_spawn_normal_batch": can_run_legacy_barrage,
+		"can_toggle_normal_generation": can_run_legacy_barrage,
+		"can_toggle_opponent_publish": can_toggle_opponent_publish,
+		"legacy_barrage_hint": (
+			"Plan B 普通阶段使用棋子；矛盾阶段只开放旧弹幕清屏。"
+			if use_plan_b_campaign else "旧普通战斗使用弹幕操作；矛盾阶段只开放清屏。"
+		),
 		"viewer_count": live_session.viewer_count,
 		"like_count": live_session.like_count,
 		"comment_count": live_session.comment_count,
@@ -951,52 +1000,115 @@ func get_debug_snapshot() -> Dictionary:
 	}
 
 
-# F3 调试入口经 HitResolution 正式更新 PK，让 CombatStage 和 HUD 收到同一变化信号。
+# F3 调试入口按玩法选择正式 PK 所有者，并保留旧脚本调用的数值返回值。
 func debug_set_player_pk(player_pk: float) -> float:
-	var hit_resolution: HitResolution = _battle_attempt_flow.get_hit_resolution()
-	if hit_resolution == null:
-		return 0.0
+	return float(debug_set_player_pk_with_status(player_pk).get("player_pk", 0.0))
+
+
+## DebugPanel 使用带结果的入口；Plan B 的写入权仍由唯一 PK Host 持有。
+func debug_set_player_pk_with_status(player_pk: float) -> Dictionary:
+	if _battle_attempt_flow == null or not is_finite(player_pk):
+		return {"ok": false, "player_pk": 0.0, "tier": 0}
+	var current_hit_resolution: HitResolution = _battle_attempt_flow.get_hit_resolution()
+	if (not _battle_attempt_flow.is_normal_combat_active() or current_hit_resolution == null
+			or not current_hit_resolution.allows_normal_pk_resolution()):
+		return {"ok": false, "player_pk": current_hit_resolution.get_player_pk() if current_hit_resolution != null else 0.0,
+			"tier": _battle_attempt_flow.get_current_tier()}
+	var expected_pk: float = clampf(player_pk, 0.0, 1.0)
+	var accepted: bool = false
+	var actual_pk: float = 0.0
 	_debug_pk_update_active = true
-	var applied_pk: float = hit_resolution.set_player_pk_for_debug(player_pk)
+	if use_plan_b_campaign:
+		if _plan_b_host != null:
+			accepted = _plan_b_host.set_player_pk_for_debug(expected_pk)
+			actual_pk = _plan_b_host.get_pk_fraction()
+	else:
+		var hit_resolution: HitResolution = _battle_attempt_flow.get_hit_resolution()
+		if hit_resolution != null:
+			actual_pk = hit_resolution.set_player_pk_for_debug(expected_pk)
+			accepted = is_equal_approx(actual_pk, expected_pk)
 	_debug_pk_update_active = false
-	return applied_pk
+	var combat_stage: CombatStage = _battle_attempt_flow.get_combat_stage()
+	var tier: int = combat_stage.get_current_tier() if combat_stage != null else 0
+	var verified_pk: float = actual_pk
+	if use_plan_b_campaign and _plan_b_host != null:
+		verified_pk = _plan_b_host.get_pk_fraction()
+	return {
+		"ok": accepted and is_equal_approx(verified_pk, expected_pk),
+		"player_pk": verified_pk,
+		"tier": tier,
+	}
 
 
 # 直播调试值仍写入本场 LiveSessionData，由 Resource.changed 刷新当前 HUD。
-func debug_set_live_data(viewer: int, likes: int, comments: int, fans: int) -> void:
+func debug_set_live_data(viewer: int, likes: int, comments: int, fans: int) -> bool:
 	if SaveManager.data == null or SaveManager.data.live_session == null:
-		return
+		return false
 	var live_session: LiveSessionData = SaveManager.data.live_session
 	live_session.viewer_count = maxi(viewer, 0)
 	live_session.like_count = maxi(likes, 0)
 	live_session.comment_count = maxi(comments, 0)
 	live_session.fan_count = maxi(fans, 0)
+	return (live_session.viewer_count == maxi(viewer, 0)
+		and live_session.like_count == maxi(likes, 0)
+		and live_session.comment_count == maxi(comments, 0)
+		and live_session.fan_count == maxi(fans, 0))
 
 
 # 调试倾向只写当前关暂存值，不碰已提交的周目累计。
-func debug_set_attempt_tendencies(orthodox: int, heretical: int, absurd: int) -> void:
+func debug_set_attempt_tendencies(orthodox: int, heretical: int, absurd: int) -> bool:
 	if SaveManager.data == null or SaveManager.data.tendency_state == null:
-		return
-	SaveManager.data.tendency_state.set_attempt_tendencies_for_debug(orthodox, heretical, absurd)
+		return false
+	var tendency_state: TendencyState = SaveManager.data.tendency_state
+	tendency_state.set_attempt_tendencies_for_debug(orthodox, heretical, absurd)
+	return (tendency_state.attempt_orthodox_total == maxi(orthodox, 0)
+		and tendency_state.attempt_heretical_total == maxi(heretical, 0)
+		and tendency_state.attempt_absurd_total == maxi(absurd, 0))
 
 
 # 清空当前画面弹幕并取消尚未出现的复读请求，但保留普通生成开关状态。
-func debug_clear_barrages() -> void:
-	_barrage_area.clear_current_barrages()
-	_battle_attempt_flow.clear_pending_normal_repeats()
+func debug_clear_barrages() -> bool:
+	if not _can_debug_clear_barrages() or _barrage_area == null or _battle_attempt_flow == null:
+		return false
+	var cleared_count: int = _barrage_area.clear_current_barrages()
+	var pending_count: int = _battle_attempt_flow.clear_pending_normal_repeats()
+	var counts: Dictionary = _barrage_area.get_current_barrage_counts()
+	return (cleared_count >= 0 and pending_count >= 0
+		and int(counts.get("normal", 0)) == 0
+		and int(counts.get("repeat", 0)) == 0
+		and int(counts.get("contradiction", 0)) == 0)
 
 
 # 使用当前关卡和 Tier 参数立即生成一批普通弹幕。
 func debug_spawn_normal_batch() -> int:
+	if use_plan_b_campaign or _battle_attempt_flow == null or not _battle_attempt_flow.is_normal_combat_active():
+		return 0
 	return _barrage_area.spawn_normal_batch_now()
 
 
 # DEBUG 操作只切换 BarrageArea 的真实普通生成状态。
 func debug_set_normal_generation_enabled(enabled: bool) -> bool:
+	if use_plan_b_campaign or _battle_attempt_flow == null or not _battle_attempt_flow.is_normal_combat_active():
+		return false
 	if enabled:
-		return _barrage_area.resume_normal_generation()
+		return _barrage_area.resume_normal_generation() and _barrage_area.is_normal_generation_enabled()
 	_barrage_area.stop_normal_generation()
-	return true
+	return not _barrage_area.is_normal_generation_enabled()
+
+
+## F3 通过 Host 切换对手主动发表；操作结果按 Host 当前值回读确认。
+func debug_set_plan_b_opponent_auto_publish_enabled(enabled: bool) -> bool:
+	if not use_plan_b_campaign or _plan_b_host == null:
+		return false
+	var accepted: bool = _plan_b_host.set_opponent_auto_publish_enabled_for_debug(enabled)
+	var snapshot: Dictionary = _plan_b_host.get_debug_snapshot()
+	return (accepted and bool(snapshot.get("opponent_auto_publish_enabled", not enabled)) == enabled)
+
+
+func _can_debug_clear_barrages() -> bool:
+	if _contradiction_oracle_flow != null and _contradiction_oracle_flow.is_contradiction_active():
+		return true
+	return not use_plan_b_campaign and _battle_attempt_flow != null and _battle_attempt_flow.is_normal_combat_active()
 
 
 # 流程已经提交成果并准备好 Rest；根场景只展示同一结果对象。

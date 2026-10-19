@@ -5,6 +5,7 @@ signal word_selected(word_id: String)
 signal publish_requested(slot_id: int, word_id: String, spawn_position: Vector2)
 signal dialogue_sequence_completed(sequence_id: StringName, side: int)
 signal dialogue_bubble_presented(side: int, event_id: StringName, text: String)
+signal tier_breakthrough_fading(previous_tier: int, current_tier: int)
 signal tier_breakthrough_finished(previous_tier: int, current_tier: int, completed: bool)
 signal failure_presentation_finished
 signal opponent_result_presentation_finished(broken: bool)
@@ -914,6 +915,12 @@ func _on_opponent_connection_finished() -> void:
 		_finish_tier_breakthrough()
 
 
+func _on_stage_arrow_fading(direction: int) -> void:
+	# 升档箭头进入真实淡出时通知 Sandbox 对齐档位音乐。
+	if direction > 0 and _stage_transition_active:
+		tier_breakthrough_fading.emit(_stage_transition_previous_tier, _stage_transition_current_tier)
+
+
 func _on_stage_arrow_finished(direction: int) -> void:
 	if direction < 0 or not _stage_transition_active:
 		return
@@ -1113,6 +1120,7 @@ func _build_field(parent: Container) -> void:
 	_stage_arrow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_board_overlay.add_child(_stage_arrow)
 	_stage_arrow.connect("animation_finished", Callable(self, "_on_stage_arrow_finished"))
+	_stage_arrow.connect("fade_started", Callable(self, "_on_stage_arrow_fading"))
 
 
 func _build_word_hand(parent: Container) -> void:

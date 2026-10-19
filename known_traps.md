@@ -307,6 +307,12 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - **条件**：使用PB-16的64px碰撞半径和当前棋盘尺寸。超过全局排布容量后，随机采样无法避免重叠。
 - **处理**：PB-19将默认碰撞半径调为32px，安全圆心区域约960×764，理想六角密排容量约207个，超过默认人口上限96；因此原全局容量冲突已解除。开局和随机出生仍先搜索间距至少65px的格位，再尝试随机候选，空位不足时选最近邻距离最大的候选。高密度运动导致的局部接触仍由现有碰撞裁决与冷却处理；若半径恢复到64px，需重新评估此容量问题。
 
+### KT-49：Plan B HUD 缺少 Sandbox 订阅的公开转场信号
+
+- **现象**：运行 `scenes/sandbox/sandbox_plan_b.tscn` 时，`Sandbox._ready()` 在读取 `tier_breakthrough_fading` 连接处报错，随后 Host 未启动、调试快照为空。
+- **条件**：Sandbox 组合方订阅的 UI 信号没有同步声明到 `PlanBBattleUI`，即使该信号仍由旧 HUD 提供。
+- **处理**：Plan B HUD 声明并转发 `StageArrowFx.fade_started`，只在有效升档箭头淡出时发出转场信号；修改组合方信号连接时核对各 HUD 实现的公开 signal 列表。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。
@@ -323,6 +329,7 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - Plan B 到 0% 后失败对白未入队：KT-46。
 - Plan B 神降临锁句占比不收束：KT-47。
 - PB-16 128px碰撞圆超过棋盘全局排布容量（PB-19已调整默认半径）：KT-48。
+- Plan B HUD 转场信号缺失导致 Sandbox 初始化中断：KT-49。
 
 ## 附录 A：Godot 生命周期提醒
 

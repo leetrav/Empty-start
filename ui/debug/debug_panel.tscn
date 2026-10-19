@@ -84,6 +84,26 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "战斗阶段："
 
+[node name="PlanBStatusTitle" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+text = "Plan B 棋子战斗"
+
+[node name="PlanBStatusLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+autowrap_mode = 3
+text = "棋子人口：我方 0 / 对手 0 / 中立 0"
+
+[node name="OpponentPublishButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "暂停对手主动发表"
+
 [node name="PKTierRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
 layout_mode = 2
 theme_override_constants/separation = 32
@@ -187,6 +207,7 @@ layout_mode = 2
 text = "100%"
 
 [node name="BarrageTitle" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/ScrollContainer/Content"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"HeadingLabel"
 text = "弹幕与战斗操作"

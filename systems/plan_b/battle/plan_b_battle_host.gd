@@ -223,6 +223,51 @@ func get_battle_state() -> StringName:
 			return &"idle"
 
 
+## F3 只改当前运行中的真实 PK，并沿用正式 PK、Tier 与结束信号链。
+func set_player_pk_for_debug(player_pk: float) -> bool:
+	if _battle_state != BattleState.RUNNING or not is_finite(player_pk):
+		return false
+	var updated_pk: float = clampf(player_pk, 0.0, 1.0)
+	if is_equal_approx(updated_pk, _pk):
+		return true
+	_pk = updated_pk
+	_update_tier()
+	pk_changed.emit(get_pk())
+	if _pk <= 0.0:
+		end_battle(&"failed")
+	elif _pk >= 1.0:
+		end_battle(&"enter_contradiction")
+	return is_equal_approx(_pk, updated_pk)
+
+
+## F3 只切换 Host 的对手主动发表总开关，不改关卡导演配置。
+func set_opponent_auto_publish_enabled_for_debug(enabled: bool) -> bool:
+	if _battle_state != BattleState.RUNNING:
+		return false
+	opponent_auto_publish_enabled = enabled
+	return opponent_auto_publish_enabled == enabled
+
+
+## DebugPanel 即时读取 Host 和 C 导演的真实运行快照，不保存第二份业务状态。
+func get_debug_snapshot() -> Dictionary:
+	var opponent_snapshot: Dictionary = {}
+	if _opponent_director != null and _opponent_director.has_method("get_debug_snapshot"):
+		var snapshot_value: Variant = _opponent_director.call("get_debug_snapshot")
+		if snapshot_value is Dictionary:
+			opponent_snapshot = snapshot_value
+	return {
+		"battle_state": get_battle_state(),
+		"player_pk": get_pk_fraction(),
+		"tier": get_current_tier(),
+		"faction_counts": get_faction_counts(),
+		"player_hand": get_player_hand(),
+		"player_slot_states": get_player_slot_states(),
+		"opponent_auto_publish_enabled": opponent_auto_publish_enabled,
+		"opponent_counterattack_enabled": opponent_counterattack_enabled,
+		"opponent_director": opponent_snapshot,
+	}
+
+
 func get_used_word_ids() -> Array[String]:
 	return _used_word_ids.duplicate()
 
