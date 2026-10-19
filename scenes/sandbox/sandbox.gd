@@ -22,6 +22,7 @@ const PA09_FEEDBACK_SCRIPT: Script = preload("res://systems/presentation/combat_
 const BATTLE_AUDIO_SCRIPT: Script = preload("res://core/audio/battle_audio_presenter.gd")
 const PARADOX_COMIC_SCENE: PackedScene = preload("res://systems/presentation/paradox_comic_transition.tscn")
 const PLAN_B_BATTLE_UI_SCENE: PackedScene = preload("res://ui/plan_b/plan_b_battle_ui.tscn")
+const CB17_PARADOX_PRESENTATION_SCENE: PackedScene = preload("res://systems/contradiction_break/contradiction_barrage_presentation.tscn")
 const PLAN_B_HOST_SCRIPT: Script = preload("res://systems/plan_b/battle/plan_b_battle_host.gd")
 const PLAN_B_SIMULATION_SCRIPT: Script = preload("res://systems/plan_b/simulation/plan_b_unit_simulation.gd")
 const PB14_PERFORMANCE_TRACKER_SCRIPT: Script = preload("res://systems/plan_b/performance/pb14_performance_tracker.gd")
@@ -57,6 +58,7 @@ const PLAN_B_OPPONENT_DIRECTOR_SCRIPT: Script = preload("res://systems/plan_b/op
 var _run_state: LevelRunState
 var _battle_attempt_flow: BattleAttemptFlow
 var _battle_hud
+var _cb17_paradox_presentation: Control
 var _plan_b_host: PlanBBattleHost
 var _plan_b_simulation: Node2D
 var _plan_b_content_catalog: Object
@@ -369,6 +371,17 @@ func _initialize_plan_b_battle_ui() -> bool:
 	paradox_layer.move_child(_barrage_area, 0)
 	_barrage_area.visible = false
 	_oracle_candidate_display.visible = false
+	# CB-17 只观察既有 BArea 和正式准星；候选、释放快照与真假结果继续归现有流程。
+	_cb17_paradox_presentation = CB17_PARADOX_PRESENTATION_SCENE.instantiate() as Control
+	if _cb17_paradox_presentation == null:
+		return false
+	_cb17_paradox_presentation.name = "ContradictionBarragePresentation"
+	_cb17_paradox_presentation.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_cb17_paradox_presentation.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	paradox_layer.add_child(_cb17_paradox_presentation)
+	if not bool(_cb17_paradox_presentation.call("bind_battle_nodes", _barrage_area, _aim_reticle)):
+		push_error("Sandbox: CB-17 无法绑定现有弹幕区域与准星。")
+		return false
 	_legacy_battle_hud.queue_free()
 	return true
 

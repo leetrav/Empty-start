@@ -6,7 +6,7 @@
 
 A 在根输入所有者中路由 `flow.handle_input(event)`：点击/触摸/非重复空格加速三倍，Enter 结束；停止、暂停、未出结果、已结束均拒绝。`repeat_climax_interactive=false` 可预览自动版；`repeat_climax_finished` 仅通知本段视觉完成，不等价于结果演出或奖励提交。
 
-六句、一真五假、10 秒、一发与运动可攻击保持 11 表规则。当前依然调用 C 的真实 `BarrageArea.start_contradiction_generation(level, true_lines, false_lines, runtime_window_config)`；**普通/矛盾运动与外框统一仍待 C 提供消费者修改，本卡未伪报完成**。原两秒曲线继续由本场 `ContradictionWindowConfig` 注入。完整 A/B 材料见 [PTF-02 日志](../Integration/阶段交互_PTF-02_2026-10-16_log.md)。
+六句、一真五假、10 秒、一发与运动可攻击继续沿用现有规则；正式入口仍调用 C 的 `BarrageArea.start_contradiction_generation(level, true_lines, false_lines, runtime_window_config)`。CB-17 视觉组件复用该入口、`BarrageView` 与 `AimReticle`，将真假候选随机映射到六个按最高气泡高度统一排布的行槽，并对准星命中目标提供统一缩放反馈。Sandbox 的 Plan B 正式 HUD 已挂接该表现观察器；完整战斗验收仍待执行。原两秒曲线继续由本场 `ContradictionWindowConfig` 注入。完整 A/B 材料见 [PTF-02 日志](../Integration/阶段交互_PTF-02_2026-10-16_log.md)。
 
 
 > **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。已实现的基础卡用于接口复查；新的视觉、静止弹幕、对话与阶段打磨以最新单卡和此表为准。
@@ -21,16 +21,23 @@ A 在根输入所有者中路由 `flow.handle_input(event)`：点击/触摸/非�
 
 T5 满 PK 后进入独立矛盾击破阶段，UI 表现名为 T6/Paradox。`ContradictionBreakSystem.get_fixed_paradox_candidates()` 按当前关卡顺序取第一条有效真句，再取五个有效假句；假句条目不足五条时循环复用现有原句 ID 与文本，不生成正式内容。阶段协调方把候选分组后交给 `BarrageArea`，后者一次性显示六个实例，按候选集合数量独立限容，不占普通前景容量，也不再轮换后续批次。
 
-当前 `level_001.tres` 示例资源只有一条真矛盾和一条假矛盾，因此该示例运行时会显示一条真句实例与五条同 ID 的假句实例。项目尚无最终对手矛盾文本池，本实现不能证明最终正式文本具备五条不同假句；`tests/fixtures/contradiction_break/test_cb_13_six_candidates_level.tres` 用六个不同 `test_` ID 验证完整内容路径。没有修改关卡源表、导表器或正式关卡 Resource。
+当前 `level_001.tres` 示例资源已配置一条真矛盾与五条不同 ID 的假矛盾；`tests/fixtures/contradiction_break/test_cb_13_six_candidates_level.tres` 仍以六个不同 `test_` ID 验证独立候选路径。候选文字保存在 `LevelContradiction`，真假标签只由系统所属列表判定，不复制到 `BarrageRuntimeRecord` 的可视字段。
 
 现有 10 秒窗口、一发正式射击、释放快照冻结的原句事实、真/假结果与后续复读/神谕/休息流程保持原规则。CB-14 已接入六句减速运动；演出曲线和时长由 `ContradictionWindowConfig` 提供，均为可编辑初值，正式手感仍待策划验收。
 
 | 卡片 | 按实际代码核对后的唯一功能 | 状态 |
 | --- | --- | --- |
-| [CB-13](tasks/CB-13_six-fixed-contradictions.md) | T6 固定一真五假候选集；数据不足时复用有效假句 | 已实现；现行 LevelProfile 示例仅提供一个假句 ID |
+| [CB-13](tasks/CB-13_six-fixed-contradictions.md) | T6 固定一真五假候选集；数据不足时复用有效假句 | 已实现；`level_001.tres` 提供一条真句与五条不同假句 |
 | [CB-14](tasks/CB-14_contradiction-ease-out-motion.md) | 六句减速停止，运动时可射击 | 已实现 · Godot 4.7.2 Headless 聚焦运行 46 项通过；正式演出初值待验收 |
+| [CB-17](tasks/CB-17_uniform-real-fake-paradox-barrage-ui.md) | 六条矛盾统一玻璃外观、随机行槽映射及准星反馈 | 组件、独立演示与 Sandbox HUD 观察器接线完成；完整战斗验收待做 |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
+
+### CB-17 视觉组件切片（2026-10-19）
+
+`ContradictionBarragePresentation` 组合既有 `BarrageArea`、`BarrageView` 与 `AimReticle`。候选来源仍为 LevelProfile 的一真五假列表；六个 `BarrageView` 共用中立玻璃色、字号、描边与同一文本测量规则，不读取或绘制真假字段。每局先以最高气泡高度建立六个等高行槽，再随机打乱句子与行槽的映射，长句不会挤占相邻短句的行位；准星与目标矩形相交时仅触发所有候选一致的轻微缩放反馈。Sandbox Plan B HUD 将观察器绑定到正式流程已有的 `BarrageArea` 和 `AimReticle`，候选生成、射击快照与真假结果仍由现有系统负责。
+
+独立演示使用 `level_001.tres` 六句；命令行长句预览只复制一条假句到内存并替换测试文本，正式 Resource 与攻击记录保持原样。正式 HUD 观察器已在 `_initialize_plan_b_battle_ui()` 接入；Sandbox 发射与结算继续由原攻击路径负责。独立演示完成 Godot GUI 实景检查，完整 Sandbox 战斗接线仍待运行验收。
 
 ### CB-14 运动表现（2026-10-12）
 
