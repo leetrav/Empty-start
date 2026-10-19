@@ -1,4 +1,5 @@
-[gd_resource type="Resource" script_class="ComicSequence" load_steps=24 format=3]
+[gd_resource type="Resource" script_class="ComicSequence" format=3]
+
 [ext_resource type="Script" path="res://ui/comic/comic_sequence.gd" id="1"]
 [ext_resource type="Script" path="res://ui/comic/comic_frame.gd" id="2"]
 [ext_resource type="Texture2D" path="res://assets/manga/P5/0.png" id="3"]
@@ -9,57 +10,15 @@
 [ext_resource type="Texture2D" path="res://assets/manga/P6/1.png" id="8"]
 [ext_resource type="Texture2D" path="res://assets/manga/P6/2.png" id="9"]
 [ext_resource type="Texture2D" path="res://assets/manga/P6/P6.png" id="10"]
-
 [ext_resource type="Script" path="res://ui/comic/comic_caption.gd" id="caption_script"]
-
-
-[sub_resource type="Resource" id="caption_1"]
-script = ExtResource("caption_script")
-kind = "narration"
-text = "【剧情旁白待定】"
-rect = Rect2(1480, 760, 370, 135)
-tail = Vector2(-1, -1)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_2"]
-script = ExtResource("caption_script")
-kind = "narration"
-text = "【剧情旁白待定】"
-rect = Rect2(750, 880, 1040, 110)
-tail = Vector2(-1, -1)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_3"]
-script = ExtResource("caption_script")
-kind = "speech"
-text = "【鼠鼠台词待定】"
-rect = Rect2(1320, 780, 480, 130)
-tail = Vector2(1250, 930)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_4"]
-script = ExtResource("caption_script")
-kind = "speech"
-text = "【鼠鼠台词待定】"
-rect = Rect2(850, 65, 600, 135)
-tail = Vector2(970, 550)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_5"]
-script = ExtResource("caption_script")
-kind = "narration"
-text = "【剧情旁白待定】"
-rect = Rect2(1000, 800, 760, 110)
-tail = Vector2(-1, -1)
-delay = 0.55
 
 [sub_resource type="Resource" id="caption_6"]
 script = ExtResource("caption_script")
-kind = "narration"
-text = "【剧情旁白待定】"
-rect = Rect2(1000, 800, 760, 110)
-tail = Vector2(-1, -1)
-delay = 0.55
+kind = "label"
+text = "*直播结束了*"
+rect = Rect2(600, 113, 760, 110)
+font_size = 80
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_1"]
 script = ExtResource("2")
@@ -67,12 +26,14 @@ textures = Array[Texture2D]([ExtResource("3"), ExtResource("4")])
 positions = PackedVector2Array(0, 0, 38, 70)
 seconds = 3.0
 motion_offset = Vector2(-40, 0)
-text = ""
-
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_6")])
+
+[sub_resource type="Resource" id="caption_5"]
+script = ExtResource("caption_script")
+text = "[wave amp=30 freq=5]瓜子~ 瓜子~ 亲爱的瓜子~[/wave]"
+rect = Rect2(679, 453, 500, 80)
+font_size = 40
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_2"]
 script = ExtResource("2")
@@ -80,12 +41,15 @@ textures = Array[Texture2D]([ExtResource("3"), ExtResource("4"), ExtResource("5"
 positions = PackedVector2Array(0, 0, 38, 70, 25, 334)
 seconds = 3.0
 motion_offset = Vector2(-40, 0)
-text = ""
-
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_5")])
+
+[sub_resource type="Resource" id="caption_4"]
+script = ExtResource("caption_script")
+text = "[wave amp=14 freq=3]这些~ 全部~ 都是鼠的~ 吱！[/wave]"
+rect = Rect2(860, 122, 800, 150)
+tail = Vector2(970, 550)
+font_size = 60
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_3"]
 script = ExtResource("2")
@@ -93,12 +57,19 @@ textures = Array[Texture2D]([ExtResource("3"), ExtResource("4"), ExtResource("5"
 positions = PackedVector2Array(0, 0, 38, 70, 25, 334, 720, 114)
 seconds = 4.0
 motion_offset = Vector2(0, 18)
-text = ""
-
 effect = "push"
 effect_layer = 3
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_4")])
+
+[sub_resource type="Resource" id="caption_3"]
+script = ExtResource("caption_script")
+kind = "label"
+text = "[wave amp=14 freq=3][shake rate=18 level=4]Duang~[/shake][/wave]"
+rect = Rect2(91, 352, 480, 130)
+tail = Vector2(1250, 930)
+font_size = 80
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
+text_color = Color(0.32941177, 0.18431373, 0.10980392, 1)
 
 [sub_resource type="Resource" id="frame_4"]
 script = ExtResource("2")
@@ -106,12 +77,16 @@ textures = Array[Texture2D]([ExtResource("7"), ExtResource("8")])
 positions = PackedVector2Array(0, 0, 0, 0)
 seconds = 4.0
 motion_offset = Vector2(0, 18)
-text = ""
-
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_3")])
+
+[sub_resource type="Resource" id="caption_2"]
+script = ExtResource("caption_script")
+kind = "label"
+text = "*沙沙*"
+rect = Rect2(1561, 397, 200, 110)
+font_size = 50
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
+text_color = Color(1, 0.9764706, 0.9137255, 1)
 
 [sub_resource type="Resource" id="frame_5"]
 script = ExtResource("2")
@@ -119,12 +94,24 @@ textures = Array[Texture2D]([ExtResource("7"), ExtResource("8"), ExtResource("9"
 positions = PackedVector2Array(0, 0, 0, 0, 1331, 0)
 seconds = 4.0
 motion_offset = Vector2(0, 18)
-text = ""
-
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_2")])
+
+[sub_resource type="Resource" id="caption_1"]
+script = ExtResource("caption_script")
+kind = "narration"
+text = "To be continued"
+rect = Rect2(1476, 926, 370, 135)
+font_size = 50
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
+
+[sub_resource type="Resource" id="Resource_s4rqs"]
+script = ExtResource("caption_script")
+kind = "label"
+text = "*蠕动*"
+rect = Rect2(936, 992, 200, 165)
+font_size = 50
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
+text_color = Color(1, 0.9764706, 0.9137255, 1)
 
 [sub_resource type="Resource" id="frame_6"]
 script = ExtResource("2")
@@ -132,12 +119,9 @@ textures = Array[Texture2D]([ExtResource("10")])
 positions = PackedVector2Array(0, 0)
 seconds = 4.5
 motion_offset = Vector2(0, 18)
-text = ""
-
 effect = "push"
 effect_layer = 0
-transition_seconds = 0
-captions = Array[ExtResource("caption_script")]([SubResource("caption_1")])
+captions = Array[ExtResource("caption_script")]([SubResource("caption_1"), SubResource("Resource_s4rqs")])
 
 [resource]
 script = ExtResource("1")

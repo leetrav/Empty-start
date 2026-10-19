@@ -1,4 +1,5 @@
-[gd_resource type="Resource" script_class="ComicSequence" load_steps=46 format=3]
+[gd_resource type="Resource" script_class="ComicSequence" format=3]
+
 [ext_resource type="Script" path="res://ui/comic/comic_sequence.gd" id="1"]
 [ext_resource type="Script" path="res://ui/comic/comic_frame.gd" id="2"]
 [ext_resource type="Texture2D" path="res://assets/manga/P1/0.png" id="3"]
@@ -16,114 +17,14 @@
 [ext_resource type="Texture2D" path="res://assets/manga/P3/2.png" id="15"]
 [ext_resource type="Texture2D" path="res://assets/manga/P3/3.png" id="16"]
 [ext_resource type="Texture2D" path="res://assets/manga/P4/1.png" id="17"]
-[ext_resource type="Texture2D" path="res://assets/manga/P4/最终效果.png" id="18"]
-
 [ext_resource type="Script" path="res://ui/comic/comic_caption.gd" id="caption_script"]
-
-
-[sub_resource type="Resource" id="caption_1"]
-script = ExtResource("caption_script")
-kind = "danmaku"
-text = "【观众弹幕待定】"
-rect = Rect2(85, 110, 610, 95)
-tail = Vector2(-1, -1)
-delay = 0.85
-
-[sub_resource type="Resource" id="caption_2"]
-script = ExtResource("caption_script")
-kind = "danmaku"
-text = "【观众弹幕待定】"
-rect = Rect2(1360, 325, 460, 90)
-tail = Vector2(-1, -1)
-delay = 1.13
-
-[sub_resource type="Resource" id="caption_3"]
-script = ExtResource("caption_script")
-kind = "danmaku"
-text = "【观众弹幕待定】"
-rect = Rect2(45, 590, 480, 90)
-tail = Vector2(-1, -1)
-delay = 1.4100000000000001
-
-[sub_resource type="Resource" id="caption_4"]
-script = ExtResource("caption_script")
-kind = "danmaku"
-text = "【观众弹幕待定】"
-rect = Rect2(1300, 925, 500, 90)
-tail = Vector2(-1, -1)
-delay = 1.69
-
-[sub_resource type="Resource" id="caption_5"]
-script = ExtResource("caption_script")
-kind = "speech"
-text = "【鼠鼠台词待定】"
-rect = Rect2(1380, 550, 470, 130)
-tail = Vector2(1260, 730)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_6"]
-script = ExtResource("caption_script")
-kind = "speech"
-text = "【鼠鼠台词待定】"
-rect = Rect2(1290, 780, 500, 130)
-tail = Vector2(1210, 950)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_7"]
-script = ExtResource("caption_script")
-kind = "speech"
-text = "【鼠鼠台词待定】"
-rect = Rect2(1290, 780, 500, 130)
-tail = Vector2(1210, 950)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_8"]
-script = ExtResource("caption_script")
-kind = "speech"
-text = "【鼠鼠台词待定】"
-rect = Rect2(1290, 780, 500, 130)
-tail = Vector2(1210, 950)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_9"]
-script = ExtResource("caption_script")
-kind = "narration"
-text = "【剧情旁白待定】"
-rect = Rect2(1090, 120, 670, 110)
-tail = Vector2(-1, -1)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_10"]
-script = ExtResource("caption_script")
-kind = "speech"
-text = "【鼠鼠台词待定】"
-rect = Rect2(650, 70, 620, 130)
-tail = Vector2(960, 390)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_11"]
-script = ExtResource("caption_script")
-kind = "narration"
-text = "【剧情旁白待定】"
-rect = Rect2(850, 885, 930, 100)
-tail = Vector2(-1, -1)
-delay = 0.55
-
-[sub_resource type="Resource" id="caption_12"]
-script = ExtResource("caption_script")
-kind = "speech"
-text = "【鼠鼠台词待定】"
-rect = Rect2(850, 560, 560, 145)
-tail = Vector2(720, 850)
-delay = 0.55
 
 [sub_resource type="Resource" id="caption_13"]
 script = ExtResource("caption_script")
-kind = "narration"
-text = "【剧情旁白待定】"
-rect = Rect2(1150, 80, 620, 110)
-tail = Vector2(-1, -1)
-delay = 0.55
+text = "做直播好几天了......"
+rect = Rect2(468, 402, 450, 110)
+font_size = 40
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_1"]
 script = ExtResource("2")
@@ -131,24 +32,22 @@ textures = Array[Texture2D]([ExtResource("3"), ExtResource("4")])
 positions = PackedVector2Array(0, 0, 19, 0)
 seconds = 3.0
 motion_offset = Vector2(0, 18)
-text = ""
-
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_13")])
 
 [sub_resource type="Resource" id="frame_2"]
 script = ExtResource("2")
 textures = Array[Texture2D]([ExtResource("3"), ExtResource("4"), ExtResource("5")])
 positions = PackedVector2Array(0, 0, 19, 0, 715, 377)
-seconds = 3.0
+seconds = 1.0
 motion_offset = Vector2(0, 18)
-text = ""
 
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
+[sub_resource type="Resource" id="caption_12"]
+script = ExtResource("caption_script")
+text = "[shake rate=18 level=4]收入还是0！！！[/shake]"
+rect = Rect2(810, 484, 500, 120)
+tail = Vector2(720, 850)
+font_size = 50
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_3"]
 script = ExtResource("2")
@@ -156,12 +55,16 @@ textures = Array[Texture2D]([ExtResource("3"), ExtResource("4"), ExtResource("5"
 positions = PackedVector2Array(0, 0, 19, 0, 715, 377, 115, 362)
 seconds = 3.8
 motion_offset = Vector2(0, 0)
-text = ""
-
 effect = "tremble"
 effect_layer = 3
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_12")])
+
+[sub_resource type="Resource" id="Resource_dygtg"]
+script = ExtResource("caption_script")
+text = "这样下去......"
+rect = Rect2(823, 388, 400, 100)
+font_size = 40
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_4"]
 script = ExtResource("2")
@@ -169,11 +72,15 @@ textures = Array[Texture2D]([ExtResource("3"), ExtResource("4"), ExtResource("5"
 positions = PackedVector2Array(0, 0, 19, 0, 715, 377, 115, 362, 855, 79)
 seconds = 3.0
 motion_offset = Vector2(0, 18)
-text = ""
+captions = Array[ExtResource("caption_script")]([SubResource("Resource_dygtg")])
 
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
+[sub_resource type="Resource" id="Resource_y7a6d"]
+script = ExtResource("caption_script")
+text = "[pulse freq=2.5 color=#FFD45C]可不行吱！！！[/pulse]"
+rect = Rect2(1252, 426, 500, 100)
+tail = Vector2(1600, 400)
+font_size = 50
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_5"]
 script = ExtResource("2")
@@ -181,11 +88,15 @@ textures = Array[Texture2D]([ExtResource("3"), ExtResource("4"), ExtResource("5"
 positions = PackedVector2Array(0, 0, 19, 0, 715, 377, 115, 362, 855, 79, 1219, 81)
 seconds = 3.0
 motion_offset = Vector2(0, 18)
-text = ""
+captions = Array[ExtResource("caption_script")]([SubResource("Resource_y7a6d")])
 
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
+[sub_resource type="Resource" id="caption_11"]
+script = ExtResource("caption_script")
+text = "挨饿的话，鼠就没办法保持圆圆的形状吱......"
+rect = Rect2(681, 839, 800, 100)
+tail = Vector2(1300, 750)
+font_size = 40
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_6"]
 script = ExtResource("2")
@@ -193,12 +104,17 @@ textures = Array[Texture2D]([ExtResource("9")])
 positions = PackedVector2Array(0, 0)
 seconds = 3.8
 motion_offset = Vector2(0, 18)
-text = ""
-
 effect = "push"
 effect_layer = 0
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_11")])
+
+[sub_resource type="Resource" id="caption_10"]
+script = ExtResource("caption_script")
+text = "[shake rate=18 level=4]这样的事情——[/shake]"
+rect = Rect2(742, 151, 600, 130)
+tail = Vector2(1050, 400)
+font_size = 80
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_7"]
 script = ExtResource("2")
@@ -206,12 +122,29 @@ textures = Array[Texture2D]([ExtResource("10"), ExtResource("11")])
 positions = PackedVector2Array(0, 0, 78, 101)
 seconds = 4.6
 motion_offset = Vector2(0, 18)
-text = ""
-
 effect = "zeros"
-effect_layer = -1
-transition_seconds = 0.5
 captions = Array[ExtResource("caption_script")]([SubResource("caption_10")])
+transition_seconds = 0.5
+
+[sub_resource type="Resource" id="Resource_bs7i5"]
+script = ExtResource("caption_script")
+kind = "label"
+text = "[pulse freq=2.5 color=#FFD45C]咩！[/pulse]"
+rect = Rect2(1341, 30, 630, 240)
+delay = 0.3
+font_size = 250
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
+text_color = Color(1, 0.9764706, 0.9137255, 1)
+
+[sub_resource type="Resource" id="Resource_mlepm"]
+script = ExtResource("caption_script")
+kind = "label"
+text = "[pulse freq=2.5 color=#FFD45C]达！[/pulse]"
+rect = Rect2(181, 30, 630, 240)
+delay = 0.3
+font_size = 250
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
+text_color = Color(1, 0.9764706, 0.9137255, 1)
 
 [sub_resource type="Resource" id="frame_8"]
 script = ExtResource("2")
@@ -219,12 +152,16 @@ textures = Array[Texture2D]([ExtResource("12")])
 positions = PackedVector2Array(0, 0)
 seconds = 3.4
 motion_offset = Vector2(0, 18)
-text = ""
-
 effect = "impact"
-effect_layer = -1
-transition_seconds = 0
-captions = Array[ExtResource("caption_script")]([SubResource("caption_9")])
+captions = Array[ExtResource("caption_script")]([SubResource("Resource_bs7i5"), SubResource("Resource_mlepm")])
+
+[sub_resource type="Resource" id="caption_8"]
+script = ExtResource("caption_script")
+text = "所以！"
+rect = Rect2(133, 134, 250, 100)
+tail = Vector2(-1, 950)
+font_size = 40
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_9"]
 script = ExtResource("2")
@@ -232,12 +169,14 @@ textures = Array[Texture2D]([ExtResource("13"), ExtResource("14")])
 positions = PackedVector2Array(0, 0, 42, 36)
 seconds = 3.0
 motion_offset = Vector2(-45, 0)
-text = ""
-
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_8")])
+
+[sub_resource type="Resource" id="caption_7"]
+script = ExtResource("caption_script")
+text = "[wave amp=14 freq=3]哼哼哼~[/wave]"
+rect = Rect2(1325, 471, 300, 100)
+font_size = 50
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_10"]
 script = ExtResource("2")
@@ -245,12 +184,15 @@ textures = Array[Texture2D]([ExtResource("13"), ExtResource("14"), ExtResource("
 positions = PackedVector2Array(0, 0, 42, 36, 533, 70)
 seconds = 3.0
 motion_offset = Vector2(-45, 0)
-text = ""
-
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_7")])
+
+[sub_resource type="Resource" id="caption_6"]
+script = ExtResource("caption_script")
+text = "[shake rate=18 level=4]万能的神呀~ 请帮帮鼠吧！[/shake]"
+rect = Rect2(1290, 780, 500, 100)
+tail = Vector2(1210, 950)
+font_size = 40
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_11"]
 script = ExtResource("2")
@@ -258,12 +200,15 @@ textures = Array[Texture2D]([ExtResource("13"), ExtResource("14"), ExtResource("
 positions = PackedVector2Array(0, 0, 42, 36, 533, 70, 538, 461)
 seconds = 3.0
 motion_offset = Vector2(-45, 0)
-text = ""
-
-effect = "none"
-effect_layer = -1
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_6")])
+
+[sub_resource type="Resource" id="caption_5"]
+script = ExtResource("caption_script")
+text = "[wave amp=14 freq=3]鼠鼠想要~ 很多很多爱~[/wave]"
+rect = Rect2(1300, 543, 550, 100)
+tail = Vector2(1260, 730)
+font_size = 50
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_12"]
 script = ExtResource("2")
@@ -271,12 +216,44 @@ textures = Array[Texture2D]([ExtResource("17")])
 positions = PackedVector2Array(0, 0)
 seconds = 3.8
 motion_offset = Vector2(0, 18)
-text = ""
-
 effect = "halo"
-effect_layer = -1
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_5")])
+
+[sub_resource type="Resource" id="caption_1"]
+script = ExtResource("caption_script")
+kind = "danmaku"
+text = "[shake rate=20 level=10]天哪是圣仓鼠！！！[/shake]"
+rect = Rect2(85, 110, 610, 95)
+delay = 0.85
+font_size = 40
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
+
+[sub_resource type="Resource" id="caption_2"]
+script = ExtResource("caption_script")
+kind = "danmaku"
+text = "[shake rate=50 level=10]请祝福我！[/shake]"
+rect = Rect2(1360, 322, 460, 90)
+delay = 1.13
+font_size = 40
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
+
+[sub_resource type="Resource" id="caption_3"]
+script = ExtResource("caption_script")
+kind = "danmaku"
+text = "[shake rate=18 level=10]鼠鼠喜欢什么颜色的麻袋？！！！[/shake]"
+rect = Rect2(45, 590, 600, 90)
+delay = 1.41
+font_size = 40
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
+
+[sub_resource type="Resource" id="caption_4"]
+script = ExtResource("caption_script")
+kind = "danmaku"
+text = "[shake rate=18 level=10]圆圆的好可爱！！[/shake]"
+rect = Rect2(1300, 925, 500, 90)
+delay = 1.69
+font_size = 40
+font_path = "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
 
 [sub_resource type="Resource" id="frame_13"]
 script = ExtResource("2")
@@ -284,11 +261,7 @@ textures = Array[Texture2D]([ExtResource("17")])
 positions = PackedVector2Array(0, 0)
 seconds = 5.0
 motion_offset = Vector2(0, 18)
-text = ""
-
 effect = "halo"
-effect_layer = -1
-transition_seconds = 0
 captions = Array[ExtResource("caption_script")]([SubResource("caption_1"), SubResource("caption_2"), SubResource("caption_3"), SubResource("caption_4")])
 
 [resource]

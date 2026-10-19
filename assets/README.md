@@ -4,7 +4,7 @@
 
 ## 剧情漫画（INT-11，2026-10-13）
 
-`manga/P1/`～`manga/P6/` 保留美术交付的 27 张 PNG 及原文件名，完整构图为 1920×1080，另有不同尺寸的拆分图。文件清单见 [INT-11](../docs/Integration/tasks/INT-11_opening-ending-comic-playback.md)。播放配置位于 `data/comics/opening.tres`、`ending.tres`；两份配置分别持有开场动画的前半 P1～P4 和后半 P5～P6。首次 Boot 连续播放两份配置组成完整六幕，菜单分别回看前后部分；后半不代表通关结局。
+`manga/P1/`～`manga/P6/` 保留美术交付的 27 张 PNG 及原文件名，完整构图为 1920×1080，另有不同尺寸的拆分图。文件清单见 [INT-11](../docs/Integration/tasks/INT-11_opening-ending-comic-playback.md)。播放配置位于 `data/comics/opening.tres`（P1～P4、13 个节点）和 `data/comics/ending.tres`（**正式通关结局** P5～P6、6 个节点）。首次 Boot 只播 P1～P4，结局 P5～P6 由 `ending` 入口播放；菜单可分别回看。文案包含可编辑纯 Label、大字、字体与 BBCode 特效，使用 `tools/comic_copy_editor/comic_copy_editor.tscn`（F6）修改。
 
 完整效果图与拆图不作为连续独立页面机械播放。原图片不修改，配置保存拆图坐标、显现顺序和时长。参考视频、临时观察脚本和录屏保存在工程外。正式台词与书写音效待提供；`comic_write` 暂复用现有 Kenney `click_002.ogg` 验证声音链路。
 
