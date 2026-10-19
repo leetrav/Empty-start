@@ -23,7 +23,6 @@ const NEUTRAL_TEAM: StringName = &"neutral"
 const PLAYER_TEAM: StringName = &"player"
 const OPPONENT_TEAM: StringName = &"opponent"
 const WORD_BATCH_SIZE_BY_STRENGTH: Dictionary = {1: 2, 2: 4, 3: 8}
-const NEUTRAL_SPAWN_BATCH_RESERVE: int = 8
 const RANDOM_SPAWN_CANDIDATE_COUNT: int = 64
 const INFECTION_CHANCES_BY_STRENGTH: Dictionary = {
 	1: 0.50,
@@ -37,6 +36,7 @@ const SPAWN_BURST_DURATION_SECONDS: float = 0.5
 @export_range(1, 512, 1) var maximum_population: int = 96
 @export_range(0, 500, 1) var initial_neutral_count: int = 30
 @export_range(0, 32, 1) var initial_seed_slot_count: int = 2
+@export_range(0, 32, 1) var neutral_spawn_batch_reserve: int = 8
 @export_range(0.05, 10.0, 0.05) var neutral_spawn_interval_seconds: float = 0.75
 ## 以现有补人节奏为中心扰动到达时间；固定随机 seed 时，补人时刻可重复。
 @export_range(0.0, 0.95, 0.05) var neutral_spawn_jitter_ratio: float = 0.25
@@ -140,6 +140,32 @@ func set_random_seed(seed_value: int) -> void:
 	_neutral_spawn_rng.seed = seed_value
 	_spawn_elapsed_seconds = 0.0
 	_next_neutral_spawn_interval_seconds = 0.0
+
+
+## 将 C 的开局与补人配置注入模拟器；A 的对手播种数量由 create_population 的显式参数控制。
+func configure_population_config(config: Dictionary) -> bool:
+	if _is_running or not _units_by_id.is_empty():
+		return false
+	if not config.has("initial_neutral_count") or not config.has("initial_seed_slot_count") \
+		or not config.has("neutral_spawn_interval_seconds") \
+		or not config.has("neutral_spawn_jitter_ratio"):
+		return false
+	var neutral_count: int = int(config["initial_neutral_count"])
+	var c_seed_slot_count: int = int(config["initial_seed_slot_count"])
+	var spawn_interval: float = float(config["neutral_spawn_interval_seconds"])
+	var jitter_ratio: float = float(config["neutral_spawn_jitter_ratio"])
+	if neutral_count < 0 or c_seed_slot_count < 0 or c_seed_slot_count > 32 \
+		or neutral_count + c_seed_slot_count > maximum_population \
+		or spawn_interval < 0.05 or spawn_interval > 10.0 \
+		or jitter_ratio < 0.0 or jitter_ratio > 0.95:
+		return false
+	initial_neutral_count = neutral_count
+	initial_seed_slot_count = c_seed_slot_count
+	neutral_spawn_interval_seconds = spawn_interval
+	neutral_spawn_jitter_ratio = jitter_ratio
+	_spawn_elapsed_seconds = 0.0
+	_next_neutral_spawn_interval_seconds = 0.0
+	return true
 
 
 ## 按基础间隔和扰动比例为下一名中立观众抽取到达时间。
@@ -1319,7 +1345,7 @@ func _despawn_expired_units() -> void:
 ## 以随机间隔补充中立观众；到达批次保留线后暂停计时，留出完整8颗发表空间。
 func _update_neutral_replenishment(delta: float) -> void:
 	var neutral_spawn_population_limit: int = maxi(
-		maximum_population - NEUTRAL_SPAWN_BATCH_RESERVE,
+		maximum_population - neutral_spawn_batch_reserve,
 		0
 	)
 	if _units_by_id.size() >= neutral_spawn_population_limit:

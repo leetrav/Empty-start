@@ -64,6 +64,8 @@ func configure_modules(simulation: Node, word_catalog: Object, opponent_director
 		_word_catalog = word_catalog
 		if not _load_word_catalog():
 			return false
+		if not _configure_simulation_population_config():
+			return false
 	if opponent_director != null:
 		_disconnect_opponent_signal()
 		_opponent_director = opponent_director
@@ -622,6 +624,24 @@ func _load_word_catalog() -> bool:
 	if _word_catalog != null and _word_catalog.has_method("load_test_configuration"):
 		return bool(_word_catalog.call("load_test_configuration"))
 	return _word_catalog != null
+
+
+## A 读取 C 的单一人口配置并注入 B；A 的 opponent seed 数量仍由 Host 参数显式提供。
+func _configure_simulation_population_config() -> bool:
+	if _simulation == null or _word_catalog == null \
+		or not _word_catalog.has_method("get_population_config") \
+		or not _simulation.has_method("configure_population_config"):
+		push_error("PlanBBattleHost 缺少 PB-15 人口配置接口。")
+		return false
+	var config_value: Variant = _word_catalog.call("get_population_config")
+	if not config_value is Dictionary or config_value.is_empty():
+		push_error("PlanBBattleHost 无法读取 C 的 PB-15 人口配置。")
+		return false
+	var population_config: Dictionary = config_value
+	if not bool(_simulation.call("configure_population_config", population_config)):
+		push_error("PlanBBattleHost 无法将 PB-15 人口配置应用到 B 模拟器。")
+		return false
+	return true
 
 
 func _configure_opponent_director() -> bool:

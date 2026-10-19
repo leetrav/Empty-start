@@ -2,7 +2,9 @@ extends SceneTree
 
 const REQUIRED_PLAN_B_CSVS: Array[String] = [
 	"res://data/plan_b/battle_type_matchups.csv",
+	"res://data/plan_b/battle_type_emoji.csv",
 	"res://data/plan_b/opponent_config.csv",
+	"res://data/plan_b/population_config.csv",
 	"res://data/plan_b/retaliation_skill_map.csv",
 	"res://data/plan_b/strength_success_rates.csv",
 	"res://data/plan_b/word_pool.csv",

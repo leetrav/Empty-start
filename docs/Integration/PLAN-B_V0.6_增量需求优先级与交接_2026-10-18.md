@@ -49,13 +49,14 @@
 - `unit_physics_positions_updated(unit_ids: PackedInt32Array, previous_positions: PackedVector2Array, current_positions: PackedVector2Array)` 每个物理步发出一次。三组数组按升序 Unit ID 对齐，位置使用 scene-global 坐标，新生首帧的前后位置相同；D 可在渲染帧之间据此插值。
 - PB-14 的 pre-optimization 正式 Sandbox CLI profile 与后续同场景 post-optimization 结果记录在 `evidence/PB-14_2026-10-18/`。Engine `TIME_PROCESS/TIME_PHYSICS_PROCESS` 与 CLI GPU/FPS 值按各自计量名记录；GUI Profiler 的 Script/Idle 函数明细及窗口截图需人工验收。
 
-### Lane B 当前已实现的 PB-15 人口规则
-- 模拟器默认开局创建30名中立观众和2个中立播种位；当前 A `PlanBBattleHost` 明确调用 `create_population(-1, initial_opponent_seed_count)`，再将两个播种位转成费米棋子，因此首个 PK 快照为30名中立、2名对手。A 持有播种位数量，B 持有真实单位、位置、寿命与人口快照。
-- 中立补人以 `neutral_spawn_interval_seconds=0.75` 为中心，`neutral_spawn_jitter_ratio=0.25` 控制±25%范围。补人计时使用独立随机流，`set_random_seed()` 同步重置棋子和补人随机流，使固定 seed 可重放到达时序；随机坐标继续调用现有安全边界逻辑。
-- 自动补人最多增长到 `maximum_population - 8`；达到该人口线后冻结当前补人计时，容量释放后继续当前周期。玩家与对手仍共用现有2/4/8完整批次接口，容量和 PK 仍从实时单位总数、阵营快照读取。默认人口上限96保持不变。
-- C 的 PB-15 数值表当前给出 `initial_neutral_count=30`、`initial_seed_slot_count=0`、0.75秒与0.25扰动；A 当前 Host 通过 `initial_opponent_seed_count=2` 单独提供播种数量，数值表尚未接入该 Host。集成时继续以 A 的 Host 设置作为播种位唯一入口，并由 C/A 对齐配置读取。
-- 30、50、80人口画面密度，以及 PB-16 棋子放大后的可读性与最终间隔/上限建议仍待 E 的合流验收。
+### PB-15 人口配置接线与当前规则
 
+- C 的 population_config.csv 使用 Keep File；PlanBContentCatalog.load_configuration() 验证后由 get_population_config() 返回副本。A 的 PlanBBattleHost.configure_modules() 已将该配置调用 B 的 configure_population_config() 实际写入 PlanBUnitSimulation。
+- B 模拟器应用30名中立、C额外播种槽0、中心间隔0.75秒、jitter ratio 0.25。A Host 仍独立持有 initial_opponent_seed_count=2，并显式调用 create_population(-1, 2)：B 创建30名中立加2个待播种槽，A播种后首个PK快照是30中立、2对手。
+- 补人使用独立随机流，set_random_seed() 同步重置棋子与补人随机流。自动补人上限为 maximum_population 减去可调 neutral_spawn_batch_reserve（默认8）；达到容量线后冻结周期，释放空间后继续。
+- 玩家与对手仍使用现有2/4/8完整批次接口；容量与PK来自实时单位总数和阵营快照。默认最大人口96保留。
+- PB-10 packed CSV smoke 已扩展为7份原表，增加 population_config.csv 与 battle_type_emoji.csv；Windows构建脚本的成功摘要预期同步为7。当前集成分支尚未执行PCK导出。
+- 30、50、80人口密度、正式场景切关/重开和玩家/对手批次仍待后续验收。
 ### Lane B 当前已实现的 PB-16 碰撞规则
 - `PlanBUnitSimulation.unit_collision_radius` 默认64px；模拟器配置、单位圆形碰撞资源和单位快照共用该半径，接触中心距小于128px时进入实际碰撞/感染裁决，分离后至少留出128.5px。
 - 棋盘边界、随机出生、分裂出生、点击中立查询与批次内部间距均继续从半径派生。随机出生抽64个候选点，找到与现存棋子中心距至少128px的位置时优先采用；空位不足时选择最近邻距离最大的点，保持生成成功。

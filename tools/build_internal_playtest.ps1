@@ -131,15 +131,17 @@ if ($Platform -in @('Windows', 'Both')) {
         throw 'Exported PCK lacks its successful resource/content verification record'
     }
 
-    # 旧审计覆盖正式 source_tables；PB-10 另核对新增的五份 Plan B 原始 CSV。
+    # PB-10 packed smoke checks the required Plan B CSVs in the actual exported PCK.
     $planBCsvSmoke = Join-Path $buildDir 'planb_packed_csv_smoke.gd'
     Copy-Item -LiteralPath (Join-Path $project 'tests/plan_b/pb10_packed_data_smoke.gd') -Destination $planBCsvSmoke
     Invoke-BuildProcess 'packed Plan B CSV resources' $GodotEditor @(
         '--headless', '--path', $buildDir, '--main-pack', $pck,
         '--script', $planBCsvSmoke
     ) (Join-Path $buildDir 'planb_packed_csv_smoke.log')
-    if (!(Select-String -LiteralPath (Join-Path $buildDir 'planb_packed_csv_smoke.log.stdout') -SimpleMatch 'PASS PB-10 packed Plan B CSV: 5 original files opened' -Quiet)) {
-        throw 'Exported PCK lacks the five readable Plan B CSV files'
+    $expectedPlanBCsvCount = 7
+    $expectedPlanBCsvPassLine = "PASS PB-10 packed Plan B CSV: $expectedPlanBCsvCount original files opened"
+    if (!(Select-String -LiteralPath (Join-Path $buildDir 'planb_packed_csv_smoke.log.stdout') -SimpleMatch $expectedPlanBCsvPassLine -Quiet)) {
+        throw "Exported PCK lacks the expected $expectedPlanBCsvCount readable Plan B CSV files"
     }
 
     $smokeStatus = 'skipped'

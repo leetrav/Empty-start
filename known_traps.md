@@ -280,6 +280,8 @@
 
 PB-10 配置核对发现 `data/plan_b/` 的五份战斗 CSV 缺少 Keep File sidecar，Windows / Android include filter 也只包含 `data/source_tables/*.csv`，存在源工程可读、导出 PCK 缺原表的同类风险。五份表都要提交 `importer="keep"` sidecar，并加入两端 include filter；旧 `.translation` 输出需排除。此次 4.7.2 资源 PCK 导出退出 0，包外脚本挂载该 PCK 后逐表用 `FileAccess` 打开，五表 PASS。冷导入还会在 `tests/plan_b/results/` 旁生成 CSV Translation 临时文件，已由 `.gitignore` 定点忽略。
 
+PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新增表时，必须同步更新 pb10_packed_data_smoke.gd 的文件清单和 build_internal_playtest.ps1 的成功摘要预期；旧摘要仍要求5份时，即使7份CSV全部可读也会误报失败。本集成分支已把摘要预期改为7；正式PCK验证尚未运行。
+
 ### KT-45：全新 worktree 首次 headless 启动先报资源导入缺失
 
 - **现象**：Godot 4.7.2 在新 worktree 首次 `--headless --editor` 时，项目主题加载先报告字体没有 FontFile loader，部分音频也短暂出现 `Failed loading resource`；同一轮后续扫描会重新导入字体和音频，之后加载 UI 场景正常。
