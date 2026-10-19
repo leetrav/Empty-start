@@ -12,10 +12,8 @@ const TEAM_COLORS := {
 	"opponent": Color("#ff9f68"),
 }
 const UNIT_VISUAL_RADIUS: float = 64.0
-const UNIT_VISUAL_CLIP_MARGIN: float = 20.0
 
 var world_bounds := Rect2(Vector2.ZERO, Vector2(900.0, 490.0))
-var density_profile := "clear"
 
 var _snapshots: Array = []
 var _performance_tracker: Node
@@ -94,7 +92,7 @@ func set_unit_snapshots(snapshots: Array) -> void:
 			continue
 		_snapshots.append(snapshot)
 		_snapshots_by_id[unit_id] = snapshot
-		next_points[unit_id] = _clamp_visual_local_position(_world_to_local(_unit_position(snapshot)))
+		next_points[unit_id] = _world_to_local(_unit_position(snapshot))
 		if _previous_points.has(unit_id):
 			var previous: Vector2 = _previous_points[unit_id]
 			var current: Vector2 = next_points[unit_id]
@@ -216,9 +214,9 @@ func set_unit_layer_visible(visible: bool) -> void:
 	queue_redraw()
 
 
-func set_density_profile(profile: String) -> void:
-	density_profile = "compact" if profile == "compact" else "clear"
-	queue_redraw()
+func set_density_profile(_profile: String) -> void:
+	# PB-16 统一头像直径128px，密度档不改变头像尺寸；保留兼容入口。
+	pass
 
 
 func show_unit_feedback(unit_id: String, reason: String) -> void:
@@ -659,11 +657,11 @@ func _group_member_positions(group: Dictionary, member_ids: Array) -> Dictionary
 				previous_position = position
 			if current_position.is_zero_approx():
 				current_position = position
-			positions[member_id] = _clamp_visual_local_position(_world_to_local(previous_position.lerp(current_position, _render_interpolation_fraction)))
+			positions[member_id] = _world_to_local(previous_position.lerp(current_position, _render_interpolation_fraction))
 	if positions.is_empty():
 		var center: Vector2 = _position_value(group.get("center_position", Vector2.ZERO))
 		if not center.is_zero_approx():
-			positions["__center__"] = _clamp_visual_local_position(_world_to_local(center))
+			positions["__center__"] = _world_to_local(center)
 	return positions
 
 
@@ -818,7 +816,7 @@ func _visual_radius(_snapshot: Dictionary) -> float:
 
 
 func _unit_visual_radius() -> float:
-	return UNIT_VISUAL_RADIUS * 0.82 if density_profile == "compact" else UNIT_VISUAL_RADIUS
+	return UNIT_VISUAL_RADIUS
 
 
 func _world_to_local(world_position: Vector2) -> Vector2:
@@ -850,19 +848,8 @@ func _display_local_position(unit_id: String, snapshot: Dictionary) -> Vector2:
 		var previous := _physics_position_for_unit(unit_id, true)
 		if previous.is_zero_approx():
 			previous = current
-		return _clamp_visual_local_position(_world_to_local(previous.lerp(current, _render_interpolation_fraction)))
-	return _clamp_visual_local_position(_world_to_local(_unit_position(snapshot)))
-
-
-func _clamp_visual_local_position(position: Vector2) -> Vector2:
-	# 放大头像和外圈后只移动显示中心，模拟和发表仍使用真实位置。
-	var arena := _arena_rect()
-	var safe_inset := _unit_visual_radius() + UNIT_VISUAL_CLIP_MARGIN
-	var minimum := arena.position + Vector2.ONE * safe_inset
-	var maximum := arena.end - Vector2.ONE * safe_inset
-	if maximum.x < minimum.x or maximum.y < minimum.y:
-		return arena.get_center()
-	return position.clamp(minimum, maximum)
+		return _world_to_local(previous.lerp(current, _render_interpolation_fraction))
+	return _world_to_local(_unit_position(snapshot))
 
 
 func _actual_local_position(unit_id: String, snapshot: Dictionary) -> Vector2:
