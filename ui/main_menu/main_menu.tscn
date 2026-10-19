@@ -1,7 +1,17 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=11 format=3]
 
-[ext_resource type="Script" path="res://ui/main_menu/main_menu.gd" id="1_main_menu"]
-[ext_resource type="PackedScene" path="res://ui/settings/settings_panel.tscn" id="2_settings_panel"]
+[ext_resource type="Script" path="res://ui/main_menu/main_menu.gd" id="1"]
+[ext_resource type="PackedScene" path="res://ui/settings/settings_panel.tscn" id="2"]
+[ext_resource type="Texture2D" path="res://assets/opening/background.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/opening/char_hamster.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/opening/ui_front_bo.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/opening/ui_front_lai.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/opening/ui_front_shu.png" id="7"]
+[ext_resource type="Script" path="res://ui/main_menu/cover_menu_button.gd" id="8"]
+[ext_resource type="Shader" path="res://ui/main_menu/previews/pend00_god_rays.gdshader" id="9"]
+
+[sub_resource type="ShaderMaterial" id="GodRays"]
+shader = ExtResource("9")
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -10,9 +20,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_main_menu")
+script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Letterbox" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,86 +30,185 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.090196, 0.098039, 0.113725, 1)
+color = Color(0.055, 0.065, 0.035, 1)
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 48.0
-offset_top = 32.0
-offset_right = -48.0
-offset_bottom = -32.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="CoverCanvas" type="Control" parent="."]
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
 
-[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
-custom_minimum_size = Vector2(560, 0)
-layout_mode = 2
-theme_type_variation = &"CardPanel"
+[node name="Background" type="TextureRect" parent="CoverCanvas"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+texture = ExtResource("3")
+expand_mode = 1
 
-[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
-layout_mode = 2
+[node name="Titles" type="Control" parent="CoverCanvas"]
+layout_mode = 0
+mouse_filter = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 16
+[node name="Bo" type="TextureRect" parent="CoverCanvas/Titles"]
+layout_mode = 0
+offset_left = 1112.0
+offset_top = -62.0
+offset_right = 1750.0
+offset_bottom = 485.0
+mouse_filter = 2
+texture = ExtResource("7")
+expand_mode = 1
+[node name="Lai" type="TextureRect" parent="CoverCanvas/Titles"]
+layout_mode = 0
+offset_left = 1372.0
+offset_top = 16.0
+offset_right = 1946.0
+offset_bottom = 497.0
+mouse_filter = 2
+texture = ExtResource("6")
+expand_mode = 1
+[node name="Shu" type="TextureRect" parent="CoverCanvas/Titles"]
+layout_mode = 0
+offset_left = 1460.0
+offset_top = 278.0
+offset_right = 2228.0
+offset_bottom = 923.0
+mouse_filter = 2
+texture = ExtResource("5")
+expand_mode = 1
+[node name="Hamster" type="TextureRect" parent="CoverCanvas"]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 27.0
+offset_right = 1622.0
+offset_bottom = 1080.0
+mouse_filter = 2
+texture = ExtResource("4")
+expand_mode = 1
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_type_variation = &"TitleLabel"
-text = "Empty-start"
-horizontal_alignment = 1
+[node name="Pend00GodRays" type="ColorRect" parent="CoverCanvas"]
+material = SubResource("GodRays")
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
 
-[node name="MenuActions" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="MenuActions" type="Control" parent="CoverCanvas"]
 unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 16
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
 
-[node name="StartButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MenuActions"]
+[node name="StartButton" type="Button" parent="CoverCanvas/MenuActions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-theme_type_variation = &"PrimaryButton"
-text = "开始游戏"
+layout_mode = 0
+offset_left = 70.0
+offset_top = 55.0
+offset_right = 500.0
+offset_bottom = 149.0
+script = ExtResource("8")
+caption = "开始游戏"
+text_size = 64
 
-[node name="ReplayFullOpeningButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MenuActions"]
+[node name="ContinueButton" type="Button" parent="CoverCanvas/MenuActions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-theme_type_variation = &"SecondaryButton"
-text = "重播完整开场"
+layout_mode = 0
+offset_left = 130.0
+offset_top = 165.0
+offset_right = 560.0
+offset_bottom = 259.0
+script = ExtResource("8")
+caption = "载入游戏"
+text_size = 64
 
-[node name="ReplayOpeningButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MenuActions"]
+[node name="SettingsButton" type="Button" parent="CoverCanvas/MenuActions"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 190.0
+offset_top = 275.0
+offset_right = 620.0
+offset_bottom = 369.0
+script = ExtResource("8")
+caption = "选项"
+text_size = 64
+
+[node name="QuitButton" type="Button" parent="CoverCanvas/MenuActions"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 230.0
+offset_top = 385.0
+offset_right = 660.0
+offset_bottom = 479.0
+script = ExtResource("8")
+caption = "退出游戏"
+text_size = 64
+
+[node name="ReplayToggleButton" type="Button" parent="CoverCanvas/MenuActions"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 90.0
+offset_top = 910.0
+offset_right = 520.0
+offset_bottom = 1004.0
+script = ExtResource("8")
+caption = "开场回看"
+text_size = 34
+
+[node name="ReplayActions" type="Control" parent="CoverCanvas"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-theme_type_variation = &"SecondaryButton"
-text = "再次播放开头"
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
 
-[node name="ReplayEndingButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MenuActions"]
+[node name="ReplayFullOpeningButton" type="Button" parent="CoverCanvas/ReplayActions"]
 unique_name_in_owner = true
-visible = false
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-theme_type_variation = &"SecondaryButton"
-text = "再次播放结尾"
+layout_mode = 0
+offset_left = 70.0
+offset_top = 60.0
+offset_right = 610.0
+offset_bottom = 154.0
+script = ExtResource("8")
+caption = "重播完整开场"
+text_size = 48
 
-[node name="SettingsButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MenuActions"]
+[node name="ReplayOpeningButton" type="Button" parent="CoverCanvas/ReplayActions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-theme_type_variation = &"SecondaryButton"
-text = "设置"
+layout_mode = 0
+offset_left = 150.0
+offset_top = 170.0
+offset_right = 690.0
+offset_bottom = 264.0
+script = ExtResource("8")
+caption = "回看前四幕"
+text_size = 48
 
-[node name="QuitButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/MenuActions"]
+[node name="ReplayEndingButton" type="Button" parent="CoverCanvas/ReplayActions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-theme_type_variation = &"DangerButton"
-text = "退出游戏"
+layout_mode = 0
+offset_left = 230.0
+offset_top = 280.0
+offset_right = 770.0
+offset_bottom = 374.0
+script = ExtResource("8")
+caption = "回看后两幕"
+text_size = 48
 
-[node name="SettingsPanel" parent="." instance=ExtResource("2_settings_panel")]
+[node name="ReplayBackButton" type="Button" parent="CoverCanvas/ReplayActions"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 310.0
+offset_top = 390.0
+offset_right = 850.0
+offset_bottom = 484.0
+script = ExtResource("8")
+caption = "返回菜单"
+text_size = 48
+
+[node name="SettingsPanel" parent="." instance=ExtResource("2")]
 unique_name_in_owner = true
