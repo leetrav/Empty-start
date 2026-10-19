@@ -8,6 +8,7 @@ signal tier_changed(current_tier: int)
 signal battle_ended(result: StringName)
 signal battle_state_changed(state: StringName)
 signal publish_result(team: String, word_id: String, result: Dictionary)
+signal player_s1_rewrite_resolved(result: Dictionary)
 signal player_hand_changed(hand: Array)
 signal unit_changed(unit_id: String, reason: String)
 signal unit_spawned(unit_id: String)
@@ -519,6 +520,18 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2,
 		failure["reason"] = &"incomplete_batch"
 		failure["spawn_count"] = spawn_count
 		return _report_publish_result(team, word_id, failure)
+	var rewrite_unit_ids: Array = []
+	var is_player_s1: bool = team == "player" and int(definition.get("strength", 0)) == 1
+	if is_player_s1 and _simulation.has_method("rewrite_player_units_nearby_after_s1"):
+		var rewrite_ids_value: Variant = _simulation.call(
+			"rewrite_player_units_nearby_after_s1",
+			spawn_position,
+			definition,
+			candidate_order,
+			batch_unit_ids
+		)
+		if rewrite_ids_value is Array:
+			rewrite_unit_ids = rewrite_ids_value.duplicate()
 	_used_word_ids.append(word_id)
 	if team == "player":
 		_player_slot_refresh_remaining[slot_id] = PLAYER_WORD_SLOT_REFILL_SECONDS
@@ -536,7 +549,18 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2,
 		"unit_ids": batch_unit_ids.duplicate(),
 		"spawn_target_positions": batch_result.get("spawn_target_positions", []).duplicate(),
 		"batch": batch_result.duplicate(true),
+		"rewrite_count": rewrite_unit_ids.size(),
+		"rewrite_unit_ids": rewrite_unit_ids.duplicate(),
 	}
+	if is_player_s1:
+		# 仅在成功整批发表并完成即时改口后发布事实，供 UI 与教学消费。
+		player_s1_rewrite_resolved.emit({
+			"word_id": word_id,
+			"word_order": candidate_order,
+			"spawn_position": spawn_position,
+			"rewrite_count": rewrite_unit_ids.size(),
+			"rewrite_unit_ids": rewrite_unit_ids.duplicate(),
+		})
 	return _report_publish_result(team, word_id, success)
 
 

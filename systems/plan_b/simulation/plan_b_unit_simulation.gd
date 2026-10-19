@@ -23,6 +23,7 @@ const NEUTRAL_TEAM: StringName = &"neutral"
 const PLAYER_TEAM: StringName = &"player"
 const OPPONENT_TEAM: StringName = &"opponent"
 const WORD_BATCH_SIZE_BY_STRENGTH: Dictionary = {1: 2, 2: 4, 3: 8}
+const S1_INSTANT_REWRITE_MAX_TARGETS: int = 4
 const RANDOM_SPAWN_CANDIDATE_COUNT: int = 64
 const RANDOM_SPAWN_GRID_COLUMNS: int = 7
 const RANDOM_SPAWN_GRID_ROWS: int = 6
@@ -49,6 +50,9 @@ const SPAWN_BURST_DURATION_SECONDS: float = 0.5
 @export_range(2.0, 32.0, 1.0) var unit_collision_radius: float = 32.0
 @export_range(0.0, 5.0, 0.05) var collision_cooldown_seconds: float = 0.7
 @export_range(0.0, 120.0, 1.0) var contact_recoil_speed: float = 22.0
+
+@export_group("S1 Instant Rewrite")
+@export_range(0.0, 480.0, 1.0) var s1_instant_rewrite_radius: float = 120.0
 
 @export_group("Movement")
 @export_range(1.0, 160.0, 1.0) var base_speed_min: float = 30.0
@@ -319,6 +323,63 @@ func spawn_word_batch(
 		unit_spawned.emit(unit.unit_id)
 	word_batch_spawned.emit(batch.duplicate(true))
 	return batch
+
+
+## S1 整批出生成功后，改写落点附近最靠近的旧玩家信徒；排除本批新单位。
+func rewrite_player_units_nearby_after_s1(
+	center_position: Vector2,
+	word_definition: Dictionary,
+	new_word_order: int,
+	excluded_unit_ids: Array
+) -> Array[int]:
+	var clean_definition: Dictionary = _copy_valid_word_definition(word_definition)
+	if clean_definition.is_empty() or int(clean_definition.get("strength", 0)) != 1 or new_word_order < 1:
+		return []
+	var excluded_ids: Dictionary = {}
+	for value: Variant in excluded_unit_ids:
+		var excluded_id: int = _normalize_unit_id(value)
+		if excluded_id >= 0:
+			excluded_ids[excluded_id] = true
+	var radius: float = maxf(s1_instant_rewrite_radius, 0.0)
+	var radius_squared: float = radius * radius
+	var candidates: Array[Dictionary] = []
+	for unit_id: int in _get_sorted_unit_ids():
+		if excluded_ids.has(unit_id):
+			continue
+		var unit := _units_by_id.get(unit_id) as PlanBUnit
+		if unit == null or unit.team != PLAYER_TEAM or not unit.has_word() or unit.word_order >= new_word_order:
+			continue
+		var distance_squared: float = unit.global_position.distance_squared_to(center_position)
+		if distance_squared > radius_squared:
+			continue
+		candidates.append({
+			"unit": unit,
+			"unit_id": unit.unit_id,
+			"distance_squared": distance_squared,
+		})
+	candidates.sort_custom(func(first: Dictionary, second: Dictionary) -> bool:
+		var first_distance: float = float(first.get("distance_squared", 0.0))
+		var second_distance: float = float(second.get("distance_squared", 0.0))
+		if first_distance == second_distance:
+			return int(first.get("unit_id", -1)) < int(second.get("unit_id", -1))
+		return first_distance < second_distance
+	)
+	var rewritten_unit_ids: Array[int] = []
+	var rewrite_count: int = mini(S1_INSTANT_REWRITE_MAX_TARGETS, candidates.size())
+	for candidate_index: int in rewrite_count:
+		var candidate: Dictionary = candidates[candidate_index]
+		var unit := candidate.get("unit") as PlanBUnit
+		if unit == null:
+			continue
+		# apply_word_snapshot 只替换话语、属性、倾向、强度与顺序号，保留旧友军的运行状态。
+		unit.apply_word_snapshot(PLAYER_TEAM, clean_definition, new_word_order)
+		rewritten_unit_ids.append(unit.unit_id)
+		# 复用现有 S1 relay 事件聚合，让 UI 将同一批改口合并为一次反馈。
+		unit_changed.emit(unit.unit_id, &"relay")
+	if not rewritten_unit_ids.is_empty():
+		# 下一物理步先刷新邻居网格，再重算新的同词团体拓扑。
+		_group_refresh_remaining_seconds = 0.0
+	return rewritten_unit_ids
 
 
 ## 执行 C 的原型反击请求；split 子体完整继承对手目标快照并受人口上限约束。

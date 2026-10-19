@@ -64,3 +64,8 @@
 - 同队移动的理想间距不小于碰撞直径64px；结群加入阈值为72px、离开阈值为90px。空间网格根据有效离开距离和碰撞半径扩容，移动及碰撞分离的候选padding沿用当前逻辑。
 - 30名中立加2个对手种子仍可在1024×828棋盘内优先分散出生；安全圆心区域约960×764，按圆形半径32与理想六角密排估算容量约207名，高于默认总人口上限96。出生格位与随机候选中心距离至少65px；批次继续按strength 1/2/3创建2/4/8颗。
 - PB-16的64px半径已由PB-19覆盖。D 的 #275/#276 视觉工作仍独立由 D 负责：棋子逻辑直径目标为64px、中心跟随模拟位置；PopulationRibbon与事件提示移出棋盘，气泡按重叠评分避让。真实64px画面验收由 D/E 的对应任务完成。
+
+### PB-23 玩家 S1 即时改口规则
+- 玩家 S1 完整批次成功生成2颗后，A 调用 B 的 `rewrite_player_units_nearby_after_s1(center_position, word_definition, new_word_order, excluded_unit_ids) -> Array[int]`。B 排除本批新生单位，只处理落点120逻辑像素半径内、已有话语且 `word_order` 更旧的玩家单位；候选按距离升序、再按 `unit_id` 升序，最多4名。半径由 `s1_instant_rewrite_radius` 导出配置，默认120。
+- B 通过 `PlanBUnit.apply_word_snapshot()` 替换完整词语快照与新顺序号，保留原阵营、`unit_id`、位置、年龄和寿命；每名改口单位复用 `unit_changed(unit_id, "relay")`，由现有 S1 改口反馈合并显示，并促使下一物理步重算同词团体拓扑。
+- A 的 `player_s1_rewrite_resolved(result)` 与成功发表回执同时提供 `rewrite_count`、`rewrite_unit_ids`，包含0目标的成功S1发表。失败发表不调用改口；S2/S3只保留原有4/8颗批次及自然接触传播。
