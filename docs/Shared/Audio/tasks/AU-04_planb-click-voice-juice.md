@@ -1,6 +1,6 @@
 # AU-04 · 全流程点击、主播拟声与Plan B关键Juice音效
 
-**状态：2026-10-20最新已确认P0需求；待功能开发。**
+**状态：2026-10-20最新已确认P0需求；AU-04 接线实现待 Review，实机听感仍待最短验收。**
 
 ## 开始前先阅读以下文档
 - `AGENTS.md`、`project.godot`、`known_traps.md`、`docs/Original/任务卡模板.md`。
@@ -9,7 +9,7 @@
 
 ## 已经实现的功能
 - `core/autoload/audio_manager.gd`已存在`play_event()`、`bind_ui_button(button,event_id)`、音效播放池和UI Bus；`data/source_tables/17_音频事件.csv`已有`ui_click`且指向`assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg`，部分正式界面此前已接入点击。
-- 共享基线的`data/shared/audio_event_config.tres`**未列出ui_click**，运行时能否从17表动态注册必须按真实AudioManager检查，不把文档声称“已接入”当作实际可播放。
+- 共享基线的`data/shared/audio_event_config.tres`未列出`ui_click`；`AudioManager._ready()`实际调用`FormalSheetRuntimeConsumer.register_audio_events()`，从17表动态注册资源存在且可加载的事件。AU-04复用此路径，不复制第二条点击素材配置。
 - `ui/plan_b/plan_b_battle_ui.gd`已有`dialogue_bubble_presented(side,event_id,text)`；`scenes/sandbox/sandbox.gd`已有本局开场/主播对白、反击等接线，`core/audio/battle_audio_presenter.gd`当前大部分行为仍来自旧射击链。
 
 ## 本次任务

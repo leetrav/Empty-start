@@ -229,9 +229,11 @@ func _input(event: InputEvent) -> void:
 			advance()
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		get_viewport().set_input_as_handled()
+		AudioManager.play_ui_click()
 		advance()
 	elif event is InputEventScreenTouch and event.pressed:
 		get_viewport().set_input_as_handled()
+		AudioManager.play_ui_click()
 		advance()
 	else:
 		return
