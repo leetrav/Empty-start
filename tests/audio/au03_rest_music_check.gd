@@ -11,10 +11,41 @@ func _run() -> void:
 	var audio := root.get_node("AudioManager")
 	var router := root.get_node("SceneRouter")
 	save.new_game()
-	assert(save.confirm_opening_identity("音乐测试", IdentityOptions.CARDS[0], "测试团", IdentityConfirmationState.new()) == OK)
-	assert(router.goto_opening_room() == OK)
+	# 从真实姓名/身份页面进入截图中的房间，不跳过此前漏接的开局步骤。
+	assert(router.goto_identity_setup() == OK)
 	await process_frame
 	await process_frame
+	var setup := current_scene
+	assert(audio.get_music_event_id() == &"")
+	setup.get_node("StreamerPage/Center/Panel/Content/NameInput").text = "音乐测试"
+	setup.get_node("StreamerPage/Center/Panel/Content/Continue").pressed.emit()
+	setup.complete_player_presentation()
+	setup.get_node("IdentitySelection").next_requested.emit(IdentityOptions.CARDS[0])
+	await create_timer(0.3).timeout
+	assert(setup.get_node("RoomComputerTransitionPage").visible)
+	assert(audio.get_music_event_id() == &"music_rest_room")
+	assert(audio.get_music_position() >= 2.35)
+	# 回退身份页会淡出；再次回房间、命名及保存进入开播房间均正常接管。
+	setup.get_node("RoomComputerTransitionPage/Center/Panel/Content/Back").pressed.emit()
+	await create_timer(1.7).timeout
+	assert(audio.get_music_event_id() == &"")
+	setup.get_node("IdentitySelection").next_requested.emit(IdentityOptions.CARDS[0])
+	await create_timer(0.3).timeout
+	var setup_position: float = audio.get_music_position()
+	setup.complete_room_computer_transition()
+	await create_timer(0.2).timeout
+	assert(audio.get_music_position() > setup_position)
+	setup.get_node("FanGroupPage/Center/Panel/Content/Back").pressed.emit()
+	setup.complete_room_computer_transition()
+	setup.get_node("FanGroupPage/Center/Panel/Content/NameInput").text = "测试团"
+	setup_position = audio.get_music_position()
+	setup.get_node("FanGroupPage/Center/Panel/Content/Continue").pressed.emit()
+	await process_frame
+	await process_frame
+	await create_timer(0.8).timeout
+	assert(current_scene.scene_file_path.ends_with("rest_opening_room.tscn"))
+	assert(audio.get_music_position() > setup_position)
+	print("PASS 身份后回到房间起曲/回退淡出/命名不重播/保存后同曲交接")
 	var room := current_scene
 	assert(audio.get_music_event_id() == &"music_rest_room")
 	assert(audio.get_music_position() >= 2.35)
