@@ -227,9 +227,11 @@ func set_random_seed(seed_value: int) -> void:
 func draw_player_speech_word(
 	used_word_ids: Array[String],
 	occupied_word_ids: Array[String],
-	level_context: Variant = null
+	level_context: Variant = null,
+	battle_type_filter: String = "",
+	strength_filter: int = 0
 ) -> Dictionary:
-	if not _loaded:
+	if not _loaded or strength_filter < 0 or strength_filter > 3:
 		return {}
 	var excluded_word_ids: Array[String] = used_word_ids.duplicate()
 	for occupied_word_id: String in occupied_word_ids:
@@ -237,6 +239,18 @@ func draw_player_speech_word(
 			excluded_word_ids.append(occupied_word_id)
 	var context: Variant = _active_level_context if level_context == null else level_context
 	var candidates: Array[String] = get_available_word_ids("player", excluded_word_ids, context)
+	# 保留同一玩家池和随机源，只在首关教学请求时缩小候选范围。
+	if not battle_type_filter.is_empty() or strength_filter > 0:
+		var filtered_candidates: Array[String] = []
+		for word_id: String in candidates:
+			var definition: Dictionary = _word_definitions.get(word_id, {})
+			if not battle_type_filter.is_empty() \
+				and str(definition.get("battle_type", "")) != battle_type_filter:
+				continue
+			if strength_filter > 0 and int(definition.get("strength", 0)) != strength_filter:
+				continue
+			filtered_candidates.append(word_id)
+		candidates = filtered_candidates
 	if candidates.is_empty():
 		return {}
 	var selected_index: int = _rng.randi_range(0, candidates.size() - 1)
