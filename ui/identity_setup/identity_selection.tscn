@@ -36,61 +36,111 @@ theme_type_variation = &"TitleLabel"
 text = "选择你的身份"
 horizontal_alignment = 1
 
-[node name="CardScroll" type="ScrollContainer" parent="Margins/Content"]
+[node name="CardArea" type="HBoxContainer" parent="Margins/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 12
 
-[node name="CardRowCenter" type="HBoxContainer" parent="Margins/Content/CardScroll"]
+[node name="CardScroll" type="ScrollContainer" parent="Margins/Content/CardArea"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="CardRowCenter" type="HBoxContainer" parent="Margins/Content/CardArea/CardScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="CardLeftSpacer" type="Control" parent="Margins/Content/CardScroll/CardRowCenter"]
+[node name="CardLeftSpacer" type="Control" parent="Margins/Content/CardArea/CardScroll/CardRowCenter"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="IdentityCards" type="GridContainer" parent="Margins/Content/CardScroll/CardRowCenter"]
+[node name="IdentityCards" type="GridContainer" parent="Margins/Content/CardArea/CardScroll/CardRowCenter"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_constants/h_separation = 16
-theme_override_constants/v_separation = 16
-columns = 4
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 6
 
-[node name="CardRightSpacer" type="Control" parent="Margins/Content/CardScroll/CardRowCenter"]
+[node name="CardRightSpacer" type="Control" parent="Margins/Content/CardArea/CardScroll/CardRowCenter"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="SelectionStatus" type="Label" parent="Margins/Content"]
+[node name="IdentityDetailsPanel" type="PanelContainer" parent="Margins/Content/CardArea"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+size_flags_vertical = 3
+
+[node name="DetailsContent" type="VBoxContainer" parent="Margins/Content/CardArea/IdentityDetailsPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="IdentityDetailsTitle" type="Label" parent="Margins/Content/CardArea/IdentityDetailsPanel/DetailsContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "身份详情"
+
+[node name="IdentityDetailsName" type="Label" parent="Margins/Content/CardArea/IdentityDetailsPanel/DetailsContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+autowrap_mode = 3
+text = "聚焦卡片查看完整名称"
+
+[node name="SelectionStatus" type="Label" parent="Margins/Content/CardArea/IdentityDetailsPanel/DetailsContent"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"MutedLabel"
 autowrap_mode = 3
-text = "请选择一张身份卡片"
+text = "尚未选择身份"
 
-[node name="Navigation" type="HBoxContainer" parent="Margins/Content"]
+[node name="IdentityDetailsDescription" type="Label" parent="Margins/Content/CardArea/IdentityDetailsPanel/DetailsContent"]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 3
+autowrap_mode = 3
+text = "聚焦或翻开身份卡查看完整说明。"
+
+[node name="Navigation" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = -88.0
+offset_right = -32.0
+offset_bottom = -24.0
+grow_horizontal = 2
 theme_override_constants/separation = 16
 
-[node name="BackButton" type="Button" parent="Margins/Content/Navigation"]
+[node name="BackButton" type="Button" parent="Navigation"]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 text = "返回主播取名"
 
-[node name="RevealAllButton" type="Button" parent="Margins/Content/Navigation"]
+[node name="RevealAllButton" type="Button" parent="Navigation"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 64)
 layout_mode = 2
 text = "一键翻开"
 
-[node name="NextButton" type="Button" parent="Margins/Content/Navigation"]
+[node name="NextButton" type="Button" parent="Navigation"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
