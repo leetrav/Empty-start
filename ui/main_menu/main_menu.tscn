@@ -92,7 +92,7 @@ offset_right = 1920.0
 offset_bottom = 1080.0
 mouse_filter = 2
 
-[node name="QuitButton" type="Button" parent="CoverCanvas/MenuActions"]
+[node name="StartButton" type="Button" parent="CoverCanvas/MenuActions"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 70.0
@@ -100,10 +100,10 @@ offset_top = 55.0
 offset_right = 500.0
 offset_bottom = 149.0
 script = ExtResource("8")
-caption = "退出游戏"
+caption = "开始游戏"
 text_size = 64
 
-[node name="SettingsButton" type="Button" parent="CoverCanvas/MenuActions"]
+[node name="ContinueButton" type="Button" parent="CoverCanvas/MenuActions"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 130.0
@@ -111,10 +111,10 @@ offset_top = 165.0
 offset_right = 560.0
 offset_bottom = 259.0
 script = ExtResource("8")
-caption = "选项"
+caption = "载入游戏"
 text_size = 64
 
-[node name="ContinueButton" type="Button" parent="CoverCanvas/MenuActions"]
+[node name="SettingsButton" type="Button" parent="CoverCanvas/MenuActions"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 190.0
@@ -122,10 +122,10 @@ offset_top = 275.0
 offset_right = 620.0
 offset_bottom = 369.0
 script = ExtResource("8")
-caption = "载入游戏"
+caption = "选项"
 text_size = 64
 
-[node name="StartButton" type="Button" parent="CoverCanvas/MenuActions"]
+[node name="QuitButton" type="Button" parent="CoverCanvas/MenuActions"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 230.0
@@ -133,7 +133,7 @@ offset_top = 385.0
 offset_right = 660.0
 offset_bottom = 479.0
 script = ExtResource("8")
-caption = "开始游戏"
+caption = "退出游戏"
 text_size = 64
 
 [node name="ReplayToggleButton" type="Button" parent="CoverCanvas/MenuActions"]
