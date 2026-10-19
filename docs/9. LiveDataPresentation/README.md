@@ -136,6 +136,7 @@ LD-10 等 18. Rest。
 | [LD-14](tasks/LD-14_scrolling-chat-display.md) | 直播评论从下向上滚动显示 | LD-13 |
 | [LD-15](tasks/LD-15_camp-fan-badges.md) | 评论按粉丝身份显示双方专属粉丝牌 | LD-14 |
 | [LD-16](tasks/LD-16_chat-feed-lifecycle-wiring.md) | 战斗时启动与重置双方直播评论流 | LD-12～LD-15 |
+| [LD-17](tasks/LD-17_comment-fan-badge-nameplate-fit.md) | 粉丝徽章嵌入 PA-21 横标，主播栏仅显示粉丝团名 | D实现与1920×1080、1280×720截图完成；E验收待做 |
 
 当前仓库中 `PresentationAssetConfig.player_fan_badge` 与 `LevelProfile.fan_badge_texture` 已可提供两侧资源；正式风格由现有美术资源替换入口承接。新词库为独立 `19_直播评论词库`，与 `09_直播数据` 数值规则表分别管理。
 
@@ -144,6 +145,12 @@ LD-10 等 18. Rest。
 策划 `19_直播评论词库` 在原 `comment_id / username / text / audience_type / side_scope / weight / enabled` 后新增可选 `streamer_id`。LD-12导表按 `side_scope` 与当前 `LevelProfile.streamer_id` 共同过滤；`streamer_id` 空表示通用评论，指定值表示该对手专属评论。LD-16在直播开场、重开与关卡切换时按新对手重取候选，并复用当前侧粉丝牌。四项直播统计继续由现有LiveSessionData更新，随机聊天属于展示。
 
 当前仓库中 `PresentationAssetConfig.player_fan_badge` 与 `LevelProfile.fan_badge_texture` 已可提供评论专属粉丝牌纹理；顶部粉丝团名归 PA-20。`19_直播评论词库` 与 `25_直播观众账号` 是两张相互引用的普通评论数据表，均与 `09_直播数据` 真实业务计数分离。
+
+## LD-17 评论横标与徽章（2026-10-20）
+
+粉丝评论行使用 PA-21 `assets/ui/live/fan_nameplates/<streamer_id>_fan_nameplate.png` 横标，在左侧圆形安全区等比居中显示该侧粉丝徽章；玩家侧沿用 `PresentationAssetConfig.player_fan_badge`，对手徽章缺省时按当前主播稳定 ID 从 PA-21 路径回退。长昵称与评论正文放入横标矩形文本区，并按实际字体测量缩字号；路人保留无徽章的纯文字行。主播栏取消粉丝徽章纹理，`❤粉丝团名❤` 文字位置不变。
+
+Godot 双分辨率截图和验证限制见 [LD-17 日志](直播数据表现系统_LD-17_2026-10-20_log.md)。
 
 ## INT-14 正式评论展示接线（2026-10-15）
 
