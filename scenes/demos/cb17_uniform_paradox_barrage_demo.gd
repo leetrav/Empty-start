@@ -6,9 +6,13 @@ const LEVEL_PROFILE: LevelProfile = preload("res://data/level_configuration/leve
 const WINDOW_CONFIG: ContradictionWindowConfig = preload("res://systems/contradiction_break/contradiction_window_config.tres")
 const BREAK_SYSTEM_SCRIPT: Script = preload("res://systems/contradiction_break/contradiction_break_system.gd")
 const PRESENTATION_SCENE: PackedScene = preload("res://systems/contradiction_break/contradiction_barrage_presentation.tscn")
+const BARRAGE_AREA_SCENE: PackedScene = preload("res://systems/barrage_generation/barrage_area.tscn")
+const AIM_RETICLE_SCENE: PackedScene = preload("res://systems/combat_attack/aim_reticle.tscn")
 const EVIDENCE_DIR: String = "res://docs/12. ContradictionBreak/evidence/CB-17_2026-10-19"
 
 var _presentation: Control
+var _barrage_area: BarrageArea
+var _aim_reticle: AimReticle
 var _break_system: ContradictionBreakSystem
 var _capture_file_name: String = ""
 var _long_text_preview: bool = false
@@ -50,6 +54,14 @@ func _build_demo_layout() -> void:
 	_presentation.position = BOARD_RECT.position
 	_presentation.size = BOARD_RECT.size
 	add_child(_presentation)
+	_barrage_area = BARRAGE_AREA_SCENE.instantiate() as BarrageArea
+	_barrage_area.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_presentation.add_child(_barrage_area)
+	_aim_reticle = AIM_RETICLE_SCENE.instantiate() as AimReticle
+	_presentation.add_child(_aim_reticle)
+	if not bool(_presentation.call("bind_battle_nodes", _barrage_area, _aim_reticle)):
+		push_error("CB-17 demo: failed to bind the existing BarrageArea and AimReticle")
+		return
 	_add_label(
 		"长句排版样例 · 测试文本，不属于关卡候选" if _long_text_preview else "第一关 · 费米",
 		Rect2(Vector2(1088.0, 82.0), Vector2(350.0, 34.0)), 16, Color("#AEBFCE"), HORIZONTAL_ALIGNMENT_RIGHT
@@ -121,8 +133,7 @@ func _capture_real_godot_frame() -> void:
 	var target := views[views.size() / 2] as BarrageView
 	var target_transform: Transform2D = target.get_global_transform_with_canvas()
 	var target_viewport_center: Vector2 = target_transform * (target.size * 0.5)
-	var reticle := _presentation.call("get_aim_reticle") as AimReticle
-	reticle.move_touch_aim(target_viewport_center, 144.0)
+	_aim_reticle.move_touch_aim(target_viewport_center, 144.0)
 	await RenderingServer.frame_post_draw
 	if DisplayServer.get_name() == "headless":
 		push_error("CB-17 capture requires a real Godot window renderer")

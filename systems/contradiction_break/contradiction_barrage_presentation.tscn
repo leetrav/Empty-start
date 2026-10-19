@@ -1,19 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://systems/contradiction_break/contradiction_barrage_presentation.gd" id="1_presentation"]
-[ext_resource type="PackedScene" path="res://systems/barrage_generation/barrage_area.tscn" id="2_area"]
-[ext_resource type="PackedScene" path="res://systems/combat_attack/aim_reticle.tscn" id="3_aim"]
 
 [node name="ContradictionBarragePresentation" type="Control"]
 clip_contents = false
 script = ExtResource("1_presentation")
-
-[node name="BarrageArea" parent="." instance=ExtResource("2_area")]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="AimReticle" parent="." instance=ExtResource("3_aim")]

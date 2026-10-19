@@ -8,17 +8,33 @@ const CANDIDATE_COUNT: int = 6
 const AIM_FEEDBACK_SCALE: float = 1.06
 const AIM_FEEDBACK_SECONDS: float = 0.16
 
-@onready var _barrage_area: BarrageArea = $BarrageArea
-@onready var _aim_reticle: AimReticle = $AimReticle
-
+var _barrage_area: BarrageArea
+var _aim_reticle: AimReticle
 var _slot_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _visible_views: Array[BarrageView] = []
 var _aimed_instance_id: int = 0
+var _presentation_active: bool = false
 
 
 func _ready() -> void:
 	_slot_rng.randomize()
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(false)
+
+
+## 绑定正式流程已持有的区域与准星；本组件只观察视图生成和真实准星几何。
+func bind_battle_nodes(barrage_area: BarrageArea, aim_reticle: AimReticle) -> bool:
+	if barrage_area == null or aim_reticle == null:
+		return false
+	if is_instance_valid(_barrage_area) and _barrage_area.barrage_generated.is_connected(_on_barrage_generated):
+		_barrage_area.barrage_generated.disconnect(_on_barrage_generated)
+	_reset_visual_state()
+	_barrage_area = barrage_area
+	_aim_reticle = aim_reticle
+	if not _barrage_area.barrage_generated.is_connected(_on_barrage_generated):
+		_barrage_area.barrage_generated.connect(_on_barrage_generated)
+	_try_activate_fixed_set()
+	return true
 
 
 ## 显示一条真句与五条假句；只把整组视图放进六个现有槽位，不传递真假标签。
@@ -28,38 +44,22 @@ func present_candidates(
 	false_lines: Array[LevelContradiction],
 	window_config: ContradictionWindowConfig
 ) -> bool:
-	clear_presentation()
-	if level_profile == null or window_config == null:
+	_reset_visual_state()
+	if not is_instance_valid(_barrage_area) or level_profile == null or window_config == null:
 		return false
 	if not _barrage_area.start_contradiction_generation(level_profile, true_lines, false_lines, window_config):
 		return false
-	_visible_views = _collect_visible_views()
-	if _visible_views.size() != CANDIDATE_COUNT:
-		clear_presentation()
-		return false
-	for view: BarrageView in _visible_views:
-		if view.runtime_record == null or not view.runtime_record.is_contradiction:
-			clear_presentation()
-			return false
-	# 固定六个行槽的集合保持不变；每局打乱句子与槽位的对应关系，消除首条候选占首行的顺序提示。
-	_shuffle_visual_slots()
-	_aimed_instance_id = 0
-	set_process(true)
-	return true
+	return _try_activate_fixed_set()
 
 
-## 清理独立演示或宿主重开时的视图与视觉焦点。
+## 清理本组件的视觉追踪；弹幕区域生命周期仍归 BarrageArea 与宿主所有。
 func clear_presentation() -> void:
-	_aimed_instance_id = 0
-	set_process(false)
-	if is_instance_valid(_barrage_area):
-		_barrage_area.clear_barrages()
-	_visible_views.clear()
+	_reset_visual_state()
 
 
 ## 返回按屏幕视觉位置排序的候选副本，调用方看不到真假分类顺序。
 func get_visible_views() -> Array[BarrageView]:
-	var sorted_views: Array[BarrageView] = _collect_visible_views()
+	var sorted_views: Array[BarrageView] = _visible_views.duplicate()
 	for index: int in range(1, sorted_views.size()):
 		var candidate: BarrageView = sorted_views[index]
 		var insert_at: int = index
@@ -76,6 +76,12 @@ func get_aim_reticle() -> AimReticle:
 
 
 func _process(_delta: float) -> void:
+	if not _presentation_active:
+		return
+	for view: BarrageView in _visible_views:
+		if not is_instance_valid(view) or view.is_queued_for_deletion():
+			_reset_visual_state()
+			return
 	var aimed_view: BarrageView = _find_aimed_view()
 	var next_instance_id: int = aimed_view.get_instance_id() if aimed_view != null else 0
 	if next_instance_id == _aimed_instance_id:
@@ -95,31 +101,87 @@ func _collect_visible_views() -> Array[BarrageView]:
 		var view := child as BarrageView
 		if view == null or view.is_queued_for_deletion() or view.runtime_record == null:
 			continue
-		if view.runtime_record.is_contradiction:
+		if view.runtime_record.is_contradiction and not view.runtime_record.is_repeat:
 			result.append(view)
 	return result
 
 
-## 用独立 RNG 打乱固定落点，不触碰候选 Resource、运行记录或战斗判定。
-func _shuffle_visual_slots() -> void:
-	var slots: Array[Vector2] = []
+## 一次 BarrageArea 生成通知后扫描固定集合；不逐帧遍历普通弹幕。
+func _on_barrage_generated(view: BarrageView) -> void:
+	if view == null or view.runtime_record == null:
+		return
+	if not view.runtime_record.is_contradiction or view.runtime_record.is_repeat:
+		return
+	if _presentation_active and _visible_views.has(view):
+		return
+	_reset_visual_state()
+	_try_activate_fixed_set()
+
+
+## 只在候选首次齐备时按统一行高排布；运行记录与攻击快照不变。
+func _try_activate_fixed_set() -> bool:
+	if _presentation_active and _visible_views.size() == CANDIDATE_COUNT:
+		return true
+	if not is_instance_valid(_barrage_area):
+		return false
+	var candidates: Array[BarrageView] = _collect_visible_views()
+	if candidates.size() != CANDIDATE_COUNT:
+		return false
+	_visible_views = candidates
+	if not _shuffle_visual_slots():
+		_reset_visual_state()
+		return false
+	_presentation_active = true
+	_aimed_instance_id = 0
+	set_process(true)
+	return true
+
+
+func _reset_visual_state() -> void:
+	_presentation_active = false
+	_aimed_instance_id = 0
+	_visible_views.clear()
+	set_process(false)
+
+
+## 使用最高视图高度建立统一行槽，再用独立 RNG 打乱句子与行槽的映射。
+func _shuffle_visual_slots() -> bool:
+	var slot_height: float = 48.0
 	for view: BarrageView in _visible_views:
-		slots.append(view.position)
-	for index: int in range(slots.size() - 1, 0, -1):
+		slot_height = maxf(slot_height, view.size.y)
+	var row_gap: float = 16.0
+	var total_height: float = slot_height * CANDIDATE_COUNT + row_gap * (CANDIDATE_COUNT - 1)
+	if total_height > _barrage_area.size.y:
+		row_gap = 0.0
+		total_height = slot_height * CANDIDATE_COUNT
+	if total_height > _barrage_area.size.y:
+		return false
+	var first_row_y: float = maxf(0.0, minf(48.0, (_barrage_area.size.y - total_height) * 0.5))
+	var row_slots: Array[float] = []
+	for index: int in CANDIDATE_COUNT:
+		row_slots.append(first_row_y + float(index) * (slot_height + row_gap))
+	for index: int in range(row_slots.size() - 1, 0, -1):
 		var swap_index: int = _slot_rng.randi_range(0, index)
-		var previous_slot: Vector2 = slots[index]
-		slots[index] = slots[swap_index]
-		slots[swap_index] = previous_slot
+		var previous_slot: float = row_slots[index]
+		row_slots[index] = row_slots[swap_index]
+		row_slots[swap_index] = previous_slot
 	for index: int in _visible_views.size():
-		_visible_views[index].position = slots[index]
+		var view: BarrageView = _visible_views[index]
+		view.position = Vector2(
+			maxf(_barrage_area.size.x - view.size.x, 0.0),
+			row_slots[index] + maxf((slot_height - view.size.y) * 0.5, 0.0)
+		)
+	return true
 
 
 ## 只按准星圆与真实视图矩形筛选；重叠时选择几何中心最近者，真假 ID 不参与。
 func _find_aimed_view() -> BarrageView:
+	if not is_instance_valid(_aim_reticle) or not _aim_reticle.is_visible_in_tree():
+		return null
 	var aim_center: Vector2 = _aim_reticle.get_aim_center_global_position()
 	var best_view: BarrageView
 	var best_distance_squared: float = INF
-	for view: BarrageView in _collect_visible_views():
+	for view: BarrageView in _visible_views:
 		var target_rect: Rect2 = view.get_global_rect()
 		if not _aim_reticle.intersects_target_area(target_rect):
 			continue
