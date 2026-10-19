@@ -11,7 +11,7 @@ const TEAM_COLORS := {
 	"player": Color("#50c7ff"),
 	"opponent": Color("#ff9f68"),
 }
-const UNIT_VISUAL_RADIUS: float = 64.0
+const UNIT_VISUAL_RADIUS: float = 32.0
 const GROUP_BUBBLE_WIDTH_SINGLE: float = 100.0
 const GROUP_BUBBLE_WIDTH_TWO: float = 150.0
 const GROUP_BUBBLE_WIDTH_EIGHT: float = 500.0
@@ -51,7 +51,7 @@ var _tracker_group_layout_cache_hits: int = 0
 func _ready() -> void:
 	# 场地只消费只读快照；鼠标和触控按有效棋盘区域提交坐标，不按头像尺寸改动发表规则。
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	# 512px头像缩放到128px时使用线性过滤，保持边缘平滑。
+	# 512px头像缩放到64px时使用线性过滤，保持边缘平滑。
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	queue_redraw()
 
@@ -219,7 +219,7 @@ func set_unit_layer_visible(visible: bool) -> void:
 
 
 func set_density_profile(_profile: String) -> void:
-	# PB-16 统一头像直径128px，密度档不改变头像尺寸；保留兼容入口。
+	# PB-19统一头像直径64px，密度档不改变头像尺寸；保留兼容入口。
 	pass
 
 
@@ -323,18 +323,18 @@ func _draw_unit(snapshot: Dictionary) -> void:
 	var is_hovered := unit_id == _hovered_unit_id
 
 	if is_selected or is_hovered:
-		draw_circle(center, radius + 8.0, Color(tint.r, tint.g, tint.b, 0.22))
+		draw_circle(center, radius + 4.0, Color(tint.r, tint.g, tint.b, 0.22))
 	var sprite_id := _sprite_id_for(snapshot, team)
 	var token_texture: Texture2D = _unit_sprite_textures.get(sprite_id) as Texture2D
 	if token_texture != null:
 		draw_texture_rect(token_texture, Rect2(center - Vector2.ONE * radius, Vector2.ONE * radius * 2.0), false)
 	else:
-		draw_circle(center, radius + 2.0, Color("#07121b"))
+		draw_circle(center, radius + 1.0, Color("#07121b"))
 		draw_circle(center, radius, tint)
-	draw_arc(center, radius + 2.5, 0.0, TAU, 20, tint, 2.5, true)
+	draw_arc(center, radius + 1.25, 0.0, TAU, 20, tint, 1.5, true)
 	var attribute_color := _battle_type_color(str(snapshot.get("battle_type", "")))
 	var badge_center := center + Vector2(radius * 0.68, radius * 0.68)
-	var badge_size := maxf(8.0, radius * 0.17)
+	var badge_size := maxf(4.0, radius * 0.17)
 	draw_colored_polygon(PackedVector2Array([
 		badge_center + Vector2(0.0, -badge_size),
 		badge_center + Vector2(badge_size, 0.0),
@@ -347,12 +347,12 @@ func _draw_unit(snapshot: Dictionary) -> void:
 		var age := float(Time.get_ticks_msec() - int(feedback.get("time", 0))) / 1500.0
 		var reason := str(feedback.get("reason", ""))
 		var pulse_color := _feedback_color(reason)
-		draw_arc(center, radius + 12.0 + 8.0 * age, 0.0, TAU, 32, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 2.0, true)
+		draw_arc(center, radius + 6.0 + 4.0 * age, 0.0, TAU, 32, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 1.5, true)
 		if reason == "split":
-			draw_arc(center, radius + 4.0 + 5.0 * age, 0.0, TAU, 24, Color(pulse_color.r, pulse_color.g, pulse_color.b, 0.85 * (1.0 - age)), 1.5, true)
+			draw_arc(center, radius + 2.0 + 2.5 * age, 0.0, TAU, 24, Color(pulse_color.r, pulse_color.g, pulse_color.b, 0.85 * (1.0 - age)), 1.0, true)
 		elif reason == "reflect":
-			draw_arc(center, radius + 7.0, -PI * 0.8, -PI * 0.2, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 3.0, true)
-			draw_arc(center, radius + 7.0, PI * 0.2, PI * 0.8, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 3.0, true)
+			draw_arc(center, radius + 3.5, -PI * 0.8, -PI * 0.2, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 1.5, true)
+			draw_arc(center, radius + 3.5, PI * 0.2, PI * 0.8, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 1.5, true)
 
 
 func _draw_group_bubbles() -> void:
@@ -552,7 +552,7 @@ func _choose_group_bubble_rect(
 ) -> Rect2:
 	# 空间允许时气泡放在团体上方；顶部拥挤时比较左右与下方，减少遮住头像。
 	var bubble_size := Vector2(bubble_width, bubble_height)
-	var clearance := _unit_visual_radius() + 8.0
+	var clearance := _unit_visual_radius() + 4.0
 	var candidate_positions: Array[Vector2] = [
 		Vector2(center.x - bubble_width * 0.5, group_top_y - bubble_height - clearance),
 		Vector2(center.x - bubble_width - clearance, center.y - bubble_height * 0.5),
@@ -627,8 +627,8 @@ func _draw_group_bubble_tails(
 		if not positions_by_id.has(member_id):
 			continue
 		var target: Vector2 = positions_by_id[member_id]
-		var tail_offset := _unit_visual_radius() + 4.0
-		var half_width := maxf(6.0, _unit_visual_radius() * 0.12)
+		var tail_offset := _unit_visual_radius() + 2.0
+		var half_width := maxf(3.0, _unit_visual_radius() * 0.12)
 		var triangle := PackedVector2Array()
 		if horizontal_tail:
 			var horizontal_spread := bubble_rect.size.y / float(tail_ids.size() + 1)
@@ -645,8 +645,8 @@ func _draw_group_bubble_tails(
 				continue
 			triangle = PackedVector2Array([vertical_root + Vector2(-half_width, 0.0), vertical_root + Vector2(half_width, 0.0), vertical_tip])
 		draw_colored_polygon(triangle, fill_color)
-		draw_line(triangle[0], triangle[2], border_color, 1.6)
-		draw_line(triangle[1], triangle[2], border_color, 1.6)
+		draw_line(triangle[0], triangle[2], border_color, 1.2)
+		draw_line(triangle[1], triangle[2], border_color, 1.2)
 
 
 func _get_group_bubble_style(team: String) -> StyleBoxFlat:
@@ -814,9 +814,9 @@ func _draw_contact_feedback() -> void:
 		var second_point := _display_local_position(str(second.get("unit_id", "")), second)
 		var first_radius := _visual_radius(first)
 		var second_radius := _visual_radius(second)
-		draw_line(first_point, second_point, Color(tint.r, tint.g, tint.b, alpha), 2.5)
-		draw_arc(first_point, first_radius + 8.0 + age * 7.0, 0.0, TAU, 24, Color(tint.r, tint.g, tint.b, alpha), 2.5, true)
-		draw_arc(second_point, second_radius + 8.0 + age * 7.0, 0.0, TAU, 24, Color(tint.r, tint.g, tint.b, alpha), 2.5, true)
+		draw_line(first_point, second_point, Color(tint.r, tint.g, tint.b, alpha), 1.5)
+		draw_arc(first_point, first_radius + 4.0 + age * 3.5, 0.0, TAU, 24, Color(tint.r, tint.g, tint.b, alpha), 1.5, true)
+		draw_arc(second_point, second_radius + 4.0 + age * 3.5, 0.0, TAU, 24, Color(tint.r, tint.g, tint.b, alpha), 1.5, true)
 
 
 func _draw_word_batch_bursts() -> void:
@@ -828,14 +828,14 @@ func _draw_word_batch_bursts() -> void:
 		var team := str(batch.get("team", "player"))
 		var color: Color = TEAM_COLORS.get(team, TEAM_COLORS["player"])
 		var origin := _world_to_local(_vector_from_variant(batch.get("spawn_position", Vector2.ZERO)))
-		draw_arc(origin, _unit_visual_radius() + age * 76.0, 0.0, TAU, 40, Color(color.r, color.g, color.b, alpha * 0.9), 2.4, true)
+		draw_arc(origin, _unit_visual_radius() + age * 38.0, 0.0, TAU, 40, Color(color.r, color.g, color.b, alpha * 0.9), 1.5, true)
 		var unit_ids: Array = batch.get("unit_ids", [])
 		for unit_id in unit_ids:
 			var snapshot := _snapshot_for_id(str(unit_id))
 			if snapshot.is_empty():
 				continue
 			var target := _display_local_position(str(unit_id), snapshot)
-			draw_line(origin.lerp(target, age), target, Color(color.r, color.g, color.b, alpha * 0.75), 1.8)
+			draw_line(origin.lerp(target, age), target, Color(color.r, color.g, color.b, alpha * 0.75), 1.2)
 
 
 func _sprite_id_for(snapshot: Dictionary, team: String) -> String:
@@ -897,7 +897,7 @@ func _arena_rect() -> Rect2:
 
 
 func _visual_radius(_snapshot: Dictionary) -> float:
-	# 显示半径与碰撞半径分离，默认头像直径为128逻辑像素。
+	# 显示半径与碰撞半径分离；PB-19头像直径为64逻辑像素，碰撞半径由B独立维护。
 	return _unit_visual_radius()
 
 
