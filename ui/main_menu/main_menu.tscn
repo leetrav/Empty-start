@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://ui/main_menu/main_menu.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/settings/settings_panel.tscn" id="2"]
@@ -8,10 +8,6 @@
 [ext_resource type="Texture2D" path="res://assets/opening/ui_front_lai.png" id="6"]
 [ext_resource type="Texture2D" path="res://assets/opening/ui_front_shu.png" id="7"]
 [ext_resource type="Script" path="res://ui/main_menu/cover_menu_button.gd" id="8"]
-[ext_resource type="Shader" path="res://ui/main_menu/cover_light.gdshader" id="9"]
-
-[sub_resource type="ShaderMaterial" id="Light"]
-shader = ExtResource("9")
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -88,13 +84,6 @@ offset_bottom = 1080.0
 mouse_filter = 2
 texture = ExtResource("4")
 expand_mode = 1
-
-[node name="Light" type="ColorRect" parent="CoverCanvas"]
-material = SubResource("Light")
-layout_mode = 0
-offset_right = 1920.0
-offset_bottom = 1080.0
-mouse_filter = 2
 
 [node name="MenuActions" type="Control" parent="CoverCanvas"]
 unique_name_in_owner = true
