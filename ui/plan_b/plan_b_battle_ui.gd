@@ -132,6 +132,7 @@ var _stage_transition_previous_tier := -1
 var _stage_transition_current_tier := -1
 var _failure_presentation_active := false
 var _feedback_seconds := 0.0
+var _field_event_text := ""
 var _counterattack_seconds := 0.0
 var _portrait_attack: AttackChargeInput
 var _last_player_echo := ""
@@ -150,8 +151,6 @@ var _pk_value_label: Label
 var _tier_value_label: Label
 var _pk_bar: ProgressBar
 var _counts_label: Label
-var _population_ribbon: Control
-var _event_label: Label
 var _paradox_stage_label: Label
 var _word_hand_panel: Control
 var _paradox_footer: Control
@@ -185,8 +184,10 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_feedback_seconds = maxf(0.0, _feedback_seconds - delta)
-	if _feedback_seconds <= 0.0 and _event_label != null:
-		_event_label.modulate.a = 0.0
+	# 事件倒计时结束后恢复手牌状态，不在棋盘绘制层覆盖头像。
+	if _feedback_seconds <= 0.0 and not _field_event_text.is_empty():
+		_field_event_text = ""
+		_update_status_view()
 	_counterattack_seconds = maxf(0.0, _counterattack_seconds - delta)
 	if _counterattack_seconds <= 0.0 and _counterattack_label != null:
 		_counterattack_label.visible = false
@@ -681,7 +682,7 @@ func _refresh_special_stage_layout() -> void:
 	_word_hand_panel.visible = not special_stage_active
 	_paradox_footer.visible = show_paradox_layer
 	_oracle_footer.visible = _final_oracle_stage_active
-	_population_ribbon.visible = not special_stage_active
+	_counts_label.visible = not special_stage_active
 	_paradox_stage_label.visible = show_paradox_layer
 	_aim_reticle.visible = show_paradox_layer
 	if special_stage_active:
@@ -917,11 +918,12 @@ func _finish_tier_breakthrough() -> void:
 
 
 func _show_field_event(message: String, seconds: float = 2.2) -> void:
-	if _event_label == null:
+	# 短时战场提示复用底部状态行，棋盘面保持清晰。
+	if _hand_status_label == null:
 		return
-	_event_label.text = message
-	_event_label.modulate.a = 1.0
+	_field_event_text = message
 	_feedback_seconds = maxf(seconds, 0.1)
+	_update_status_view()
 
 func _build_view() -> void:
 	# 逻辑画布按 448 / 1024 / 448 固定切分；主播信息留在两侧，操作集中在中间。
@@ -1007,9 +1009,12 @@ func _build_pk_bar(parent: Container) -> void:
 	_pk_value_label = _label("50% · 玩家 PK", 17, COLOR_TEXT)
 	_pk_value_label.custom_minimum_size.x = 144.0
 	heading.add_child(_pk_value_label)
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	heading.add_child(spacer)
+	# 人口统计放进既有72px顶部栏，棋盘绘制区域从第一颗头像开始保持清晰。
+	_counts_label = _label("煲煲 0 · 中立 0 · 费米 0 · 合计 0 / 96", 13, COLOR_MUTED)
+	_counts_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_counts_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_counts_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	heading.add_child(_counts_label)
 	_tier_value_label = _label("T0", 18, Color("#ffd59b"))
 	_tier_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	heading.add_child(_tier_value_label)
@@ -1063,23 +1068,6 @@ func _build_field(parent: Container) -> void:
 	_board_overlay.z_index = 10
 	field_host.add_child(_board_overlay)
 
-	var ribbon := PanelContainer.new()
-	ribbon.name = "PopulationRibbon"
-	ribbon.anchor_left = 0.0
-	ribbon.anchor_right = 1.0
-	ribbon.offset_left = 14.0
-	ribbon.offset_top = 10.0
-	ribbon.offset_right = -14.0
-	ribbon.offset_bottom = 48.0
-	ribbon.add_theme_stylebox_override("panel", _panel_style(Color(0.04, 0.10, 0.14, 0.90), Color("#2b4652"), 10))
-	ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_population_ribbon = ribbon
-	_board_overlay.add_child(_population_ribbon)
-	_counts_label = _label("煲煲 0    ·    中立 0    ·    费米 0", 16, COLOR_TEXT)
-	_counts_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_counts_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	ribbon.add_child(_counts_label)
-
 	_counterattack_label = _label("", 17, Color("#ffe096"))
 	_counterattack_label.anchor_left = 0.18
 	_counterattack_label.anchor_right = 0.82
@@ -1102,21 +1090,6 @@ func _build_field(parent: Container) -> void:
 	_paradox_stage_label.add_theme_constant_override("outline_size", 5)
 	_paradox_stage_label.visible = false
 	_board_overlay.add_child(_paradox_stage_label)
-
-	_event_label = _label("", 14, Color("#f1f7f8"))
-	_event_label.anchor_left = 0.12
-	_event_label.anchor_right = 0.88
-	_event_label.anchor_top = 1.0
-	_event_label.anchor_bottom = 1.0
-	_event_label.offset_top = -56.0
-	_event_label.offset_bottom = -14.0
-	_event_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_event_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_event_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_event_label.add_theme_color_override("font_outline_color", Color("#071018"))
-	_event_label.add_theme_constant_override("outline_size", 5)
-	_event_label.modulate.a = 0.0
-	_board_overlay.add_child(_event_label)
 
 	_stage_arrow = StageArrowScript.new()
 	_stage_arrow.name = "StageArrowFx"
@@ -1673,11 +1646,14 @@ func _update_status_view() -> void:
 			tint = Color("#ff9c83")
 		"warning":
 			tint = Color("#ffd38e")
+	if not _status_text.is_empty() and _status_kind != "info":
+		next_text = _status_text
+	if not _field_event_text.is_empty() and _feedback_seconds > 0.0:
+		next_text = _field_event_text
+		tint = Color("#e6f2f5")
 	if tint != _last_hand_status_tint:
 		_hand_status_label.add_theme_color_override("font_color", tint)
 		_last_hand_status_tint = tint
-	if not _status_text.is_empty() and _status_kind != "info":
-		next_text = _status_text
 	if _hand_status_label.text != next_text:
 		_hand_status_label.text = next_text
 

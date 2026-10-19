@@ -12,17 +12,16 @@ const TEAM_COLORS := {
 	"opponent": Color("#ff9f68"),
 }
 const UNIT_VISUAL_RADIUS: float = 64.0
-const UNIT_VISUAL_CLIP_MARGIN: float = 20.0
 const GROUP_BUBBLE_WIDTH_SINGLE: float = 100.0
 const GROUP_BUBBLE_WIDTH_TWO: float = 150.0
 const GROUP_BUBBLE_WIDTH_EIGHT: float = 500.0
 
 var world_bounds := Rect2(Vector2.ZERO, Vector2(900.0, 490.0))
-var density_profile := "clear"
 
 var _snapshots: Array = []
 var _performance_tracker: Node
 var _snapshots_by_id: Dictionary = {}
+var _frame_unit_centers: Dictionary = {}
 var _word_texts: Dictionary = {}
 var _unit_sprite_textures: Dictionary = {}
 var _active_opponent_sprite_id := "alien"
@@ -97,7 +96,7 @@ func set_unit_snapshots(snapshots: Array) -> void:
 			continue
 		_snapshots.append(snapshot)
 		_snapshots_by_id[unit_id] = snapshot
-		next_points[unit_id] = _clamp_visual_local_position(_world_to_local(_unit_position(snapshot)))
+		next_points[unit_id] = _world_to_local(_unit_position(snapshot))
 		if _previous_points.has(unit_id):
 			var previous: Vector2 = _previous_points[unit_id]
 			var current: Vector2 = next_points[unit_id]
@@ -219,9 +218,9 @@ func set_unit_layer_visible(visible: bool) -> void:
 	queue_redraw()
 
 
-func set_density_profile(profile: String) -> void:
-	density_profile = "compact" if profile == "compact" else "clear"
-	queue_redraw()
+func set_density_profile(_profile: String) -> void:
+	# PB-16 统一头像直径128px，密度档不改变头像尺寸；保留兼容入口。
+	pass
 
 
 func show_unit_feedback(unit_id: String, reason: String) -> void:
@@ -298,6 +297,8 @@ func _draw() -> void:
 	_draw_word_batch_bursts()
 
 	var unit_draw_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
+	# 复用当前帧的头像中心，供共享气泡选择较少遮挡的位置。
+	_frame_unit_centers.clear()
 	for snapshot in _snapshots:
 		_draw_unit(snapshot)
 	if _performance_tracker != null:
@@ -312,6 +313,9 @@ func _draw_unit(snapshot: Dictionary) -> void:
 	var unit_id := str(snapshot.get("unit_id", ""))
 	var team := str(snapshot.get("team", "neutral"))
 	var center := _display_local_position(unit_id, snapshot)
+	# 与实际绘制共用同一中心，气泡避让判断不引入第二套头像坐标。
+	if not unit_id.is_empty():
+		_frame_unit_centers[unit_id] = center
 	var tint: Color = TEAM_COLORS.get(team, TEAM_COLORS["neutral"])
 	var radius := _visual_radius(snapshot)
 	var is_neutral := team == "neutral"
@@ -368,6 +372,7 @@ func _draw_group_bubbles() -> void:
 	var position_member_max: int = 0
 	var position_entry_total: int = 0
 	var position_entry_max: int = 0
+	var placed_bubble_rects: Array[Rect2] = []
 	# 每帧只取可见团体成员的当前显示位置；文本测量和尾巴成员选择由布局缓存复用。
 	if not _unit_layer_visible or _active_group_bubble_ids.is_empty():
 		_last_drawn_group_bubbles = 0
@@ -427,14 +432,12 @@ func _draw_group_bubbles() -> void:
 		center /= float(positions_by_id.size())
 		var bubble_width := float(layout.get("width", 100.0))
 		var bubble_height := float(layout.get("height", 48.0))
-		var bubble_clearance := _unit_visual_radius() + 8.0
-		var bubble_rect := Rect2(Vector2(center.x - bubble_width * 0.5, group_top_y - bubble_height - bubble_clearance), Vector2(bubble_width, bubble_height))
-		if bubble_rect.position.y < 8.0:
-			bubble_rect.position.y = group_bottom_y + bubble_clearance
-		bubble_rect.position.x = clampf(bubble_rect.position.x, 8.0, maxf(8.0, size.x - bubble_width - 8.0))
-		bubble_rect.position.y = clampf(bubble_rect.position.y, 8.0, maxf(8.0, size.y - bubble_height - 8.0))
+		var bubble_rect := _choose_group_bubble_rect(
+			center, group_top_y, group_bottom_y, bubble_width, bubble_height, member_ids, placed_bubble_rects
+		)
+		placed_bubble_rects.append(bubble_rect)
 		var style: StyleBoxFlat = _get_group_bubble_style(str(group.get("team", "player")))
-		_draw_group_bubble_tails(bubble_rect, layout, positions_by_id, style.bg_color, style.border_color, center.y)
+		_draw_group_bubble_tails(bubble_rect, layout, positions_by_id, style.bg_color, style.border_color, center)
 		draw_style_box(style, bubble_rect)
 		var font: Font = get_theme_default_font()
 		if font == null:
@@ -538,32 +541,109 @@ func _choose_tail_member_ids(group: Dictionary, member_ids: Array) -> Array:
 	return selected
 
 
+func _choose_group_bubble_rect(
+	center: Vector2,
+	group_top_y: float,
+	group_bottom_y: float,
+	bubble_width: float,
+	bubble_height: float,
+	member_ids: Array,
+	placed_bubble_rects: Array[Rect2]
+) -> Rect2:
+	# 空间允许时气泡放在团体上方；顶部拥挤时比较左右与下方，减少遮住头像。
+	var bubble_size := Vector2(bubble_width, bubble_height)
+	var clearance := _unit_visual_radius() + 8.0
+	var candidate_positions: Array[Vector2] = [
+		Vector2(center.x - bubble_width * 0.5, group_top_y - bubble_height - clearance),
+		Vector2(center.x - bubble_width - clearance, center.y - bubble_height * 0.5),
+		Vector2(center.x + clearance, center.y - bubble_height * 0.5),
+		Vector2(center.x - bubble_width * 0.5, group_bottom_y + clearance),
+	]
+	var best_rect := Rect2(Vector2.ZERO, bubble_size)
+	var best_score := 2147483647
+	for candidate_position in candidate_positions:
+		var candidate := Rect2(candidate_position, bubble_size)
+		candidate.position.x = clampf(candidate.position.x, 8.0, maxf(8.0, size.x - bubble_width - 8.0))
+		candidate.position.y = clampf(candidate.position.y, 8.0, maxf(8.0, size.y - bubble_height - 8.0))
+		var overlap_score := _group_bubble_overlap_score(candidate, member_ids, placed_bubble_rects, best_score)
+		if overlap_score < best_score:
+			best_rect = candidate
+			best_score = overlap_score
+		if best_score == 0:
+			break
+	return best_rect
+
+
+func _group_bubble_overlap_score(
+	bubble_rect: Rect2,
+	member_ids: Array,
+	placed_bubble_rects: Array[Rect2],
+	stop_at_score: int
+) -> int:
+	var member_lookup: Dictionary = {}
+	for member_id in member_ids:
+		member_lookup[str(member_id)] = true
+	var score := 0
+	var avatar_radius_squared := _unit_visual_radius() * _unit_visual_radius()
+	for unit_id_value in _frame_unit_centers.keys():
+		var unit_id := str(unit_id_value)
+		var unit_center: Vector2 = _frame_unit_centers[unit_id_value]
+		var nearest_point := Vector2(
+			clampf(unit_center.x, bubble_rect.position.x, bubble_rect.end.x),
+			clampf(unit_center.y, bubble_rect.position.y, bubble_rect.end.y)
+		)
+		if unit_center.distance_squared_to(nearest_point) < avatar_radius_squared:
+			score += 3 if member_lookup.has(unit_id) else 1
+			if score >= stop_at_score:
+				return score
+	for placed_rect in placed_bubble_rects:
+		if _bubble_rects_overlap(bubble_rect, placed_rect):
+			score += 6
+			if score >= stop_at_score:
+				return score
+	return score
+
+
+func _bubble_rects_overlap(first: Rect2, second: Rect2) -> bool:
+	return first.position.x < second.end.x and first.end.x > second.position.x and first.position.y < second.end.y and first.end.y > second.position.y
+
+
 func _draw_group_bubble_tails(
 	bubble_rect: Rect2,
 	layout: Dictionary,
 	positions_by_id: Dictionary,
 	fill_color: Color,
 	border_color: Color,
-	group_center_y: float
+	group_center: Vector2
 ) -> void:
 	var tail_ids: Array = layout.get("tail_ids", [])
 	if tail_ids.is_empty():
 		return
-	var point_down := bubble_rect.get_center().y < group_center_y
+	var horizontal_tail := group_center.x < bubble_rect.position.x or group_center.x > bubble_rect.end.x
+	var point_right := bubble_rect.get_center().x < group_center.x
+	var point_down := bubble_rect.get_center().y < group_center.y
 	for tail_index in tail_ids.size():
 		var member_id := str(tail_ids[tail_index])
 		if not positions_by_id.has(member_id):
 			continue
 		var target: Vector2 = positions_by_id[member_id]
-		var spread := bubble_rect.size.x / float(tail_ids.size() + 1)
-		var root := Vector2(bubble_rect.position.x + spread * float(tail_index + 1), bubble_rect.end.y if point_down else bubble_rect.position.y)
 		var tail_offset := _unit_visual_radius() + 4.0
-		var target_tip := target + (Vector2(0.0, -tail_offset) if point_down else Vector2(0.0, tail_offset))
 		var half_width := maxf(6.0, _unit_visual_radius() * 0.12)
-		# 目标点与水平底边重合时三角形面积为零，跳过以避免多边形三角化失败。
-		if absf(target_tip.y - root.y) <= 0.001:
-			continue
-		var triangle := PackedVector2Array([root + Vector2(-half_width, 0.0), root + Vector2(half_width, 0.0), target_tip])
+		var triangle := PackedVector2Array()
+		if horizontal_tail:
+			var horizontal_spread := bubble_rect.size.y / float(tail_ids.size() + 1)
+			var horizontal_root := Vector2(bubble_rect.end.x if point_right else bubble_rect.position.x, bubble_rect.position.y + horizontal_spread * float(tail_index + 1))
+			var horizontal_tip := target + Vector2(-tail_offset if point_right else tail_offset, 0.0)
+			if absf(horizontal_tip.x - horizontal_root.x) <= 0.001:
+				continue
+			triangle = PackedVector2Array([horizontal_root + Vector2(0.0, -half_width), horizontal_root + Vector2(0.0, half_width), horizontal_tip])
+		else:
+			var vertical_spread := bubble_rect.size.x / float(tail_ids.size() + 1)
+			var vertical_root := Vector2(bubble_rect.position.x + vertical_spread * float(tail_index + 1), bubble_rect.end.y if point_down else bubble_rect.position.y)
+			var vertical_tip := target + (Vector2(0.0, -tail_offset) if point_down else Vector2(0.0, tail_offset))
+			if absf(vertical_tip.y - vertical_root.y) <= 0.001:
+				continue
+			triangle = PackedVector2Array([vertical_root + Vector2(-half_width, 0.0), vertical_root + Vector2(half_width, 0.0), vertical_tip])
 		draw_colored_polygon(triangle, fill_color)
 		draw_line(triangle[0], triangle[2], border_color, 1.6)
 		draw_line(triangle[1], triangle[2], border_color, 1.6)
@@ -663,11 +743,11 @@ func _group_member_positions(group: Dictionary, member_ids: Array) -> Dictionary
 				previous_position = position
 			if current_position.is_zero_approx():
 				current_position = position
-			positions[member_id] = _clamp_visual_local_position(_world_to_local(previous_position.lerp(current_position, _render_interpolation_fraction)))
+			positions[member_id] = _world_to_local(previous_position.lerp(current_position, _render_interpolation_fraction))
 	if positions.is_empty():
 		var center: Vector2 = _position_value(group.get("center_position", Vector2.ZERO))
 		if not center.is_zero_approx():
-			positions["__center__"] = _clamp_visual_local_position(_world_to_local(center))
+			positions["__center__"] = _world_to_local(center)
 	return positions
 
 
@@ -822,7 +902,7 @@ func _visual_radius(_snapshot: Dictionary) -> float:
 
 
 func _unit_visual_radius() -> float:
-	return UNIT_VISUAL_RADIUS * 0.82 if density_profile == "compact" else UNIT_VISUAL_RADIUS
+	return UNIT_VISUAL_RADIUS
 
 
 func _world_to_local(world_position: Vector2) -> Vector2:
@@ -854,19 +934,8 @@ func _display_local_position(unit_id: String, snapshot: Dictionary) -> Vector2:
 		var previous := _physics_position_for_unit(unit_id, true)
 		if previous.is_zero_approx():
 			previous = current
-		return _clamp_visual_local_position(_world_to_local(previous.lerp(current, _render_interpolation_fraction)))
-	return _clamp_visual_local_position(_world_to_local(_unit_position(snapshot)))
-
-
-func _clamp_visual_local_position(position: Vector2) -> Vector2:
-	# 放大头像和外圈后只移动显示中心，模拟和发表仍使用真实位置。
-	var arena := _arena_rect()
-	var safe_inset := _unit_visual_radius() + UNIT_VISUAL_CLIP_MARGIN
-	var minimum := arena.position + Vector2.ONE * safe_inset
-	var maximum := arena.end - Vector2.ONE * safe_inset
-	if maximum.x < minimum.x or maximum.y < minimum.y:
-		return arena.get_center()
-	return position.clamp(minimum, maximum)
+		return _world_to_local(previous.lerp(current, _render_interpolation_fraction))
+	return _world_to_local(_unit_position(snapshot))
 
 
 func _actual_local_position(unit_id: String, snapshot: Dictionary) -> Vector2:
