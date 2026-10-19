@@ -511,3 +511,9 @@ Headless 测试只能证明其覆盖到的逻辑。
 - 将《街》music_comic_street、1.5秒淡入、Music Bus设置、暂停及退出淡出重新接到动效播放器；后两幕起点与分镜自动计时共用_frame_duration，包含延迟气泡阅读时间，取代上一轮旧版33.4秒起点。动态版完整配置时长67.9秒，快进会缩短实际观看时间。
 - 保留上游INT-18D的AudioManager.play_event_player事实接口；恢复本地动效版“仅文字增长时打字”规则，comic_write=-10dB、comic_page=-6dB写入17表与兼容Resource，避免正式播放接口覆盖局部音量。其他UI音效/四Boss事件不变。
 - 动效/气泡沿用原版占位内容，尚未宣称正式剧情台词定稿。原工作区及用户真实存档/观看记录不修改，本轮仅当前feature/bgm-integration分支。
+## 2026-10-19 费米首档取消对白结束自动换段
+- 用户截图显示PK58%/Tier1，指出开场到下一段衔接不对，期望升档才变换BGM。旧实现并非按固定时间切换，而是finish_connection_dialogue后按下一小节从intro换T1 low；这条对白结束例外与本轮用户要求不符。
+- Fermi Profile启用hold_intro_until_tier_change；默认false，其他三Boss沿用既有对白接低段。Presenter在对白结束且仍为首档组时保持引子，只有后续真实跨音乐组请求才解除；不会用计时器或曲目播放完毕触发换段。对白结束前已经跨档时直接按最新Tier放行。
+- 费米正常流程：T0静音；T1连线/对白及对白后均保持teek_intro；到T2/T3用mid，T4/T5用high。100%击破与暂停/失败规则保持；从中高段稳定降回T1仍用low。F3从静音直接跳T1仍按战斗映射low试听，不冒充正常连线流程。
+- start_battle/T0清除保持；真实跨组时解除一次性保持，避免后续降档被旧首档保持卡住。没有重剪、重编码素材或修改PK/Tier阈值。原5191c59首档对白结束接low的行为由本轮要求替代。
+- 更新au03_runtime_smoke为对白完成后真实等待20秒（超过19.2秒片段一整轮）仍是intro，再请求T2检查顺序淡变；四Boss真实场景检查按Profile分别验首档规则，保留升档、降档、F3、暂停、重开、击破和失败回归。

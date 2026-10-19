@@ -98,7 +98,8 @@ func _run() -> void:
 			remaining -= 0.2
 		_check(_dialogue_completed, id + " 真实对白完成")
 		await create_timer(profile.bar_seconds() + 0.8).timeout
-		_check(audio.get_music_event_id() == profile.event_ids[1], id + " 白结束后低段")
+		var after_dialogue: int = 0 if profile.hold_intro_until_tier_change else 1
+		_check(audio.get_music_event_id() == profile.event_ids[after_dialogue], id + " 对白结束按配置保持引子/切低段")
 		scene.debug_set_player_pk(0.66)
 		await create_timer(profile.bar_seconds() + 0.8).timeout
 		_check(audio.get_music_event_id() == profile.event_ids[2], id + " F3到中段")

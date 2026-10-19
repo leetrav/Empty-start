@@ -9,6 +9,7 @@ var _host: Node
 var _active: bool = false
 var _paused: bool = false
 var _opening_active: bool = false
+var _intro_hold_group: int = -1
 var _group: int = -1
 var _target: int = -1
 var _lower_elapsed: float = 0.0
@@ -40,6 +41,7 @@ func start_battle(tier: int = 0) -> void:
 	_active = true
 	_paused = false
 	_opening_active = false
+	_intro_hold_group = -1
 	_group = -1
 	_target = profile.group_for_tier(tier)
 	_lower_elapsed = 0.0
@@ -60,6 +62,7 @@ func request_tier(tier: int) -> void:
 		_group = -1
 		_target = target
 		_opening_active = false
+		_intro_hold_group = -1
 		_lower_elapsed = 0.0
 		_boundary_remaining = -1.0
 		if owned:
@@ -69,6 +72,9 @@ func request_tier(tier: int) -> void:
 		# 对白结束前只更新后续战斗目标，不让Tier覆盖柔和引子。
 		_target = target
 		return
+	# 开场对白完成本身不换段；首档实际跨组后解除保持，后续降档照常。
+	if _intro_hold_group >= 0 and target != _intro_hold_group:
+		_intro_hold_group = -1
 	if _group < 0:
 		_target = target
 		_play_group(target, 0.0, true)
@@ -112,6 +118,8 @@ func finish_connection_dialogue() -> void:
 	_opening_active = false
 	if _target == 0:
 		_target = profile.group_for_tier(1)
+	if profile.hold_intro_until_tier_change and _target == profile.group_for_tier(1):
+		_intro_hold_group = _target
 	_boundary_remaining = -1.0
 	_last_position = AudioManager.get_music_position()
 
@@ -155,7 +163,7 @@ func _process(delta: float) -> void:
 		audio_delta += AudioManager.get_music_length() - AudioManager.get_music_loop_offset()
 	audio_delta = maxf(audio_delta, 0.0)
 	_last_position = position
-	if _opening_active or _target == _group:
+	if _opening_active or _intro_hold_group >= 0 or _target == _group:
 		return
 	if _target < _group:
 		_lower_elapsed += delta

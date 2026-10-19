@@ -36,8 +36,8 @@ func _run() -> void:
 		remaining -= 0.2
 	assert(_connected_complete, "真实连线对白应完成")
 	await create_timer(2.8).timeout
-	assert(audio.get_music_event_id() == &"music_alien_low")
-	print("PASS 费米T1连线后切入战斗低段")
+	assert(audio.get_music_event_id() == &"music_alien_intro")
+	print("PASS 费米T1对白结束后继续引子，等待真实升档")
 	scene.debug_set_player_pk(0.66)
 	await create_timer(2.8).timeout
 	assert(audio.get_music_event_id() == &"music_alien_mid")

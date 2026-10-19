@@ -178,3 +178,9 @@ AudioManager.get_music_loop_offset()返回当前OGG循环起点（非OGG或不�
 - Boot原有规则不改：settings.cfg的story/opening_intro_v2_seen为true则启动进菜单；首次自动开场完成或Esc跳过会记录已看过。无需删除真实用户设置或存档即可从菜单完整重看。
 - 新增assets/audio/music/opening/street.ogg及原生loop=false导入，来自用户本地《街》MP3，完整转Vorbis；17表现91行/41有资源（含表头则92），Resource兼容事件同步，音乐说明/游戏内署名补《街》。其他场景与Boss音乐不改。
 - au03_opening_check.gd经隔离APPDATA运行真实菜单按钮，三路分镜数19/13/6、曲目/后半进度、暂停恢复、完成返回菜单与淡出、回看不写观看事实、Boot首次自动开场及Esc后再次启动跳过均通过：OPENING_STREET_INTEGRATION_PASS。音乐听感仍待用户确认。
+## 2026-10-19 费米首档取消对白结束自动换段
+- 用户截图显示PK58%/Tier1，指出开场到下一段衔接不对，期望升档才变换BGM。旧实现并非按固定时间切换，而是finish_connection_dialogue后按下一小节从intro换T1 low；这条对白结束例外与本轮用户要求不符。
+- Fermi Profile启用hold_intro_until_tier_change；默认false，其他三Boss沿用既有对白接低段。Presenter在对白结束且仍为首档组时保持引子，只有后续真实跨音乐组请求才解除；不会用计时器或曲目播放完毕触发换段。对白结束前已经跨档时直接按最新Tier放行。
+- 费米正常流程：T0静音；T1连线/对白及对白后均保持teek_intro；到T2/T3用mid，T4/T5用high。100%击破与暂停/失败规则保持；从中高段稳定降回T1仍用low。F3从静音直接跳T1仍按战斗映射low试听，不冒充正常连线流程。
+- start_battle/T0清除保持；真实跨组时解除一次性保持，避免后续降档被旧首档保持卡住。没有重剪、重编码素材或修改PK/Tier阈值。原5191c59首档对白结束接low的行为由本轮要求替代。
+- 更新au03_runtime_smoke为对白完成后真实等待20秒（超过19.2秒片段一整轮）仍是intro，再请求T2检查顺序淡变；四Boss真实场景检查按Profile分别验首档规则，保留升档、降档、F3、暂停、重开、击破和失败回归。

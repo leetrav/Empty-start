@@ -8,6 +8,7 @@ streamer_id = &"alien"
 event_ids = Array[StringName]([&"music_alien_intro", &"music_alien_low", &"music_alien_mid", &"music_alien_high"])
 tier_groups = Array[int]([0, 1, 2, 2, 3, 3])
 intro_fade_seconds = 2.4
+hold_intro_until_tier_change = true
 bpm = 100.0
 beats_per_bar = 4
 downgrade_hold_seconds = 2.0
