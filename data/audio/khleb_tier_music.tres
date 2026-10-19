@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="TierMusicProfile" load_steps=2 format=3]
+[ext_resource type="Script" path="res://core/audio/tier_music_profile.gd" id="1"]
+[resource]
+script = ExtResource("1")
+streamer_id = &"fox"
+event_ids = Array[StringName]([&"music_fox_intro", &"music_fox_low", &"music_fox_mid", &"music_fox_high"])
+tier_groups = Array[int]([0, 1, 2, 2, 3, 3])
+hold_intro_through_first_tier = true
+intro_fade_seconds = 0.25
+bpm = 129.13933333333333
+beats_per_bar = 4
+downgrade_hold_seconds = 2.0
+cross_fade_seconds = 0.6
+overlap_battle = false
+entrance_event_id = &"music_fox_entrance"
+entrance_fade_seconds = 0.25

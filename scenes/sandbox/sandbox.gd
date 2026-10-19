@@ -16,9 +16,18 @@ const SPECIFIC_SENTENCE_REPLY_PRESENTER_SCRIPT: Script = preload("res://ui/strea
 const COMBAT_STATE_DIALOGUE_PRESENTER_SCRIPT: Script = preload("res://ui/streamer_bubble_dialogue/streamer_bubble_combat_state_presenter.gd")
 const TIMED_OPPONENT_DIALOGUE_PRESENTER_SCRIPT: Script = preload("res://ui/streamer_bubble_dialogue/streamer_bubble_timed_opponent_dialogue_presenter.gd")
 const REST_RESULT_VIEW_SCENE: PackedScene = preload("res://ui/rest/rest_result_view.tscn")
+const TUTORIAL_HINT_SCENE: PackedScene = preload("res://ui/tutorial/tutorial_hint_view.tscn")
 const BARRAGE_IMPACT_SCRIPT: Script = preload("res://systems/presentation/barrage_impact_presenter.gd")
 const PA09_FEEDBACK_SCRIPT: Script = preload("res://systems/presentation/combat_hit_feedback.gd")
+const BATTLE_AUDIO_SCRIPT: Script = preload("res://core/audio/battle_audio_presenter.gd")
 const PARADOX_COMIC_SCENE: PackedScene = preload("res://systems/presentation/paradox_comic_transition.tscn")
+const PLAN_B_BATTLE_UI_SCENE: PackedScene = preload("res://ui/plan_b/plan_b_battle_ui.tscn")
+const CB17_PARADOX_PRESENTATION_SCENE: PackedScene = preload("res://systems/contradiction_break/contradiction_barrage_presentation.tscn")
+const PLAN_B_HOST_SCRIPT: Script = preload("res://systems/plan_b/battle/plan_b_battle_host.gd")
+const PLAN_B_SIMULATION_SCRIPT: Script = preload("res://systems/plan_b/simulation/plan_b_unit_simulation.gd")
+const PB14_PERFORMANCE_TRACKER_SCRIPT: Script = preload("res://systems/plan_b/performance/pb14_performance_tracker.gd")
+const PLAN_B_CONTENT_CATALOG_SCRIPT: Script = preload("res://systems/plan_b/content/plan_b_content_catalog.gd")
+const PLAN_B_OPPONENT_DIRECTOR_SCRIPT: Script = preload("res://systems/plan_b/opponent/fermi_opponent_director.gd")
 # 关卡资料统一由目录提供，运行验证可注入独立临时目录。
 @export var level_catalog: LevelCatalog = preload("res://data/level_configuration/level_catalog.tres")
 @export var battle_config: SandboxBattleConfig = preload("res://data/sandbox/playable_battle_config.tres")
@@ -34,6 +43,8 @@ const PARADOX_COMIC_SCENE: PackedScene = preload("res://systems/presentation/par
 @export var divine_input_scale: float = 0.0
 @export var divine_input_return_seconds: float = 0.0
 @export var divine_trait_colors: Dictionary = {}
+## 正式 SceneRouter 路径启用 Plan B；独立 Sandbox 调试场景保留旧普通战斗夹具。
+@export var use_plan_b_campaign: bool = false
 ## 对手胜负热度映射尚待负责人批准，仅供明确启用的独立试玩预览。
 @export var opponent_reaction_preview_enabled: bool = false
 
@@ -41,20 +52,32 @@ const PARADOX_COMIC_SCENE: PackedScene = preload("res://systems/presentation/par
 @onready var _aim_reticle: AimReticle = %AimReticle
 @onready var _attack_charge_input: AttackChargeInput = %AttackChargeInput
 @onready var _oracle_candidate_display: FinalOracleCandidateDisplay = %OracleCandidateDisplay
-@onready var _battle_hud = %BattleHud
+@onready var _legacy_battle_hud: Control = %BattleHud
 @onready var _debug_panel: CanvasLayer = %DebugPanel
 
 var _run_state: LevelRunState
 var _battle_attempt_flow: BattleAttemptFlow
+var _battle_hud
+var _cb17_paradox_presentation: Control
+var _plan_b_host: PlanBBattleHost
+var _plan_b_simulation: Node2D
+var _plan_b_content_catalog: Object
+var _plan_b_opponent_director: Object
+var _pb14_performance_tracker: Node
+var _plan_b_level_ready: bool = false
+var _plan_b_slot_state_sync_elapsed: float = 0.0
 var _rest_session: RestSession
 var _rest_result_view: RestResultView
+var _ending_music: EndingMusicPresenter
 var _contradiction_oracle_flow: ContradictionOracleFlow
 var _divine_descent_flow: DivineDescentFlow
 var _hit_echo_presenter: Node
+var _battle_audio: Node
 var _barrage_impact_presenter: BarrageImpactPresenter
 var _pa09_feedback: Control
 var _combat_state_dialogue_presenter: Node
 var _timed_opponent_dialogue_presenter: Node
+var _specific_sentence_reply_presenter: Node
 # 仅跟踪 PA-11 连线演出后的对白呈现，战斗状态仍由 Flow 拥有。
 var _pa11_connection_dialogue_active: bool = false
 var _paradox_comic: ParadoxComicTransition
@@ -64,11 +87,15 @@ var _paradox_entry_repeat_stats: RepeatGenerationStats
 var _pending_oracle_session: FinalOracleSession
 var _pending_rest_session: RestSession
 var _result_feedback_active: bool = false
+var _battle_music: TierMusicPresenter
+# F3直接改PK不产生命中清场/连线对白，音乐不应等待不存在的完成事件。
+var _debug_pk_update_active: bool = false
 var _formal_sheet_consumer
 var _active_dialogue_config: BubbleDialogueConfig
 var _trait_catalog: BarrageTraitCatalog
 var _trait_runtime: BarrageTraitRuntime
 var _tutorial_runner: TutorialStepRunner
+var _tutorial_hint: Control
 var _result_feedback_system: ContradictionBreakSystem
 var _opponent_live: LiveSessionData
 var _mobile_touch: Control
@@ -76,6 +103,12 @@ var _mobile_touch: Control
 
 # 场景只创建生命周期对象并接线；PK、Tier、倾向等状态留在各自所有者。
 func _ready() -> void:
+	if use_plan_b_campaign:
+		if not _initialize_plan_b_battle_ui():
+			push_error("Sandbox: 无法实例化 PB-09 正式界面。")
+			return
+	else:
+		_battle_hud = _legacy_battle_hud
 	_formal_sheet_consumer = FORMAL_SHEET_CONSUMER_SCRIPT.new()
 	_formal_sheet_consumer.register_audio_events(AudioManager)
 	_active_dialogue_config = BubbleDialogueConfig.new()
@@ -83,13 +116,19 @@ func _ready() -> void:
 	# 直接运行场景时等待 Autoload 完成初始化，再创建周目并显式绑定已就绪的子 HUD。
 	if SaveManager.data == null:
 		SaveManager.new_game()
-	%LiveDataHud.bind_live_session(SaveManager.data.live_session)
+	if use_plan_b_campaign:
+		_battle_hud.bind_player_live_session(SaveManager.data.live_session, [])
+	else:
+		%LiveDataHud.bind_live_session(SaveManager.data.live_session)
 	_run_state = LevelRunState.new(level_catalog)
 	# 房间开播使用已保存的下一关，场景重建保留周目进度。
 	if not _run_state.restore_progress(
 			SaveManager.data.next_normal_level_order,
 			SaveManager.data.completed_normal_level_ids):
 		push_error("Campaign: invalid saved level order %d" % SaveManager.data.next_normal_level_order)
+		return
+	if use_plan_b_campaign and not _create_plan_b_runtime():
+		push_error("Sandbox: 无法组合正式 Plan B 战斗模块。")
 		return
 	_contradiction_oracle_flow = ContradictionOracleFlow.new()
 	add_child(_contradiction_oracle_flow)
@@ -106,6 +145,13 @@ func _ready() -> void:
 	add_child(opponent_pk_bar)
 	_barrage_area.barrage_generated.connect(_on_barrage_generated)
 	_attack_charge_input.configure_target_query(_aim_reticle, _barrage_area)
+	_attack_charge_input.shot_snapshot_created.connect(_on_plan_b_paradox_shot_created)
+	if use_plan_b_campaign:
+		_battle_audio = BATTLE_AUDIO_SCRIPT.new()
+		_battle_audio.name = "BattleAudioPresenter"
+		add_child(_battle_audio)
+		_battle_audio.call("bind_sources", _attack_charge_input, _barrage_area)
+		_battle_audio.call("bind_flows", _contradiction_oracle_flow)
 	# PA-06 与 PA-09 只订阅战斗事实，材质播放与数值浮字均不写回结算。
 	_barrage_impact_presenter = BARRAGE_IMPACT_SCRIPT.new() as BarrageImpactPresenter
 	_barrage_impact_presenter.name = "BarrageImpactPresenter"
@@ -122,6 +168,8 @@ func _ready() -> void:
 	_battle_hud.bind_portrait_attack(_attack_charge_input)
 	_rest_result_view = REST_RESULT_VIEW_SCENE.instantiate() as RestResultView
 	add_child(_rest_result_view)
+	_ending_music = EndingMusicPresenter.new()
+	add_child(_ending_music)
 	# 创建时注入一次准心，休息及历史页面统一冻结输入，隐藏时恢复。
 	_rest_result_view.configure_battle_aim(_aim_reticle)
 	_rest_result_view.continue_requested.connect(_on_rest_continue_requested)
@@ -142,18 +190,37 @@ func _ready() -> void:
 	if not _trait_catalog.load_production_tables() or not _trait_runtime.bind(_barrage_area, _trait_catalog):
 		push_error("Sandbox: 无法接入正式特性目录。")
 		return
+	if use_plan_b_campaign:
+		_battle_audio.call("bind_trait_runtime", _trait_runtime)
+	elif _battle_hud.has_method("bind_trait_audio"):
+		_battle_hud.call("bind_trait_audio", _trait_runtime)
 	_battle_attempt_flow.shot_resolved.connect(_trait_runtime.on_shot_resolved)
 	_tutorial_runner = TutorialStepRunner.new()
 	_tutorial_runner.step_completed.connect(_on_tutorial_step_completed)
 	_battle_attempt_flow.shot_resolved.connect(_tutorial_runner.on_shot_resolved)
-	_battle_hud.bind_tutorial_runner(_tutorial_runner)
-	_battle_hud.bind_audio_flows(_contradiction_oracle_flow)
+	if use_plan_b_campaign:
+		_tutorial_hint = TUTORIAL_HINT_SCENE.instantiate() as Control
+		_tutorial_hint.name = "TutorialHintView"
+		var paradox_overlay: Control = _battle_hud.call("get_paradox_overlay_layer")
+		paradox_overlay.add_child(_tutorial_hint)
+		_tutorial_hint.position = Vector2(30.0, 90.0)
+		_tutorial_hint.size = Vector2(paradox_overlay.size.x - 60.0, 90.0)
+		_tutorial_hint.call("bind_runner", _tutorial_runner)
+	else:
+		_battle_hud.bind_tutorial_runner(_tutorial_runner)
 	_battle_hud.opponent_result_presentation_finished.connect(_on_opponent_result_finished)
 	_battle_hud.failure_presentation_finished.connect(_on_failure_presentation_finished)
-	%RestartButton.pressed.connect(restart_current_attempt)
+	if use_plan_b_campaign:
+		%RestartButton.pressed.connect(Callable(_battle_hud, "request_restart"))
+		_battle_hud.connect("restart_requested", Callable(self, "restart_current_attempt"))
+	else:
+		%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
 	%PauseMenu.paused_changed.connect(_on_pause_changed)
-	_debug_panel.call("bind_sandbox", self)
+	if use_plan_b_campaign:
+		_debug_panel.hide()
+	else:
+		_debug_panel.call("bind_sandbox", self)
 	if not _battle_attempt_flow.configure(
 			SaveManager.data, level_catalog, _run_state, battle_config, SAMPLE_TIER_CATALOG,
 			_barrage_area, _aim_reticle, _attack_charge_input, opponent_pk_bar,
@@ -161,6 +228,18 @@ func _ready() -> void:
 			CONTRADICTION_WINDOW_CONFIG, AudioManager):
 		push_error("Sandbox: 无法组合 BattleAttemptFlow。")
 		return
+	if use_plan_b_campaign:
+		if not _battle_attempt_flow.set_external_pk_source(
+				Callable(_plan_b_host, "get_pk_fraction")):
+			push_error("Sandbox: 无法把 Plan B Host 绑定为唯一普通 PK 源。")
+			return
+		if not _plan_b_host.set_tier_source(
+				Callable(_battle_attempt_flow, "get_current_tier")):
+			push_error("Sandbox: 无法把正式 CombatStage 绑定为 Tier 来源。")
+			return
+		_battle_audio.call("bind_flows", _contradiction_oracle_flow)
+	else:
+		_battle_hud.bind_audio_flows(_contradiction_oracle_flow)
 	_paradox_comic = PARADOX_COMIC_SCENE.instantiate() as ParadoxComicTransition
 	_paradox_comic.name = "ParadoxComicTransition"
 	_paradox_comic.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -169,6 +248,7 @@ func _ready() -> void:
 	_paradox_comic.result_feedback_finished.connect(_on_paradox_result_feedback_finished)
 	_battle_attempt_flow.tier_transition_cleared.connect(_on_tier_transition_cleared)
 	_battle_hud.tier_breakthrough_finished.connect(_on_tier_breakthrough_finished)
+	_battle_hud.tier_breakthrough_fading.connect(_on_tier_breakthrough_fading)
 	# 由新消费者读取正式逐目标结算，再通过 HUD 公开队列入口提交玩家复述。
 	_hit_echo_presenter = HIT_ECHO_PRESENTER_SCRIPT.new()
 	_hit_echo_presenter.name = "StreamerBubbleHitEchoPresenter"
@@ -181,10 +261,10 @@ func _ready() -> void:
 		push_error("Sandbox: 无法接入实际命中气泡消费者。")
 		return
 	# 特定原句回复独立消费同一最终命中事实，剧情优先级由 SD-03 队列调度。
-	var sentence_reply_presenter: Node = SPECIFIC_SENTENCE_REPLY_PRESENTER_SCRIPT.new()
-	sentence_reply_presenter.name = "StreamerBubbleSpecificSentenceReplyPresenter"
-	add_child(sentence_reply_presenter)
-	if not bool(sentence_reply_presenter.call(
+	_specific_sentence_reply_presenter = SPECIFIC_SENTENCE_REPLY_PRESENTER_SCRIPT.new()
+	_specific_sentence_reply_presenter.name = "StreamerBubbleSpecificSentenceReplyPresenter"
+	add_child(_specific_sentence_reply_presenter)
+	if not bool(_specific_sentence_reply_presenter.call(
 			"configure",
 			_battle_attempt_flow,
 			_active_dialogue_config,
@@ -207,6 +287,7 @@ func _ready() -> void:
 	_combat_state_dialogue_presenter.connect(
 		"event_sequence_completed", Callable(self, "_on_dialogue_event_sequence_completed")
 	)
+	_battle_hud.dialogue_bubble_presented.connect(_on_dialogue_bubble_presented)
 	# 定时闲聊由可暂停的独立消费者计时，并提交 HUD 已有的低优先级入口。
 	_timed_opponent_dialogue_presenter = TIMED_OPPONENT_DIALOGUE_PRESENTER_SCRIPT.new()
 	_timed_opponent_dialogue_presenter.name = "StreamerBubbleTimedOpponentDialoguePresenter"
@@ -218,12 +299,139 @@ func _ready() -> void:
 			Callable(_battle_hud, "enqueue_dialogue_bubble"))):
 		push_error("Sandbox: 无法接入战斗定时对手对白消费者。")
 		return
+	_setup_pb14_performance_tracker()
 	if not _battle_attempt_flow.start_first_attempt():
 		push_error("Sandbox: 无法启动首场普通战斗。")
 
 
+## 默认不创建 Tracker；只有 PB14_PERF_TRACKER=1 时才向 B/D 注入观测器。
+func _setup_pb14_performance_tracker() -> void:
+	if not use_plan_b_campaign or OS.get_environment("PB14_PERF_TRACKER") != "1":
+		return
+	if _plan_b_host == null or _plan_b_simulation == null or _battle_hud == null or _battle_attempt_flow == null:
+		push_error("PB14 tracker: runtime sources are unavailable")
+		return
+	var tracker := PB14_PERFORMANCE_TRACKER_SCRIPT.new() as Node
+	if tracker == null:
+		push_error("PB14 tracker: unable to create tracker node")
+		return
+	var duration_seconds: float = 0.0
+	var duration_text: String = OS.get_environment("PB14_PERF_TRACKER_SECONDS")
+	if duration_text.is_valid_float():
+		duration_seconds = duration_text.to_float()
+	var output_path: String = OS.get_environment("PB14_PERF_TRACKER_PATH")
+	if not bool(tracker.call("configure", output_path, duration_seconds)):
+		tracker.free()
+		push_error("PB14 tracker: invalid runtime configuration")
+		return
+	tracker.call("set_runtime_sources", _plan_b_host, _plan_b_simulation, _battle_hud, _battle_attempt_flow)
+	add_child(tracker)
+	if not bool(tracker.call("is_enabled")):
+		tracker.queue_free()
+		return
+	_pb14_performance_tracker = tracker
+	_plan_b_simulation.call("set_performance_tracker", tracker)
+	_battle_hud.call("set_performance_tracker", tracker)
+
+
+## 正式三列 UI 由 D 提供；旧六句矛盾与准心组件复用 D 明确开放的 Paradox 容器。
+func _initialize_plan_b_battle_ui() -> bool:
+	var battle_ui: Control = PLAN_B_BATTLE_UI_SCENE.instantiate() as Control
+	if battle_ui == null:
+		return false
+	var legacy_ui_index: int = _legacy_battle_hud.get_index()
+	_legacy_battle_hud.name = "LegacyBattleHud"
+	battle_ui.name = "BattleHud"
+	battle_ui.unique_name_in_owner = true
+	battle_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(battle_ui)
+	# 保持 FailureOverlay、PauseMenu 和 DebugPanel 处于正式 UI 前景。
+	move_child(battle_ui, legacy_ui_index)
+	if not battle_ui.has_method("get_paradox_overlay_layer"):
+		return false
+	var paradox_layer: Variant = battle_ui.call("get_paradox_overlay_layer")
+	if not paradox_layer is Control or not battle_ui.has_method("get_aim_reticle"):
+		return false
+
+	_battle_hud = battle_ui
+	_aim_reticle = battle_ui.call("get_aim_reticle") as AimReticle
+	if _aim_reticle == null:
+		return false
+	_legacy_battle_hud.visible = false
+	var legacy_paradox_nodes: Array[Control] = [
+		_barrage_area,
+		_oracle_candidate_display,
+	]
+	for legacy_node: Control in legacy_paradox_nodes:
+		var previous_parent: Node = legacy_node.get_parent()
+		if previous_parent != null:
+			previous_parent.remove_child(legacy_node)
+		paradox_layer.add_child(legacy_node)
+		legacy_node.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	paradox_layer.move_child(_barrage_area, 0)
+	_barrage_area.visible = false
+	_oracle_candidate_display.visible = false
+	# CB-17 只观察既有 BArea 和正式准星；候选、释放快照与真假结果继续归现有流程。
+	_cb17_paradox_presentation = CB17_PARADOX_PRESENTATION_SCENE.instantiate() as Control
+	if _cb17_paradox_presentation == null:
+		return false
+	_cb17_paradox_presentation.name = "ContradictionBarragePresentation"
+	_cb17_paradox_presentation.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_cb17_paradox_presentation.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	paradox_layer.add_child(_cb17_paradox_presentation)
+	if not bool(_cb17_paradox_presentation.call("bind_battle_nodes", _barrage_area, _aim_reticle)):
+		push_error("Sandbox: CB-17 无法绑定现有弹幕区域与准星。")
+		return false
+	_legacy_battle_hud.queue_free()
+	return true
+
+
+## 组合正式 B/C 模块；B 运行态只存棋子快照，UI 由 D 读取。
+func _create_plan_b_runtime() -> bool:
+	var simulation := PLAN_B_SIMULATION_SCRIPT.new() as Node2D
+	_plan_b_host = PLAN_B_HOST_SCRIPT.new() as PlanBBattleHost
+	if simulation == null or _plan_b_host == null:
+		return false
+	simulation.name = "Simulation"
+	# B 的 Area2D 保留碰撞与逻辑，棋子图形由 D 从只读快照绘制。
+	simulation.visible = false
+	_plan_b_host.name = "PlanBBattleHost"
+	_plan_b_host.add_child(simulation)
+	add_child(_plan_b_host)
+	_plan_b_simulation = simulation
+	_plan_b_content_catalog = PLAN_B_CONTENT_CATALOG_SCRIPT.new()
+	_plan_b_opponent_director = PLAN_B_OPPONENT_DIRECTOR_SCRIPT.new()
+	if not _plan_b_host.configure_modules(
+			_plan_b_simulation, _plan_b_content_catalog, _plan_b_opponent_director):
+		return false
+	_plan_b_content_catalog.call("set_random_seed", 20261017)
+	_plan_b_host.pk_changed.connect(_on_plan_b_pk_changed)
+	_plan_b_host.publish_result.connect(_on_plan_b_publish_result)
+	_plan_b_host.battle_ended.connect(_on_plan_b_battle_ended)
+	_plan_b_host.counterattack_windup_started.connect(_on_plan_b_counterattack_windup_started)
+	_plan_b_host.counterattack_resolved.connect(_on_plan_b_counterattack_resolved)
+	if _plan_b_content_catalog.has_signal("player_hand_changed"):
+		_plan_b_content_catalog.connect(
+			"player_hand_changed", Callable(self, "_on_plan_b_hand_changed"))
+	_plan_b_host.player_hand_changed.connect(_on_plan_b_hand_changed)
+	if _plan_b_opponent_director.has_signal("opponent_word_pool_exhausted"):
+		_plan_b_opponent_director.connect(
+			"opponent_word_pool_exhausted", Callable(self, "_on_opponent_word_pool_exhausted"))
+	_battle_hud.call("bind_sources", _plan_b_host, _plan_b_simulation, _plan_b_content_catalog)
+	_battle_hud.connect("publish_requested", Callable(self, "_on_plan_b_publish_requested"))
+	return true
+
+
 # CombatStage 的起始 Tier 通知早于 attempt_started；延后一帧避免新场误播升降档动作。
 func _queue_pk_tier_visual(current_tier: int, _player_pk: float) -> void:
+	if _plan_b_host != null:
+		_plan_b_host.notify_external_tier_changed(current_tier)
+	if is_instance_valid(_battle_music):
+		if current_tier > 0 and _battle_music.is_waiting_for_connection() and not _debug_pk_update_active:
+			_battle_music.begin_connection()
+		if _debug_pk_update_active:
+			_battle_music.skip_connection_for_debug(current_tier)
+		_battle_music.request_tier(current_tier, _battle_music.profile.hold_intro_through_first_tier and not _debug_pk_update_active)
 	# 延迟只保存来源和档位，PK在执行时读取，避免旧回调覆盖回拉或新尝试。
 	_deliver_pk_tier_visual.call_deferred(_battle_attempt_flow.get_combat_stage(), current_tier)
 
@@ -234,11 +442,17 @@ func _deliver_pk_tier_visual(source: CombatStage, tier: int) -> void:
 		return
 	if not _battle_attempt_flow.is_normal_combat_active():
 		return
-	_battle_hud.on_tier_changed(tier, _battle_attempt_flow.get_hit_resolution().get_player_pk())
+	_battle_hud.refresh_pk(_battle_attempt_flow.get_hit_resolution().get_player_pk(), tier)
 
 
 ## C的公开入口只撤销当前指针蓄力，保留已发射言弹及硬直计时。
 func _on_pause_changed(paused: bool) -> void:
+	if is_instance_valid(_ending_music):
+		_ending_music.set_paused(paused)
+	if is_instance_valid(_rest_result_view):
+		_rest_result_view.set_music_paused(paused)
+	if is_instance_valid(_battle_music):
+		_battle_music.set_paused(paused)
 	if paused and _attack_charge_input.has_method("cancel_pointer_attack"):
 		_attack_charge_input.call("cancel_pointer_attack")
 	_refresh_mobile_touch_phase()
@@ -253,6 +467,8 @@ func restart_current_attempt() -> void:
 	_reset_paradox_presentation()
 	_rest_session = null
 	_rest_result_view.hide_result()
+	if use_plan_b_campaign:
+		%FailureOverlay.hide()
 	_attack_charge_input.set_contradiction_mode(false)
 	%PauseMenu.resume_game()
 	if not _battle_attempt_flow.restart_current_attempt():
@@ -262,6 +478,17 @@ func restart_current_attempt() -> void:
 
 # 当前关的角色和素材由一次尝试启动事实提供；HUD 只呈现组合方状态。
 func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage: CombatStage, _queue: RepeatDelayQueue) -> void:
+	# 每次尝试先清理旧消费者，再按真实主播选择配置，旧退出回调不能停新曲。
+	if is_instance_valid(_battle_music):
+		remove_child(_battle_music)
+		_battle_music.queue_free()
+		_battle_music = null
+	var music_profile: TierMusicProfile = BossMusicCatalog.find_profile(StringName(current_level.streamer_id))
+	if music_profile != null:
+		_battle_music = TierMusicPresenter.new()
+		_battle_music.profile = music_profile
+		add_child(_battle_music)
+		_battle_music.start_battle(stage.get_current_tier())
 	%PauseMenu.set_restart_available(true)
 	_refresh_mobile_touch_phase()
 	_pa11_connection_dialogue_active = false
@@ -269,11 +496,22 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 	_pa09_feedback.call("clear_feedback")
 	_battle_hud.reset_for_attempt(stage.get_current_tier())
 	_battle_hud.set_paradox_stage_active(false, stage.get_current_tier())
+	if use_plan_b_campaign:
+		_battle_hud.set_final_oracle_stage_active(false)
+		_barrage_area.visible = false
+		_oracle_candidate_display.visible = false
+	if _tutorial_hint != null:
+		_tutorial_hint.call("clear_hint")
 	# 表现表按稳定 level_id 解析，并在同一尝试入口刷新主播、立绘、对白与评论。
 	var presentation: Dictionary = _formal_sheet_consumer.get_level_presentation(current_level.level_id)
 	_battle_hud.configure_opponent_result(current_level, presentation)
 	_trait_runtime.begin_attempt(current_level)
-	_tutorial_runner.begin(current_level.tutorial_config_id, SaveManager.data.completed_tutorial_step_ids)
+	if _battle_attempt_flow.uses_external_pk_source():
+		_tutorial_runner.begin("", SaveManager.data.completed_tutorial_step_ids)
+	else:
+		_tutorial_runner.begin(
+			current_level.tutorial_config_id, SaveManager.data.completed_tutorial_step_ids
+		)
 	var streamer_id: String = str(presentation.get("streamer_id", current_level.streamer_id))
 	var opponent_name: String = str(presentation.get("streamer_name", current_level.streamer_name))
 	var fan_group_name: String = str(presentation.get("fan_group_name", current_level.fan_group_name))
@@ -289,6 +527,8 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 		presentation.get("background", current_level.streamer_live_background) as Texture2D,
 		presentation.get("fan_badge", current_level.fan_badge_texture) as Texture2D
 	)
+	if _battle_hud.has_method("configure_opponent_foreground"):
+		_battle_hud.call("configure_opponent_foreground", current_level.streamer_live_foreground)
 	var portraits: Array = presentation.get("portrait_tiers", [])
 	if portraits.size() == 4:
 		_battle_hud.configure_opponent_tier_textures(
@@ -297,16 +537,128 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 	var story_id: String = str(presentation.get("story_config_id", ""))
 	if not story_id.is_empty():
 		_active_dialogue_config.entries = _formal_sheet_consumer.create_dialogue_config(story_id).entries
-	%OpponentLiveDataHud.configure_formal_comments(
-		_formal_sheet_consumer.get_comments("opponent", streamer_id),
-		_formal_sheet_consumer.comment_parameters)
-	%LiveDataHud.configure_formal_comments(
-		_formal_sheet_consumer.get_comments("player", ""),
-		_formal_sheet_consumer.comment_parameters)
+	if use_plan_b_campaign:
+		_battle_hud.configure_formal_comments(BubbleDialogueEntry.SpeakerSide.OPPONENT,
+			_formal_sheet_consumer.get_comments("opponent", streamer_id),
+			_formal_sheet_consumer.comment_parameters)
+		_battle_hud.configure_formal_comments(BubbleDialogueEntry.SpeakerSide.PLAYER,
+			_formal_sheet_consumer.get_comments("player", ""),
+			_formal_sheet_consumer.comment_parameters)
+		if not _plan_b_level_ready or not _start_plan_b_battle(current_level):
+			_battle_attempt_flow.stop()
+			push_error("Sandbox: 无法启动当前关卡的 Plan B 棋子战斗。")
+	else:
+		%OpponentLiveDataHud.configure_formal_comments(
+			_formal_sheet_consumer.get_comments("opponent", streamer_id),
+			_formal_sheet_consumer.comment_parameters)
+		%LiveDataHud.configure_formal_comments(
+			_formal_sheet_consumer.get_comments("player", ""),
+			_formal_sheet_consumer.comment_parameters)
+
+
+## 每次正式开播从 D 的实际 UnitField 读取场地区域，B/D 共用同一 scene-global Rect2。
+func _start_plan_b_battle(level: LevelProfile) -> bool:
+	if level == null or _plan_b_host == null or _battle_hud == null:
+		return false
+	if (
+		not _battle_hud.has_method("get_board_world_bounds")
+		or not _battle_hud.has_method("set_world_bounds")
+		or not _battle_hud.has_method("set_word_hand")
+	):
+		return false
+	var board_bounds: Rect2 = _battle_hud.call("get_board_world_bounds")
+	if board_bounds.size.x <= 0.0 or board_bounds.size.y <= 0.0:
+		return false
+	_plan_b_host.available_level = level.level_id
+	_battle_hud.call("set_world_bounds", board_bounds)
+	_plan_b_host.start_battle(board_bounds.size, board_bounds.position)
+	if _plan_b_host.get_battle_state() != &"running":
+		return false
+	var current_hand: Array[Dictionary] = _plan_b_host.get_player_hand()
+	_refresh_plan_b_hand(current_hand)
+	return true
+
+
+## 手牌状态由 C 保有；A 只提供 Host 的权威已用词数量给 D。
+func _refresh_plan_b_hand(hand: Array[Dictionary]) -> void:
+	if _battle_hud == null or _plan_b_host == null or not _battle_hud.has_method("set_word_hand"):
+		return
+	var available_ids: Array[String] = _plan_b_host.get_available_word_ids("player")
+	var occupied_slot_count: int = 0
+	for card: Dictionary in hand:
+		if not str(card.get("word_id", "")).is_empty():
+			occupied_slot_count += 1
+	var draw_pool_remaining: int = maxi(0, available_ids.size() - occupied_slot_count)
+	_battle_hud.call("set_word_hand", hand, draw_pool_remaining)
+	if _battle_hud.has_method("set_player_slot_states"):
+		_battle_hud.call("set_player_slot_states", _plan_b_host.get_player_slot_states())
+
+
+func _on_plan_b_pk_changed(_pk_percent: float) -> void:
+	# BattleAttemptFlow 通过 HitResolution 的只读 getter 转发 Host PK，驱动旧 Tier/HUD/终结流程。
+	if _battle_attempt_flow != null:
+		_battle_attempt_flow.notify_external_pk_changed()
+
+
+func _on_plan_b_battle_ended(result: StringName) -> void:
+	if result != &"enter_contradiction":
+		return
+	# 矛盾神谕与神降临按真实玩家复读棋子数排序；统计在旧普通胜利提交前冻结。
+	if not _battle_attempt_flow.record_plan_b_population_repeats(
+			_plan_b_host.get_unit_snapshots(), _plan_b_content_catalog):
+		push_error("Sandbox: 无法提交 Plan B 玩家复读统计。")
+
+
+func _on_plan_b_publish_result(team: String, word_id: String, result: Dictionary) -> void:
+	if not bool(result.get("ok", false)):
+		return
+	var definition: Dictionary = _plan_b_host.get_word_definition(word_id)
+	if team == "player":
+		if not _battle_attempt_flow.record_plan_b_player_publication(definition):
+			push_error("Sandbox: Plan B 玩家发表缺少旧结算所需话语字段：%s" % word_id)
+		_hit_echo_presenter.call("on_plan_b_player_publication", definition)
+		_specific_sentence_reply_presenter.call("on_plan_b_player_publication", definition)
+		SaveManager.data.live_session.record_generated_comments(1)
+	elif team == "opponent" and _opponent_live != null:
+		_opponent_live.record_normal_hit_live_rule()
+		_opponent_live.record_generated_comments(1)
+
+
+func _on_plan_b_publish_requested(slot_id: int, word_id: String, spawn_position: Vector2) -> void:
+	# 玩家以中央棋盘场景坐标提交整批发表；失败回执由 D 保留原句与选中状态。
+	var result: Dictionary = _plan_b_host.publish_word("player", word_id, spawn_position, slot_id)
+	_battle_hud.call("resolve_publish_request", slot_id, word_id, spawn_position, result)
+
+
+func _on_plan_b_hand_changed(hand: Array) -> void:
+	var typed_hand: Array[Dictionary] = []
+	for card: Variant in hand:
+		if card is Dictionary:
+			typed_hand.append((card as Dictionary).duplicate(true))
+	_refresh_plan_b_hand(typed_hand)
+
+
+func _on_plan_b_counterattack_windup_started(request: Dictionary) -> void:
+	if _battle_hud != null and _battle_hud.has_method("show_counterattack_windup"):
+		_battle_hud.call("show_counterattack_windup", request.duplicate(true))
+
+
+func _on_plan_b_counterattack_resolved(result: Dictionary) -> void:
+	if bool(result.get("applied", false)) and str(result.get("effect_id", "")) == "split":
+		AudioManager.play_event(&"trait_split")
+	if _battle_hud != null and _battle_hud.has_method("show_counterattack_result"):
+		_battle_hud.call("show_counterattack_result", result.duplicate(true))
+
+
+func _on_opponent_word_pool_exhausted(_level_id: String, streamer_id: String) -> void:
+	if _battle_hud != null:
+		_battle_hud.call("show_battle_state", "%s 已用完本关发言" % streamer_id)
 
 
 # 正式失败先播放 PA-18 局部演出，完成通知后再显示既有失败界面。
 func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: HitResolution, _repeat_stats: RepeatGenerationStats) -> void:
+	if is_instance_valid(_battle_music):
+		_battle_music.finish_battle(&"failed")
 	if is_instance_valid(_mobile_touch):
 		_mobile_touch.call("set_enabled", false)
 	if opponent_reaction_preview_enabled and _opponent_live != null:
@@ -319,11 +671,22 @@ func _on_attempt_failed(_level: LevelProfile, _loss_streak_count: int, _hit: Hit
 	_battle_hud.play_failure_presentation()
 
 
+# HUD已公开真实气泡呈现事实；列巴在开口时才柔化出场音乐。
+func _on_dialogue_bubble_presented(side: int, event_id: StringName, _text: String) -> void:
+	if side == BubbleDialogueEntry.SpeakerSide.OPPONENT and event_id == &"combat_connected":
+		if is_instance_valid(_battle_music):
+			_battle_music.begin_connection_dialogue()
+
+
 # T1 连线对白完整结束后恢复本档战斗，再向外转发已完成事实。
 func _on_dialogue_event_sequence_completed(event_id: StringName, sequence_id: StringName, side: int) -> void:
 	if event_id == &"combat_connected":
 		_pa11_connection_dialogue_active = false
-		_battle_attempt_flow.resume_after_tier1_dialogue()
+		var resumed: bool = _battle_attempt_flow.resume_after_tier1_dialogue()
+		if resumed:
+			_resume_plan_b_after_tier_transition()
+		if is_instance_valid(_battle_music) and (resumed or _battle_attempt_flow.get_current_tier() > 1):
+			_battle_music.finish_connection_dialogue()
 		_refresh_mobile_touch_phase()
 	dialogue_event_sequence_completed.emit(event_id, sequence_id, side)
 
@@ -332,6 +695,8 @@ func _on_dialogue_event_sequence_completed(event_id: StringName, sequence_id: St
 func _on_tier_transition_cleared(previous_tier: int, current_tier: int, _cleared_count: int) -> void:
 	if not _battle_attempt_flow.begin_tier_breakthrough_transition(previous_tier, current_tier):
 		return
+	if _plan_b_host != null:
+		_plan_b_host.pause_battle()
 	if is_instance_valid(_mobile_touch):
 		_mobile_touch.call("set_enabled", false)
 	if previous_tier == CombatStage.INITIAL_TIER and current_tier > CombatStage.INITIAL_TIER:
@@ -342,24 +707,61 @@ func _on_tier_transition_cleared(previous_tier: int, current_tier: int, _cleared
 
 
 # 转场结束后先恢复 T1 立绘，再让公开 Tier 完成事件触发对白 / 战斗恢复。
+func _on_tier_breakthrough_fading(_previous_tier: int, current_tier: int) -> void:
+	# 对齐实际箭头淡出，过期档位不放行音乐。
+	if is_instance_valid(_battle_music) and _battle_attempt_flow.get_current_tier() == current_tier:
+		_battle_music.release_tier_visual(current_tier)
+
+
 func _on_tier_breakthrough_finished(
 		previous_tier: int, current_tier: int, completed: bool
 ) -> void:
 	if not completed or _battle_attempt_flow.get_current_tier() != current_tier:
 		return
+	# 没有可播放的箭头时，沿用真实完成入口兜底；已经换段时不重播。
+	_on_tier_breakthrough_fading(previous_tier, current_tier)
 	if previous_tier == CombatStage.INITIAL_TIER and current_tier > CombatStage.INITIAL_TIER:
 		_battle_hud.set_opponent_portrait_connected(true)
 	# 空配置可能同步完播，所以必须在完成入口发出通知前设置此标记。
 	_pa11_connection_dialogue_active = previous_tier == 0 and current_tier == 1
 	if not _battle_attempt_flow.finish_tier_breakthrough_transition():
 		push_error("Sandbox: 升档突破过渡结束后无法恢复当前流程。")
+	elif not _pa11_connection_dialogue_active:
+		_resume_plan_b_after_tier_transition()
 	_refresh_mobile_touch_phase()
+
+
+func _resume_plan_b_after_tier_transition() -> void:
+	if (_battle_attempt_flow.is_normal_combat_active() and _plan_b_host != null
+			and _plan_b_host.get_battle_state() == &"paused"):
+		_plan_b_host.resume_battle()
 
 
 # 真实矛盾流程发出进入事实后，HUD 才展示 T6 / Paradox。
 func _on_contradiction_stage_entered(_system: ContradictionBreakSystem) -> void:
+	# 转场结束进入可操作矛盾窗口，恢复高段，结果锁定仍按原流程淡出。
+	if is_instance_valid(_battle_music) and _battle_music.owns_music():
+		AudioManager.restore_music()
 	_battle_hud.set_paradox_stage_active(true, _battle_attempt_flow.get_current_tier())
+	if _battle_attempt_flow.uses_external_pk_source():
+		_battle_hud.set_final_oracle_stage_active(false)
+		_barrage_area.visible = true
+		var current_level: LevelProfile = _battle_attempt_flow.get_current_level_profile()
+		if current_level != null:
+			# 旧准心教程只在恢复射击的矛盾阶段出现。
+			_tutorial_runner.begin(
+				current_level.tutorial_config_id, SaveManager.data.completed_tutorial_step_ids
+			)
 	_refresh_mobile_touch_phase()
+
+
+func _on_plan_b_paradox_shot_created(snapshot: AttackTargetSnapshot) -> void:
+	if (not _battle_attempt_flow.uses_external_pk_source()
+			or not _contradiction_oracle_flow.is_contradiction_active()
+			or snapshot == null):
+		return
+	if not snapshot.get_contradiction_facts().is_empty():
+		_tutorial_runner.notify_event("tutorial_normal_hit")
 
 
 # 神谕接管阶段展示时恢复当前 CombatStage 档位，再转发既有对外事件。
@@ -367,7 +769,11 @@ func _on_final_oracle_opened(session: FinalOracleSession) -> void:
 	if _result_feedback_active:
 		_pending_oracle_session = session
 		return
+	if use_plan_b_campaign:
+		_barrage_area.visible = false
 	_battle_hud.set_paradox_stage_active(false, _battle_attempt_flow.get_current_tier())
+	if use_plan_b_campaign:
+		_battle_hud.set_final_oracle_stage_active(true)
 	final_oracle_opened.emit(session)
 	_refresh_mobile_touch_phase()
 
@@ -376,6 +782,11 @@ func _on_final_oracle_opened(session: FinalOracleSession) -> void:
 func _on_normal_combat_completed(
 		level: LevelProfile, hit_resolution: HitResolution, repeat_stats: RepeatGenerationStats
 ) -> void:
+	if is_instance_valid(_battle_music):
+		_battle_music.finish_battle(&"enter_contradiction")
+		# 击破标题/斜切出现时压至25%，让演出与音效先被听见。
+		if _battle_music.owns_music():
+			AudioManager.duck_music()
 	_reset_paradox_presentation()
 	if is_instance_valid(_mobile_touch):
 		_mobile_touch.call("set_enabled", false)
@@ -404,6 +815,8 @@ func _on_contradiction_outcome_resolved(outcome: int) -> void:
 		_mobile_touch.call("set_enabled", false)
 	if _result_feedback_active:
 		return
+	if is_instance_valid(_battle_music) and _battle_music.owns_music():
+		AudioManager.fade_to_silence()
 	_result_feedback_active = true
 	_result_feedback_system = _contradiction_oracle_flow.get_contradiction_system()
 	_contradiction_oracle_flow.hold_result_presentation()
@@ -445,6 +858,16 @@ func _reset_paradox_presentation() -> void:
 	_pending_rest_session = null
 	_result_feedback_active = false
 	_result_feedback_system = null
+	if use_plan_b_campaign and _battle_hud != null:
+		var current_tier: int = (
+			_battle_attempt_flow.get_current_tier()
+			if _battle_attempt_flow != null
+			else CombatStage.INITIAL_TIER
+		)
+		_battle_hud.set_paradox_stage_active(false, current_tier)
+		_battle_hud.set_final_oracle_stage_active(false)
+		_barrage_area.visible = false
+		_oracle_candidate_display.visible = false
 	if is_instance_valid(_paradox_comic):
 		_paradox_comic.reset_for_attempt()
 
@@ -465,9 +888,20 @@ func _process(delta: float) -> void:
 	SaveManager.data.live_session.advance_short_boosts(delta)
 	_battle_attempt_flow.advance(delta)
 	_contradiction_oracle_flow.advance(delta)
-	if _tutorial_runner != null and _battle_attempt_flow.is_normal_combat_active():
-		_tutorial_runner.observe_combat_frame(_barrage_area, _aim_reticle, _attack_charge_input)
+	if _tutorial_runner != null:
+		if _battle_attempt_flow.uses_external_pk_source():
+			if _contradiction_oracle_flow.is_contradiction_active():
+				_tutorial_runner.observe_combat_frame(
+					_barrage_area, _aim_reticle, _attack_charge_input, true
+				)
+		elif _battle_attempt_flow.is_normal_combat_active():
+			_tutorial_runner.observe_combat_frame(_barrage_area, _aim_reticle, _attack_charge_input)
 	_battle_hud.refresh_attack(_attack_charge_input.get_charge_progress(), _attack_charge_input.get_attack_phase())
+	if use_plan_b_campaign and _plan_b_host != null and _battle_hud.has_method("set_player_slot_states"):
+		_plan_b_slot_state_sync_elapsed += delta
+		if _plan_b_slot_state_sync_elapsed >= 0.1:
+			_plan_b_slot_state_sync_elapsed = 0.0
+			_battle_hud.call("set_player_slot_states", _plan_b_host.get_player_slot_states())
 
 
 # DEBUG 面板每次刷新时从现有系统即时收集快照，不把可变业务值保存在 UI。
@@ -522,7 +956,10 @@ func debug_set_player_pk(player_pk: float) -> float:
 	var hit_resolution: HitResolution = _battle_attempt_flow.get_hit_resolution()
 	if hit_resolution == null:
 		return 0.0
-	return hit_resolution.set_player_pk_for_debug(player_pk)
+	_debug_pk_update_active = true
+	var applied_pk: float = hit_resolution.set_player_pk_for_debug(player_pk)
+	_debug_pk_update_active = false
+	return applied_pk
 
 
 # 直播调试值仍写入本场 LiveSessionData，由 Resource.changed 刷新当前 HUD。
@@ -564,6 +1001,9 @@ func debug_set_normal_generation_enabled(enabled: bool) -> bool:
 
 # 流程已经提交成果并准备好 Rest；根场景只展示同一结果对象。
 func _on_rest_ready(result: RestSession) -> void:
+	if is_instance_valid(_battle_music) and _battle_music.owns_music():
+		_battle_music.set_paused(false)
+		AudioManager.fade_out_music()
 	if _result_feedback_active:
 		_pending_rest_session = result
 		return
@@ -573,9 +1013,14 @@ func _on_rest_ready(result: RestSession) -> void:
 func _show_rest_result(result: RestSession) -> void:
 	if is_instance_valid(_mobile_touch):
 		_mobile_touch.call("set_enabled", false)
+	if use_plan_b_campaign:
+		_barrage_area.visible = false
+		_oracle_candidate_display.visible = false
 	%PauseMenu.set_restart_available(false)
 	_rest_session = result
 	_battle_hud.set_paradox_stage_active(false, _battle_attempt_flow.get_current_tier())
+	if use_plan_b_campaign:
+		_battle_hud.set_final_oracle_stage_active(false)
 	if not _rest_result_view.show_result(result, SaveManager.data, level_catalog, loser_card_catalog):
 		push_error("Sandbox: 无法显示本场 Rest 结果。")
 		return
@@ -622,7 +1067,11 @@ func _enter_divine_descent() -> void:
 	add_child(_divine_descent_flow)
 	_divine_descent_flow.entered.connect(_on_divine_descent_entered)
 	_divine_descent_flow.completed.connect(_finish_divine_descent)
-	_battle_hud.bind_audio_flows(_contradiction_oracle_flow, _divine_descent_flow)
+	_divine_descent_flow.phase_changed.connect(_ending_music.on_divine_phase)
+	if use_plan_b_campaign:
+		_battle_audio.call("bind_flows", _contradiction_oracle_flow, _divine_descent_flow)
+	else:
+		_battle_hud.bind_audio_flows(_contradiction_oracle_flow, _divine_descent_flow)
 	if not _divine_descent_flow.configure_formal_parameters(
 			divine_decay_config.auto_repeat_interval_min_seconds, divine_decay_config.auto_repeat_interval_max_seconds,
 			divine_decay_config.converge_ratio, divine_decay_config.final_emphasis_duration_seconds):
@@ -654,6 +1103,10 @@ func _on_divine_descent_entered(session: DivineDescentSession) -> void:
 	_contradiction_oracle_flow.stop()
 	_rest_result_view.hide_result()
 	_rest_session = null
+	if use_plan_b_campaign:
+		# 神降临复用旧弹幕记录收束占比；Plan B 普通战斗隐藏该视图，进入终局时恢复。
+		_barrage_area.visible = true
+		_oracle_candidate_display.visible = false
 	_battle_hud.show_battle_state("神降临")
 	divine_descent_entered.emit(session)
 
@@ -670,8 +1123,11 @@ func _finish_divine_descent(result: EndingSession) -> void:
 		SaveManager.data.completed_normal_level_ids.append(last_id)
 	if SaveManager.save_game() != OK:
 		push_error("Sandbox: 终局成果存盘失败。")
+	# 结局页面接管同曲，不让旧场景退出在淡入途中把音乐停掉。
+	_ending_music.set_handoff(true)
 	var error := SceneRouter.goto_ending(result)
 	if error != OK:
+		_ending_music.set_handoff(false)
 		push_error("Sandbox: Ending 顶层路由失败：%s" % error_string(error))
 
 
@@ -693,6 +1149,23 @@ func get_contradiction_oracle_flow() -> ContradictionOracleFlow:
 # 普通战斗与后续阶段通过此入口订阅同一尝试流程。
 func get_battle_attempt_flow() -> BattleAttemptFlow:
 	return _battle_attempt_flow
+
+
+## PB-06 integration runner and sibling flows read the same live Plan B Host.
+func get_plan_b_battle_host() -> PlanBBattleHost:
+	return _plan_b_host
+
+
+func get_plan_b_content_catalog() -> Object:
+	return _plan_b_content_catalog
+
+
+func get_plan_b_battle_ui() -> Control:
+	return _battle_hud
+
+
+func get_oracle_candidate_display() -> FinalOracleCandidateDisplay:
+	return _oracle_candidate_display
 
 
 # Rest 页面验收与结果展示共用同一视图实例。
@@ -717,14 +1190,23 @@ func _on_barrage_generated(_view: BarrageView) -> void:
 func _prepare_opponent_live(level: LevelProfile) -> void:
 	if level == null:
 		return
+	if use_plan_b_campaign:
+		_plan_b_level_ready = false
+		_plan_b_host.available_level = level.level_id
+		_plan_b_content_catalog.call("set_random_seed", 20261017 + level.level_order)
+		if not bool(_plan_b_content_catalog.call("configure_level", level)):
+			push_error("Sandbox: C 无法为当前 LevelProfile 配置四关 Plan B 词池。")
+			return
+		_plan_b_level_ready = true
 	_opponent_live = SaveManager.data.get_opponent_live_session(level.streamer_id)
 	_opponent_live.configure_formal_rules(BattleAttemptFlow.FORMAL_COMBAT_NUMERICS)
 	_opponent_live.initialize_session(_opponent_live.fan_count)
 	_opponent_live.set_opening_viewers(randf_range(
 		BattleAttemptFlow.FORMAL_COMBAT_NUMERICS.opening_viewer_multiplier_min,
 		BattleAttemptFlow.FORMAL_COMBAT_NUMERICS.opening_viewer_multiplier_max))
-	%OpponentLiveDataHud.bind_live_session(_opponent_live)
-	%OpponentLiveDataHud.tooltip_text = "对手评论来自实际前景生成。初始粉丝与热度事件映射尚待配置。"
+	_battle_hud.bind_opponent_live_session(_opponent_live, ["fan_count"])
+	if not use_plan_b_campaign:
+		%OpponentLiveDataHud.tooltip_text = "对手评论来自实际前景生成。初始粉丝与热度事件映射尚待配置。"
 
 
 ## 独立A/B预览沿用09增量，对手事件含义须人工批准后才能作为正式规则。
@@ -767,6 +1249,8 @@ func _exit_tree() -> void:
 
 # PA-18 完成只放行既有失败 UI，失败路由仍由 Sandbox / Flow 拥有。
 func _on_failure_presentation_finished() -> void:
+	if use_plan_b_campaign:
+		%FailureOverlay.show()
 	_battle_hud.show_failure()
 
 

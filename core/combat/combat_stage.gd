@@ -101,13 +101,13 @@ func bind_barrage_area(barrage_area: BarrageArea) -> void:
 	_publish_barrage_state()
 
 
-func bind_audio_manager(audio_manager: Node) -> void:
+func bind_audio_manager(audio_manager: Node, enable_music_requests: bool = true) -> void:
 	# 音效由共享 AudioManager 播放；重复绑定同一管理器不重复连接。
 	var callback: Callable = Callable(audio_manager, "play_event")
 	if not audio_event_requested.is_connected(callback):
 		audio_event_requested.connect(callback)
 	var music_callback := Callable(audio_manager, "change_music")
-	if audio_manager.has_method("change_music") and not music_event_requested.is_connected(music_callback):
+	if enable_music_requests and audio_manager.has_method("change_music") and not music_event_requested.is_connected(music_callback):
 		music_event_requested.connect(music_callback)
 
 

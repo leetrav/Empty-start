@@ -1,5 +1,8 @@
 # 20. Ending 结局系统任务拆分
 
+## AU-03 结尾音乐（2026-10-19）
+EndingPage持有EndingMusicPresenter，共用AudioManager的music_ending_tendoh（天導 -Tendoh-）。正常神降临在最终进度满起曲，页面接管同曲不重播；保存结局回看或单独运行页面则淡入起曲，退出页面淡出。只增加音乐表现与署名，不改显示快照/判词/奖励计算。
+
 ## PTF-05 独立结束序列与素材审核（2026-10-16）
 
 `ui/ending/ending_sequence_view.tscn`消费既有ComicSequence/ComicFrame，复用ComicPanelPlaybackControl，不读取开场P5/P6。`play_sequence(sequence)->bool`拒绝空配置；`advance()`、`set_paused(bool)`、`stop()`用于宿主控制；`sequence_finished(reason)`通知A完成，组件不写保存或调用SceneRouter。Timer/Tween跟随全局暂停。

@@ -266,3 +266,10 @@ Sandbox 接收 `BattleAttemptFlow.attempt_failed` 后调用 HUD 的 `play_failur
 四位对手的idle、Tier1～3与击败图、Alien过渡图由23表进入现有LevelProfile字段；Frog前景进入 `streamer_live_foreground`，程序演出读取 `opponent_defeat_effect_id`。玩家直播桌面已进入 `PresentationAssetConfig.player_live_foreground`。Fox背景、Frog特效ID、结局三主图保留真实缺失；18表状态台账不作路径。
 
 Godot4.7.2实际渲染了生产Resource素材检查图，1920×1080；本机 `D:\tmp\int17e-media-20261016\production-resources-1920x1080.png`，媒体未入Git。该图用于确认贴图加载和空缺，正式HUD布局/击败动画仍由D与INT-16验收。[素材逐项对照](../../Integration/INT-17E_asset_usage_2026-10-16.md)与[日志](../../Integration/生产集成_INT-17E_2026-10-16_log.md)列出真实边界。
+
+## AU-03 费米音乐对齐（2026-10-19）
+StageArrowFx.fade_started(direction)在真实淡出首帧报告一次；HUD以tier_breakthrough_fading(previous_tier,current_tier)转发有效升档。Sandbox协调费米音乐，不改变箭头/CRT时长与玩法。正常费米升档目标仅在此时放行淡变，F3调试不制造动画等待。
+
+## PA-24 分层封面与纯文字主菜单（2026-10-19 首版）
+主菜单复用 assets/opening 下背景、三张标题和透明仓鼠，按背景→标题→仓鼠→pend00光效→菜单顺序组合。1920×1080完整画布等比适配，标题轻微错相浮动；pend00 God rays接入正式菜单，沿用原算法和默认参数，仅适配Godot 4语法。菜单使用650字重的现有Noto字体；文字反馈独立于Button点击区域。开场回看收进次级菜单，开始/载入/设置/退出沿用既有路由。无存档显示禁用载入项。首版已通过1280×720、1920×1080 Godot渲染与最小路由检查；实体鼠标手感和最终视觉待用户确认。AU-03背景音乐成果已通过PR #301合入共同开发基线，PA-24保留菜单UI音效与完整开场回放入口。详见PA-24任务卡与日志。
+PA-24封面标题绑定注意：assets/opening/ui_front_shu.png实际字形为“播”，ui_front_bo.png实际字形为“鼠”；应按实际字形和封面参考定位，不按文件名推断。“来”使用ui_front_lai.png。当前未重命名原图，main_menu.tscn的Bo/Shu节点已按实际字形绑定。

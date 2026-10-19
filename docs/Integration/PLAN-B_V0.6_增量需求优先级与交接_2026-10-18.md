@@ -6,13 +6,15 @@
 ### P0 交互（依次以最新任务为准）
 1. **PB-13 / PR #265：** 原先“选句→点击一名中立观众→将该观众转化”的单颗播种改为“选句→点击中央棋盘任意有效位置→按 strength 生成 2/4/8 颗我方/敌方棋子”。基础合法感染率为 50%/60%/70%；批次必须完整创建才算成功，失败不耗词、不耗次数/计时。每批累计成功感染5次可触发一次性 split/reflect 候选特性。旧的 `seed_unit(neutral_unit_id)` 不再用于玩家正式发表，现有真实碰撞/改口/人口PK延续。
 2. **PB-12 / PR #266：** 原先“4张手牌、使用后即时抽取补位、玩家全局5秒冷却”改为“**3个固定卡位，数字键1～3，连续可发表；成功使用的那一槽独立等待5秒再抽一张新卡**”。另外两槽不受影响；玩家取消全局发言冷却，对手 AI 冷却独立。失败不消耗；暂停冻结倒计时，重开重抽。
-3. **PB-11 / PR #267：** 同阵营棋子主动结群（不融合，不改棋子人数/PK）；同阵营、同词且空间相邻的棋子共享一只复读气泡，随团体人数放大，1～5根尾巴，完整显示文本；出生、感染、转化和改口即时复读，独立随机复读计时。运动真实碰撞与短暂弹开保留。
+3. **PB-11 / PR #267：** 同阵营棋子主动结群（不融合，不改棋子人数/PK）；同阵营、同词且空间相邻的棋子共享一只复读气泡，保留P1/P2轮廓与1～5根尾巴；PB-20覆盖旧人数定宽规则，主播主泡和复读泡的文字栏按同一字体测量约10个全角汉字，文字栏在泡体内居中、每行左对齐，全文自动换行并按高度适配；团体人数只影响尾巴数与团体锚点。出生、感染、转化和改口即时复读，独立随机复读计时。运动真实碰撞与短暂弹开保留。
 4. **PB-14 / PR #268：** 先测真实 Profiler、再优化高频全场搜索/重复快照拷贝/绘制插值；约96棋子为**测量基准而非最终人口上限**。人口上限在优化后用性能及实际画面可读性分档测定，不预先锁定最终值。
+5. **PB-15：** 每场正式普通战斗开局保留30名中立观众；A 提供2个费米播种位并完成播种。B 以0.75秒为补人中心间隔、按±25%扰动；自动补人到总人口上限前保留8个位置，供 strength 3 的完整批次使用。人口上限仍待 PB-14 性能与 PB-16 棋子放大后的画面密度共同决定。
 
 ### 其他始终生效
 - 逻辑画布 1920×1080：主播左右各448；中央 PK 72、棋盘828、底部话语180。PC 默认窗口化；棋子美术采用实际已交付资源。
 - 普通 PK 只用话语投放、棋子传播；达到100%后进入原有六选一矛盾击破，**仍使用蓄力射击**。保留四关、Tier、气泡、直播数据/评论、漫画反馈、旧剧情演出、结算与结局。
 - 由 A 拥有整批发表原子事务与 PK，B 拥有真实棋子及邻域/碰撞，C 拥有四关词库/AI，D 拥有三槽/棋盘/共享气泡显示，E 测实际性能并出包。对用户电脑仍禁止 GUI 操作时，仅运行非 GUI 构建验证并将需要人工画面验收的部分标为待验。
+- 画面遮挡补充（PB-16/PB-17实机验收）：人口统计留在72px PK/Tier栏，瞬时事件文字留在180px底部话语栏；PB-19将当前头像逻辑直径更新为64px。群体气泡优先选择与头像重叠最少的上/左/右/下位置，保持完整话语、尾巴与B的真实单位中心不变。
 
 ## 旧任务卡优先级规则与交接
 - PB-06 正式流程卡：正式主线仍有效，`publish_word(...,neutral_unit_id)` 的旧目标参数以 PB-13 批次坐标接口替代；旧人物/矛盾击破不变。
@@ -25,3 +27,40 @@
 1. A 当前 PB-06 未提交的代码保留并由 A 自己同步新规格；B/C/D/E 在各自原工作树继续，分别提交变更与log。
 2. B 先交批次出生/合法容量，再接PB-11运动和PB-14低频决策；A 改发表事务，C 同步对手与三槽词池，D 同步三槽UI与批次视觉，E 在合流后测实际帧率并出包。
 3. 游戏完整流程不断开：Boot→身份→房间→四关 Plan B 普通 PK→旧六选一蓄力矛盾击破→败者卡/结算→回房间或结局。
+
+### Lane B 当前已实现的批次接口（PB-13）
+- `PlanBUnitSimulation.set_play_area(scene_area: Rect2)` 接收棋盘 scene-global 矩形并转换为模拟节点本地边界；模拟器根按正式场景保持无旋转、单位缩放。单位快照中的 `position` 与 `collision_radius` 使用 scene-global 坐标。
+- `spawn_word_batch(scene_position, team, word_definition, word_order, requested_count) -> Dictionary` 由玩家和对手共用。仅接受 strength 1/2/3 对应 2/4/8 的完整数量、有效阵营/词/棋盘落点及足够容量；成功结果含 `ok`, `reason`, `word_order`, `team`, `word_id`, `word_definition`, `spawn_position`, `spawn_target_positions`, `unit_ids`, `count`。失败返回 `ok=false` 和明确 `reason`，人口、单位 ID 与批次事实均不改变。
+- `word_batch_spawned(batch: Dictionary)` 每个完整成功批次只发一次，字段沿用上项批次快照；`unit_spawned(unit_id)` 仍按真实单位各发一次。D 用批次事实表现喷涌，继续以 B 的单位快照渲染运行位置。
+- 合法感染常量为 strength 1/2/3 = 50%/60%/70%。玩家批次以 `word_order` 累计成功感染；达到5次最多发放一次 split/reflect，并通过 `word_batch_trait_awarded(word_order, unit_id, trait_name)` 通知表现层。
+
+### Lane B 当前已实现的 PB-11 团体与运动接口
+- `PlanBUnitSimulation.get_word_groups() -> Array[Dictionary]` 返回按稳定 `group_id` 排序的同阵营、同当前 `word_id` 空间连通组。每组字段包括 `group_id/team/word_id/word_order/member_ids/word_snapshot/member_positions/center_position`；成员位置、几何中心使用 scene-global 坐标，1人单位也保留为一组。
+- `word_groups_changed(groups: Array)` 在团体拓扑、阵营、话语成员关系变化时发出完整组快照；清场会在旧组存在时发出空数组。成员实时位置由 `get_word_groups()` 读取，避免每个物理步复制话语字典。
+- `PlanBUnit.get_word_id()` 提供稳定当前话语 ID，用于组建团体。玩家、对手棋子以同阵营、同话语、相邻关系组成气泡组；单个棋子也形成独立组。
+- 团体邻接默认 72px 加入、90px 离开，成员到组中心半径上限180px；拓扑固定每0.2秒刷新，同一周期内的出生、感染、改口和离场会合并到下一次刷新。成员位置仍由查询接口即时提供。
+- 主动移动默认同阵营侦测160px、理想间距36px；物理有效理想间距会按碰撞直径抬升到至少64px。保持同话吸引0.45、同阵营不同话吸引0.225、分离0.65。可感染目标追击与克制威胁回避优先于团体靠拢；无优先目标时向同伴移动。
+- 敌我/中立接触反冲持续0.18秒并沿用原接触裁决；同阵营贴碰使用轻量软分离并保留 `word_order` 改口规则。团体始终保留独立 `unit_id`、人口、寿命和PK统计。
+- lane D 负责将这些团体快照绘制为共享气泡及尾巴。PB-14 会补充单位物理帧位置事实信号供绘制插值。
+
+### Lane B 当前已实现的 PB-14 决策与位置事实
+- `target_decision_refresh_seconds` 默认0.1秒。目标、威胁与同伴查询复用同一邻居网格；棋子按稳定 `unit_id` 错峰刷新决策缓存。
+- 单位位置积分、真实 Area2D 接触、感染/改口、反冲和边缘反射继续每个物理步运行。物理步之间沿缓存方向和当前速度运动；碰撞反冲期间不由寻敌改写速度。
+- 目标方向按单位各自错峰每0.1秒更新；接触、感染和改口在下个决策时隙读取新状态。空间网格默认0.1秒刷新；新生/离场会使成员索引在下一物理步重建，碰撞分离期间以额外候选padding覆盖网格位置偏移。团体拓扑固定每0.2秒刷新，事件不会把它提升到每物理步。
+- `unit_physics_positions_updated(unit_ids: PackedInt32Array, previous_positions: PackedVector2Array, current_positions: PackedVector2Array)` 每个物理步发出一次。三组数组按升序 Unit ID 对齐，位置使用 scene-global 坐标，新生首帧的前后位置相同；D 可在渲染帧之间据此插值。
+- PB-14 的 pre-optimization 正式 Sandbox CLI profile 与后续同场景 post-optimization 结果记录在 `evidence/PB-14_2026-10-18/`。Engine `TIME_PROCESS/TIME_PHYSICS_PROCESS` 与 CLI GPU/FPS 值按各自计量名记录；GUI Profiler 的 Script/Idle 函数明细及窗口截图需人工验收。
+
+### PB-15 人口配置接线与当前规则
+
+- C 的 population_config.csv 使用 Keep File；PlanBContentCatalog.load_configuration() 验证后由 get_population_config() 返回副本。A 的 PlanBBattleHost.configure_modules() 已将该配置调用 B 的 configure_population_config() 实际写入 PlanBUnitSimulation。
+- B 模拟器应用30名中立、C额外播种槽0、中心间隔0.75秒、jitter ratio 0.25。A Host 仍独立持有 initial_opponent_seed_count=2，并显式调用 create_population(-1, 2)：B 创建30名中立加2个待播种槽，A播种后首个PK快照是30中立、2对手。
+- 补人使用独立随机流，set_random_seed() 同步重置棋子与补人随机流。自动补人上限为 maximum_population 减去可调 neutral_spawn_batch_reserve（默认8）；达到容量线后冻结周期，释放空间后继续。
+- 玩家与对手仍使用现有2/4/8完整批次接口；容量与PK来自实时单位总数和阵营快照。默认最大人口96保留。
+- PB-10 packed CSV smoke 已扩展为7份原表，增加 population_config.csv 与 battle_type_emoji.csv；Windows构建脚本的成功摘要预期同步为7。当前集成分支尚未执行PCK导出。
+- 30、50、80人口密度、正式场景切关/重开和玩家/对手批次仍待后续验收。
+### Lane B 当前已实现的 PB-19 碰撞规则
+- `PlanBUnitSimulation.unit_collision_radius` 默认及配置上限为32px；模拟器、单位圆形碰撞资源和单位快照共用该半径，碰撞外接框为64×64，中心距小于64px时进入真实碰撞/感染裁决，分离后至少留出64.5px。
+- 棋盘边界、随机出生、分裂出生、点击中立查询与批次内部间距均从32px半径派生。随机出生先从带4px随机微扰的7×6格位选择安全空点，再抽取64个随机候选；空位不足时选择最近邻距离最大的候选，保持生成成功。
+- 同队移动的理想间距不小于碰撞直径64px；结群加入阈值为72px、离开阈值为90px。空间网格根据有效离开距离和碰撞半径扩容，移动及碰撞分离的候选padding沿用当前逻辑。
+- 30名中立加2个对手种子仍可在1024×828棋盘内优先分散出生；安全圆心区域约960×764，按圆形半径32与理想六角密排估算容量约207名，高于默认总人口上限96。出生格位与随机候选中心距离至少65px；批次继续按strength 1/2/3创建2/4/8颗。
+- PB-16的64px半径已由PB-19覆盖。D 的 #275/#276 视觉工作仍独立由 D 负责：棋子逻辑直径目标为64px、中心跟随模拟位置；PopulationRibbon与事件提示移出棋盘，气泡按重叠评分避让。真实64px画面验收由 D/E 的对应任务完成。

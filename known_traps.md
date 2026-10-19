@@ -259,11 +259,11 @@
 - **条件**：运动按 `Curve2D` 烘焙弧长前进，同时把 `cubic` 插值设为 `true`。
 - **处理**：细分烘焙点间改用 `sample_baked(offset, false)` 线性插值，并用同一 `_process(delta)` 帧时间累计实际路径距离验证速度。BG-21 的 2 px 烘焙步长和 96 px/s 上限回归通过。
 
-### KT-42：动画撕边多边形经过视口边缘时可能三角化失败
+### KT-42：CanvasItem 多边形退化可能导致三角化失败
 
-- **现象**：PA-12 GPU 预览在移动撕幕跨越视口边缘时，`draw_colored_polygon()` 输出 `Invalid polygon data, triangulation failed`，即使场景仍以退出码 0 结束。
-- **条件**：由多点锯齿边构成的单个多边形在动画中伸出视口，边缘点相交、塌缩或变成自交轮廓。
-- **处理**：将幕布边缘按纵向分段为视口内凸三角形/四边形，完全离屏或退化的片段跳过；再次以 Godot GUI 渲染确认 Output 无绘制错误。
+- **现象**：PA-12 GPU 预览在移动撕幕跨越视口边缘时，以及 PB-14 匹配 profile 的团体气泡尾巴绘制中，`draw_colored_polygon()` 输出 `Invalid polygon data, triangulation failed`，即使场景仍以退出码 0 结束。
+- **条件**：多边形边缘点相交、塌缩或变成自交轮廓；团体气泡尾巴的尖端与水平底边重合时也会形成零面积三角形。
+- **处理**：将幕布边缘按纵向分段为视口内凸三角形/四边形，完全离屏或退化的片段跳过；团体气泡尾巴在尖端与底边垂直距离不超过0.001时跳过填充和边线绘制。D headless smoke 已通过；D3D12 修复后复测待 E 执行。
 
 ### KT-44：Windows 标题栏使 1080 预览实际只有 1055
 
@@ -278,6 +278,35 @@
 - **处理**：业务表使用原生 Keep File（`importer="keep"`），把 `data/source_tables/*.csv.import` 随 Git 保存；旧 `.translation` 缓存继续忽略并排除出包。使用包外验证脚本挂载真实 PCK，核对 27 张 CSV、字体和已映射音频，不能仅在源工程 smoke。
 - **证据**：INT-18E 的失败 PCK `csv=0`；修复后 Godot 4.7.2 实包 `csv=27 fonts=2 audio=23`、退出 0。
 
+PB-10 配置核对发现 `data/plan_b/` 的五份战斗 CSV 缺少 Keep File sidecar，Windows / Android include filter 也只包含 `data/source_tables/*.csv`，存在源工程可读、导出 PCK 缺原表的同类风险。五份表都要提交 `importer="keep"` sidecar，并加入两端 include filter；旧 `.translation` 输出需排除。此次 4.7.2 资源 PCK 导出退出 0，包外脚本挂载该 PCK 后逐表用 `FileAccess` 打开，五表 PASS。冷导入还会在 `tests/plan_b/results/` 旁生成 CSV Translation 临时文件，已由 `.gitignore` 定点忽略。
+
+PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新增表时，必须同步更新 pb10_packed_data_smoke.gd 的文件清单和 build_internal_playtest.ps1 的成功摘要预期；旧摘要仍要求5份时，即使7份CSV全部可读也会误报失败。本集成分支已把摘要预期改为7；正式PCK验证尚未运行。
+
+### KT-45：全新 worktree 首次 headless 启动先报资源导入缺失
+
+- **现象**：Godot 4.7.2 在新 worktree 首次 `--headless --editor` 时，项目主题加载先报告字体没有 FontFile loader，部分音频也短暂出现 `Failed loading resource`；同一轮后续扫描会重新导入字体和音频，之后加载 UI 场景正常。
+- **条件**：worktree 尚无 `.godot` 导入缓存，且项目全局主题在首次文件系统扫描前初始化。
+- **处理**：先执行 `godot --headless --editor --import --path <project-root> --quit` 完成资源导入，再用项目场景入口复验。首轮主题加载报错不单独作为资源不存在的结论；随后场景仍失败时再按最终解析日志定位。
+- **证据**：PB-12～14 D worktree 首轮 import 完成后，Plan B UI 场景与 D UI smoke 均退出 0；相同 cold-import 现象在 B 的新 worktree 复现。PB-14 A worktree 另复现了 PNG 与 `.import` sidecar 齐全、但6张弹幕球目标 `.ctex` 缺失；一次 `--headless --editor --import --quit` 返回0仍未生成这些目标，核对实际缓存后从同项目同版本的 E worktree 复制六个确切缓存文件，随后 Sandbox headless 短跑进入运行态。Exit 0 不足以证明指定导入目标已经存在。
+
+### KT-46：PK 归零关闭对手侧后，失败剧情序列被 SD-03 拒收
+
+- **现象**：正式 Plan B 战斗到 0% 后，对手侧 `combat_lose` 序列被标记为拒收。
+- **条件**：外部 PK 同步先发出 `pk_feedback_changed`，Plan B UI 按 T0 禁用对手侧队列；随后 `attempt_failed` 消费者提交对手侧失败剧情。
+- **处理**：Plan B UI 在失败演出开始时重新启用对手立绘与对白侧，再提交后续失败序列；重开仍由 `reset_for_attempt()` 清理活动对白。
+
+### KT-47：Plan B 隐藏的弹幕视图被 DivineDescent 收束查询复用
+
+- **现象**：神降临进入锁句阶段后可持续显示 `locked`，可见占比无法达到收束阈值，Ending 不会开始。
+- **条件**：Plan B 普通战斗隐藏旧 `BarrageArea`；`DivineDescentSpread` 仍用其中 `BarrageView.is_visible_in_tree()` 通过的记录计算锁句占比。
+- **处理**：Plan B 进入 DivineDescent 时恢复 `_barrage_area.visible`，并隐藏旧神谕候选层；可见弹幕事实仍由 `BarrageArea` 提供。
+
+### KT-48：PB-16 的128px碰撞圆超过96人口的棋盘排布容量（PB-19已解除全局容量冲突）
+
+- **现象**：PB-16 半径64px时，1024×828棋盘的安全圆心区域约896×700；按理想六角密排估算约容纳44个不重叠棋子，低于PB-15默认人口上限96。
+- **条件**：使用PB-16的64px碰撞半径和当前棋盘尺寸。超过全局排布容量后，随机采样无法避免重叠。
+- **处理**：PB-19将默认碰撞半径调为32px，安全圆心区域约960×764，理想六角密排容量约207个，超过默认人口上限96；因此原全局容量冲突已解除。开局和随机出生仍先搜索间距至少65px的格位，再尝试随机候选，空位不足时选最近邻距离最大的候选。高密度运动导致的局部接触仍由现有碰撞裁决与冷却处理；若半径恢复到64px，需重新评估此容量问题。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。
@@ -290,6 +319,10 @@
 - headless 位移速度与计时验证：KT-40；Curve2D 速度上限：KT-41。
 - CanvasItem 动画多边形三角化：KT-42。
 - 源工程可读 CSV、导出包缺表：KT-43。
+- 新 worktree 首次字体 / 音频 loader 报错：KT-45。
+- Plan B 到 0% 后失败对白未入队：KT-46。
+- Plan B 神降临锁句占比不收束：KT-47。
+- PB-16 128px碰撞圆超过棋盘全局排布容量（PB-19已调整默认半径）：KT-48。
 
 ## 附录 A：Godot 生命周期提醒
 
@@ -298,3 +331,42 @@
 - `PackedScene.instantiate()` 后，节点未进入树时不得假设 `@onready` 已初始化。
 - 关键 Task / Dispatch 清理必须显式完成，不依赖 `_exit_tree()` 等销毁副作用。
 - UI 只提交请求和显示事实，不直接写业务状态。
+
+
+### AU-03：F3调PK不会自动完成连线对白
+- **现象**：通过F3从T0调高PK，HUD档位已上升，音乐却持续柔和引子。
+- **原因**：调试改值发出PK/Tier信号，状态对白可能即时入队，但没有真实命中清场后的正式T1等待/恢复状态；音乐若无条件开始引子，会等待无法被当前恢复条件接受的完成事实。
+- **处理**：Sandbox仅在同步F3改值调用期间标记调试来源，音乐直接按真实Tier试听战斗段；正常命中连线仍等待实际对白完成。不要用定时器冒充对白结束。
+- **证据**：tests/audio/au03_first_boss_check.gd同时验证正常对白与F3入口，debug-duck运行通过。
+
+
+### AU-03：列巴出场测试需要正式命中到达状态
+- **现象**：只用set_player_pk_for_debug改Tier测试列巴，会立即显示连线台词，出场版几乎同步切成对白版，无法观察原色出场。
+- **处理**：生产不改玩法；集成测试通过AttackChargeInput公开的shot_arrival_resolved和shot_hit_resolution_submitted触发实际突破流程，再等待真实气泡。动态emit传参需显式Array[Dictionary]，不能用无类型空Array冒充，否则Godot会拒绝信号回调。
+- **边界**：仅调试/测试路径区别，F3依然直接试听真实Tier战斗段，不应增加生产固定秒数等待。
+
+
+### AU-03：长对白不可循环重放一次性出场开头
+- **现象**：列巴台词仍在播放，约14.868秒后再次听到原曲开头的淡入。
+- **原因**：出场/对白两版音频都包含一次性开头，但导入loop_offset为0；普通循环检查通过并不能证明它适合作为对白等待段。
+- **处理**：保留首次0秒出场，原生OGG循环起点设在约7.432秒伴奏段；两种混音使用同一源时间循环点以保持切换进度。消费者回绕时应加length-loop_offset，而非整首length。
+- **验证**：等待实际回绕并检查位置，覆盖出场/对白两版及长于片段的对白；真实对白完成后仍按原事实切战斗，禁止改成固定时长结束对白。
+
+### AU-03：对白完成切曲与按Tier切曲是两种触发
+- 现象：费米PK仍在58%/T1，连线台词结束后音乐从intro换low，让玩家感觉没有升档也自动换曲。
+- 原因：finish_connection_dialogue解除引子锁，目标T1 low在下一小节接入；不是固定播放时间导致。
+- 当前规则：费米hold_intro_until_tier_change=true，首档对白完成后继续引子，真实跨组才解锁；其他Boss默认false。保持必须在新局/T0清空，跨组后释放，避免阻止以后降档。
+- 测试应同时覆盖真实对白完成、超过片段长度的等待、T2/T4升级及降回T1；F3跳首档不能代表真实连线。
+## 2026-10-19 用户澄清：开场保留到56%首次升档，循环不重播静音
+- 用户明确“第一次升档”是PK56%/T0→T1、费米开屏，指出Teek开头约四秒静音不应重复。此决定替代上一轮误解的“T1保持引子到64%”，也替代此前费米T0静音到连线才起曲的规则。
+- 本地解码teek_intro确认0.25～3.75秒为静音，3.75秒后起声。OGG本体仍是原19.2秒，不改字节；导入loop_offset=4.8，第一次从0秒保留原静音前缀，之后从4.8秒（100BPM两小节位置）回绕，循环跨度14.4秒，不再回到静音头。
+- Fermi Profile用intro_before_connection=true；T0从开场段开始，等待多久都只循环有声后段，56%首次升档箭头进入淡出时接low，64%/T2接mid，79%/T4接high。对白完成不另换段，T3/T5同组不重播。
+- StageArrowFx新增fade_started(direction)，在自身真实淡出首帧发出一次；HUD转发tier_breakthrough_fading(previous,current)。Sandbox在正常升档请求时锁住费米目标，到该信号才release_tier_visual，直接开始既有0.6秒淡变，不再额外等小节；旧档回调拒绝。不可播放箭头时由现有完成入口兜底，重复回调不重播。其他三Boss保持原音乐策略。
+- F3没有真实命中清场箭头，用skip_connection_for_debug直接试听目标档；T0重开/回拉重置引子状态，暂停仍冻结音频；终局高段、失败清理不变。删除已被本轮决定替代的hold_intro_until_tier_change属性，未修改PK阈值/箭头时长或重剪战斗低中高。
+## 2026-10-19 用户再次更正后的当前规则
+- 用户澄清：第一次56%箭头/Boss露面才开始开场曲，开场保持到第二次64%升档；上一轮“T0先起曲、56%切低段”作废。T0恢复静音。
+- Fermi Profile改为hold_intro_through_first_tier=true：56%连线起曲从0秒保留首次约4秒静音；第一次箭头淡出、对白结束都不切曲/不重播；64%第二次箭头淡出才接中段。后续T3同组、T4/T5高段与稳定降档规则不变。F3直接调档仍走明确试听旁路。
+- teek_intro原生loop_offset=4.8继续保留，等待期间可持续循环有声伴奏，不重放静音前缀；未重编码素材或改变原曲速度/音高。删除已被更正的intro_before_connection属性。
+- 保留StageArrowFx真实淡出事实和过期档位保护，仅首次箭头对仍在开场的费米不放行换段；第二次真实升档才放行。其他三Boss默认false，音乐策略未改。
+### AU-03：首档引子保持后，独立试听要模拟箭头放行
+正式四Boss已统一保持引子到T2真实箭头淡出。独立试听没有箭头，只有request_tier会继续保持引子；手动选Tier后调用公开release_tier_visual模拟放行。正式Sandbox仍只使用真实HUD信号。试听提示应区分五次升档和三组音乐，不能再写成对白结束自动接T1低段。

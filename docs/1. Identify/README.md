@@ -60,6 +60,7 @@
 | ID-11 | 一键翻开十二张身份卡，保留选择并继续现有保存流程（已实现） | Godot 4.7.2 Windows GUI 合成事件 smoke、身份映射回归通过 |
 | ID-12 | 独立漫画分镜计时、点击推进、末格确认与暂停恢复（已实现） | Godot 4.7.2 runtime TEST_ONLY 三格流程 smoke |
 | ID-13 | 六阶段开场调度、演出请求与完成回调（已实现） | Godot 4.7.2 Windows 隔离 GUI / headless 流程 smoke；覆盖回退、一次保存及 RS-12 路由 |
+| ID-15 | 统一身份卡框/卡面/文字宽度、滚动顶端与响应式列数 | 代码已提交；实际窗口验收 UNVERIFIED |
 
 ## ID-08 可复用身份步骤（2026-10-09）
 
@@ -70,6 +71,13 @@
 - 已确认的旧 `identity_orthodox`、`identity_heretical`、`identity_absurd` 以 `locked=true` 恢复时沿用旧 Resource、原 ID 和原开局倾向，卡片禁用、显示沿用记录；不映射到任何新角色。未知已存 ID 同样锁住并禁用下一步。调用方继续负责最终确认锁定。
 - 本次资源直接由既有 CSV 建立，正文未改动；Google Sheet 在线内容未能访问。现有导表工具仍负责 Sheet → CSV，后续修改身份正文时同步相应 `.tres` 并运行 `tests/unit/identity_mapping_test.gd` 核对完整正文与映射。没有增加导表基础设施。
 - 身份卡底部的 `BackButton` 由流程显示。ID-13 将其接到已完成的动机漫画页；该视图的身份翻开和当前选择在步骤回退时继续保留。
+
+## ID-15 卡片布局（2026-10-19）
+
+- 当前 #271 正式头像卡面原图为297×371（约0.80纵横比）；身份卡按钮采用280×350逻辑像素，使 Button、CardArt 和选中框使用同一外框比例。旧任务卡的280×260与当前源图比例不符，保留在 QA 日志作为待总控确认的规格差异。
+- GridContainer 4列优先，按 ScrollContainer 可见宽度动态降至3/2/1列；按钮不再横向扩张。CardArt 填满卡框，标题与描述保留20px内边距并自动换行。
+- 初次聚焦只在卡片离开可视范围时滚动；高于视口的卡片以顶边对齐。窗口缩放时方向键焦点按当前列数重建。
+- 真实1920×1080 / 1280×720画面和卡内长文本视觉结果尚未复验，状态为 **UNVERIFIED**。
 
 ## 当前开场流程（ID-13 / RS-12 已接通）
 
@@ -172,3 +180,27 @@ ID-12 提供独立漫画播放控制 Node，按配置发出 1-based 分镜编号
 ## INT-11 当前边界（2026-10-13）
 
 首次 Boot 六幕漫画是角色塑造之前的独立演出，结束到主菜单。它不会代替身份动机漫画；ID-14 在正式动机分镜交付前跳过该素材步骤。
+
+## 2026-10-19 十二张身份卡美术到库
+
+- 新素材路径：`assets/ui/identity/cards/`：`identity_card_back.png`、`identity_card_front_00_blank.png`、`identity_card_front_01.png`～`identity_card_front_12.png`。
+- 12 张带符号卡面已由项目负责人确认为身份卡；空白正面和背面同属于身份卡。
+- 本次只归类美术，不改变翻开、选择和存档逻辑。美术原 01～12 编号保留；已暂按 IdentityOptions.CARDS 的当前顺序，映射至三倾向的 12 个身份，写入各 IdentityOption Resource 的 icon。后续可直接调整映射；当前身份选择 UI 读取 icon 绘制卡面，未翻开时使用统一卡背，缺省贴图时使用空白正面；保留原翻面和选择逻辑。
+- 全部旧文件名到新文件名的对照：`docs/Shared/PresentationAssets/Art_Intake_Rename_2026-10-19.md`。
+
+### 2026-10-19 临时卡面映射
+
+- `card_front_01` → `identity_orthodox_1`
+- `card_front_02` → `identity_heresy_4`
+- `card_front_03` → `identity_absurd_1`
+- `card_front_04` → `identity_heresy_2`
+- `card_front_05` → `identity_absurd_2`
+- `card_front_06` → `identity_orthodox_3`
+- `card_front_07` → `identity_heresy_3`
+- `card_front_08` → `identity_absurd_4`
+- `card_front_09` → `identity_orthodox_4`
+- `card_front_10` → `identity_absurd_3`
+- `card_front_11` → `identity_orthodox_2`
+- `card_front_12` → `identity_heresy_1`
+
+- 2026-10-19：同步写入 `data/source_tables/01_身份配置.csv` 的 icon_asset_id（12 行），正式导表再次生成身份 Resource 时可保留当前暂定映射。
