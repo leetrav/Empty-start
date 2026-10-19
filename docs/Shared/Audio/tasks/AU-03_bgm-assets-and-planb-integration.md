@@ -523,3 +523,8 @@ Headless 测试只能证明其覆盖到的逻辑。
 - Fermi Profile用intro_before_connection=true；T0从开场段开始，等待多久都只循环有声后段，56%首次升档箭头进入淡出时接low，64%/T2接mid，79%/T4接high。对白完成不另换段，T3/T5同组不重播。
 - StageArrowFx新增fade_started(direction)，在自身真实淡出首帧发出一次；HUD转发tier_breakthrough_fading(previous,current)。Sandbox在正常升档请求时锁住费米目标，到该信号才release_tier_visual，直接开始既有0.6秒淡变，不再额外等小节；旧档回调拒绝。不可播放箭头时由现有完成入口兜底，重复回调不重播。其他三Boss保持原音乐策略。
 - F3没有真实命中清场箭头，用skip_connection_for_debug直接试听目标档；T0重开/回拉重置引子状态，暂停仍冻结音频；终局高段、失败清理不变。删除已被本轮决定替代的hold_intro_until_tier_change属性，未修改PK阈值/箭头时长或重剪战斗低中高。
+## 2026-10-19 用户再次更正后的当前规则
+- 用户澄清：第一次56%箭头/Boss露面才开始开场曲，开场保持到第二次64%升档；上一轮“T0先起曲、56%切低段”作废。T0恢复静音。
+- Fermi Profile改为hold_intro_through_first_tier=true：56%连线起曲从0秒保留首次约4秒静音；第一次箭头淡出、对白结束都不切曲/不重播；64%第二次箭头淡出才接中段。后续T3同组、T4/T5高段与稳定降档规则不变。F3直接调档仍走明确试听旁路。
+- teek_intro原生loop_offset=4.8继续保留，等待期间可持续循环有声伴奏，不重放静音前缀；未重编码素材或改变原曲速度/音高。删除已被更正的intro_before_connection属性。
+- 保留StageArrowFx真实淡出事实和过期档位保护，仅首次箭头对仍在开场的费米不放行换段；第二次真实升档才放行。其他三Boss默认false，音乐策略未改。

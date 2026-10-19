@@ -16,8 +16,8 @@ func _run() -> void:
 	await process_frame
 	var audio: Node = root.get_node("AudioManager")
 	await create_timer(0.2).timeout
-	assert(audio.get_music_event_id() == &"music_alien_intro")
-	print("PASS 正式费米开局引子")
+	assert(audio.get_music_event_id() == &"")
+	print("PASS 正式费米开局静音")
 	scene.dialogue_event_sequence_completed.connect(_on_dialogue_completed)
 	var flow: Node = scene.get_node("BattleAttemptFlow")
 	# 直接驱动PK事实测试正式连线路径，F3调档绕过对白的场景另验。
@@ -36,8 +36,8 @@ func _run() -> void:
 		remaining -= 0.2
 	assert(_connected_complete, "真实连线对白应完成")
 	await create_timer(2.8).timeout
-	assert(audio.get_music_event_id() == &"music_alien_low")
-	print("PASS 费米T1箭头后已切低段，结束对白不再换段")
+	assert(audio.get_music_event_id() == &"music_alien_intro")
+	print("PASS 费米T1保持开场到下一次升档")
 	scene.debug_set_player_pk(0.66)
 	await create_timer(2.8).timeout
 	assert(audio.get_music_event_id() == &"music_alien_mid")
@@ -58,8 +58,8 @@ func _run() -> void:
 	print("PASS 正式PK到T5切高段")
 	scene.restart_current_attempt()
 	await create_timer(0.15).timeout
-	assert(audio.get_music_event_id() == &"music_alien_intro")
-	print("PASS 正式重开回引子")
+	assert(audio.get_music_event_id() == &"")
+	print("PASS 正式重开回静音")
 	scene.debug_set_player_pk(0.0)
 	await create_timer(0.8).timeout
 	assert(audio.get_music_event_id() == &"")

@@ -36,7 +36,7 @@ func _ready() -> void:
 	AudioManager.music_changed.connect(_on_music_changed)
 
 
-# 新局按Profile选择T0引子或静音；中途恢复非T0时从实际战斗组开始。
+# 新局T0黑屏等待保持静音；中途恢复非T0时从实际战斗组开始。
 func start_battle(tier: int = 0) -> void:
 	_active = true
 	_paused = false
@@ -49,9 +49,6 @@ func start_battle(tier: int = 0) -> void:
 	AudioManager.stop_music()
 	if tier > 0:
 		_play_group(_target, 0.0, true)
-	elif profile.intro_before_connection:
-		_opening_active = true
-		_play_group(0, 0.0, true)
 
 
 # 同组信号不重播；向更低组连续计时，取消时只保留最新目标。
@@ -60,13 +57,6 @@ func request_tier(tier: int, wait_for_visual: bool = false) -> void:
 		return
 	var target: int = profile.group_for_tier(tier)
 	if tier == 0:
-		if profile.intro_before_connection:
-			_target = 0
-			_opening_active = true
-			_waiting_for_tier_visual = false
-			if _group != 0 or not owns_music():
-				_play_group(0, 0.0, true)
-			return
 		# 对手离线/等待时撤销引子和所有延迟切曲，保留普通操作音效。
 		var owned: bool = owns_music()
 		_group = -1
@@ -127,7 +117,7 @@ func finish_connection_dialogue() -> void:
 	_opening_active = false
 	if _target == 0:
 		_target = profile.group_for_tier(1)
-	if profile.intro_before_connection:
+	if profile.hold_intro_through_first_tier:
 		# 费米仅由真实箭头放行，不能拿对白完成替代升档视觉。
 		_opening_active = true
 	_boundary_remaining = -1.0
@@ -144,9 +134,13 @@ func is_opening_dialogue_active() -> bool:
 
 # 当前真实升档箭头开始淡出后才启动音乐淡变，不再额外等待小节。
 func release_tier_visual(tier: int) -> void:
-	if not _active or not profile.intro_before_connection or tier <= 0:
+	if not _active or not profile.hold_intro_through_first_tier or tier <= 0:
 		return
 	if profile.group_for_tier(tier) != _target:
+		return
+	# 首次升档只开屏，开场曲保持到第二次升档；不重播前四秒。
+	if _opening_active and tier == 1:
+		_waiting_for_tier_visual = false
 		return
 	_opening_active = false
 	_waiting_for_tier_visual = false
@@ -156,7 +150,7 @@ func release_tier_visual(tier: int) -> void:
 
 # F3无命中清场和箭头链路，显式直接试听当前档，避免卡在待放行状态。
 func skip_connection_for_debug(tier: int) -> void:
-	if not _active or not profile.intro_before_connection or tier <= 0:
+	if not _active or not profile.hold_intro_through_first_tier or tier <= 0:
 		return
 	_opening_active = false
 	_waiting_for_tier_visual = false

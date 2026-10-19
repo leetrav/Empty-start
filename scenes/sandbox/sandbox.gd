@@ -234,7 +234,7 @@ func _queue_pk_tier_visual(current_tier: int, _player_pk: float) -> void:
 			_battle_music.begin_connection()
 		if _debug_pk_update_active:
 			_battle_music.skip_connection_for_debug(current_tier)
-		_battle_music.request_tier(current_tier, _battle_music.profile.intro_before_connection and not _debug_pk_update_active)
+		_battle_music.request_tier(current_tier, _battle_music.profile.hold_intro_through_first_tier and not _debug_pk_update_active)
 	# 延迟只保存来源和档位，PK在执行时读取，避免旧回调覆盖回拉或新尝试。
 	_deliver_pk_tier_visual.call_deferred(_battle_attempt_flow.get_combat_stage(), current_tier)
 
