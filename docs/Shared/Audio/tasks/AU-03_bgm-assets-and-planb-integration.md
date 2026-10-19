@@ -7,7 +7,7 @@
 首次开播前房间保留Pure Soul（-12dB、0.6秒淡入，从2.35秒起播/循环跳过空白）；每场PK后休息改为夢灯 -YumeAkari-（music_rest_after_pk，-12dB、0.6秒淡入、0秒播放/原生循环）。后续开播房间以已提交next_normal_level_order>1选择夢灯并续播；重复结果、历史往返不重播，暂停续播，离开/下场T0淡出。复用RoomMusicPresenter和AudioManager，不改变奖励、关卡流程或结尾天導2.5秒淡入。
 
 日期：2026-10-18（2026-10-19更新）。状态：P1旧版四关统一接入已实现，真实场景/结果淡出/17段循环/PCK检查通过；仍待用户游戏内听感与完整结算回房间试玩。费米保持5191c59确认效果，奥格尔v1/咕拉v1与列巴原曲开头v2已采用。P2正式PlanB适配尚待上游可运行交付；整卡未标全部完成。
-工作分支：`feature/bgm-integration`，基于 `leetrav/Empty-start` main `28b156f`；完成后推送 leetrav，再向 w7775p/Empty-start 提 PR。
+工作分支：`feature/bgm-integration`，最初基于 `leetrav/Empty-start` main `28b156f`，2026-10-19已合入同步后的main `be81f08c43b82a8a02dc978cdbe6e101131001ba`；完成后推送 leetrav，再向 w7775p/Empty-start 提 PR。
 
 ## 开始前先阅读以下文档
 - `AGENTS.md`、`project.godot`、`known_traps.md`（音频淡变与 KT-43 CSV 导入问题）。
