@@ -18,6 +18,13 @@ signal counterattack_resolved(result: Dictionary)
 const TIER_CATALOG: Resource = preload("res://data/combat_stage/tier_catalog.tres")
 const PLAYER_WORD_SLOT_COUNT: int = 3
 const PLAYER_WORD_SLOT_REFILL_SECONDS: float = 5.0
+const PLAYER_WORD_SLOT_BATTLE_TYPES: Array[StringName] = [&"type_a", &"type_b", &"type_c"]
+const PLAYER_WORD_SLOT_TITLES: Array[String] = ["铁拳布道", "断章取义", "博爱包容"]
+const STRENGTH_NAMES: Dictionary = {
+	1: "S1低声传教",
+	2: "S2带起节奏",
+	3: "S3全网疯传",
+}
 
 @export_range(0.0, 5.0, 0.01) var pk_rate_pp_per_second: float = 0.85
 @export_range(0.0, 60.0, 0.1) var player_publish_cooldown_seconds: float = 5.0
@@ -43,6 +50,8 @@ var _last_published_at: Dictionary = {"player": -1000000.0, "opponent": -1000000
 var _player_slot_refresh_remaining: Array[float] = [0.0, 0.0, 0.0]
 var _player_slot_refresh_word_ids: Array[String] = ["", "", ""]
 var _player_slot_definitions: Array[Dictionary] = [{}, {}, {}]
+var _tutorial_type_c_s1_pending: bool = false
+var _tutorial_type_c_s1_draw_used: bool = false
 var _simulation_uses_integer_unit_ids: bool = false
 
 
@@ -88,6 +97,8 @@ func start_battle(arena_size: Vector2, arena_origin: Vector2 = Vector2.ZERO) -> 
 	_current_tier = 0
 	_next_word_order = 1
 	_used_word_ids.clear()
+	_tutorial_type_c_s1_pending = false
+	_tutorial_type_c_s1_draw_used = false
 	_last_published_at = {"player": -1000000.0, "opponent": -1000000.0}
 	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
 		_player_slot_refresh_remaining[slot_id] = 0.0
@@ -307,8 +318,12 @@ func get_player_hand() -> Array[Dictionary]:
 		var source_definition: Dictionary = _player_slot_definitions[slot_id]
 		var definition: Dictionary = source_definition.duplicate(true)
 		if definition.is_empty():
-			definition = {"word_id": "", "text": "", "strength": 0, "battle_type": ""}
+			definition = {"word_id": "", "text": "", "strength": 0}
 		definition["slot_id"] = slot_id
+		definition["slot_title"] = PLAYER_WORD_SLOT_TITLES[slot_id]
+		definition["battle_type"] = PLAYER_WORD_SLOT_BATTLE_TYPES[slot_id]
+		definition["battle_type_emoji"] = _get_player_slot_battle_type_emoji(slot_id, definition)
+		definition["strength_name"] = str(STRENGTH_NAMES.get(int(definition.get("strength", 0)), ""))
 		hand.append(definition)
 	return hand
 
@@ -333,7 +348,7 @@ func get_player_slot_states() -> Array[Dictionary]:
 func _reset_player_hand_slots() -> void:
 	var occupied_word_ids: Array[String] = []
 	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
-		var definition: Dictionary = _draw_player_word_candidate(occupied_word_ids)
+		var definition: Dictionary = _draw_player_word_candidate(occupied_word_ids, slot_id)
 		_player_slot_definitions[slot_id] = definition
 		var word_id: String = str(definition.get("word_id", ""))
 		if not word_id.is_empty():
@@ -342,12 +357,20 @@ func _reset_player_hand_slots() -> void:
 
 
 ## C 每次只返回一个候选；当前槽和其他槽的状态由 A 持有。
-func _draw_player_word_candidate(occupied_word_ids: Array[String]) -> Dictionary:
+func _draw_player_word_candidate(
+	occupied_word_ids: Array[String],
+	slot_id: int,
+	strength_filter: int = 0
+) -> Dictionary:
 	if _word_catalog == null:
 		return {}
+	if slot_id < 0 or slot_id >= PLAYER_WORD_SLOT_COUNT:
+		return {}
+	var battle_type_filter: String = str(PLAYER_WORD_SLOT_BATTLE_TYPES[slot_id])
 	if _word_catalog.has_method("draw_player_speech_word"):
 		var candidate: Variant = _word_catalog.call(
-			"draw_player_speech_word", _used_word_ids, occupied_word_ids, available_level
+			"draw_player_speech_word", _used_word_ids, occupied_word_ids, available_level,
+			battle_type_filter, strength_filter
 		)
 		return candidate.duplicate(true) if candidate is Dictionary else {}
 	if _word_catalog.has_method("get_available_word_ids"):
@@ -360,8 +383,63 @@ func _draw_player_word_candidate(occupied_word_ids: Array[String]) -> Dictionary
 			var word_id: String = str(value)
 			if occupied_word_ids.has(word_id):
 				continue
-			return get_word_definition(word_id)
+			var definition: Dictionary = get_word_definition(word_id)
+			if str(definition.get("battle_type", "")) != battle_type_filter:
+				continue
+			if strength_filter > 0 and int(definition.get("strength", 0)) != strength_filter:
+				continue
+			return definition
 	return {}
+
+
+## PB-25 在首关第二段教学请求一次✋S1；卡槽冷却中时延迟到冷却结束再抽取。
+func request_tutorial_type_c_s1_draw() -> bool:
+	if available_level != "level_001" or _battle_state != BattleState.RUNNING \
+		or _tutorial_type_c_s1_draw_used:
+		return false
+	if _tutorial_type_c_s1_pending:
+		return true
+	_tutorial_type_c_s1_pending = true
+	if _player_slot_refresh_remaining[2] > 0.0:
+		return true
+	if _draw_tutorial_type_c_s1_now():
+		return true
+	_tutorial_type_c_s1_pending = false
+	return false
+
+
+## 当前✋槽可用时立即换成合法S1；排队请求则在五秒计时结束时由补牌路径消费。
+func _draw_tutorial_type_c_s1_now() -> bool:
+	var slot_id: int = 2
+	var occupied_word_ids: Array[String] = []
+	for other_slot_id: int in PLAYER_WORD_SLOT_COUNT:
+		if other_slot_id == slot_id:
+			continue
+		var occupied_word_id: String = str(_player_slot_definitions[other_slot_id].get("word_id", ""))
+		if not occupied_word_id.is_empty():
+			occupied_word_ids.append(occupied_word_id)
+	var current_word_id: String = str(_player_slot_definitions[slot_id].get("word_id", ""))
+	if not current_word_id.is_empty() and not occupied_word_ids.has(current_word_id):
+		occupied_word_ids.append(current_word_id)
+	var definition: Dictionary = _draw_player_word_candidate(occupied_word_ids, slot_id, 1)
+	if definition.is_empty():
+		return false
+	_player_slot_definitions[slot_id] = definition
+	if _player_slot_refresh_remaining[slot_id] > 0.0:
+		_player_slot_refresh_word_ids[slot_id] = str(definition.get("word_id", ""))
+	else:
+		_player_slot_refresh_word_ids[slot_id] = ""
+	_tutorial_type_c_s1_pending = false
+	_tutorial_type_c_s1_draw_used = true
+	player_hand_changed.emit(get_player_hand())
+	return true
+
+
+## 空槽也从正式词库读取类型符号；PB-24无需按内部type ID自行猜图标。
+func _get_player_slot_battle_type_emoji(slot_id: int, definition: Dictionary) -> String:
+	if _word_catalog != null and _word_catalog.has_method("get_battle_type_emoji"):
+		return str(_word_catalog.call("get_battle_type_emoji", str(PLAYER_WORD_SLOT_BATTLE_TYPES[slot_id])))
+	return str(definition.get("battle_type_emoji", ""))
 
 
 func _get_player_slot_state(slot_id: int) -> Dictionary:
@@ -569,7 +647,15 @@ func _update_player_slot_refills(delta: float) -> void:
 			var occupied_word_id: String = str(_player_slot_definitions[other_slot_id].get("word_id", ""))
 			if not occupied_word_id.is_empty():
 				occupied_word_ids.append(occupied_word_id)
-		_player_slot_definitions[slot_id] = _draw_player_word_candidate(occupied_word_ids)
+		if slot_id == 2 and _tutorial_type_c_s1_pending:
+			if not _draw_tutorial_type_c_s1_now():
+				# 池确实耗尽时仅清空✋槽，其他固定槽继续按各自计时补牌。
+				_player_slot_definitions[slot_id] = {}
+				_player_slot_refresh_word_ids[slot_id] = ""
+				_tutorial_type_c_s1_pending = false
+				player_hand_changed.emit(get_player_hand())
+			continue
+		_player_slot_definitions[slot_id] = _draw_player_word_candidate(occupied_word_ids, slot_id)
 		_player_slot_refresh_word_ids[slot_id] = ""
 		player_hand_changed.emit(get_player_hand())
 

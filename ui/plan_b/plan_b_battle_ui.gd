@@ -139,6 +139,11 @@ var _portrait_attack: AttackChargeInput
 var _last_player_echo := ""
 var _last_opponent_echo := ""
 var _last_hand_status_tint := Color.TRANSPARENT
+var _last_counterable_battle_type := ""
+var _counterable_target_count := 0
+var _pending_rephrase_unit_ids: Array[String] = []
+var _pending_rephrase_feedback_key := ""
+var _pending_rephrase_seconds := -1.0
 
 var _field
 var _player_panel: Control
@@ -160,8 +165,10 @@ var _hand_buttons: Array[Button] = []
 var _hand_phrase_labels: Array[Label] = []
 var _hand_meta_labels: Array[Label] = []
 var _hand_cooldown_fills: Array[CardCooldownFill] = []
+var _hand_key_labels: Array[Label] = []
 var _hand_button_selected_state: Array[bool] = []
 var _hand_button_disabled_state: Array[bool] = []
+var _hand_button_tendency_state: Array[String] = []
 var _hand_status_label: Label
 var _hand_count_label: Label
 var _counterattack_label: Label
@@ -193,6 +200,10 @@ func _process(delta: float) -> void:
 	if _counterattack_seconds <= 0.0 and _counterattack_label != null:
 		_counterattack_label.visible = false
 	_advance_slot_fill_visual(delta)
+	if _pending_rephrase_seconds >= 0.0:
+		_pending_rephrase_seconds -= delta
+		if _pending_rephrase_seconds <= 0.0:
+			_flush_rephrase_feedback()
 	_advance_group_bubbles(delta)
 	_flush_tracker_unit_snapshot_metrics()
 	_sync_elapsed += delta
@@ -283,6 +294,7 @@ func set_word_definitions(definitions: Array) -> void:
 		_field.set_word_texts(_word_text_by_id)
 	if not _hand_from_c:
 		_rebuild_fallback_hand()
+	_update_counterable_targets_if_type_changed()
 	_refresh_hand_view()
 	_refresh_view()
 
@@ -308,6 +320,7 @@ func set_word_hand(hand: Array, remaining_count: int = 0) -> void:
 			_word_text_by_id[word_id] = str(entry["text"])
 		next_hand[slot_id] = entry
 	_hand_words = next_hand
+	_update_counterable_targets_if_type_changed()
 	_refresh_hand_view()
 	if _field != null:
 		_field.set_word_texts(_word_text_by_id)
@@ -328,6 +341,7 @@ func set_player_slot_states(states: Array) -> void:
 	_hand_slot_states = next_states
 	for slot_id in 3:
 		_hand_display_remaining[slot_id] = maxf(float(_hand_slot_states[slot_id].get("remaining", 0.0)), 0.0)
+	_update_counterable_targets_if_type_changed()
 	_refresh_hand_view()
 	if _performance_tracker != null:
 		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_REFRESH, Time.get_ticks_usec() - tracker_start_usec, next_states.size())
@@ -687,6 +701,8 @@ func _refresh_special_stage_layout() -> void:
 	_paradox_stage_label.visible = show_paradox_layer
 	_aim_reticle.visible = show_paradox_layer
 	if special_stage_active:
+		_counterable_target_count = 0
+		_field.call("set_counterable_unit_ids", [])
 		_counterattack_label.visible = false
 		_counterattack_seconds = 0.0
 		_clear_group_bubbles()
@@ -1124,7 +1140,7 @@ func _build_word_hand(parent: Container) -> void:
 	var heading := HBoxContainer.new()
 	heading.add_theme_constant_override("separation", 8)
 	content.add_child(heading)
-	var title := _label("选一句  ·  按 1–3 选句", 16, Color("#75d9f0"))
+	var title := _label("选一句 · 按 1–3 选句 · " + _matchup_rule_legend(), 14, Color("#75d9f0"))
 	heading.add_child(title)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1147,7 +1163,7 @@ func _build_word_hand(parent: Container) -> void:
 		button.mouse_filter = Control.MOUSE_FILTER_STOP
 		button.add_theme_stylebox_override("disabled", _panel_style(Color("#101a21"), Color("#23343c"), 10))
 		button.add_theme_color_override("font_disabled_color", Color("#82929a"))
-		_style_button(button, false)
+		_style_button(button, false, "neutral")
 		cards.add_child(button)
 		var cooldown_fill := CardCooldownFill.new()
 		cooldown_fill.name = "CooldownFill"
@@ -1161,7 +1177,7 @@ func _build_word_hand(parent: Container) -> void:
 		card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(card_content)
 
-		var key_label := _label("%d" % (index + 1), 11, Color("#7dd9ef"))
+		var key_label := _label("%d" % (index + 1), 12, Color("#7dd9ef"))
 		key_label.name = "KeyLabel"
 		card_content.add_child(key_label)
 		var phrase_label := _label("等待词池", 18, COLOR_TEXT)
@@ -1179,8 +1195,10 @@ func _build_word_hand(parent: Container) -> void:
 		_hand_phrase_labels.append(phrase_label)
 		_hand_meta_labels.append(meta_label)
 		_hand_cooldown_fills.append(cooldown_fill)
+		_hand_key_labels.append(key_label)
 		_hand_button_selected_state.append(false)
 		_hand_button_disabled_state.append(false)
+		_hand_button_tendency_state.append("")
 
 	_hand_status_label = _label(_status_text, 14, COLOR_MUTED)
 	_hand_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1261,13 +1279,15 @@ func _label(text_value: String, font_size: int, tint: Color) -> Label:
 	return label
 
 
-func _style_button(button: Button, selected: bool) -> void:
-	var base := Color("#19313d") if selected else Color("#12232d")
-	var edge := Color("#65d8f2") if selected else Color("#2b424c")
+func _style_button(button: Button, selected: bool, tendency_id: String) -> void:
+	# 卡面主色表达话语倾向；克制类型继续由独立徽标表达。
+	var tendency_color: Color = UnitFieldScript.get_tendency_color(tendency_id)
+	var base := Color("#19313d").lerp(tendency_color, 0.16) if selected else Color("#12232d").lerp(tendency_color, 0.09)
+	var edge := tendency_color if selected else tendency_color.lerp(Color("#2b424c"), 0.34)
 	button.add_theme_stylebox_override("normal", _panel_style(base, edge, 11))
-	button.add_theme_stylebox_override("hover", _panel_style(Color("#203c49"), Color("#71dcf2"), 11))
-	button.add_theme_stylebox_override("pressed", _panel_style(Color("#244a5a"), Color("#a0edff"), 11))
-	button.add_theme_stylebox_override("disabled", _panel_style(Color("#141e25"), Color("#29343a"), 11))
+	button.add_theme_stylebox_override("hover", _panel_style(Color("#203c49").lerp(tendency_color, 0.15), tendency_color, 11))
+	button.add_theme_stylebox_override("pressed", _panel_style(Color("#244a5a").lerp(tendency_color, 0.22), tendency_color.lightened(0.2), 11))
+	button.add_theme_stylebox_override("disabled", _panel_style(Color("#141e25").lerp(tendency_color, 0.08), tendency_color.darkened(0.35), 11))
 	button.add_theme_color_override("font_color", COLOR_TEXT)
 	button.add_theme_color_override("font_disabled_color", Color("#829098"))
 	button.add_theme_color_override("font_hover_color", Color("#ffffff"))
@@ -1297,6 +1317,109 @@ func _entry_word_id(entry: Dictionary) -> String:
 	return str(entry.get("word_id", entry.get("id", entry.get("phrase_id", ""))))
 
 
+## Emoji 字形存在时使用策划映射；字体缺字时用易懂的石/剪/布文字回退。
+func _battle_type_symbol(configured_symbol: String, battle_type: String, font: Font) -> String:
+	var codepoint := 0
+	match battle_type:
+		"type_a":
+			codepoint = 0x270A
+		"type_b":
+			codepoint = 0x270C
+		"type_c":
+			codepoint = 0x270B
+	if not configured_symbol.is_empty() and font != null and codepoint > 0 and font.has_char(codepoint):
+		return configured_symbol
+	return UnitFieldScript.get_battle_type_fallback_mark(battle_type)
+
+
+func _matchup_rule_legend() -> String:
+	var font := get_theme_default_font()
+	if font == null:
+		font = ThemeDB.fallback_font
+	var icons_available := (
+		font.has_char(0x270A) and font.has_char(0x270C) and font.has_char(0x270B)
+	)
+	if icons_available:
+		return "✊克✌️ · ✌️克✋ · ✋克✊"
+	return "石克剪 · 剪克布 · 布克石"
+
+
+## 力度名称和投放颗数共用正式强度档位，避免卡面只显示内部数字。
+func _strength_presentation(strength: int) -> String:
+	var safe_strength := clampi(strength, 1, 3)
+	var bead_count := 2 if safe_strength == 1 else (4 if safe_strength == 2 else 8)
+	var strength_name := "低声传教" if safe_strength == 1 else ("带起节奏" if safe_strength == 2 else "全网疯传")
+	var beads := ""
+	for _index in bead_count:
+		beads += "●"
+	return "S%d %s · %d颗 %s" % [safe_strength, strength_name, bead_count, beads]
+
+
+func _selected_battle_type() -> String:
+	if _selected_slot_index < 0 or _selected_slot_index >= _hand_words.size():
+		return ""
+	var selected_word_id := _entry_word_id(_hand_words[_selected_slot_index])
+	if selected_word_id.is_empty() or _used_word_ids.has(selected_word_id):
+		return ""
+	var slot_state: Dictionary = _hand_slot_states[_selected_slot_index] if _selected_slot_index < _hand_slot_states.size() else {}
+	if not bool(slot_state.get("available", true)):
+		return ""
+	if slot_state.has("word_id") and str(slot_state.get("word_id", "")) != selected_word_id:
+		return ""
+	return str(_hand_words[_selected_slot_index].get("battle_type", ""))
+
+
+## 只在选中类型变化时重算；单位属性变化由 unit_changed / spawn / despawn 入口强制刷新。
+func _update_counterable_targets_if_type_changed() -> void:
+	var battle_type := _selected_battle_type()
+	if battle_type == _last_counterable_battle_type:
+		return
+	_refresh_counterable_targets(true)
+
+
+func _refresh_counterable_targets(force: bool = false) -> void:
+	var battle_type := _selected_battle_type()
+	if not force and battle_type == _last_counterable_battle_type:
+		return
+	_last_counterable_battle_type = battle_type
+	var target_ids: Array[String] = []
+	if (not battle_type.is_empty() and _has_method(_word_catalog, "get_type_matchup")
+			and is_instance_valid(_field)):
+		for snapshot in _snapshots:
+			if str(snapshot.get("team", "")) != "opponent":
+				continue
+			var defender_type := str(snapshot.get("battle_type", ""))
+			if defender_type.is_empty():
+				continue
+			var relation: StringName = _word_catalog.call("get_type_matchup", battle_type, defender_type)
+			if relation == &"advantage":
+				target_ids.append(str(snapshot.get("unit_id", "")))
+	_counterable_target_count = target_ids.size()
+	if is_instance_valid(_field):
+		_field.call("set_counterable_unit_ids", target_ids)
+
+
+## 将同一 S1 话语在同一小段时间内真正发生的 relay 合并成一个棋盘提示。
+func _queue_rephrase_feedback(unit_id: String, snapshot: Dictionary) -> void:
+	var word_id := str(snapshot.get("word_id", ""))
+	var word_order := int(snapshot.get("word_order", 0))
+	var feedback_key := "%s:%d" % [word_id, word_order]
+	if _pending_rephrase_feedback_key != feedback_key and not _pending_rephrase_unit_ids.is_empty():
+		_flush_rephrase_feedback()
+	_pending_rephrase_feedback_key = feedback_key
+	if not _pending_rephrase_unit_ids.has(unit_id):
+		_pending_rephrase_unit_ids.append(unit_id)
+	_pending_rephrase_seconds = 0.08
+
+
+func _flush_rephrase_feedback() -> void:
+	if not _pending_rephrase_unit_ids.is_empty() and is_instance_valid(_field):
+		_field.call("show_rephrase_feedback", _pending_rephrase_unit_ids.duplicate(), _pending_rephrase_feedback_key)
+	_pending_rephrase_unit_ids.clear()
+	_pending_rephrase_feedback_key = ""
+	_pending_rephrase_seconds = -1.0
+
+
 func _refresh_hand_view() -> void:
 	if _hand_buttons.is_empty():
 		return
@@ -1314,9 +1437,14 @@ func _refresh_hand_view() -> void:
 		var button := _hand_buttons[index]
 		var phrase_label := _hand_phrase_labels[index]
 		var meta_label := _hand_meta_labels[index]
+		var key_label := _hand_key_labels[index]
+		var tendency_id := str(entry.get("tendency_id", entry.get("tendency", "neutral")))
+		var tendency_color: Color = UnitFieldScript.get_tendency_color(tendency_id)
 		var next_disabled := true
 		if word_id.is_empty():
 			var empty_text := "无可用话语" if _hand_from_c else "等待 A/C 提供三槽"
+			key_label.text = "槽 %d" % (index + 1)
+			key_label.add_theme_color_override("font_color", tendency_color)
 			if phrase_label.text != empty_text:
 				phrase_label.text = empty_text
 			if meta_label.text != "":
@@ -1328,11 +1456,25 @@ func _refresh_hand_view() -> void:
 			if phrase_label.text != shown_phrase:
 				phrase_label.text = shown_phrase
 			var strength := int(entry.get("strength", 1))
-			var battle_type := str(entry.get("battle_type", "话语"))
-			var meta_text := "刷新中 %.1f 秒 · 强度 %d · %s" % [remaining, strength, battle_type] if remaining > 0.0 else ("本局已发表" if used else "强度 %d · %s" % [strength, battle_type])
+			var battle_type := str(entry.get("battle_type", ""))
+			var battle_type_name: String = UnitFieldScript.get_battle_type_name(battle_type)
+			var battle_symbol := _battle_type_symbol(
+				str(entry.get("battle_type_emoji", "")), battle_type, key_label.get_theme_default_font()
+			)
+			key_label.text = "%d · %s %s" % [index + 1, battle_symbol, battle_type_name]
+			if remaining > 0.0:
+				key_label.text += " · %.1f秒" % remaining
+			elif used:
+				key_label.text += " · 已用"
+			key_label.add_theme_color_override("font_color", tendency_color)
+			var meta_text := _strength_presentation(strength)
+			if remaining > 0.0:
+				meta_text += " · 补牌中"
+			elif used:
+				meta_text += " · 本局已发表"
 			if meta_label.text != meta_text:
 				meta_label.text = meta_text
-			var tooltip := phrase
+			var tooltip := "%s\n%s %s\n%s" % [phrase, battle_symbol, battle_type_name, _strength_presentation(strength)]
 			if remaining > 0.0:
 				tooltip += "\n%.1f 秒后补入新话语" % remaining
 			elif used:
@@ -1345,12 +1487,14 @@ func _refresh_hand_view() -> void:
 		var next_selected := index == _selected_slot_index and available
 		var disabled_changed := _hand_button_disabled_state[index] != next_disabled
 		var selection_changed := _hand_button_selected_state[index] != next_selected
+		var tendency_changed := _hand_button_tendency_state[index] != tendency_id
 		if button.disabled != next_disabled:
 			button.disabled = next_disabled
-		if disabled_changed or selection_changed:
-			_style_button(button, next_selected)
+		if disabled_changed or selection_changed or tendency_changed:
+			_style_button(button, next_selected, tendency_id)
 			_hand_button_disabled_state[index] = next_disabled
 			_hand_button_selected_state[index] = next_selected
+			_hand_button_tendency_state[index] = tendency_id
 	if _hand_count_label != null:
 		var occupied_slots := 0
 		for entry in _hand_words:
@@ -1398,6 +1542,7 @@ func _refresh_sources() -> void:
 			_faction_phrases_dirty = true
 			if _field != null:
 				_field.set_unit_snapshots(_snapshots)
+			_update_counterable_targets_if_type_changed()
 	var group_source: Object = _unit_source if _has_method(_unit_source, "get_word_groups") else _battle_host
 	var group_signal_connected := _has_signal(_unit_source, "word_groups_changed")
 	if _has_method(group_source, "get_word_groups") and (not _sources_initialized or not group_signal_connected):
@@ -1440,6 +1585,13 @@ func _reindex_unit_snapshots() -> void:
 		var unit_id := str(_snapshots[index].get("unit_id", ""))
 		if not unit_id.is_empty():
 			_snapshot_index_by_id[unit_id] = index
+
+
+func _snapshot_for_unit_id(unit_id: String) -> Dictionary:
+	if not _snapshot_index_by_id.has(unit_id):
+		return {}
+	var snapshot_index: int = int(_snapshot_index_by_id[unit_id])
+	return _snapshots[snapshot_index] if snapshot_index >= 0 and snapshot_index < _snapshots.size() else {}
 
 
 func _upsert_unit_snapshot(unit_id: String) -> void:
@@ -1642,9 +1794,11 @@ func _update_status_view() -> void:
 	elif _selected_word_id.is_empty():
 		next_text = "选择一句话，再点击棋盘内任意位置发表。"
 	else:
-		next_text = "已选第 %d 槽「%s」· 点击棋盘位置发表" % [
+		var counter_hint := " · 亮圈标出可克制目标" if _counterable_target_count > 0 else ""
+		next_text = "已选第 %d 槽「%s」%s · 点击棋盘位置发表" % [
 		_selected_slot_index + 1,
 		_clip_text(str(_word_text_by_id.get(_selected_word_id, _selected_word_id)), 30),
+		counter_hint,
 	]
 	var tint := COLOR_MUTED
 	match _status_kind:
@@ -1702,6 +1856,7 @@ func _select_hand_slot(index: int) -> void:
 		return
 	_selected_slot_index = index
 	_selected_word_id = word_id
+	_refresh_counterable_targets(true)
 	_field.call("set_selected_unit", "")
 	_status_kind = "info"
 	_status_text = ""
@@ -1766,6 +1921,7 @@ func resolve_publish_request(slot_id: int, word_id: String, spawn_position: Vect
 	if _selected_word_id == word_id:
 		_selected_word_id = ""
 		_selected_slot_index = -1
+		_refresh_counterable_targets(true)
 	_field.call("set_selected_unit", "")
 	var published_text := str(_word_text_by_id.get(word_id, _definition_for(word_id).get("text", word_id)))
 	var order_suffix := " · 顺序 #%d" % word_order if word_order > 0 else ""
@@ -1786,6 +1942,7 @@ func _clear_word_selection() -> void:
 		return
 	_selected_slot_index = -1
 	_selected_word_id = ""
+	_refresh_counterable_targets(true)
 	_status_text = ""
 	_status_kind = "info"
 	_refresh_hand_view()
@@ -1855,6 +2012,7 @@ func _on_battle_ended(result: Variant) -> void:
 	_battle_over = true
 	_selected_word_id = ""
 	_selected_slot_index = -1
+	_refresh_counterable_targets(true)
 	_clear_group_bubbles()
 	_field.call("set_selected_unit", "")
 	var result_text := str(result)
@@ -1869,14 +2027,16 @@ func show_counterattack_windup(request: Dictionary) -> void:
 		return
 	var target_id := str(request.get("target_unit_id", ""))
 	var skill_id := str(request.get("skill_id", request.get("effect_id", "费米反击")))
+	var streamer_name := _counterattack_streamer_name(request)
+	var skill_name := _counterattack_skill_name(request, skill_id)
 	var windup := float(request.get("pre_windup_seconds", 0.0))
 	if not target_id.is_empty():
 		_field.call("show_unit_feedback", target_id, "counterattack")
-	_counterattack_label.text = "费米反击蓄力 · %s" % skill_id
+	_counterattack_label.text = "%s · 反击蓄力 · %s" % [streamer_name, skill_name]
 	_counterattack_label.visible = true
 	_counterattack_seconds = maxf(windup + 1.2, 1.2)
-	_add_event("[费米反击前摇] %s · 目标 %s · %.1f 秒" % [skill_id, target_id, windup])
-	_set_status("费米正在准备反击，请留意目标棋子的紫色脉冲。", "warning")
+	_add_event("[%s 反击前摇] %s · 目标 %s · %.1f 秒" % [streamer_name, skill_name, target_id, windup])
+	_set_status("%s正在准备%s，请留意目标棋子的紫色脉冲。" % [streamer_name, skill_name], "warning")
 
 
 func show_counterattack_result(result: Dictionary) -> void:
@@ -1884,14 +2044,50 @@ func show_counterattack_result(result: Dictionary) -> void:
 		return
 	var target_id := str(result.get("target_unit_id", ""))
 	var skill_id := str(result.get("skill_id", result.get("effect_id", "费米反击")))
+	var streamer_name := _counterattack_streamer_name(result)
+	var skill_name := _counterattack_skill_name(result, skill_id)
 	var applied := bool(result.get("applied", false))
 	if not target_id.is_empty():
 		_field.call("show_unit_feedback", target_id, "counterattack")
-	_counterattack_label.text = "%s · %s" % ["反击生效" if applied else "反击未生效", skill_id]
+	_counterattack_label.text = "%s · %s · %s" % [streamer_name, skill_name, "反击生效" if applied else "反击未生效"]
 	_counterattack_label.visible = true
 	_counterattack_seconds = 2.4
-	_add_event("[%s] %s · %s" % ["费米反击生效" if applied else "费米反击未生效", skill_id, target_id])
-	_set_status("费米反击已结算：%s。" % ("生效" if applied else "未生效"), "warning" if applied else "info")
+	_add_event("[%s · %s] 目标 %s" % [skill_name, "反击生效" if applied else "反击未生效", target_id])
+	_set_status("%s的%s已结算：%s。" % [streamer_name, skill_name, "生效" if applied else "未生效"], "warning" if applied else "info")
+
+
+## 兼容 PB-27 新事件名字段，并从现有主播配置保底取当前中文名。
+func _counterattack_streamer_name(event: Dictionary) -> String:
+	var supplied_name := str(event.get("streamer_name", event.get("opponent_name", event.get("display_name", ""))))
+	if not supplied_name.strip_edges().is_empty():
+		return supplied_name
+	return _opponent_display_name if not _opponent_display_name.strip_edges().is_empty() else "当前主播"
+
+
+## PB-27 可直接提供技能中文名；当前分支从同一技能映射表读 trait_name。
+func _counterattack_skill_name(event: Dictionary, skill_id: String) -> String:
+	for field_name in ["skill_name_cn", "skill_name", "trait_name", "skill_display_name"]:
+		var supplied_name := str(event.get(field_name, "")).strip_edges()
+		if not supplied_name.is_empty():
+			return supplied_name
+	var streamer_id := str(event.get("streamer_id", ""))
+	if streamer_id.is_empty() and _has_method(_word_catalog, "get_current_level_context"):
+		var level_context: Variant = _word_catalog.call("get_current_level_context")
+		if level_context is Dictionary:
+			streamer_id = str(level_context.get("streamer_id", ""))
+	if _has_method(_word_catalog, "get_retaliation_skill_mappings"):
+		var mappings: Variant = _word_catalog.call("get_retaliation_skill_mappings", streamer_id)
+		if mappings is Array:
+			for mapping_value in mappings:
+				if not mapping_value is Dictionary:
+					continue
+				var mapping: Dictionary = mapping_value
+				if str(mapping.get("skill_id", "")) == skill_id:
+					var trait_name := str(mapping.get("trait_name", "")).strip_edges()
+					if not trait_name.is_empty():
+						return trait_name
+		return "特殊反击"
+	return "特殊反击"
 
 
 func _on_contact_resolved(first_unit_id: Variant, second_unit_id: Variant, outcome: StringName) -> void:
@@ -1924,8 +2120,17 @@ func _on_contact_resolved(first_unit_id: Variant, second_unit_id: Variant, outco
 func _on_unit_changed(unit_id: String, reason: String) -> void:
 	if _is_special_stage_active():
 		return
-	_queue_group_speech_event([unit_id], false, reason)
+	var previous_snapshot: Dictionary = {}
+	if _snapshot_index_by_id.has(unit_id):
+		previous_snapshot = _snapshots[int(_snapshot_index_by_id[unit_id])]
 	_upsert_unit_snapshot(unit_id)
+	var current_snapshot: Dictionary = _snapshot_for_unit_id(unit_id)
+	var is_s1_rephrase := reason == "relay" and int(current_snapshot.get("strength", 0)) == 1
+	if not is_s1_rephrase:
+		_queue_group_speech_event([unit_id], false, reason)
+	if (str(previous_snapshot.get("team", "")) != str(current_snapshot.get("team", ""))
+			or str(previous_snapshot.get("battle_type", "")) != str(current_snapshot.get("battle_type", ""))):
+		_refresh_counterable_targets(true)
 	_refresh_faction_counts()
 	var message := ""
 	match reason:
@@ -1934,11 +2139,15 @@ func _on_unit_changed(unit_id: String, reason: String) -> void:
 		"convert":
 			message = "[碰撞·阵营转化] %s 加入新阵营" % unit_id
 		"relay":
-			message = "[碰撞·同阵营接力] %s 接过较新的话" % unit_id
+			if is_s1_rephrase:
+				_queue_rephrase_feedback(unit_id, current_snapshot)
+			else:
+				message = "[碰撞·同阵营接力] %s 接过较新的话" % unit_id
 		_:
 			message = "[棋子更新] %s · %s" % [unit_id, reason]
 	_field.call("show_unit_feedback", unit_id, reason)
-	_add_event(message)
+	if not message.is_empty():
+		_add_event(message)
 	_refresh_sources()
 	_refresh_view()
 
@@ -1947,6 +2156,7 @@ func _on_unit_spawned(unit_id: String) -> void:
 	if _is_special_stage_active():
 		return
 	_upsert_unit_snapshot(unit_id)
+	_refresh_counterable_targets(true)
 	_refresh_faction_counts()
 	_refresh_view()
 	_add_event("[入场] 新观众 %s 加入" % unit_id)
@@ -2169,6 +2379,7 @@ func _on_unit_despawned(unit_id: String) -> void:
 	if _is_special_stage_active():
 		return
 	_remove_unit_snapshot(unit_id)
+	_refresh_counterable_targets(true)
 	_refresh_faction_counts()
 	_field.call("forget_unit_position", unit_id)
 	_refresh_view()
