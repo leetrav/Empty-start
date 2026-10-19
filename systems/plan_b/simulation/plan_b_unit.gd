@@ -22,7 +22,7 @@ var combat_trait: StringName = &""
 var combat_trait_uses: int = 0
 
 var _word_definition: Dictionary = {}
-var _collision_radius: float = 13.0
+var _collision_radius: float = 64.0
 
 
 ## 初始化单个棋子的运行事实；话语字典在入场时深拷贝，避免反向改写 C 的静态配置。

@@ -24,6 +24,7 @@ const PLAYER_TEAM: StringName = &"player"
 const OPPONENT_TEAM: StringName = &"opponent"
 const WORD_BATCH_SIZE_BY_STRENGTH: Dictionary = {1: 2, 2: 4, 3: 8}
 const NEUTRAL_SPAWN_BATCH_RESERVE: int = 8
+const RANDOM_SPAWN_CANDIDATE_COUNT: int = 64
 const INFECTION_CHANCES_BY_STRENGTH: Dictionary = {
 	1: 0.50,
 	2: 0.60,
@@ -43,7 +44,7 @@ const SPAWN_BURST_DURATION_SECONDS: float = 0.5
 @export_range(1.0, 180.0, 0.5) var lifespan_max_seconds: float = 77.0
 
 @export_group("Collision")
-@export_range(2.0, 64.0, 1.0) var unit_collision_radius: float = 13.0
+@export_range(2.0, 64.0, 1.0) var unit_collision_radius: float = 64.0
 @export_range(0.0, 5.0, 0.05) var collision_cooldown_seconds: float = 0.7
 @export_range(0.0, 120.0, 1.0) var contact_recoil_speed: float = 22.0
 
@@ -60,10 +61,13 @@ const SPAWN_BURST_DURATION_SECONDS: float = 0.5
 
 @export_group("Group Motion")
 @export_range(32.0, 512.0, 1.0) var ally_detection_radius: float = 160.0
+## 运行时实际间距不低于当前碰撞直径，避免同盟靠拢时持续挤入碰撞圆。
 @export_range(20.0, 128.0, 1.0) var ally_ideal_spacing: float = 36.0
 @export_range(0.0, 2.0, 0.05) var ally_attraction_weight: float = 0.45
 @export_range(0.0, 2.0, 0.05) var ally_separation_weight: float = 0.65
+## 运行时入组距离不低于当前碰撞直径。
 @export_range(24.0, 128.0, 1.0) var word_group_join_distance: float = 72.0
+## 运行时离组距离至少比有效入组距离多留迟滞余量。
 @export_range(24.0, 180.0, 1.0) var word_group_leave_distance: float = 90.0
 @export_range(60.0, 400.0, 1.0) var word_group_max_center_radius: float = 180.0
 @export_range(0.05, 0.5, 0.01) var target_decision_refresh_seconds: float = 0.1
@@ -457,7 +461,7 @@ func _rebuild_neighbor_grid(units: Array[PlanBUnit]) -> void:
 	_neighbor_grid.clear()
 	_neighbor_grid_cell_size = maxf(
 		maxf(detection_radius, ally_detection_radius),
-		maxf(word_group_leave_distance, unit_collision_radius * 4.0)
+		maxf(_effective_word_group_leave_distance(), unit_collision_radius * 4.0)
 	)
 	for unit: PlanBUnit in units:
 		var cell: Vector2i = _neighbor_grid_cell_for_position(unit.position)
@@ -656,10 +660,25 @@ func _refresh_word_groups() -> void:
 			)
 
 
-## 同队同词的邻近单位形成连通组件；72/90px距离迟滞避免阈值抖动。
+## 碰撞半径变大时，提高结群查询阈值，保证接触边缘的棋子可进入同一组。
+func _effective_word_group_join_distance() -> float:
+	# 相邻碰撞圆至少以直径距离接触；群组入组范围不能比接触阈值更小。
+	return maxf(word_group_join_distance, unit_collision_radius * 2.0)
+
+
+func _effective_word_group_leave_distance() -> float:
+	# 保留迟滞；大碰撞半径下比入组距离多留16px，避免贴边抖动。
+	var join_distance: float = _effective_word_group_join_distance()
+	var hysteresis_margin: float = maxf(unit_collision_radius * 0.25, 8.0)
+	return maxf(word_group_leave_distance, join_distance + hysteresis_margin)
+
+
+## 同队同词的邻近单位形成连通组件，并保留入组/离组迟滞。
 func _build_word_group_components(previous_group_by_unit: Dictionary) -> Array[Dictionary]:
 	var components: Array[Dictionary] = []
 	var visited: Dictionary = {}
+	var join_distance: float = _effective_word_group_join_distance()
+	var leave_distance: float = _effective_word_group_leave_distance()
 	for seed_unit: PlanBUnit in _get_sorted_units():
 		if seed_unit.team == NEUTRAL_TEAM or not seed_unit.has_word() or visited.has(seed_unit.unit_id):
 			continue
@@ -673,15 +692,15 @@ func _build_word_group_components(previous_group_by_unit: Dictionary) -> Array[D
 			var current_unit: PlanBUnit = queue[queue_index]
 			queue_index += 1
 			var current_old_group_id: int = int(previous_group_by_unit.get(current_unit.unit_id, -1))
-			for neighbor_unit: PlanBUnit in _get_neighbor_units(current_unit.position, word_group_leave_distance):
+			for neighbor_unit: PlanBUnit in _get_neighbor_units(current_unit.position, leave_distance):
 				if visited.has(neighbor_unit.unit_id):
 					continue
 				if neighbor_unit.team != seed_unit.team or neighbor_unit.get_word_id() != seed_word_id:
 					continue
 				var neighbor_old_group_id: int = int(previous_group_by_unit.get(neighbor_unit.unit_id, -1))
-				var link_distance: float = word_group_join_distance
+				var link_distance: float = join_distance
 				if current_old_group_id >= 0 and current_old_group_id == neighbor_old_group_id:
-					link_distance = word_group_leave_distance
+					link_distance = leave_distance
 				if current_unit.position.distance_squared_to(neighbor_unit.position) > link_distance * link_distance:
 					continue
 				if not _can_add_word_group_member(member_positions, neighbor_unit.position):
@@ -1137,6 +1156,7 @@ func _advance_units(delta: float) -> void:
 func _get_steering(unit: PlanBUnit, nearby_units: Array[PlanBUnit]) -> Dictionary:
 	if unit.team == NEUTRAL_TEAM:
 		return {"direction": unit.wander_direction, "intent": &"wander"}
+	var effective_ally_ideal_spacing: float = maxf(ally_ideal_spacing, unit_collision_radius * 2.0)
 	var nearest_chase_direction := Vector2.ZERO
 	var nearest_threat_direction := Vector2.ZERO
 	var same_word_cohesion := Vector2.ZERO
@@ -1164,8 +1184,10 @@ func _get_steering(unit: PlanBUnit, nearby_units: Array[PlanBUnit]) -> Dictionar
 					other_word_cohesion += toward_ally
 					other_word_count += 1
 				var distance: float = sqrt(distance_squared)
-				if distance < ally_ideal_spacing:
-					separation_direction -= toward_ally * ((ally_ideal_spacing - distance) / ally_ideal_spacing)
+				if distance < effective_ally_ideal_spacing:
+					separation_direction -= toward_ally * (
+						(effective_ally_ideal_spacing - distance) / effective_ally_ideal_spacing
+					)
 			continue
 		if distance_squared > detection_radius_squared:
 			continue
@@ -1440,7 +1462,7 @@ func _spawn_unit(team_value: StringName, word_definition: Dictionary, new_word_o
 	return unit
 
 
-## 按模拟区域的当前本地坐标取样，并为棋子半径留出边界内缩。
+## 按模拟区域的当前本地坐标取样；优先选择与现有棋子相隔一个直径的位置。
 func _random_spawn_position() -> Vector2:
 	var left: float = play_area.position.x + unit_collision_radius
 	var right: float = play_area.end.x - unit_collision_radius
@@ -1448,7 +1470,29 @@ func _random_spawn_position() -> Vector2:
 	var bottom: float = play_area.end.y - unit_collision_radius
 	if right < left or bottom < top:
 		return play_area.get_center()
-	return Vector2(_rng.randf_range(left, right), _rng.randf_range(top, bottom))
+	var existing_units: Array[PlanBUnit] = _get_sorted_units()
+	if existing_units.is_empty():
+		return Vector2(_rng.randf_range(left, right), _rng.randf_range(top, bottom))
+
+	var minimum_spacing: float = unit_collision_radius * 2.0
+	var minimum_spacing_squared: float = minimum_spacing * minimum_spacing
+	var best_position: Vector2 = play_area.get_center()
+	var best_nearest_distance_squared: float = -1.0
+	for _candidate_index: int in RANDOM_SPAWN_CANDIDATE_COUNT:
+		var candidate := Vector2(_rng.randf_range(left, right), _rng.randf_range(top, bottom))
+		var nearest_distance_squared: float = INF
+		for unit: PlanBUnit in existing_units:
+			nearest_distance_squared = minf(
+				nearest_distance_squared,
+				candidate.distance_squared_to(unit.position)
+			)
+		if nearest_distance_squared >= minimum_spacing_squared:
+			return candidate
+		if nearest_distance_squared > best_nearest_distance_squared:
+			best_nearest_distance_squared = nearest_distance_squared
+			best_position = candidate
+	# 场地没有完整直径的空位时仍让棋子入场，并选择当前相对最空的候选点。
+	return best_position
 
 
 ## 让分裂子体从目标周围展开；每个方向按请求次序稳定计算，且限制在实际战场内。
