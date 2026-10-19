@@ -12,9 +12,6 @@ const TEAM_COLORS := {
 	"opponent": Color("#ff9f68"),
 }
 const UNIT_VISUAL_RADIUS: float = 32.0
-const GROUP_BUBBLE_WIDTH_SINGLE: float = 100.0
-const GROUP_BUBBLE_WIDTH_TWO: float = 150.0
-const GROUP_BUBBLE_WIDTH_EIGHT: float = 500.0
 
 var world_bounds := Rect2(Vector2.ZERO, Vector2(900.0, 490.0))
 
@@ -53,6 +50,13 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	# 512px头像缩放到64px时使用线性过滤，保持边缘平滑。
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	theme_changed.connect(_on_theme_changed)
+	queue_redraw()
+
+
+# 主题字体更换后清除缓存；下一次布局读取新字体实际字宽。
+func _on_theme_changed() -> void:
+	_group_bubble_layouts.clear()
 	queue_redraw()
 
 
@@ -355,6 +359,7 @@ func _draw_unit(snapshot: Dictionary) -> void:
 			draw_arc(center, radius + 3.5, PI * 0.2, PI * 0.8, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 1.5, true)
 
 
+# 复读气泡使用主播主泡的十汉字文字栏，团体人数只影响尾巴和锚点。
 func _draw_group_bubbles() -> void:
 	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	var drawn_bubble_count: int = 0
@@ -443,13 +448,16 @@ func _draw_group_bubbles() -> void:
 		if font == null:
 			font = ThemeDB.fallback_font
 		var padding := 12.0
+		var text_width := float(layout.get("text_width", bubble_width - padding * 2.0))
+		var text_block_width := minf(float(layout.get("text_block_width", text_width)), text_width)
+		var text_origin_x := bubble_rect.position.x + (bubble_rect.size.x - text_block_width) * 0.5
 		draw_multiline_string(
 			font,
-			bubble_rect.position + Vector2(padding, padding + 8.0),
+			Vector2(text_origin_x, bubble_rect.position.y + padding + 4.0),
 			phrase,
-			HORIZONTAL_ALIGNMENT_CENTER,
-			bubble_width - padding * 2.0,
-			int(layout.get("font_size", 20)),
+			HORIZONTAL_ALIGNMENT_LEFT,
+			text_width,
+			int(layout.get("font_size", StreamerBubbleView.DEFAULT_CURRENT_FONT_SIZE)),
 			-1,
 			Color("#36252f")
 		)
@@ -483,30 +491,37 @@ func _draw_group_bubbles() -> void:
 		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_GROUP_BUBBLE_DRAW, Time.get_ticks_usec() - tracker_start_usec, drawn_bubble_count, tail_candidate_count)
 
 
+# 气泡主框只由十汉字文字栏宽度决定；团体人数只改变尾巴抽样。
 func _get_group_bubble_layout(group: Dictionary, group_id: String, member_ids: Array, phrase: String) -> Dictionary:
-	var signature := "%s|%d|%s|%d|%d" % [str(group.get("team", "")), member_ids.size(), phrase, int(size.x), int(size.y)]
+	var signature := "%s|%d|%d|%s|%d|%d" % [str(group.get("team", "")), member_ids.size(), StreamerBubbleView.DEFAULT_CURRENT_FONT_SIZE, phrase, int(size.x), int(size.y)]
 	var cached: Dictionary = _group_bubble_layouts.get(group_id, {})
 	if str(cached.get("signature", "")) == signature:
 		if _performance_tracker != null:
 			_tracker_group_layout_cache_hits += 1
 		return cached
-	var bubble_width := minf(_bubble_base_width(member_ids.size()), maxf(100.0, size.x - 24.0))
 	var padding := 12.0
 	var font: Font = get_theme_default_font()
 	if font == null:
 		font = ThemeDB.fallback_font
-	var font_size := 26
-	var measured := Vector2.ZERO
-	for candidate_size in range(26, 15, -1):
-		measured = font.get_multiline_string_size(phrase, HORIZONTAL_ALIGNMENT_CENTER, bubble_width - padding * 2.0, candidate_size)
-		font_size = candidate_size
-		if measured.y <= size.y - 72.0:
-			break
+	var font_size := StreamerBubbleView.DEFAULT_CURRENT_FONT_SIZE
+	var text_width := StreamerBubbleView.measure_ten_hanzi_width(font, font_size)
+	var available_height := maxf(24.0, size.y - 72.0)
+	var measured := font.get_multiline_string_size(phrase, HORIZONTAL_ALIGNMENT_LEFT, text_width, font_size)
+	var minimum_font_size := StreamerBubbleView.DEFAULT_MINIMUM_READABLE_FONT_SIZE
+	while measured.y > available_height and font_size > minimum_font_size:
+		font_size -= 1
+		text_width = StreamerBubbleView.measure_ten_hanzi_width(font, font_size)
+		measured = font.get_multiline_string_size(phrase, HORIZONTAL_ALIGNMENT_LEFT, text_width, font_size)
+	var text_block_width: float = minf(measured.x, text_width)
+	var bubble_width := text_width + padding * 2.0
 	var bubble_height := clampf(measured.y + padding * 2.0 + 8.0, 54.0, maxf(54.0, size.y - 16.0))
 	var layout := {
 		"signature": signature,
 		"width": bubble_width,
 		"height": bubble_height,
+		"text_width": text_width,
+		"text_block_width": text_block_width,
+		"padding": padding,
 		"font_size": font_size,
 		"tail_ids": _choose_tail_member_ids(group, member_ids),
 	}
@@ -514,7 +529,6 @@ func _get_group_bubble_layout(group: Dictionary, group_id: String, member_ids: A
 	if _performance_tracker != null:
 		_performance_tracker.call("record_event", PB14_PERFORMANCE_TRACKER_SCRIPT.EVENT_GROUP_BUBBLE_LAYOUT_MISS)
 	return layout
-
 
 func _choose_tail_member_ids(group: Dictionary, member_ids: Array) -> Array:
 	var positions_value: Variant = group.get("member_positions", {})
@@ -670,17 +684,6 @@ func _get_group_bubble_style(team: String) -> StyleBoxFlat:
 	style.content_margin_bottom = 10.0
 	_group_bubble_styles[team] = style
 	return style
-
-func _bubble_base_width(member_count: int) -> float:
-	# 团体人数决定固定宽度；句子长度只参与纵向排版和高度。
-	if member_count <= 1:
-		return GROUP_BUBBLE_WIDTH_SINGLE
-	if member_count == 2:
-		return GROUP_BUBBLE_WIDTH_TWO
-	if member_count >= 8:
-		return GROUP_BUBBLE_WIDTH_EIGHT
-	return GROUP_BUBBLE_WIDTH_TWO + float(member_count - 2) * (GROUP_BUBBLE_WIDTH_EIGHT - GROUP_BUBBLE_WIDTH_TWO) / 6.0
-
 
 func _bubble_tail_count(member_count: int) -> int:
 	if member_count <= 1:

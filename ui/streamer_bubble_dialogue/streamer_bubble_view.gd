@@ -5,9 +5,13 @@ signal expired(view: StreamerBubbleView)
 
 enum TailDirection { LEFT, RIGHT }
 
+const DEFAULT_CURRENT_FONT_SIZE: int = 22
+const DEFAULT_MINIMUM_READABLE_FONT_SIZE: int = 18
+const TEN_HANZI_CAPACITY_SAMPLE: String = "这是十个汉字宽度基准"
+
 @export_enum("Left", "Right") var tail_direction: int = TailDirection.LEFT
 @export_range(0.0, 1.0, 0.01) var tail_position: float = 0.68
-@export_range(120.0, 448.0, 1.0) var max_bubble_width: float = 310.0 # 当前对白主泡固定宽度
+@export_range(120.0, 448.0, 1.0) var max_bubble_width: float = 310.0 # 当前主泡上限；实际宽度按10个全角汉字测量
 @export_range(120.0, 320.0, 1.0) var min_bubble_width: float = 134.0 # 历史对白泡固定宽度
 @export_range(12.0, 64.0, 1.0) var tail_length: float = 22.0
 @export_range(12.0, 64.0, 1.0) var tail_base_width: float = 26.0
@@ -20,7 +24,7 @@ enum TailDirection { LEFT, RIGHT }
 @export_range(0.0, 120.0, 1.0) var float_distance_px: float = 18.0
 @export_range(0.01, 1.0, 0.01) var fade_duration_seconds: float = 0.24
 # 沿用原历史气泡最小字号，超长内容宁可滚动也不缩成手机上难辨的文字。
-@export_range(10, 22, 1) var minimum_readable_font_size: int = 18
+@export_range(10, 22, 1) var minimum_readable_font_size: int = DEFAULT_MINIMUM_READABLE_FONT_SIZE
 var _available_size: Vector2 = Vector2(448.0, 432.0)
 
 @onready var _text_label: RichTextLabel = $Text
@@ -43,9 +47,17 @@ var _lifetime_tween: Tween
 var _layout_tween: Tween
 var _finished: bool = false
 
+# 统一测量主气泡约10个全角汉字的文字栏宽度，避免各类气泡各算一套。
+static func measure_ten_hanzi_width(font: Font, font_size: int) -> float:
+	if font == null:
+		return float(font_size * 10)
+	return font.get_string_size(TEN_HANZI_CAPACITY_SAMPLE, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+
 
 # 超长文本滚动阅读时暂停本气泡寿命；离开后恢复，不修改剧情配置时长。
 func _ready() -> void:
+	_text_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_text_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_text_label.mouse_entered.connect(_pause_overflow_reading)
 	_text_label.mouse_exited.connect(_resume_reading)
 
@@ -84,44 +96,51 @@ func configure_available_size(available_size: Vector2) -> void:
 	_reflow()
 
 
-# 用真实控件排版适配当前栈预算；原文始终完整保留。
+# 根据实际字体测量十汉字容量，并使用同一 RichTextLabel 完整换行与高度。
 func _reflow() -> void:
 	if _text_label == null:
 		return
 	var is_current: bool = _history_depth == 0
 	var font: Font = _text_label.get_theme_font("normal_font")
 	var base_size: int = _base_font_size
-	var font_size: int = mini(22, base_size + 1) if is_current else (19 if _history_depth == 1 else 18)
+	var font_size: int = mini(DEFAULT_CURRENT_FONT_SIZE, base_size + 1) if is_current else (19 if _history_depth == 1 else 18)
 	var horizontal_padding: float = text_margin.x if is_current else text_margin.x - 5.0
 	var vertical_padding: float = text_margin.y if is_current else 14.0
 	var tail_reserved: float = tail_length if is_current else 0.0
 	var configured_width: float = max_bubble_width if is_current else min_bubble_width
 	var width_limit: float = minf(configured_width, _available_size.x)
+	var capacity_width: float = measure_ten_hanzi_width(font, font_size)
 	var maximum_text: float = maxf(30.0, width_limit - 2.0 * horizontal_padding - tail_reserved - 5.0)
-	# 宽度由当前/历史气泡配置决定；文字长度只改变换行与纵向高度。
-	var available: float = maximum_text
+	if is_current:
+		width_limit = minf(width_limit, capacity_width + 2.0 * horizontal_padding + tail_reserved + 5.0)
+		maximum_text = maxf(30.0, width_limit - 2.0 * horizontal_padding - tail_reserved - 5.0)
 	var height_limit: float = maxf(24.0, _available_size.y - vertical_padding * 2.0 - 3.0)
 	_text_label.text = _message
 	_text_label.scroll_active = false
-	_text_label.size.x = available
 	_text_label.add_theme_font_size_override("normal_font_size", font_size)
-	# 使用最终控件自己的内容高度，避免 Font 与 RichTextLabel 的换行规则不一致。
+	_text_label.size.x = maximum_text
+	# 用最终控件的实际内容高度决定是否缩字号，避免 Font 与 RichTextLabel 换行差异。
 	while _text_label.get_content_height() + 6.0 > height_limit and font_size > minimum_readable_font_size:
 		font_size -= 1
+		if is_current:
+			capacity_width = measure_ten_hanzi_width(font, font_size)
+			width_limit = minf(minf(configured_width, _available_size.x), capacity_width + 2.0 * horizontal_padding + tail_reserved + 5.0)
+			maximum_text = maxf(30.0, width_limit - 2.0 * horizontal_padding - tail_reserved - 5.0)
+			_text_label.size.x = maximum_text
 		_text_label.add_theme_font_size_override("normal_font_size", font_size)
 	var full_text_height: float = maxf(float(_text_label.get_content_height()) + 6.0, font.get_height(font_size) + 4.0)
 	var text_height: float = minf(full_text_height, height_limit)
-	# 超出可读最小字号仍放不下时保留完整原文，开放原生滚动，不裁掉字符串。
+	# 超出最小字号仍放不下时保留完整原文并开放原生滚动，不裁掉字符串。
 	_text_label.scroll_active = full_text_height > height_limit
 	_text_label.mouse_filter = Control.MOUSE_FILTER_PASS if _text_label.scroll_active else Control.MOUSE_FILTER_IGNORE
-	var body_width: float = available + horizontal_padding * 2.0 + 5.0
+	var body_width: float = maximum_text + horizontal_padding * 2.0 + 5.0
 	var body_height: float = text_height + vertical_padding * 2.0 + 3.0
 	var body_left: float = tail_length if is_current and tail_direction == TailDirection.LEFT else 0.0
 	_text_label.text = _message
 	_text_label.add_theme_font_size_override("normal_font_size", font_size)
 	_text_label.add_theme_color_override("default_color", text_color if is_current else Color("#49414A"))
 	_text_label.position = Vector2(body_left + horizontal_padding, vertical_padding)
-	_text_label.size = Vector2(available, text_height)
+	_text_label.size = Vector2(maximum_text, text_height)
 	# 缩为历史气泡时先释放旧的 Control 最小尺寸，确保画面真的收缩。
 	var new_size := Vector2(body_width + tail_reserved, body_height)
 	custom_minimum_size = Vector2.ZERO
