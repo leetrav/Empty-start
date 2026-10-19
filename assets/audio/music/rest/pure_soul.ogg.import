@@ -13,7 +13,7 @@ dest_files=["res://.godot/imported/pure_soul.ogg-aee9af62d92834a5f8b4a9842f46d48
 [params]
 
 loop=true
-loop_offset=0
+loop_offset=2.35
 bpm=0
 beat_count=0
 bar_beats=4

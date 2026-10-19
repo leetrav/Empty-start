@@ -124,7 +124,7 @@ func show_result(
 	_loser_card_history.hide()
 	_overlay.show()
 	_result_active = true
-	_room_music.start()
+	_room_music.start(true)
 	_suspend_battle_aim()
 	_presentation_id += 1
 	_set_menu_input_enabled(false)

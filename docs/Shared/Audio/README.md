@@ -2,7 +2,7 @@
 
 结尾音乐已接入《天導 -Tendoh-》：music_ending_tendoh，-10dB、2.5秒淡入、原生循环。EndingMusicPresenter在神降临最终emphasis/completed阶段进度=1时起曲；普通神谕/刚进入神降临不起曲，结局页接管同曲不断播。保存结局回看可起曲，离开淡出。来源与加工见assets/audio/music/ending/README.md。
 
-休息音乐也已接入：Pure Soul（music_rest_room，-12dB、1.5秒淡入、原生OGG循环）。有效开局/关间房间和战后结算共用，历史阅读不重播，暂停续播，隐藏/离场淡出。页面持有RoomMusicPresenter并复用AudioManager；未制作休息转场动画。
+当前休息音乐：首次开播前房间保留Pure Soul（-12dB、0.6秒淡入，从2.35秒起播/循环跳过空白）；每场PK后休息改为夢灯 -YumeAkari-（music_rest_after_pk，-12dB、0.6秒淡入、0秒播放/原生循环）。后续开播房间以已提交next_normal_level_order>1选择夢灯并续播；重复结果、历史往返不重播，暂停续播，离开/下场T0淡出。复用RoomMusicPresenter和AudioManager，不改变奖励、关卡流程或结尾天導2.5秒淡入。
 
 四Boss统一使用hold_intro_through_first_tier=true，以下规则优先于后文历史记录。
 

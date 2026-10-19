@@ -59,7 +59,7 @@ func _prepare_last_rest(with_history: bool) -> void:
 	game.get_contradiction_oracle_flow().rest_ready.emit(rest)
 	await process_frame
 	await process_frame
-	assert(_audio.get_music_event_id() == &"music_rest_room")
+	assert(_audio.get_music_event_id() == &"music_rest_after_pk")
 	_full_seen = false
 	_start_count_before = _started_count
 	game.get_rest_result_view().get_node("%ContinueButton").pressed.emit()

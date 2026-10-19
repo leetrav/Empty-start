@@ -31,7 +31,7 @@ func _ready() -> void:
 	if _run_data.next_normal_level_order > 1:
 		_status.text = "准备开始第 %d 场直播" % _run_data.next_normal_level_order
 	_start_button.grab_focus()
-	_room_music.start()
+	_room_music.start(_run_data.next_normal_level_order > 1)
 
 # 请求成功后直到页面退出都保持锁定，同帧连点和直接重复调用只启动一次。
 func start_live() -> Error:

@@ -47,7 +47,7 @@ func start_battle(tier: int = 0) -> void:
 	_lower_elapsed = 0.0
 	_boundary_remaining = -1.0
 	# 房间离开时的尾音允许在T0淡完，新的Boss起曲会自动取消旧淡出回调。
-	if tier == 0 and AudioManager.get_music_event_id() == &"music_rest_room":
+	if tier == 0 and AudioManager.get_music_event_id() in [&"music_rest_room", &"music_rest_after_pk"]:
 		AudioManager.set_music_paused(false)
 		AudioManager.fade_out_music()
 	else:
