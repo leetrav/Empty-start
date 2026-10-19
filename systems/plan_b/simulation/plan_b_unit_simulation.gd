@@ -25,6 +25,8 @@ const OPPONENT_TEAM: StringName = &"opponent"
 const WORD_BATCH_SIZE_BY_STRENGTH: Dictionary = {1: 2, 2: 4, 3: 8}
 const NEUTRAL_SPAWN_BATCH_RESERVE: int = 8
 const RANDOM_SPAWN_CANDIDATE_COUNT: int = 64
+const RANDOM_SPAWN_GRID_COLUMNS: int = 7
+const RANDOM_SPAWN_GRID_ROWS: int = 6
 const INFECTION_CHANCES_BY_STRENGTH: Dictionary = {
 	1: 0.50,
 	2: 0.60,
@@ -1474,18 +1476,30 @@ func _random_spawn_position() -> Vector2:
 	if existing_units.is_empty():
 		return Vector2(_rng.randf_range(left, right), _rng.randf_range(top, bottom))
 
-	var minimum_spacing: float = unit_collision_radius * 2.0
+	var minimum_spacing: float = unit_collision_radius * 2.0 + 1.0
 	var minimum_spacing_squared: float = minimum_spacing * minimum_spacing
+	# 棋盘安全区内生成7×6个分散格位，30中立加2个播种位有机会全部落在不重叠位置。
+	var grid_candidate_positions: Array[Vector2] = []
+	var grid_x_step: float = (right - left) / float(RANDOM_SPAWN_GRID_COLUMNS - 1)
+	var grid_y_step: float = (bottom - top) / float(RANDOM_SPAWN_GRID_ROWS - 1)
+	var grid_jitter_x: float = minf(4.0, maxf((grid_x_step - minimum_spacing) * 0.4, 0.0))
+	var grid_jitter_y: float = minf(4.0, maxf((grid_y_step - minimum_spacing) * 0.4, 0.0))
+	for row: int in RANDOM_SPAWN_GRID_ROWS:
+		for column: int in RANDOM_SPAWN_GRID_COLUMNS:
+			var grid_position := Vector2(
+				left + grid_x_step * float(column) + _rng.randf_range(-grid_jitter_x, grid_jitter_x),
+				top + grid_y_step * float(row) + _rng.randf_range(-grid_jitter_y, grid_jitter_y)
+			).clamp(Vector2(left, top), Vector2(right, bottom))
+			if _nearest_spawn_unit_distance_squared(grid_position, existing_units) >= minimum_spacing_squared:
+				grid_candidate_positions.append(grid_position)
+	if not grid_candidate_positions.is_empty():
+		return grid_candidate_positions[_rng.randi_range(0, grid_candidate_positions.size() - 1)]
+
 	var best_position: Vector2 = play_area.get_center()
 	var best_nearest_distance_squared: float = -1.0
 	for _candidate_index: int in RANDOM_SPAWN_CANDIDATE_COUNT:
 		var candidate := Vector2(_rng.randf_range(left, right), _rng.randf_range(top, bottom))
-		var nearest_distance_squared: float = INF
-		for unit: PlanBUnit in existing_units:
-			nearest_distance_squared = minf(
-				nearest_distance_squared,
-				candidate.distance_squared_to(unit.position)
-			)
+		var nearest_distance_squared: float = _nearest_spawn_unit_distance_squared(candidate, existing_units)
 		if nearest_distance_squared >= minimum_spacing_squared:
 			return candidate
 		if nearest_distance_squared > best_nearest_distance_squared:
@@ -1493,6 +1507,14 @@ func _random_spawn_position() -> Vector2:
 			best_position = candidate
 	# 场地没有完整直径的空位时仍让棋子入场，并选择当前相对最空的候选点。
 	return best_position
+
+
+## 返回出生候选点到现存人群的最近距离平方。
+func _nearest_spawn_unit_distance_squared(candidate: Vector2, existing_units: Array[PlanBUnit]) -> float:
+	var nearest_distance_squared: float = INF
+	for unit: PlanBUnit in existing_units:
+		nearest_distance_squared = minf(nearest_distance_squared, candidate.distance_squared_to(unit.position))
+	return nearest_distance_squared
 
 
 ## 让分裂子体从目标周围展开；每个方向按请求次序稳定计算，且限制在实际战场内。
