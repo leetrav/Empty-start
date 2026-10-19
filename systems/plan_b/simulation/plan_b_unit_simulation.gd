@@ -46,7 +46,7 @@ const SPAWN_BURST_DURATION_SECONDS: float = 0.5
 @export_range(1.0, 180.0, 0.5) var lifespan_max_seconds: float = 77.0
 
 @export_group("Collision")
-@export_range(2.0, 64.0, 1.0) var unit_collision_radius: float = 64.0
+@export_range(2.0, 32.0, 1.0) var unit_collision_radius: float = 32.0
 @export_range(0.0, 5.0, 0.05) var collision_cooldown_seconds: float = 0.7
 @export_range(0.0, 120.0, 1.0) var contact_recoil_speed: float = 22.0
 
