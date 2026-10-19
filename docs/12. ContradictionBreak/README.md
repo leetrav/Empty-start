@@ -6,7 +6,7 @@
 
 A 在根输入所有者中路由 `flow.handle_input(event)`：点击/触摸/非重复空格加速三倍，Enter 结束；停止、暂停、未出结果、已结束均拒绝。`repeat_climax_interactive=false` 可预览自动版；`repeat_climax_finished` 仅通知本段视觉完成，不等价于结果演出或奖励提交。
 
-六句、一真五假、10 秒、一发与运动可攻击继续沿用现有规则；正式入口仍调用 C 的 `BarrageArea.start_contradiction_generation(level, true_lines, false_lines, runtime_window_config)`。CB-17 视觉组件复用该入口、`BarrageView` 与 `AimReticle`，独立演示中已将真假候选随机映射到同一组位置槽，并对准星命中目标提供统一缩放反馈；Sandbox 正式流程仍待 A 接入与真人验收。原两秒曲线继续由本场 `ContradictionWindowConfig` 注入。完整 A/B 材料见 [PTF-02 日志](../Integration/阶段交互_PTF-02_2026-10-16_log.md)。
+六句、一真五假、10 秒、一发与运动可攻击继续沿用现有规则；正式入口仍调用 C 的 `BarrageArea.start_contradiction_generation(level, true_lines, false_lines, runtime_window_config)`。CB-17 视觉组件复用该入口、`BarrageView` 与 `AimReticle`，将真假候选随机映射到六个按最高气泡高度统一排布的行槽，并对准星命中目标提供统一缩放反馈。Sandbox 的 Plan B 正式 HUD 已挂接该表现观察器；完整战斗验收仍待执行。原两秒曲线继续由本场 `ContradictionWindowConfig` 注入。完整 A/B 材料见 [PTF-02 日志](../Integration/阶段交互_PTF-02_2026-10-16_log.md)。
 
 
 > **统一派工入口**：[2026-10-09 任务卡整合与依赖顺序](../开发计划_2026-10-09_任务卡依赖整合.md)。已实现的基础卡用于接口复查；新的视觉、静止弹幕、对话与阶段打磨以最新单卡和此表为准。
@@ -29,15 +29,15 @@ T5 满 PK 后进入独立矛盾击破阶段，UI 表现名为 T6/Paradox。`Cont
 | --- | --- | --- |
 | [CB-13](tasks/CB-13_six-fixed-contradictions.md) | T6 固定一真五假候选集；数据不足时复用有效假句 | 已实现；`level_001.tres` 提供一条真句与五条不同假句 |
 | [CB-14](tasks/CB-14_contradiction-ease-out-motion.md) | 六句减速停止，运动时可射击 | 已实现 · Godot 4.7.2 Headless 聚焦运行 46 项通过；正式演出初值待验收 |
-| [CB-17](tasks/CB-17_uniform-real-fake-paradox-barrage-ui.md) | 六条矛盾统一玻璃外观、随机位置映射及准星反馈 | 视觉组件与独立演示完成；A正式流程接线、E场景验收待做 |
+| [CB-17](tasks/CB-17_uniform-real-fake-paradox-barrage-ui.md) | 六条矛盾统一玻璃外观、随机行槽映射及准星反馈 | 组件、独立演示与 Sandbox HUD 观察器接线完成；完整战斗验收待做 |
 
 本节是当前派工依据；历史章节中的旧默认值与旧任务说明保留用来追溯已有系统演变。开发时以单卡现行版和本节为准。
 
 ### CB-17 视觉组件切片（2026-10-19）
 
-`ContradictionBarragePresentation` 组合既有 `BarrageArea`、`BarrageView` 与 `AimReticle`。候选来源仍为 LevelProfile 的一真五假列表；六个 `BarrageView` 共用中立玻璃色、字号、描边与同一文本测量规则，不读取或绘制真假字段。每局将生成视图映射到既有六个位置槽的顺序打乱，避免真句固定占首行；准星与目标矩形相交时仅触发所有候选一致的轻微缩放反馈。
+`ContradictionBarragePresentation` 组合既有 `BarrageArea`、`BarrageView` 与 `AimReticle`。候选来源仍为 LevelProfile 的一真五假列表；六个 `BarrageView` 共用中立玻璃色、字号、描边与同一文本测量规则，不读取或绘制真假字段。每局先以最高气泡高度建立六个等高行槽，再随机打乱句子与行槽的映射，长句不会挤占相邻短句的行位；准星与目标矩形相交时仅触发所有候选一致的轻微缩放反馈。Sandbox Plan B HUD 将观察器绑定到正式流程已有的 `BarrageArea` 和 `AimReticle`，候选生成、射击快照与真假结果仍由现有系统负责。
 
-独立演示使用 `level_001.tres` 六句；命令行长句预览只复制一条假句到内存并替换测试文本，正式 Resource 与攻击记录保持原样。当前切片没有接入 Sandbox 发射与结算流程；真实一发判定继续由现有 A/攻击路径负责。
+独立演示使用 `level_001.tres` 六句；命令行长句预览只复制一条假句到内存并替换测试文本，正式 Resource 与攻击记录保持原样。正式 HUD 观察器已在 `_initialize_plan_b_battle_ui()` 接入；Sandbox 发射与结算继续由原攻击路径负责。独立演示完成 Godot GUI 实景检查，完整 Sandbox 战斗接线仍待运行验收。
 
 ### CB-14 运动表现（2026-10-12）
 
