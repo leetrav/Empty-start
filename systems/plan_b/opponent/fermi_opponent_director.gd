@@ -27,6 +27,10 @@ var _windup_remaining: float = 0.0
 var _pending_counterattack: Dictionary = {}
 var _awaiting_counterattack_result: bool = false
 var _counterattack_uses: int = 0
+var _counterattack_t2_qualified: bool = false
+var _counterattack_t4_qualified: bool = false
+var _counterattack_paused: bool = false
+var _no_target_result_reported_by_tier: Dictionary = {}
 var _last_publish_request: Dictionary = {}
 var _last_counterattack_event: Dictionary = {}
 var _opponent_pool_exhausted_reported: bool = false
@@ -58,6 +62,10 @@ func configure(content_catalog: Object, seed_value: int = 1) -> bool:
 	_pending_counterattack.clear()
 	_awaiting_counterattack_result = false
 	_counterattack_uses = 0
+	_counterattack_t2_qualified = false
+	_counterattack_t4_qualified = false
+	_counterattack_paused = false
+	_no_target_result_reported_by_tier.clear()
 	_last_publish_request.clear()
 	_last_counterattack_event.clear()
 	_pending_speech_word_id = ""
@@ -70,6 +78,14 @@ func configure(content_catalog: Object, seed_value: int = 1) -> bool:
 ## A 可注入执行器调用 B 的公开效果入口；C 不直接修改棋子。
 func set_counterattack_effect_handler(handler: Callable) -> void:
 	_counterattack_effect_handler = handler
+
+
+## PB-25 在正式教程状态内暂缓反击计时；Tier资格仍会在update时记录。
+func set_counterattack_paused(paused: bool) -> bool:
+	if not _configured:
+		return false
+	_counterattack_paused = paused
+	return true
 
 
 ## A 在战斗开始时传入 B 使用的棋盘范围；C 只在范围内选择批次落点。
@@ -125,11 +141,21 @@ func report_speech_publish_result(word_id: String, published: bool) -> bool:
 func update_counterattack(
 	delta: float,
 	faction_counts: Dictionary,
-	opponent_unit_snapshots: Array[Dictionary]
+	opponent_unit_snapshots: Array[Dictionary],
+	current_tier: int
 ) -> void:
-	if not _configured or not counterattack_enabled or not bool(_profile.get("counterattack_enabled", false)):
+	if not _configured:
+		return
+	# 只读正式Tier编号；Tier Catalog决定64%/79%边界，回落不会撤销已取得的轮次。
+	if current_tier >= 2:
+		_counterattack_t2_qualified = true
+	if current_tier >= 4:
+		_counterattack_t4_qualified = true
+	if not counterattack_enabled or not bool(_profile.get("counterattack_enabled", false)):
 		return
 	if _counterattack_uses >= int(_profile.get("counterattack_max_uses", 0)):
+		return
+	if _counterattack_paused:
 		return
 
 	var elapsed: float = maxf(0.0, delta)
@@ -137,11 +163,24 @@ func update_counterattack(
 	if not _pending_counterattack.is_empty():
 		if _awaiting_counterattack_result:
 			return
+		var pending_player_count: int = int(faction_counts.get("player", 0))
+		var pending_opponent_count: int = int(faction_counts.get("opponent", 0))
+		var pending_lead_margin: int = int(_profile.get("counterattack_lead_margin", 0))
+		if pending_player_count - pending_opponent_count < pending_lead_margin:
+			_resolve_pending_without_effect("player_lead_lost")
+			return
+		var target_unit_id: String = str(_pending_counterattack.get("target_unit_id", ""))
+		if not _get_unit_ids_for_team(opponent_unit_snapshots, "opponent").has(target_unit_id):
+			_resolve_pending_without_effect("target_unavailable")
+			return
 		_windup_remaining = maxf(0.0, _windup_remaining - elapsed)
 		if _windup_remaining <= 0.0:
 			_request_counterattack_effect()
 		return
 	if _counterattack_cooldown_remaining > 0.0:
+		return
+	var round_tier: int = _get_next_counterattack_round_tier()
+	if round_tier <= 0:
 		return
 
 	var player_count: int = int(faction_counts.get("player", 0))
@@ -150,13 +189,21 @@ func update_counterattack(
 	if player_count - opponent_count < lead_margin:
 		return
 	var opponent_unit_ids: Array[String] = _get_unit_ids_for_team(opponent_unit_snapshots, "opponent")
-	if opponent_unit_ids.is_empty():
+	var skill_id: String = str(_profile.get("counterattack_skill_id", ""))
+	if skill_id.is_empty():
+		_emit_counterattack_preflight_failure(round_tier, "missing_skill_id", "")
 		return
-
+	var skill_mapping: Dictionary = _get_skill_mapping(skill_id)
+	var skill_name_cn: String = str(skill_mapping.get("trait_name", "特殊反击"))
 	var request := {
-		"skill_id": str(_profile.get("counterattack_skill_id", "")),
-		"trigger_event": str(_profile.get("counterattack_trigger_event", "")),
-		"target_unit_id": opponent_unit_ids[_rng.randi_range(0, opponent_unit_ids.size() - 1)],
+		"counterattack_round": 1 if round_tier == 2 else 2,
+		"qualification_tier": round_tier,
+		"current_tier": current_tier,
+		"streamer_id": _streamer_id,
+		"skill_id": skill_id,
+		"skill_name_cn": skill_name_cn,
+		"trigger_event": str(_profile.get("counterattack_trigger_event", "tier_2_tier_4")),
+		"target_unit_id": "",
 		"effect_id": StringName(str(_profile.get("counterattack_effect_id", ""))),
 		"effect_parameters": {
 			"child_count": int(_profile.get("counterattack_child_count", 0)),
@@ -164,8 +211,13 @@ func update_counterattack(
 		"pre_windup_seconds": float(_profile.get("counterattack_pre_windup_seconds", 0.0)),
 		"cooldown_seconds": float(_profile.get("counterattack_cooldown_seconds", 0.0)),
 	}
-	if str(request["skill_id"]).is_empty() or String(request["effect_id"]).is_empty():
+	if String(request["effect_id"]).is_empty():
+		_emit_counterattack_preflight_failure(round_tier, "missing_effect_id", skill_id, request)
 		return
+	if opponent_unit_ids.is_empty():
+		_emit_counterattack_preflight_failure(round_tier, "no_usable_target", skill_id, request)
+		return
+	request["target_unit_id"] = opponent_unit_ids[_rng.randi_range(0, opponent_unit_ids.size() - 1)]
 	_pending_counterattack = request
 	_windup_remaining = float(request["pre_windup_seconds"])
 	_last_counterattack_event = request.duplicate(true)
@@ -181,9 +233,16 @@ func report_counterattack_result(applied: bool) -> bool:
 		return false
 	var result: Dictionary = _pending_counterattack.duplicate(true)
 	result["applied"] = applied
-	_counterattack_cooldown_remaining = float(_pending_counterattack.get("cooldown_seconds", 0.0))
 	if applied:
 		_counterattack_uses += 1
+		_counterattack_cooldown_remaining = float(_pending_counterattack.get("cooldown_seconds", 0.0))
+		result["result_reason"] = "applied"
+		result["message"] = "反击已生效"
+	else:
+		result["result_reason"] = "effect_not_applied"
+		var failed_round_tier: int = int(result.get("qualification_tier", 0))
+		if failed_round_tier > 0:
+			_no_target_result_reported_by_tier[failed_round_tier] = true
 	_pending_counterattack.clear()
 	_awaiting_counterattack_result = false
 	_windup_remaining = 0.0
@@ -205,9 +264,12 @@ func get_debug_snapshot() -> Dictionary:
 		"spawn_area": _spawn_area,
 		"last_publish_request": _last_publish_request.duplicate(true),
 		"counterattack_enabled": counterattack_enabled,
+		"counterattack_paused": _counterattack_paused,
 		"counterattack_cooldown_remaining": _counterattack_cooldown_remaining,
 		"counterattack_windup_remaining": _windup_remaining,
 		"counterattack_uses": _counterattack_uses,
+		"counterattack_t2_qualified": _counterattack_t2_qualified,
+		"counterattack_t4_qualified": _counterattack_t4_qualified,
 		"pending_counterattack": _pending_counterattack.duplicate(true),
 		"last_counterattack_event": _last_counterattack_event.duplicate(true),
 		"opponent_word_pool_exhausted_reported": _opponent_pool_exhausted_reported,
@@ -267,6 +329,94 @@ func _get_unit_ids_for_team(snapshots: Array[Dictionary], team: String) -> Array
 		if not unit_id.is_empty():
 			result.append(unit_id)
 	return result
+
+
+## 先消费已获得的T2轮次，再允许进入T4轮次；成功次数就是唯一消耗状态。
+func _get_next_counterattack_round_tier() -> int:
+	if _counterattack_uses == 0 and _counterattack_t2_qualified:
+		return 2
+	if _counterattack_uses == 1 and _counterattack_t4_qualified:
+		return 4
+	return 0
+
+
+## 反击请求沿用当前主播配置的技能ID，并从21表映射取中文显示名。
+func _get_skill_mapping(skill_id: String) -> Dictionary:
+	if _content_catalog == null or not _content_catalog.has_method("get_retaliation_skill_mappings"):
+		return {}
+	var mappings_value: Variant = _content_catalog.call("get_retaliation_skill_mappings", _streamer_id)
+	if not mappings_value is Array:
+		return {}
+	for mapping_value: Variant in mappings_value:
+		if not mapping_value is Dictionary:
+			continue
+		var mapping: Dictionary = mapping_value
+		if str(mapping.get("skill_id", "")) == skill_id:
+			return mapping.duplicate(true)
+	return {}
+
+
+## 候选缺少配置或目标时回报一次明确失败，保留当前轮次等待后续有效状态。
+func _emit_counterattack_preflight_failure(
+	round_tier: int,
+	reason: String,
+	skill_id: String,
+	event_data: Dictionary = {}
+) -> void:
+	if bool(_no_target_result_reported_by_tier.get(round_tier, false)):
+		return
+	_no_target_result_reported_by_tier[round_tier] = true
+	var result: Dictionary = event_data.duplicate(true)
+	if result.is_empty():
+		result = {
+			"counterattack_round": 1 if round_tier == 2 else 2,
+			"qualification_tier": round_tier,
+			"streamer_id": _streamer_id,
+			"skill_id": skill_id,
+			"skill_name_cn": str(_get_skill_mapping(skill_id).get("trait_name", "特殊反击")),
+			"trigger_event": str(_profile.get("counterattack_trigger_event", "tier_2_tier_4")),
+			"target_unit_id": "",
+		}
+	result["applied"] = false
+	result["result_reason"] = reason
+	result["message"] = _counterattack_result_message(reason)
+	_last_counterattack_event = result.duplicate(true)
+	counterattack_resolved.emit(result)
+
+
+## 前摇期间领先或目标消失时结束当前提示；对应轮次仍可在条件恢复后执行。
+func _resolve_pending_without_effect(reason: String) -> void:
+	if _pending_counterattack.is_empty():
+		return
+	var result: Dictionary = _pending_counterattack.duplicate(true)
+	result["applied"] = false
+	result["result_reason"] = reason
+	result["message"] = _counterattack_result_message(reason)
+	var round_tier: int = int(result.get("qualification_tier", 0))
+	_pending_counterattack.clear()
+	_awaiting_counterattack_result = false
+	_windup_remaining = 0.0
+	if round_tier > 0:
+		_no_target_result_reported_by_tier[round_tier] = true
+	_last_counterattack_event = result.duplicate(true)
+	counterattack_resolved.emit(result)
+
+
+## 给PB-27 /表现层提供明确失败事实，同时保留稳定机器可读原因码。
+func _counterattack_result_message(reason: String) -> String:
+	match reason:
+		"no_usable_target":
+			return "没有可用反击目标"
+		"missing_skill_id", "missing_effect_id":
+			return "反击技能配置缺失"
+		"player_lead_lost":
+			return "发动前玩家领先人数不足"
+		"target_unavailable":
+			return "反击目标已离场"
+		"effect_not_applied":
+			return "反击效果未生效"
+		_:
+			return "反击未生效"
 
 
 func _request_counterattack_effect() -> void:
