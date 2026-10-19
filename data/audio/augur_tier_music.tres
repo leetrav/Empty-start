@@ -5,6 +5,7 @@ script = ExtResource("1")
 streamer_id = &"kiwi"
 event_ids = Array[StringName]([&"music_kiwi_intro", &"music_kiwi_low", &"music_kiwi_mid", &"music_kiwi_high"])
 tier_groups = Array[int]([0, 1, 2, 2, 3, 3])
+hold_intro_through_first_tier = true
 intro_fade_seconds = 2.4
 bpm = 100.0
 beats_per_bar = 4

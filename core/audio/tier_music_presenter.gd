@@ -118,7 +118,7 @@ func finish_connection_dialogue() -> void:
 	if _target == 0:
 		_target = profile.group_for_tier(1)
 	if profile.hold_intro_through_first_tier:
-		# 费米仅由真实箭头放行，不能拿对白完成替代升档视觉。
+		# 本档引子仅由后续真实升档箭头放行，不能拿对白完成替代。
 		_opening_active = true
 	_boundary_remaining = -1.0
 	_last_position = AudioManager.get_music_position()
@@ -138,7 +138,7 @@ func release_tier_visual(tier: int) -> void:
 		return
 	if profile.group_for_tier(tier) != _target:
 		return
-	# 首次升档只开屏，开场曲保持到第二次升档；不重播前四秒。
+	# 首次升档只开屏，开场曲保持到第二次升档，不重播一次性前奏。
 	if _opening_active and tier == 1:
 		_waiting_for_tier_visual = false
 		return

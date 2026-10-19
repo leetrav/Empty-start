@@ -528,3 +528,9 @@ Headless 测试只能证明其覆盖到的逻辑。
 - Fermi Profile改为hold_intro_through_first_tier=true：56%连线起曲从0秒保留首次约4秒静音；第一次箭头淡出、对白结束都不切曲/不重播；64%第二次箭头淡出才接中段。后续T3同组、T4/T5高段与稳定降档规则不变。F3直接调档仍走明确试听旁路。
 - teek_intro原生loop_offset=4.8继续保留，等待期间可持续循环有声伴奏，不重放静音前缀；未重编码素材或改变原曲速度/音高。删除已被更正的intro_before_connection属性。
 - 保留StageArrowFx真实淡出事实和过期档位保护，仅首次箭头对仍在开场的费米不放行换段；第二次真实升档才放行。其他三Boss默认false，音乐策略未改。
+## 2026-10-19 将已确认费米时机推广至其余Boss
+- 用户要求奥格尔/咕拉/列巴复用费米规则，随后确认先完成当前五次升档/三组音乐方案，未增加五首或五段新剪辑。三份Profile显式启用hold_intro_through_first_tier，复用现有Presenter/真实箭头信号，无新增播放器。
+- 56%首次开屏起播并保持开场，64%第二次箭头淡出换mid，71%同组不中断，79%第四次箭头淡出换high，90%继续high。五次箭头保留，音乐不是每次箭头都重播。正常首档对白结束不换low；low仍供稳定降档/中途恢复/F3试听。
+- 列巴原色出场→真实开口柔化的同进度切换、两版7.432秒伴奏循环保留；费米4.8秒循环点不改。奥格尔/咕拉原有开场及所有低中高OGG不重剪、不变速，既有顺序淡变参数保持。
+- 试听页同步说明，手动Tier触发公开release_tier_visual模拟箭头放行，避免对白后保持引子时点T2卡住。正式场景仍只消费真实箭头信号。
+- 验证：all-second-arrow-four真实Sandbox四关逐一通过（AU03_FOUR_BOSS_PASS），四关均检查第一次箭头不切low、对白结束保持intro、第二次真实升档与首次mid请求同帧（<10ms），并覆盖同组/暂停/降档/重开/F3/击破压低/失败/离场。all-second-arrow-fox长等待真实出场一次和对白两次回绕、柔化同位置、对白结束保持、第二次放行mid及失败/重开均通过（AU03_KHLEB_INTRO_PASS）。all-second-arrow-preview实际试听页下拉/按钮四曲均通过（ALL_SECOND_ARROW_PREVIEW_PASS）。

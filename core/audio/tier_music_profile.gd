@@ -10,7 +10,7 @@ extends Resource
 @export_range(0.0, 10.0) var entrance_fade_seconds: float = 0.25
 @export_range(0.0, 10.0) var dialogue_mix_seconds: float = 0.3
 @export var overlap_battle: bool = true
-# 费米T1开屏起曲并保持引子到T2箭头淡出；其他Boss沿用对白结束接低段。
+# 四Boss均配置T1开屏起曲，保持引子到T2箭头淡出；可选关闭用于兼容旧策略。
 @export var hold_intro_through_first_tier: bool = false
 @export var tier_groups: Array[int] = [0, 1, 2, 2, 3, 3]
 @export_range(1.0, 300.0) var bpm: float = 100.0

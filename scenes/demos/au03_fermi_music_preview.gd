@@ -41,7 +41,7 @@ func _ready() -> void:
 	rows.add_child(bosses)
 	bosses.item_selected.connect(_select_boss)
 	_label(rows, "音乐试听场景：手动选择Tier；不运行或修改PK、感染规则。", 24)
-	_label(rows, "T0 静音等待   ·   连线/开场对白 柔和引子   ·   对白后 T1低 / T2-T3中 / T4-T5高", 24)
+	_label(rows, "T0静音 · T1开屏起引子并保持 · T2/T3中段 · T4/T5高段；直接选T1可试听降档低段", 24)
 	var buttons := HBoxContainer.new()
 	rows.add_child(buttons)
 	for tier in range(6):
@@ -60,7 +60,7 @@ func _ready() -> void:
 	_button(actions, "失败淡出", _finish.bind(&"failed"))
 	_button(actions, "命中音效", AudioManager.play_event.bind(&"hit_normal"))
 	_status = _label(rows, "", 26)
-	_label(rows, "跨组等曲目自己的下一小节；降档稳定2秒后切换；同组不重播。", 22)
+	_label(rows, "正式升档随箭头淡出换段；此页点Tier模拟放行。降档稳定2秒后等小节，同组不重播。", 22)
 	_credit = _label(rows, "音乐：《Teek Teek Teek》
 煉獄庭園 · 作曲/編曲：煉獄小僧
 https://note.com/rengokuteien/n/n9de199487005", 21)
@@ -87,7 +87,7 @@ func _process(_delta: float) -> void:
 			_phase = "黑屏等待：BGM静音"
 			target = "等待连线"
 		elif _music.is_opening_dialogue_active():
-			_phase = "连线/开场对白：柔和引子，等待对白完成"
+			_phase = "开场引子：持续到第二次升档，结束对白不换段"
 			if _music.profile.entrance_event_id != &"" and AudioManager.get_music_event_id() == _music.profile.entrance_event_id:
 				_phase = "连线出场：原曲开头；对白开始后再柔化"
 				current = "原色出场"
@@ -107,6 +107,8 @@ func _set_tier(tier: int) -> void:
 		_music.start_battle(tier)
 	else:
 		_music.request_tier(tier)
+		# 独立试听没有玩法箭头，手动选档等价于该档箭头淡出；正式场景用真实信号。
+		_music.release_tier_visual(tier)
 
 
 # 试听专用剧情事件，生产场景由实际连线与对白完成信号驱动。

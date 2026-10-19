@@ -8,6 +8,7 @@ func _check_pack() -> void:
 	var total: int = 0
 	for id: StringName in BossMusicCatalog.PROFILES:
 		var profile: TierMusicProfile = BossMusicCatalog.find_profile(id)
+		assert(profile.hold_intro_through_first_tier)
 		var event_ids: Array[StringName] = profile.event_ids.duplicate()
 		if profile.entrance_event_id != &"":
 			event_ids.append(profile.entrance_event_id)

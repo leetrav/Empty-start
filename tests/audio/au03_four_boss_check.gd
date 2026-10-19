@@ -8,12 +8,14 @@ var _first_low_us: int = 0
 var _first_arrow_us: int = 0
 var _second_arrow_us: int = 0
 var _first_mid_us: int = 0
+var _observed_low: StringName
+var _observed_mid: StringName
 
 
 func _on_music_event(event_id: StringName) -> void:
-	if event_id == &"music_alien_low" and _first_low_us == 0:
+	if event_id == _observed_low and _first_low_us == 0:
 		_first_low_us = Time.get_ticks_usec()
-	if event_id == &"music_alien_mid" and _first_mid_us == 0:
+	if event_id == _observed_mid and _first_mid_us == 0:
 		_first_mid_us = Time.get_ticks_usec()
 
 
@@ -48,7 +50,7 @@ func _music_gain(audio: Node) -> float:
 
 func _run() -> void:
 	# 测试失败也要退出，避免断言中止后悬挂游戏进程。
-	create_timer(200.0).timeout.connect(func(): quit(2))
+	create_timer(260.0).timeout.connect(func(): quit(2))
 	var save: Node = root.get_node("SaveManager")
 	var audio: Node = root.get_node("AudioManager")
 	audio.music_changed.connect(_on_music_event)
@@ -61,6 +63,12 @@ func _run() -> void:
 		if OS.get_cmdline_user_args().has("--fox-only") and id != "fox":
 			continue
 		var profile: TierMusicProfile = BossMusicCatalog.find_profile(StringName(id))
+		_observed_low = profile.event_ids[1]
+		_observed_mid = profile.event_ids[2]
+		_first_low_us = 0
+		_first_mid_us = 0
+		_first_arrow_us = 0
+		_second_arrow_us = 0
 		save.data.next_normal_level_order = index + 1
 		save.data.completed_normal_level_ids.clear()
 		for previous: int in range(index):
@@ -111,8 +119,8 @@ func _run() -> void:
 			start_remaining -= 0.1
 		var dialogue_group: int = 0
 		_check(_dialogue_started and audio.get_music_event_id() == profile.event_ids[dialogue_group], id + " 真实气泡时已按箭头/对白策略播放")
-		if id == "alien":
-			_check(_first_low_us == 0 and _first_arrow_us > 0, "alien 首次箭头只开屏，不切低段")
+		if profile.hold_intro_through_first_tier:
+			_check(_first_low_us == 0 and _first_arrow_us > 0, id + " 首次箭头只开屏，不切低段")
 		if id == "fox":
 			_check(audio.get_music_position() >= before_dialogue, "fox 原色出场转对白不重播开头")
 		await create_timer(1.0).timeout
@@ -125,21 +133,21 @@ func _run() -> void:
 		await create_timer(profile.bar_seconds() + 0.8).timeout
 		var after_dialogue: int = 0 if profile.hold_intro_through_first_tier else 1
 		_check(audio.get_music_event_id() == profile.event_ids[after_dialogue], id + " 对白结束按配置保持引子/切低段")
-		if id == "alien":
+		if profile.hold_intro_through_first_tier:
 			attack.shot_arrival_resolved.emit(snapshot, results)
 			flow.get_hit_resolution().set_player_pk_for_debug(0.66)
 			await process_frame
-			_check(audio.get_music_event_id() == profile.event_ids[0], "alien 第二次箭头前保持开场")
+			_check(audio.get_music_event_id() == profile.event_ids[0], id + " 第二次箭头前保持开场")
 			attack.shot_hit_resolution_submitted.emit(snapshot, {"hit_resolution_result": {"target_results": results}})
 			var transition_wait: float = 6.0
 			while audio.get_music_event_id() != profile.event_ids[2] and transition_wait > 0.0:
 				await create_timer(0.1).timeout
 				transition_wait -= 0.1
-			_check(_first_mid_us > 0 and _second_arrow_us > 0 and absi(_first_mid_us - _second_arrow_us) < 10000, "alien 首次切中段与第二次箭头淡出同帧")
+			_check(_first_mid_us > 0 and _second_arrow_us > 0 and absi(_first_mid_us - _second_arrow_us) < 10000, id + " 首次切中段与第二次箭头淡出同帧")
 		else:
 			scene.debug_set_player_pk(0.66)
 		await create_timer(profile.bar_seconds() + 0.8).timeout
-		_check(audio.get_music_event_id() == profile.event_ids[2], id + " F3到中段")
+		_check(audio.get_music_event_id() == profile.event_ids[2], id + " 正常第二次升档到中段")
 		var pos: float = audio.get_music_position()
 		scene.debug_set_player_pk(0.73)
 		await create_timer(0.15).timeout

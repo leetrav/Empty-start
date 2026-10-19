@@ -55,7 +55,13 @@ func _run() -> void:
 	_check(_music.is_opening_dialogue_active(), "对白未结束时保持伴奏，未提前进入战斗段")
 	_music.finish_connection_dialogue()
 	await create_timer(_music.profile.bar_seconds() + 0.8).timeout
-	_check(_audio.get_music_event_id() == &"music_fox_low", "真实完成入口放行后按小节接低段")
+	_check(_audio.get_music_event_id() == &"music_fox_intro", "对白结束仍保持开场伴奏，不切低段")
+	_music.request_tier(2, true)
+	await create_timer(0.2).timeout
+	_check(_audio.get_music_event_id() == &"music_fox_intro", "第二次升档等待箭头淡出，不提前切段")
+	_music.release_tier_visual(2)
+	await create_timer(0.8).timeout
+	_check(_audio.get_music_event_id() == &"music_fox_mid", "第二次箭头放行才切中段")
 	_music.start_battle()
 	_music.begin_connection()
 	_music.request_tier(1)
