@@ -50,7 +50,7 @@
 - PB-14 的 pre-optimization 正式 Sandbox CLI profile 与后续同场景 post-optimization 结果记录在 `evidence/PB-14_2026-10-18/`。Engine `TIME_PROCESS/TIME_PHYSICS_PROCESS` 与 CLI GPU/FPS 值按各自计量名记录；GUI Profiler 的 Script/Idle 函数明细及窗口截图需人工验收。
 
 ### Lane B 当前已实现的 PB-15 人口规则
-- 模拟器默认开局创建30名中立观众和2个中立播种位；当前 A `PlanBBattleHost` 明确调用 `create_population(-1, initial_opponent_seed_count)`，再将两个播种位转成费米棋子，因此首个 PK 快照为30名中立、2名对手。A 持有播种位数量，B 持有真实单位、位置、寿命与人口快照。
+- 模拟器默认创建30名中立观众，`initial_seed_slot_count=2` 是 B API 的直接调用 fallback。当前 A `PlanBBattleHost` 显式调用 `create_population(-1, initial_opponent_seed_count)`，实参2覆盖 fallback，生成32席后播种成30名中立、2名对手，不重复增加播种位。C 配置 `initial_seed_slot_count=0` 表示 C 不额外请求槽位；A 持有正式播种位数量，B 持有真实单位、位置、寿命与人口快照。
 - 中立补人以 `neutral_spawn_interval_seconds=0.75` 为中心，`neutral_spawn_jitter_ratio=0.25` 控制±25%范围。补人计时使用独立随机流，`set_random_seed()` 同步重置棋子和补人随机流，使固定 seed 可重放到达时序；随机坐标继续调用现有安全边界逻辑。
 - 自动补人最多增长到 `maximum_population - 8`；达到该人口线后冻结当前补人计时，容量释放后继续当前周期。玩家与对手仍共用现有2/4/8完整批次接口，容量和 PK 仍从实时单位总数、阵营快照读取。默认人口上限96保持不变。
 - C 的 PB-15 数值表当前给出 `initial_neutral_count=30`、`initial_seed_slot_count=0`、0.75秒与0.25扰动；A 当前 Host 通过 `initial_opponent_seed_count=2` 单独提供播种数量，数值表尚未接入该 Host。集成时继续以 A 的 Host 设置作为播种位唯一入口，并由 C/A 对齐配置读取。
