@@ -1,5 +1,8 @@
 # 19. DivineDescent 神降临系统任务拆分
 
+## AU-03 结尾音乐触发（2026-10-19）
+Sandbox将现有phase_changed转发给EndingMusicPresenter。只有最终emphasis/completed且progress=1才淡入《天導 -Tendoh-》，扩散/锁句阶段不提前起播；终局进度/计时不改。音乐跨路由延续到EndingPage，空历史completed也能起曲。实现/验证与来源见Shared/Audio的AU-03日志。
+
 ## PTF-02 全程回应输入（2026-10-16，节奏待人工选择）
 
 原 `DivineDescentFlow.handle_input(event)` 从扩散开始即可接受左键、触摸按下或非重复空格。每次有效输入有局部涟漪、可见文字缩放；锁句后沿用原锁句强化，强调中回应不改变完成 Tween。旧零 input_scale / input_return_seconds 回退到可编辑反馈参数，暂停/停止/完成后拒绝输入；0.12 秒冷却合并触摸仿真和快速重复输入。

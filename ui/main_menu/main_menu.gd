@@ -16,9 +16,11 @@ func _ready() -> void:
 	_menu_actions.move_child(_continue_button, 0)
 	_continue_button.pressed.connect(_on_continue_button_pressed)
 	# 原菜单按钮点击消费已提前注册的正式声音，路由仍由原回调负责。
-	for button: BaseButton in [%StartButton, %ReplayOpeningButton, %ReplayEndingButton, %SettingsButton, %QuitButton, _continue_button]:
+	for button: BaseButton in [%StartButton, %ReplayFullOpeningButton, %ReplayOpeningButton, %ReplayEndingButton, %SettingsButton, %QuitButton, _continue_button]:
 		AudioManager.bind_ui_button(button)
 	# 首次启动演出已由 Boot 处理，主菜单始终提供前后两部分回放。
+	%ReplayFullOpeningButton.pressed.connect(_replay_comic.bind(&"intro"))
+	%ReplayOpeningButton.text = "回看开场前四幕"
 	%ReplayOpeningButton.show()
 	%ReplayEndingButton.show()
 	# 此资源是开场P5/P6，正式Ending使用独立的结局页面和结果快照。

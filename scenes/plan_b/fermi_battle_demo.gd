@@ -7,6 +7,7 @@ const CONTENT_CATALOG_SCRIPT: Script = preload("res://systems/plan_b/content/pla
 const FERMI_DIRECTOR_SCRIPT: Script = preload("res://systems/plan_b/opponent/fermi_opponent_director.gd")
 const BATTLE_WORLD_BOUNDS: Rect2 = Rect2(Vector2.ZERO, Vector2(900.0, 490.0))
 
+var _tier_music: TierMusicPresenter
 var _host: PlanBBattleHost
 var _simulation: Node
 var _content_catalog: Object
@@ -23,6 +24,9 @@ func _ready() -> void:
 	# A 拥有跨模块生命周期；B 持有棋子，C 持有静态话语和费米请求，D 只消费事实。
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_host = $BattleHost
+	_tier_music = TierMusicPresenter.new()
+	add_child(_tier_music)
+	_tier_music.bind_host(_host)
 	_simulation = $BattleHost/Simulation
 	_content_catalog = CONTENT_CATALOG_SCRIPT.new()
 	_fermi_director = FERMI_DIRECTOR_SCRIPT.new()
