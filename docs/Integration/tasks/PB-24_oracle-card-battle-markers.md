@@ -1,6 +1,8 @@
 # PB-24 · 神谕卡宗教包装与棋盘属性反馈
 
-**状态：2026-10-19 用户确认／待实施。优先级：P0。Owner：D（UI表现）／E（视觉验收）。**
+**状态：2026-10-20 Lane D UI实现与关键截图完成；S1真实改口事件和 PB-27 正式反击事件的组合验收待做。优先级：P0。Owner：D（UI表现）／E（视觉验收）。**
+
+本次实现记录见 [PB-24 日志](../复读感染_PB-24_2026-10-20_log.md)，Godot 1920×1080 证据见 [战斗标识截图](../evidence/PB-24_2026-10-20/pb24_battle_markers_1920x1080.png)。
 
 ## 开始前先阅读以下文档
 - AGENTS.md、project.godot、known_traps.md、docs/Original/任务卡模板.md。
@@ -22,7 +24,7 @@
 
 ## 本任务所属分支和文件归属
 - 任务编号、状态、Owner：PB-24；待实施；D（UI表现）／E（视觉验收）。
-- 开发入口：以 integrate/gamejam-shared-baseline-20261019 **最新HEAD**为基线，在D盘建立单独工作树；对应功能PR的base为同一共同分支。
+- 开发入口：原规划指定 integrate/gamejam-shared-baseline-20261019 最新HEAD；本次用户指令覆盖为**最新 main**，D盘工作树与功能PR均以 main 为基线。
 - 直接依赖：现有battle_type/strength/UnitField快照和PB-18倾向显示。D可并行制作卡牌与属性标识；完成后的真实改口浮字再接PB-23事件，槽位名称与PB-22最终对齐。
 - 每个预计修改文件的唯一Owner：
 - D：ui/plan_b/plan_b_battle_ui.gd、ui/plan_b/plan_b_unit_field.gd。
