@@ -5,8 +5,8 @@ const BubbleScene: PackedScene = preload("res://ui/streamer_bubble_dialogue/stre
 
 @export_enum("Left", "Right") var tail_direction: int = StreamerBubbleView.TailDirection.LEFT
 @export_range(0.0, 1.0, 0.01) var tail_position: float = 0.68
-@export_range(120.0, 448.0, 1.0) var max_bubble_width: float = 310.0
-@export_range(120.0, 320.0, 1.0) var min_bubble_width: float = 134.0
+@export_range(120.0, 448.0, 1.0) var max_bubble_width: float = 310.0 # 当前对白主泡固定宽度
+@export_range(120.0, 320.0, 1.0) var min_bubble_width: float = 134.0 # 历史对白泡固定宽度
 @export_range(12.0, 64.0, 1.0) var tail_length: float = 22.0
 @export_range(12.0, 64.0, 1.0) var tail_base_width: float = 26.0
 @export var text_margin: Vector2 = Vector2(25.0, 16.0)

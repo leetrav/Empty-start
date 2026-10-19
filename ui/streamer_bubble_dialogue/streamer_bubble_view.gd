@@ -7,8 +7,8 @@ enum TailDirection { LEFT, RIGHT }
 
 @export_enum("Left", "Right") var tail_direction: int = TailDirection.LEFT
 @export_range(0.0, 1.0, 0.01) var tail_position: float = 0.68
-@export_range(120.0, 448.0, 1.0) var max_bubble_width: float = 310.0
-@export_range(120.0, 320.0, 1.0) var min_bubble_width: float = 134.0
+@export_range(120.0, 448.0, 1.0) var max_bubble_width: float = 310.0 # 当前对白主泡固定宽度
+@export_range(120.0, 320.0, 1.0) var min_bubble_width: float = 134.0 # 历史对白泡固定宽度
 @export_range(12.0, 64.0, 1.0) var tail_length: float = 22.0
 @export_range(12.0, 64.0, 1.0) var tail_base_width: float = 26.0
 @export var text_margin: Vector2 = Vector2(25.0, 16.0)
@@ -95,13 +95,11 @@ func _reflow() -> void:
 	var horizontal_padding: float = text_margin.x if is_current else text_margin.x - 5.0
 	var vertical_padding: float = text_margin.y if is_current else 14.0
 	var tail_reserved: float = tail_length if is_current else 0.0
-	var width_limit: float = minf(max_bubble_width, _available_size.x)
+	var configured_width: float = max_bubble_width if is_current else min_bubble_width
+	var width_limit: float = minf(configured_width, _available_size.x)
 	var maximum_text: float = maxf(30.0, width_limit - 2.0 * horizontal_padding - tail_reserved - 5.0)
-	var widest: float = 0.0
-	for line: String in _message.split("\n", true):
-		widest = maxf(widest, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
-	var minimum_text: float = maxf(32.0, min_bubble_width - horizontal_padding * 2.0 - tail_reserved)
-	var available: float = clampf(widest + 4.0, minf(minimum_text, maximum_text), maximum_text)
+	# 宽度由当前/历史气泡配置决定；文字长度只改变换行与纵向高度。
+	var available: float = maximum_text
 	var height_limit: float = maxf(24.0, _available_size.y - vertical_padding * 2.0 - 3.0)
 	_text_label.text = _message
 	_text_label.scroll_active = false
