@@ -15,8 +15,29 @@ const BREAKTHROUGH_SCENE: PackedScene = preload("res://systems/presentation/oppo
 const HAMSTER_PORTRAIT: Texture2D = preload("res://assets/characters/player/hamster_idle.png")
 const HAMSTER_BACKGROUND: Texture2D = preload("res://assets/environment/live/hamster/background.png")
 const HAMSTER_FOREGROUND: Texture2D = preload("res://assets/environment/live/hamster/foreground_desk.png")
+const DEFAULT_PLAYER_FAN_BADGE: Texture2D = preload("res://assets/ui/combat/fan_badges/player_fan_badge_01.png")
 const ALIEN_PORTRAIT: Texture2D = preload("res://assets/characters/opponents/alien/alien_idle.png")
 const ALIEN_BACKGROUND: Texture2D = preload("res://assets/environment/live/alien/background.png")
+const OPPONENT_FAN_BADGES := {
+	"alien": preload("res://assets/ui/combat/fan_badges/alien_fan_badge.png"),
+	"fox": preload("res://assets/ui/combat/fan_badges/fox_fan_badge.png"),
+	"frog": preload("res://assets/ui/combat/fan_badges/frog_fan_badge.png"),
+	"kiwi": preload("res://assets/ui/combat/fan_badges/kiwi_fan_badge.png"),
+}
+const FAN_NAMEPLATES := {
+	"hamster": preload("res://assets/ui/live/fan_nameplates/hamster_fan_nameplate.png"),
+	"alien": preload("res://assets/ui/live/fan_nameplates/alien_fan_nameplate.png"),
+	"fox": preload("res://assets/ui/live/fan_nameplates/fox_fan_nameplate.png"),
+	"frog": preload("res://assets/ui/live/fan_nameplates/frog_fan_nameplate.png"),
+	"kiwi": preload("res://assets/ui/live/fan_nameplates/kiwi_fan_nameplate.png"),
+}
+const FAN_NAMEPLATE_TEXT_COLORS := {
+	"hamster": Color("#344d18"),
+	"alien": Color("#f8f0f5"),
+	"fox": Color("#603711"),
+	"frog": Color("#124c40"),
+	"kiwi": Color("#57371f"),
+}
 const FOX_PETALS: Array[Texture2D] = [
 	preload("res://assets/characters/opponents/fox/effects/fox_rose_01.png"),
 	preload("res://assets/characters/opponents/fox/effects/fox_rose_02.png"),
@@ -25,6 +46,7 @@ const FOX_PETALS: Array[Texture2D] = [
 ]
 
 var streamer_side := "player"
+var _active_streamer_id := "hamster"
 var _name_label: Label
 var _fan_group_label: Label
 var _echo_summary_label: Label
@@ -33,7 +55,6 @@ var _portrait_background: TextureRect
 var _portrait_art: TextureRect
 var _portrait_foreground: TextureRect
 var _portrait_placeholder: Label
-var _fan_badge: TextureRect
 var _bubble_stack
 var _crt_connection: Control
 var _live_data_hud: Control
@@ -48,6 +69,7 @@ var _result_defeat_texture: Texture2D
 func configure_side(side: String) -> void:
 	## 场景组合前声明左右侧，以匹配指标对齐、气泡尾部和主播待机动效。
 	streamer_side = "opponent" if side == "opponent" else "player"
+	_active_streamer_id = "alien" if streamer_side == "opponent" else "hamster"
 
 func _ready() -> void:
 	_build_panel()
@@ -60,12 +82,13 @@ func configure_identity(display_name: String, fan_group_name: String) -> void:
 	_fan_group_label.text = _format_fan_group_name(fan_group_name)
 
 func configure_assets(portrait: Texture2D, background: Texture2D, fan_badge: Texture2D = null, foreground: Texture2D = null) -> void:
+	# 粉丝徽章只交给评论行；主播身份栏继续由纯文字团名组成。
 	if foreground == null and streamer_side == "player" and background == HAMSTER_BACKGROUND:
 		foreground = HAMSTER_FOREGROUND
 	_set_texture(_portrait_background, background)
 	_set_texture(_portrait_art, portrait)
 	_set_texture(_portrait_foreground, foreground)
-	_set_texture(_fan_badge, fan_badge)
+	_sync_comment_branding(fan_badge)
 	_portrait_placeholder.visible = portrait == null
 	if _tier_presenter != null and streamer_side == "opponent":
 		_tier_presenter.call("configure_textures", portrait, null, null, null)
@@ -75,8 +98,11 @@ func configure_opponent_tier_textures(idle: Texture2D, tier_01: Texture2D, tier_
 		_tier_presenter.call("configure_textures", idle, tier_01, tier_02, tier_03)
 
 func configure_portrait_character(character_id: String) -> void:
-	# 保存当前对手 ID，供结算演出选择对应的角色表现资源。
+	# 保存当前对手 ID，供结算演出与评论粉丝资源一起按稳定 ID 切换。
 	_result_character_id = StringName(character_id.strip_edges())
+	if not character_id.strip_edges().is_empty():
+		_active_streamer_id = character_id.strip_edges()
+	_sync_comment_branding()
 
 func configure_opponent_foreground(texture: Texture2D) -> void:
 	_set_texture(_portrait_foreground, texture)
@@ -267,14 +293,6 @@ func _build_header(parent: VBoxContainer) -> void:
 	_fan_group_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_fan_group_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS_FORCE
 	header.add_child(_fan_group_label)
-	_fan_badge = TextureRect.new()
-	_fan_badge.position = Vector2(398.0, 52.0)
-	_fan_badge.size = Vector2(34.0, 34.0)
-	_fan_badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_fan_badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_fan_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_fan_badge.visible = false
-	header.add_child(_fan_badge)
 	_echo_summary_label = _label("暂无当前复读", 13, Color("#d3dde1"))
 	_echo_summary_label.position = Vector2(28.0, 99.0)
 	_echo_summary_label.size = Vector2(390.0, 24.0)
@@ -318,6 +336,19 @@ func _build_live_data(parent: VBoxContainer) -> void:
 	_live_data_hud.set("display_side", 0 if streamer_side == "player" else 1)
 	_live_data_hud.set("auto_bind_player_session", false)
 	parent.add_child(_live_data_hud)
+	_sync_comment_branding()
+
+
+## 用当前主播的真实粉丝徽章和 PA-21 横标装饰评论行；主播栏保留纯团名文字。
+func _sync_comment_branding(preferred_badge: Texture2D = null) -> void:
+	if _live_data_hud == null or not _live_data_hud.has_method("configure_comment_branding"):
+		return
+	var badge: Texture2D = preferred_badge
+	if badge == null:
+		badge = DEFAULT_PLAYER_FAN_BADGE if streamer_side == "player" else OPPONENT_FAN_BADGES.get(_active_streamer_id) as Texture2D
+	var nameplate: Texture2D = FAN_NAMEPLATES.get(_active_streamer_id) as Texture2D
+	var nameplate_color: Color = FAN_NAMEPLATE_TEXT_COLORS.get(_active_streamer_id, Color("#27323b"))
+	_live_data_hud.call("configure_comment_branding", badge, nameplate, nameplate_color)
 
 func _attach_portrait_motion() -> void:
 	_portrait_motion = PORTRAIT_MOTION_SCRIPT.new()
