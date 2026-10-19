@@ -46,7 +46,7 @@ func _process(delta: float) -> void:
 	_title_time += delta
 	for index: int in range(_titles.size()):
 		var phase := _title_time * 1.1 + float(index) * 1.7
-		_titles[index].position = _title_origins[index] + Vector2(sin(phase * 0.7) * 3.0, sin(phase) * 7.0)
+		_titles[index].position = _title_origins[index] + Vector2(sin(phase * 0.7) * 2.0, sin(phase) * 4.0)
 
 # 原存档只读后交给原路由，不重复奖励；失败时恢复入口。
 func _on_continue_button_pressed() -> void:

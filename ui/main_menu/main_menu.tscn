@@ -54,34 +54,31 @@ mouse_filter = 2
 
 [node name="Bo" type="TextureRect" parent="CoverCanvas/Titles"]
 layout_mode = 0
-offset_left = 1130.0
-offset_top = 0.0
-offset_right = 1898.0
-offset_bottom = 645.0
-mouse_filter = 2
-texture = ExtResource("5")
-expand_mode = 1
-
-[node name="Lai" type="TextureRect" parent="CoverCanvas/Titles"]
-layout_mode = 0
-offset_left = 1370.0
-offset_top = 48.0
-offset_right = 1944.0
-offset_bottom = 529.0
-mouse_filter = 2
-texture = ExtResource("6")
-expand_mode = 1
-
-[node name="Shu" type="TextureRect" parent="CoverCanvas/Titles"]
-layout_mode = 0
-offset_left = 1460.0
-offset_top = 430.0
-offset_right = 2098.0
-offset_bottom = 977.0
+offset_left = 1112.0
+offset_top = -62.0
+offset_right = 1750.0
+offset_bottom = 485.0
 mouse_filter = 2
 texture = ExtResource("7")
 expand_mode = 1
-
+[node name="Lai" type="TextureRect" parent="CoverCanvas/Titles"]
+layout_mode = 0
+offset_left = 1372.0
+offset_top = 16.0
+offset_right = 1946.0
+offset_bottom = 497.0
+mouse_filter = 2
+texture = ExtResource("6")
+expand_mode = 1
+[node name="Shu" type="TextureRect" parent="CoverCanvas/Titles"]
+layout_mode = 0
+offset_left = 1460.0
+offset_top = 278.0
+offset_right = 2228.0
+offset_bottom = 923.0
+mouse_filter = 2
+texture = ExtResource("5")
+expand_mode = 1
 [node name="Hamster" type="TextureRect" parent="CoverCanvas"]
 layout_mode = 0
 offset_left = 540.0
