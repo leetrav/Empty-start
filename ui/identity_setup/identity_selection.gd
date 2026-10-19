@@ -53,24 +53,53 @@ func _ready() -> void:
 		margin.name = "CardFace"
 		margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		for side in ["left", "right", "top", "bottom"]:
-			margin.add_theme_constant_override("margin_" + side, 20)
+		margin.add_theme_constant_override("margin_left", 18)
+		margin.add_theme_constant_override("margin_right", 18)
+		margin.add_theme_constant_override("margin_top", 20)
+		margin.add_theme_constant_override("margin_bottom", 18)
 		button.add_child(margin)
 		var content := VBoxContainer.new()
 		content.name = "Front"
 		content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		content.add_theme_constant_override("separation", 8)
+		content.add_theme_constant_override("separation", 4)
 		margin.add_child(content)
+		# 徽记留在卡片上半区；下方独立纸色面板承载标题和完整描述。
 		var art_clearance := Control.new()
-		art_clearance.custom_minimum_size.y = 120.0
+		art_clearance.custom_minimum_size.y = 172.0
 		art_clearance.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		content.add_child(art_clearance)
-		var title := _make_label(option.display_name, 26)
-		title.add_theme_color_override("font_color", Color("#49312b"))
-		content.add_child(title)
-		var description := _make_label(option.description, 18)
-		description.add_theme_color_override("font_color", Color("#49312b"))
-		content.add_child(description)
+		var text_panel := PanelContainer.new()
+		text_panel.name = "CardTextPanel"
+		text_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		text_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		var text_style := StyleBoxFlat.new()
+		text_style.bg_color = Color("#f0dfc0")
+		text_style.border_color = Color("#b79a72")
+		text_style.border_width_left = 1
+		text_style.border_width_top = 1
+		text_style.border_width_right = 1
+		text_style.border_width_bottom = 1
+		text_style.corner_radius_top_left = 6
+		text_style.corner_radius_top_right = 6
+		text_style.corner_radius_bottom_left = 6
+		text_style.corner_radius_bottom_right = 6
+		text_style.content_margin_left = 10.0
+		text_style.content_margin_top = 6.0
+		text_style.content_margin_right = 10.0
+		text_style.content_margin_bottom = 6.0
+		text_panel.add_theme_stylebox_override("panel", text_style)
+		content.add_child(text_panel)
+		var text_content := VBoxContainer.new()
+		text_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		text_content.add_theme_constant_override("separation", 4)
+		text_panel.add_child(text_content)
+		var title := _make_label(option.display_name, 24)
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title.add_theme_color_override("font_color", Color("#2b1c14"))
+		text_content.add_child(title)
+		var description := _make_label(option.description, 17)
+		description.add_theme_color_override("font_color", Color("#302116"))
+		text_content.add_child(description)
 		var back := _make_label("身份牌\n点击翻开", 30)
 		back.name = "Back"
 		back.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
