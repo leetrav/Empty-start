@@ -11,6 +11,13 @@ const TEAM_COLORS := {
 	"player": Color("#50c7ff"),
 	"opponent": Color("#ff9f68"),
 }
+const TENDENCY_COLORS := {
+	"orthodox": Color("#62d3ab"),
+	"heretical": Color("#c49aff"),
+	"heresy": Color("#c49aff"),
+	"absurd": Color("#ffd477"),
+	"neutral": Color("#94a3b8"),
+}
 const UNIT_VISUAL_RADIUS: float = 32.0
 
 var world_bounds := Rect2(Vector2.ZERO, Vector2(900.0, 490.0))
@@ -41,9 +48,42 @@ var _render_interpolation_fraction := 0.0
 var _movement_segments: Dictionary = {}
 var _contact_feedback: Array[Dictionary] = []
 var _word_batch_bursts: Array[Dictionary] = []
+var _counterable_unit_ids: Dictionary = {}
+var _rephrase_feedback: Dictionary = {}
 var _last_drawn_group_bubbles: int = 0
 var _last_group_tail_candidates: int = 0
 var _tracker_group_layout_cache_hits: int = 0
+
+
+## 三倾向颜色由卡牌与棋子共用；阵营色继续由 TEAM_COLORS 独立表达。
+static func get_tendency_color(tendency_id: String) -> Color:
+	return TENDENCY_COLORS.get(tendency_id, TENDENCY_COLORS["neutral"])
+
+
+## 将内部 battle_type 映射到玩家能直接理解的话语名称。
+static func get_battle_type_name(battle_type: String) -> String:
+	match battle_type:
+		"type_a":
+			return "铁拳布道"
+		"type_b":
+			return "断章取义"
+		"type_c":
+			return "博爱包容"
+		_:
+			return "话语"
+
+
+## 缺少 Emoji 字形时，卡牌用同义文字代替；棋盘棋子使用原生线条徽标。
+static func get_battle_type_fallback_mark(battle_type: String) -> String:
+	match battle_type:
+		"type_a":
+			return "石"
+		"type_b":
+			return "剪"
+		"type_c":
+			return "布"
+		_:
+			return "·"
 
 func _ready() -> void:
 	# 场地只消费只读快照；鼠标和触控按有效棋盘区域提交坐标，不按头像尺寸改动发表规则。
@@ -205,6 +245,50 @@ func set_selected_unit(unit_id: String) -> void:
 	queue_redraw()
 
 
+## 接收 UI 按当前克制表计算好的敌方目标 ID 集合；集合未变时不重绘。
+func set_counterable_unit_ids(unit_ids: Array) -> void:
+	var next_ids: Dictionary = {}
+	for value in unit_ids:
+		var unit_id := str(value)
+		if not unit_id.is_empty():
+			next_ids[unit_id] = true
+	if next_ids.size() == _counterable_unit_ids.size():
+		var identical := true
+		for unit_id in next_ids:
+			if not _counterable_unit_ids.has(unit_id):
+				identical = false
+				break
+		if identical:
+			return
+	_counterable_unit_ids = next_ids
+	queue_redraw()
+
+
+## 同一条 S1 话语的 relay 只累积真正改口的棋子，并在它们落点显示一次汇总。
+func show_rephrase_feedback(unit_ids: Array, feedback_key: String) -> void:
+	if feedback_key.is_empty():
+		return
+	var feedback: Dictionary = _rephrase_feedback.get(feedback_key, {"unit_ids": []})
+	var changed_ids: Array = feedback.get("unit_ids", [])
+	for value in unit_ids:
+		var unit_id := str(value)
+		if not unit_id.is_empty() and not changed_ids.has(unit_id):
+			changed_ids.append(unit_id)
+	feedback["unit_ids"] = changed_ids
+	feedback["time"] = Time.get_ticks_msec()
+	_rephrase_feedback[feedback_key] = feedback
+	while _rephrase_feedback.size() > 3:
+		var oldest_key: String = str(_rephrase_feedback.keys()[0])
+		var oldest_time: int = int(_rephrase_feedback[oldest_key].get("time", 0))
+		for key in _rephrase_feedback:
+			var current_time: int = int(_rephrase_feedback[key].get("time", 0))
+			if current_time < oldest_time:
+				oldest_key = str(key)
+				oldest_time = current_time
+		_rephrase_feedback.erase(oldest_key)
+	queue_redraw()
+
+
 func set_unit_layer_visible(visible: bool) -> void:
 	# 矛盾阶段隐藏普通棋子与接触提示，保留棋盘底板给蓄力准星使用。
 	if _unit_layer_visible == visible:
@@ -261,7 +345,10 @@ func show_word_batch_burst(batch: Dictionary) -> void:
 func _process(_delta: float) -> void:
 	# 只保留短暂提示；棋子位置仍由每帧的新快照决定。
 	var now := Time.get_ticks_msec()
-	var had_transient_feedback := not _feedback_pulses.is_empty() or not _contact_feedback.is_empty() or not _word_batch_bursts.is_empty()
+	var had_transient_feedback := (
+		not _feedback_pulses.is_empty() or not _contact_feedback.is_empty()
+		or not _word_batch_bursts.is_empty() or not _rephrase_feedback.is_empty()
+	)
 	for unit_id in _feedback_pulses.keys():
 		if now - int(_feedback_pulses[unit_id].get("time", now)) > 1500:
 			_feedback_pulses.erase(unit_id)
@@ -271,7 +358,11 @@ func _process(_delta: float) -> void:
 	for index in range(_word_batch_bursts.size() - 1, -1, -1):
 		if now - int(_word_batch_bursts[index].get("started_at_msec", now)) > 650:
 			_word_batch_bursts.remove_at(index)
-	if had_transient_feedback or not _feedback_pulses.is_empty() or not _contact_feedback.is_empty():
+	for feedback_key in _rephrase_feedback.keys():
+		if now - int(_rephrase_feedback[feedback_key].get("time", now)) > 1200:
+			_rephrase_feedback.erase(feedback_key)
+	if (had_transient_feedback or not _feedback_pulses.is_empty()
+			or not _contact_feedback.is_empty() or not _rephrase_feedback.is_empty()):
 		queue_redraw()
 
 
@@ -305,6 +396,7 @@ func _draw() -> void:
 	_frame_unit_centers.clear()
 	for snapshot in _snapshots:
 		_draw_unit(snapshot)
+	_draw_rephrase_feedback()
 	if _performance_tracker != null:
 		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UNIT_DRAW_BATCH, Time.get_ticks_usec() - unit_draw_start_usec, _snapshots.size())
 	_draw_group_bubbles()
@@ -327,7 +419,7 @@ func _draw_unit(snapshot: Dictionary) -> void:
 	var is_hovered := unit_id == _hovered_unit_id
 
 	if is_selected or is_hovered:
-		draw_circle(center, radius + 4.0, Color(tint.r, tint.g, tint.b, 0.22))
+		draw_circle(center, radius + 9.0, Color(tint.r, tint.g, tint.b, 0.18))
 	var sprite_id := _sprite_id_for(snapshot, team)
 	var token_texture: Texture2D = _unit_sprite_textures.get(sprite_id) as Texture2D
 	if token_texture != null:
@@ -336,15 +428,12 @@ func _draw_unit(snapshot: Dictionary) -> void:
 		draw_circle(center, radius + 1.0, Color("#07121b"))
 		draw_circle(center, radius, tint)
 	draw_arc(center, radius + 1.25, 0.0, TAU, 20, tint, 1.5, true)
-	var attribute_color := _battle_type_color(str(snapshot.get("battle_type", "")))
-	var badge_center := center + Vector2(radius * 0.68, radius * 0.68)
-	var badge_size := maxf(4.0, radius * 0.17)
-	draw_colored_polygon(PackedVector2Array([
-		badge_center + Vector2(0.0, -badge_size),
-		badge_center + Vector2(badge_size, 0.0),
-		badge_center + Vector2(0.0, badge_size),
-		badge_center + Vector2(-badge_size, 0.0),
-	]), attribute_color)
+	if not is_neutral:
+		var tendency_color := get_tendency_color(str(snapshot.get("tendency", "neutral")))
+		draw_arc(center, radius + 4.25, 0.0, TAU, 32, tendency_color, 2.0, true)
+	if _counterable_unit_ids.has(unit_id):
+		draw_arc(center, radius + 7.0, 0.0, TAU, 32, Color("#b5f2a1", 0.82), 1.6, true)
+	_draw_battle_type_badge(center, radius, str(snapshot.get("battle_type", "")))
 
 	if _feedback_pulses.has(unit_id):
 		var feedback: Dictionary = _feedback_pulses[unit_id]
@@ -357,6 +446,79 @@ func _draw_unit(snapshot: Dictionary) -> void:
 		elif reason == "reflect":
 			draw_arc(center, radius + 3.5, -PI * 0.8, -PI * 0.2, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 1.5, true)
 			draw_arc(center, radius + 3.5, PI * 0.2, PI * 0.8, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 1.5, true)
+
+
+## 64px头像内绘制独立 battle_type 徽标；线稿不依赖外部 Emoji 字体或新图片。
+func _draw_battle_type_badge(center: Vector2, radius: float, battle_type: String) -> void:
+	if battle_type not in ["type_a", "type_b", "type_c"]:
+		return
+	var badge_center := center + Vector2(radius * 0.66, -radius * 0.66)
+	var type_color := _battle_type_color(battle_type)
+	draw_circle(badge_center, 10.0, Color("#07141d", 0.94))
+	draw_arc(badge_center, 9.2, 0.0, TAU, 24, type_color, 1.5, true)
+	var icon_color := Color("#f3f8fa")
+	match battle_type:
+		"type_a":
+			_draw_fist_mark(badge_center, icon_color)
+		"type_b":
+			_draw_scissors_mark(badge_center, icon_color)
+		"type_c":
+			_draw_paper_mark(badge_center, icon_color)
+
+
+func _draw_fist_mark(center: Vector2, tint: Color) -> void:
+	draw_rect(Rect2(center + Vector2(-5.0, -1.0), Vector2(10.0, 6.0)), tint, true)
+	for finger_index in 3:
+		draw_rect(Rect2(center + Vector2(-5.0 + finger_index * 3.4, -5.0), Vector2(2.8, 4.5)), tint, true)
+	draw_rect(Rect2(center + Vector2(-7.5, 0.0), Vector2(3.4, 3.2)), tint, true)
+
+
+func _draw_scissors_mark(center: Vector2, tint: Color) -> void:
+	draw_line(center + Vector2(-1.0, 0.0), center + Vector2(5.5, -5.0), tint, 1.8, true)
+	draw_line(center + Vector2(-1.0, 0.0), center + Vector2(5.5, 5.0), tint, 1.8, true)
+	draw_circle(center + Vector2(-4.0, -3.3), 2.0, tint)
+	draw_circle(center + Vector2(-4.0, 3.3), 2.0, tint)
+
+
+func _draw_paper_mark(center: Vector2, tint: Color) -> void:
+	draw_line(center + Vector2(-5.0, -6.0), center + Vector2(2.0, -6.0), tint, 1.6, true)
+	draw_line(center + Vector2(2.0, -6.0), center + Vector2(5.0, -3.0), tint, 1.6, true)
+	draw_line(center + Vector2(5.0, -3.0), center + Vector2(5.0, 6.0), tint, 1.6, true)
+	draw_line(center + Vector2(5.0, 6.0), center + Vector2(-5.0, 6.0), tint, 1.6, true)
+	draw_line(center + Vector2(-5.0, 6.0), center + Vector2(-5.0, -6.0), tint, 1.6, true)
+	draw_line(center + Vector2(-2.5, -1.5), center + Vector2(2.5, -1.5), tint, 1.2, true)
+	draw_line(center + Vector2(-2.5, 2.0), center + Vector2(2.5, 2.0), tint, 1.2, true)
+
+
+## 以当帧真实头像中心为锚点，将同一话语的实际改口单位合并成一条短提示。
+func _draw_rephrase_feedback() -> void:
+	var now := Time.get_ticks_msec()
+	for feedback in _rephrase_feedback.values():
+		var unit_ids: Array = feedback.get("unit_ids", [])
+		var center := Vector2.ZERO
+		var visible_count := 0
+		for unit_id_value in unit_ids:
+			var unit_id := str(unit_id_value)
+			if not _frame_unit_centers.has(unit_id):
+				continue
+			center += _frame_unit_centers[unit_id]
+			visible_count += 1
+		if visible_count == 0:
+			continue
+		center /= float(visible_count)
+		var age := clampf(float(now - int(feedback.get("time", now))) / 1200.0, 0.0, 1.0)
+		var alpha := 1.0 - age
+		var bounds := Rect2(
+			Vector2(
+				clampf(center.x - 55.0, 4.0, maxf(4.0, size.x - 114.0)),
+				clampf(center.y - UNIT_VISUAL_RADIUS - 34.0, 4.0, maxf(4.0, size.y - 28.0))
+			),
+			Vector2(110.0, 24.0)
+		)
+		draw_rect(bounds, Color(0.04, 0.09, 0.13, 0.86 * alpha), true)
+		draw_rect(bounds, Color(0.58, 0.89, 0.75, 0.88 * alpha), false, 1.0)
+		var text := "改口 ×%d" % unit_ids.size()
+		draw_string(ThemeDB.fallback_font, bounds.position + Vector2(8.0, 17.0), text, HORIZONTAL_ALIGNMENT_LEFT, 96.0, 14, Color(0.81, 0.98, 0.84, alpha))
 
 
 # 复读气泡使用主播主泡的十汉字文字栏，团体人数只影响尾巴和锚点。
