@@ -20,10 +20,10 @@
 ## 本任务所属分支和文件归属
 - 任务编号、状态、Owner：PB-23；待实施；B（单位模拟）／A（发表接线）。
 - 开发入口：以 integrate/gamejam-shared-baseline-20261019 **最新HEAD**为基线，在D盘建立单独工作树；对应功能PR的base为同一共同分支。
-- 直接依赖：PB-22；PB-13已有2/4/8发表和PlanBUnit完整词快照。
+- 直接依赖：现有PB-13的2/4/8发表与PlanBUnit完整词快照。B的Simulation逻辑可与PB-22并行；A在发表入口集成时再对接PB-22的新槽位规则。
 - 每个预计修改文件的唯一Owner：
 - B：systems/plan_b/simulation/plan_b_unit_simulation.gd，必要时对应plan_b_unit.gd。
-- A：systems/plan_b/battle/plan_b_battle_host.gd（与PB-22对应文件串行）。
+- A：systems/plan_b/battle/plan_b_battle_host.gd（同文件与PB-22串行合流；B的模拟开发无需等待）。
 - 当前分支有其他任务正在修改的文件先由A协调串行；工作树、Godot .godot缓存、截图/视频和测试临时文件统一放D盘（如 D:\Godot\）。
 
 ## Godot 开发环境
