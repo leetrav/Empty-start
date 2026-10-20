@@ -82,20 +82,18 @@ func _frame_duration(frame: ComicFrame) -> float:
 		duration = maxf(duration, caption.delay + ComicCaption.visible_text_length(caption.text) / maxf(1.0, frame.characters_per_second) + 1.0)
 	return duration
 
-# 各回看入口重置曲目；后两幕从动态版前四幕的实际配置时长继续。
+# 开场回看使用《街》；结局回看从头使用《天導》，通关后两幕延续神谕已起播的同曲。
 func _start_comic_music() -> void:
-	# 通关后两幕延续神谕/结尾曲；独立回看仍沿用原漫画音乐。
-	if _kind == &"epilogue":
+	if _kind in [&"ending", &"epilogue"]:
+		# 回看是独立播放，不沿用上一次播放位置；正常通关保持跨场景音乐连续。
+		if _kind == &"ending":
+			AudioManager.stop_music()
 		_ending_music = EndingMusicPresenter.new()
 		add_child(_ending_music)
 		_ending_music.start()
 		return
-	var start_seconds: float = 0.0
-	if _kind == &"ending":
-		for frame in OPENING.frames:
-			start_seconds += _frame_duration(frame)
 	AudioManager.stop_music()
-	AudioManager.change_music(MUSIC_EVENT, -1.0, start_seconds, 1.5)
+	AudioManager.change_music(MUSIC_EVENT, -1.0, 0.0, 1.5)
 
 # 独立场景启动共用计时控制器。
 func start_playback() -> bool:
