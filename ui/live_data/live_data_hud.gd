@@ -185,11 +185,13 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	var row_width: float = _comment_list.size.x
 	if row_width <= 0.0:
 		row_width = maxf(size.x - 32.0, 240.0)
-	# 牌头 50px 给头像，尾部 17px 留给箭头；确保正文至少有 160px。
+	# 昵称以整张牌的水平中心为轴；左右对称安全区保护徽章与尖角。
+	# 最小尺寸随字符宽度增加，让短昵称居中后也不会压到左边徽章。
+	var text_inset: float = 47.0
 	var plate_width: float = clampf(
-		ceilf(50.0 + name_width + 17.0),
-		96.0,
-		maxf(96.0, minf(208.0, row_width - 184.0))
+		ceilf(name_width + text_inset * 2.0),
+		112.0,
+		maxf(112.0, minf(208.0, row_width - 184.0))
 	)
 	var plate_size := Vector2(plate_width, plate_height)
 	var row := HBoxContainer.new()
@@ -242,8 +244,9 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	var nickname := Label.new()
 	nickname.name = "FanNickname"
 	nickname.text = display_name
-	nickname.position = Vector2(50.0, 4.0)
-	nickname.size = Vector2(maxf(1.0, plate_width - 67.0), plate_height - 8.0)
+	# 左右留白对称，文字几何中心严格等于 plate_width / 2。
+	nickname.position = Vector2(text_inset, 4.0)
+	nickname.size = Vector2(maxf(1.0, plate_width - text_inset * 2.0), plate_height - 8.0)
 	nickname.add_theme_font_size_override("font_size", nickname_font_size)
 	nickname.add_theme_color_override("font_color", _comment_nameplate_text_color)
 	nickname.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
