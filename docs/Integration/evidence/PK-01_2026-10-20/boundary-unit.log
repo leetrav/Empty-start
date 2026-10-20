@@ -1,0 +1,8 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PK_BOUNDARY_UNIT upper epsilon value=1.0 events=["enter_contradiction"]
+PK_BOUNDARY_UNIT lower epsilon value=0.0 events=["failed"]
+PK_BOUNDARY_UNIT ordinary gain value=0.80520833333328 events=[]
+PK_BOUNDARY_UNIT tiny gain value=0.50002514705877 events=[]
+PK_BOUNDARY_UNIT balanced value=0.8 events=[]
+PK_BOUNDARY_UNIT_DONE failures=0
