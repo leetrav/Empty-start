@@ -27,7 +27,7 @@ const STRENGTH_NAMES: Dictionary = {
 	3: "S3全网疯传",
 }
 
-@export_range(0.0, 5.0, 0.01) var pk_rate_pp_per_second: float = 0.85
+@export_range(0.0, 5.0, 0.01) var pk_rate_pp_per_second: float = 3.0
 @export_range(0.0, 60.0, 0.1) var player_publish_cooldown_seconds: float = 5.0
 @export_range(0.0, 60.0, 0.1) var opponent_publish_cooldown_seconds: float = 11.5
 @export_range(0, 8, 1) var initial_opponent_seed_count: int = 2
@@ -212,6 +212,13 @@ func notify_external_tier_changed(current_tier: int) -> void:
 		tier_changed.emit(current_tier)
 
 
+## PB-25 依据真实教学阶段暂缓通用特殊反击；Tier资格仍由导演持续记录。
+func set_counterattack_paused(paused: bool) -> bool:
+	if _opponent_director == null or not _opponent_director.has_method("set_counterattack_paused"):
+		return false
+	return bool(_opponent_director.call("set_counterattack_paused", paused))
+
+
 func get_battle_state() -> StringName:
 	match _battle_state:
 		BattleState.RUNNING:
@@ -259,6 +266,7 @@ func get_debug_snapshot() -> Dictionary:
 	return {
 		"battle_state": get_battle_state(),
 		"player_pk": get_pk_fraction(),
+		"pk_rate_pp_per_second": pk_rate_pp_per_second,
 		"tier": get_current_tier(),
 		"faction_counts": get_faction_counts(),
 		"player_hand": get_player_hand(),
@@ -772,7 +780,9 @@ func _update_opponent_counterattack(delta: float) -> void:
 	for snapshot: Dictionary in get_unit_snapshots():
 		if String(snapshot.get("team", "")) == "opponent":
 			opponent_snapshots.append(snapshot)
-	_opponent_director.call("update_counterattack", delta, get_faction_counts(), opponent_snapshots)
+	_opponent_director.call(
+		"update_counterattack", delta, get_faction_counts(), opponent_snapshots, get_current_tier()
+	)
 
 
 func _load_word_catalog() -> bool:

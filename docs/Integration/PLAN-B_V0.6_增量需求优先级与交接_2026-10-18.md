@@ -69,3 +69,16 @@
 - 玩家 S1 完整批次成功生成2颗后，A 调用 B 的 `rewrite_player_units_nearby_after_s1(center_position, word_definition, new_word_order, excluded_unit_ids) -> Array[int]`。B 排除本批新生单位，只处理落点120逻辑像素半径内、已有话语且 `word_order` 更旧的玩家单位；候选按距离升序、再按 `unit_id` 升序，最多4名。半径由 `s1_instant_rewrite_radius` 导出配置，默认120。
 - B 通过 `PlanBUnit.apply_word_snapshot()` 替换完整词语快照与新顺序号，保留原阵营、`unit_id`、位置、年龄和寿命；每名改口单位复用 `unit_changed(unit_id, "relay")`，由现有 S1 改口反馈合并显示，并促使下一物理步重算同词团体拓扑。
 - A 的 `player_s1_rewrite_resolved(result)` 与成功发表回执同时提供 `rewrite_count`、`rewrite_unit_ids`，包含0目标的成功S1发表。失败发表不调用改口；S2/S3只保留原有4/8颗批次及自然接触传播。
+
+### PB-26 PK系数与T2/T4反击轮次
+- Plan B 的权威 PK 系数由 `PlanBBattleHost.pk_rate_pp_per_second` 提供，试玩版默认3.0；计分公式、方向、Tier 和终局事件保持既有入口。正式 Sandbox 继续以 CombatStage 为Tier来源，Tier Catalog 中的 T1→T2 64% 和 T3→T4 79% 阈值是反击资格的唯一依据。
+- C 每帧接收 A 的当前正式 Tier；首次到达Tier 2 / Tier 4 后分别锁存一轮资格，回落不清除。若首次更新已处于T4，调度仍先选T2，再选T4。每次成功消耗对应顺序轮次；失败不增加使用次数或25秒成功冷却。
+- 反击请求要求己方玩家人数领先至少2名，保留1.2秒前摇与25秒成功冷却；前摇中领先条件失效或目标离场时发出带原因的失败事实，轮次仍可重新安排。无可用目标也发出单次明确结果，资格不消耗。
+- `PlanBBattleHost.set_counterattack_paused(paused)` 供 PB-25 按实际教学状态暂停/恢复通用反击。暂停期间继续记录Tier资格，冻结前摇与冷却时钟；教程结束后按当前人数和剩余资格恢复。
+- 前摇与结果沿用 `counterattack_windup_started` / `counterattack_resolved`，请求提供 `counterattack_round`、资格Tier、当前 `streamer_id`、`skill_id`、`skill_name_cn`、`effect_parameters`、目标ID与时间参数，供 PB-27 的专属技能效果消费。
+
+### PB-26试玩数值与事件口径
+- `PlanBBattleHost.pk_rate_pp_per_second` 默认值为3.0；正式场景当前没有另存属性覆盖。调试快照同时返回该实际属性值，PK仍只从真实阵营人数差按原公式推进。
+- 反击资格使用正式Tier编号：Tier Catalog 的 `tier_1.upgrade_threshold=0.64` 让正式状态进入T2，`tier_3.upgrade_threshold=0.79` 让状态进入T4；导演不复制百分比常量。
+- `opponent_config.csv` 四关统一配置领先2名、成功冷却25秒、前摇1.2秒、每局成功上限2次；T2/T4资格由正式Tier事件派生。效果失败或无目标不消耗成功次数与成功冷却。
+- PB-25 的真实教程调用者需在教学开始/结束时调用 `PlanBBattleHost.set_counterattack_paused(true/false)`。当前 main 尚未包含 Plan B 教学接线。
