@@ -12,6 +12,8 @@ signal opponent_result_presentation_finished(broken: bool)
 signal restart_requested
 signal pause_requested
 
+const LIVESTREAM_BACKGROUND: Texture2D = preload("res://assets/ui/live/livestream_layout_background.png")
+
 const UnitFieldScript = preload("res://ui/plan_b/plan_b_unit_field.gd")
 const StreamerPanelScript = preload("res://ui/plan_b/plan_b_streamer_panel.gd")
 const PK_BAR_SKIN_SCENE: PackedScene = preload("res://systems/presentation/pk_bar_skin.tscn")
@@ -978,9 +980,12 @@ func _show_field_event(message: String, seconds: float = 2.2) -> void:
 
 func _build_view() -> void:
 	# 逻辑画布按 448 / 1024 / 448 固定切分；主播信息留在两侧，操作集中在中间。
-	var background := ColorRect.new()
+	var background := TextureRect.new()
+	background.name = "LivestreamArtworkBackground"
+	background.texture = LIVESTREAM_BACKGROUND
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.stretch_mode = TextureRect.STRETCH_SCALE
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.color = Color("#071018")
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
@@ -998,6 +1003,7 @@ func _build_view() -> void:
 	_player_panel.size_flags_horizontal = Control.SIZE_FILL
 	_player_panel.connect("shutdown_finished", Callable(self, "_on_player_shutdown_finished"))
 	columns.add_child(_player_panel)
+	_reveal_livestream_artwork(_player_panel)
 
 	var center := Control.new()
 	center.name = "BattleCenter"
@@ -1015,6 +1021,7 @@ func _build_view() -> void:
 	_opponent_panel.connect("connection_finished", Callable(self, "_on_opponent_connection_finished"))
 	_opponent_panel.connect("result_presentation_finished", Callable(self, "_on_opponent_result_presentation_finished"))
 	columns.add_child(_opponent_panel)
+	_reveal_livestream_artwork(_opponent_panel)
 
 	# 旧准星以全画布坐标跟随鼠标；透明、忽略鼠标事件，不改变棋盘点击判定。
 	_aim_reticle = AIM_RETICLE_SCENE.instantiate()
@@ -1025,6 +1032,17 @@ func _build_view() -> void:
 	_aim_reticle.connect("animation_finished", Callable(self, "_on_aim_animation_finished"))
 	add_child(_aim_reticle)
 
+
+
+## 总底图位于既有三列后方；仅弱化侧栏旧底色并露出画框，不改变棋盘坐标或主播行为。
+func _reveal_livestream_artwork(panel: Control) -> void:
+	for child: Node in panel.get_children():
+		if child is ColorRect:
+			child.color.a = 0.36
+		elif child is VBoxContainer:
+			# 24px 内缩使原图两侧手绘边框可见，保留448px列宽和原有纵向分段。
+			child.offset_left = 24.0
+			child.offset_right = -24.0
 
 
 func _build_center(parent: Control) -> void:
