@@ -1040,9 +1040,14 @@ func _reveal_livestream_artwork(panel: Control) -> void:
 		if child is ColorRect:
 			child.color.a = 0.36
 		elif child is VBoxContainer:
-			# 24px 内缩使原图两侧手绘边框可见，保留448px列宽和原有纵向分段。
-			child.offset_left = 24.0
-			child.offset_right = -24.0
+			# 按原图视频窗内沿对齐左右主播；三列总宽和中央操作区不变。
+			child.offset_left = 24.0 if panel == _player_panel else 32.0
+			child.offset_right = -28.0 if panel == _player_panel else -20.0
+			# 原画视频窗从158px开始，至590px结束；下方仍留490px给原指标与评论。
+			var header := child.get_child(0) as Control
+			var live_data := child.get_child(2) as Control
+			header.custom_minimum_size.y = 158.0
+			live_data.custom_minimum_size.y = 490.0
 
 
 func _build_center(parent: Control) -> void:
