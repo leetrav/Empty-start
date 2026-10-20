@@ -142,7 +142,8 @@ func _build_message_page(node_name: String, title_text: String, status_text: Str
 	panel.name = "Panel"
 	panel.custom_minimum_size = Vector2(700, 0)
 	# 纸面只替换外层背景；保留原内容框及其浅色字、输入框和按钮。
-	panel.theme = preload("res://ui/theme/base_theme.tres")
+	panel.theme = preload("res://ui/theme/base_theme.tres").duplicate() as Theme
+	preload("res://ui/theme/paper_background.gd").apply_button_palette(panel.theme)
 	var paper := StyleBoxFlat.new()
 	paper.bg_color = Color("453b2c")
 	paper.border_color = Color("bba477")
@@ -199,7 +200,8 @@ func _build_name_page(node_name: String, title_text: String) -> Control:
 	panel.name = "Panel"
 	panel.custom_minimum_size = Vector2(560, 0)
 	# 纸面只替换外层背景；保留原内容框及其浅色字、输入框和按钮。
-	panel.theme = preload("res://ui/theme/base_theme.tres")
+	panel.theme = preload("res://ui/theme/base_theme.tres").duplicate() as Theme
+	preload("res://ui/theme/paper_background.gd").apply_button_palette(panel.theme)
 	var paper := StyleBoxFlat.new()
 	paper.bg_color = Color("453b2c")
 	paper.border_color = Color("bba477")
