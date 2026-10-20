@@ -24,10 +24,13 @@ var _text_elapsed: float = 0.0
 var _finished: bool = false
 var _kind: StringName
 var _record_first_view: bool = false
+var _ending_music: EndingMusicPresenter
 var _effects: ComicEffects
 var _caption_views: Array[ComicCaptionView] = []
 var _elapsed: float = 0.0
 var _transition: ColorRect
+# 短轻音共用节流，多个旁白同帧补字只响一次，不反复重启长打字机采样。
+var _writing_cooldown: float = 0.0
 
 # 路由只传播放目的；场景内建立独立演出节点并复用 ID-12 控制器。
 func _ready() -> void:
@@ -35,7 +38,7 @@ func _ready() -> void:
 	_record_first_view = SceneRouter.comic_record_first_view
 	# 开场仅播放 P1–P4；P5–P6 属于通关结局，回看入口按 kind 分开。
 	_sequence = ComicSequence.new()
-	_sequence.frames.append_array(ENDING.frames if _kind == &"ending" else OPENING.frames)
+	_sequence.frames.append_array(ENDING.frames if _kind in [&"ending", &"epilogue"] else OPENING.frames)
 	var background := ColorRect.new()
 	background.color = Color(0.07, 0.07, 0.025)
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -81,6 +84,12 @@ func _frame_duration(frame: ComicFrame) -> float:
 
 # 各回看入口重置曲目；后两幕从动态版前四幕的实际配置时长继续。
 func _start_comic_music() -> void:
+	# 通关后两幕延续神谕/结尾曲；独立回看仍沿用原漫画音乐。
+	if _kind == &"epilogue":
+		_ending_music = EndingMusicPresenter.new()
+		add_child(_ending_music)
+		_ending_music.start()
+		return
 	var start_seconds: float = 0.0
 	if _kind == &"ending":
 		for frame in OPENING.frames:
@@ -98,19 +107,21 @@ func get_playback_control() -> ComicPanelPlaybackControl:
 # 隐藏页面时冻结计时、动画及逐字进度，回到页面后继续。
 func set_playback_paused(value: bool) -> void:
 	_paused = value
+	if is_instance_valid(_ending_music):
+		_ending_music.set_paused(value)
 	if AudioManager.get_music_event_id() == MUSIC_EVENT:
 		AudioManager.set_music_paused(value)
 	if is_instance_valid(_effects):
 		_effects.paused = value
 	if value:
 		_control.pause_playback()
-		if _animation != null:
+		if _animation != null and _animation.is_valid():
 			_animation.pause()
 		if is_instance_valid(_sound):
 			_sound.stop()
 	else:
 		_control.resume_playback()
-		if _animation != null:
+		if _animation != null and _animation.is_valid():
 			_animation.play()
 
 # 固定原图坐标，以等比缩放及居中留边适配任意窗口。
@@ -160,6 +171,7 @@ func _show_frame(number: int) -> void:
 		_canvas.add_child(view)
 		_caption_views.append(view)
 	_elapsed = 0.0
+	_writing_cooldown = 0.0
 	if _frame.transition_seconds > 0:
 		if _animation == null:
 			_animation = create_tween().set_parallel(true)
@@ -190,6 +202,7 @@ func _process(delta: float) -> void:
 	if _paused or _finished or _frame == null:
 		return
 	_elapsed += delta
+	_writing_cooldown = maxf(0.0,_writing_cooldown-delta)
 	var spoke := false
 	var danmaku_index := 0
 	for view in _caption_views:
@@ -203,7 +216,7 @@ func _process(delta: float) -> void:
 				view.label.visible_characters = count
 				spoke = true
 	if spoke and is_instance_valid(_sound):
-		AudioManager.play_event_player(_sound)
+		_play_writing_tick()
 	# 纯图片显现、等待或运动均不触发打字声。
 	if _frame.text.is_empty():
 		return
@@ -214,19 +227,25 @@ func _process(delta: float) -> void:
 	if next_count > _caption.visible_characters:
 		_caption.visible_characters = next_count
 		if is_instance_valid(_sound):
-			AudioManager.play_event_player(_sound)
+			_play_writing_tick()
 
-# 任意非重复按键快进分镜；Esc 退出演出返回菜单。
+# 只有字数真实增长才调用；不改变逐字速度、快进、停顿或暂停规则。
+func _play_writing_tick() -> void:
+	if _writing_cooldown>0.0 or not is_instance_valid(_sound):
+		return
+	if AudioManager.play_event_player(_sound):
+		_writing_cooldown=0.08
+
+# 普通按键快进分镜；Esc保留给统一暂停菜单，不再直接跳出剧情。
 func _input(event: InputEvent) -> void:
+	if event.is_action("pause"):
+		return
 	if _finished or _paused or not is_visible_in_tree():
 		return
 	# 场景切换会立即使当前节点离树，先消费本次有效输入再执行路由。
 	if event is InputEventKey and event.pressed and not event.echo:
 		get_viewport().set_input_as_handled()
-		if event.keycode == KEY_ESCAPE:
-			_finish(&"exited")
-		else:
-			advance()
+		advance()
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		get_viewport().set_input_as_handled()
 		AudioManager.play_ui_click()
@@ -240,7 +259,8 @@ func _input(event: InputEvent) -> void:
 
 # 快进先补全当前文字，随后推进分镜；末格快进结束整段。
 func advance() -> void:
-	if _finished or _paused or _frame == null:
+	# 正常通关后两幕按配置播放；开场及已解锁回看保留原快进操作。
+	if _finished or _paused or _frame == null or _kind == &"epilogue":
 		return
 	var filled := false
 	for view in _caption_views:
@@ -271,9 +291,13 @@ func _finish(reason: StringName) -> void:
 	if _record_first_view and _kind == &"intro":
 		SettingsManager.mark_opening_comic_seen()
 	playback_finished.emit(reason)
-	var error := SceneRouter.goto_main_menu()
+	if is_instance_valid(_ending_music):
+		_ending_music.set_handoff(true)
+	var error := SceneRouter.finish_ending_epilogue() if _kind == &"epilogue" else SceneRouter.goto_main_menu()
 	if error != OK:
-		push_error("ComicPlayer: 返回主菜单失败：%s" % error_string(error))
+		if is_instance_valid(_ending_music):
+			_ending_music.set_handoff(false)
+		push_error("ComicPlayer: 漫画完成路由失败：%s" % error_string(error))
 
 # 中断时停止本场景拥有的动画及音频，不影响其他播放池。
 func _stop_animation_and_sound() -> void:
@@ -290,7 +314,7 @@ func _stop_animation_and_sound() -> void:
 		_canvas.remove_child(_transition)
 		_transition.queue_free()
 		_transition = null
-	if _animation != null:
+	if _animation != null and _animation.is_valid():
 		_animation.kill()
 		_animation = null
 	if is_instance_valid(_sound):

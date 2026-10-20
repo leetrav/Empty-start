@@ -1,0 +1,53 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+AU08 PASS identity route
+AU08_ENTRY_EVENTS []
+AU08 PASS entering name page does not play UI sounds
+AU08 PASS real confirmation player uses short CC0 bubble at -8dB
+AU08 PASS name confirmation once without generic double sound
+AU08 PASS only mouse entry sounds, automatic next-page focus stays silent
+AU08 PASS real mouse hover plays bubble
+AU08 PASS Tab focus on hovered item does not double play
+AU08 PASS keyboard selection plays bubble
+AU08 PASS keyboard confirmation plays click and advances
+AU08 PASS automatic identity focus does not add page-entry sound
+AU08_IDENTITY_ENTRY {  } events=[&"ui_click"]
+AU08 PASS identity entry keeps every card face down and unselected
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS initial card has no focus highlight or selection
+AU08 PASS first explicit click reveals only one card without selecting
+AU08 PASS second explicit click selects revealed card
+AU08 PASS real confirmation player uses short CC0 bubble at -8dB
+AU08 PASS identity confirmation uses one bubble without click overlap
+AU08 PASS return preserves explicit reveal and selection
+AU08 PASS mouse back plays click and preserves flow
+AU08 PASS fresh new-game route
+AU08 PASS fresh name-page entry stays silent
+AU08 PASS real confirmation player uses short CC0 bubble at -8dB
+AU08 PASS mouse entry also keeps all cards face down
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS mouse entry has no default yellow card
+AU08 PASS keyboard can start card navigation without default focus
+AU08 PASS UI bus has actual audio output
+AU08_DONE failures=0 ui_peak_db=-0.22641724647798

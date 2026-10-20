@@ -15,6 +15,8 @@ const CURRENT_VERSION: int = 1
 @export var completed_tutorial_step_ids: Array[String] = []
 # 结局保存显示快照，读档回看不重新发奖或重跑终局。
 @export var ending_display_data: Dictionary = {}
+# 正常终局已保存、片尾未完成；读档续播原结尾，不能凭快照直接解锁。
+@export var ending_roll_pending: bool = false
 
 # 新周目尚未完成身份确认时留空；确认后由 SaveManager 一次写入玩家侧身份数据。
 @export var streamer_name: String = ""

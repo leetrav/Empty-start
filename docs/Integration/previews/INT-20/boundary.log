@@ -1,0 +1,52 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+PK_GUI PASS route accepted
+PK_GUI PASS Host one percent is not full
+PK_GUI PASS positive low PK is not zero
+PK_GUI PASS tier transition resumes
+PK_GUI_START alien fraction=0.999995 label=玩家 PK 99%
+PK_GUI PASS not full must not display 100
+PK_GUI_RESULT alien fraction=1.0 host=ended events=["enter_contradiction"] max_events=1
+PK_GUI PASS real PK reaches exactly 1
+PK_GUI PASS Host emits exactly one terminal event
+PK_GUI PASS formal flow receives one PK maximum
+PK_GUI PASS later frames do not repeat completion
+PK_GUI PASS actual contradiction phase becomes active
+PK_GUI PASS route accepted
+PK_GUI PASS Host one percent is not full
+PK_GUI PASS positive low PK is not zero
+PK_GUI PASS tier transition resumes
+PK_GUI_START kiwi fraction=0.999995 label=玩家 PK 99%
+PK_GUI PASS not full must not display 100
+PK_GUI_RESULT kiwi fraction=1.0 host=ended events=["enter_contradiction"] max_events=1
+PK_GUI PASS real PK reaches exactly 1
+PK_GUI PASS Host emits exactly one terminal event
+PK_GUI PASS formal flow receives one PK maximum
+PK_GUI PASS later frames do not repeat completion
+PK_GUI PASS actual contradiction phase becomes active
+PK_GUI PASS route accepted
+PK_GUI PASS Host one percent is not full
+PK_GUI PASS positive low PK is not zero
+PK_GUI PASS tier transition resumes
+PK_GUI_START frog fraction=0.999995 label=玩家 PK 99%
+PK_GUI PASS not full must not display 100
+PK_GUI_RESULT frog fraction=1.0 host=ended events=["enter_contradiction"] max_events=1
+PK_GUI PASS real PK reaches exactly 1
+PK_GUI PASS Host emits exactly one terminal event
+PK_GUI PASS formal flow receives one PK maximum
+PK_GUI PASS later frames do not repeat completion
+PK_GUI PASS actual contradiction phase becomes active
+PK_GUI PASS route accepted
+PK_GUI PASS Host one percent is not full
+PK_GUI PASS positive low PK is not zero
+PK_GUI PASS tier transition resumes
+PK_GUI_START fox fraction=0.999995 label=玩家 PK 99%
+PK_GUI PASS not full must not display 100
+PK_GUI_RESULT fox fraction=1.0 host=ended events=["enter_contradiction"] max_events=1
+PK_GUI PASS real PK reaches exactly 1
+PK_GUI PASS Host emits exactly one terminal event
+PK_GUI PASS formal flow receives one PK maximum
+PK_GUI PASS later frames do not repeat completion
+PK_GUI PASS actual contradiction phase becomes active
+PK_GUI_DONE failures=0 before=false

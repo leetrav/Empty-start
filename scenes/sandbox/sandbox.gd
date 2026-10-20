@@ -238,6 +238,8 @@ func _ready() -> void:
 	if use_plan_b_campaign:
 		%RestartButton.pressed.connect(Callable(_battle_hud, "request_restart"))
 		_battle_hud.connect("restart_requested", Callable(self, "restart_current_attempt"))
+		# HUD触屏入口与Esc共用原PauseMenu，取消攻击／冻结音乐仍由既有暂停信号处理。
+		_battle_hud.connect("pause_requested", Callable(%PauseMenu, "pause_game"))
 	else:
 		%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)
@@ -487,9 +489,18 @@ func _on_pause_changed(paused: bool) -> void:
 
 # 按当前关重建尝试；重开与切到下一关共用清理，保留此前周目成果。
 func restart_current_attempt() -> void:
-	# 已进入终局后不能通过普通重开入口恢复 PK、档位与矛盾规则。
 	if _divine_descent_flow != null and _divine_descent_flow.get_session() != null:
 		return
+	var error := SceneRouter.prepare_live_attempt(_restart_current_attempt_under_cover)
+	if error != OK and error != ERR_BUSY:
+		push_error("Sandbox: 无法开始重开过渡：%s" % error_string(error))
+
+
+# 原有重建顺序保持不变，由常驻遮幕在完全盖住后调用。
+func _restart_current_attempt_under_cover() -> bool:
+	# 已进入终局后不能通过普通重开入口恢复 PK、档位与矛盾规则。
+	if _divine_descent_flow != null and _divine_descent_flow.get_session() != null:
+		return false
 	AudioManager.stop_dialogue_voice()
 	_contradiction_oracle_flow.stop()
 	_reset_paradox_presentation()
@@ -501,12 +512,18 @@ func restart_current_attempt() -> void:
 	%PauseMenu.resume_game()
 	if not _battle_attempt_flow.restart_current_attempt():
 		push_error("Sandbox: 无法重建当前战斗尝试。")
+		return false
 	_refresh_mobile_touch_phase()
+	return true
 
 
 ## DebugPanel 重开后读取真实 Host / Flow 状态，避免把无效请求提示为成功。
 func debug_restart_current_attempt() -> bool:
-	restart_current_attempt()
+	# F3程序探针保持同步；玩家失败／暂停按钮使用正式遮幕入口。
+	if SceneRouter.is_transitioning():
+		return false
+	if not _restart_current_attempt_under_cover():
+		return false
 	if use_plan_b_campaign:
 		return _plan_b_host != null and _plan_b_host.get_battle_state() == &"running"
 	return _battle_attempt_flow != null and _battle_attempt_flow.is_normal_combat_active()
@@ -1340,6 +1357,7 @@ func _finish_divine_descent(result: EndingSession) -> void:
 		return
 	# 同一真实存档保留已提交倾向与奖励；写盘失败必须留下明确证据。
 	SaveManager.data.ending_display_data = result.get_display_data()
+	SaveManager.data.ending_roll_pending = true
 	SaveManager.data.current_scene = SceneRouter.ENDING_SCENE_PATH
 	var last_id := _run_state.get_current_level_profile().level_id
 	if not SaveManager.data.completed_normal_level_ids.has(last_id):
@@ -1348,7 +1366,7 @@ func _finish_divine_descent(result: EndingSession) -> void:
 		push_error("Sandbox: 终局成果存盘失败。")
 	# 结局页面接管同曲，不让旧场景退出在淡入途中把音乐停掉。
 	_ending_music.set_handoff(true)
-	var error := SceneRouter.goto_ending(result)
+	var error := SceneRouter.goto_ending(result, true)
 	if error != OK:
 		_ending_music.set_handoff(false)
 		push_error("Sandbox: Ending 顶层路由失败：%s" % error_string(error))

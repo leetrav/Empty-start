@@ -1,0 +1,33 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+REST_PAUSE PASS formal battle route
+REST_PAUSE PASS rest display context
+REST_PAUSE PASS actual result view shown
+REST_PAUSE PASS pause above result and below loading
+REST_PAUSE PASS result Esc opens menu
+REST_PAUSE PASS result music paused
+REST_PAUSE PASS result settings receives actual mouse click
+REST_PAUSE PASS result settings Esc returns to pause
+REST_PAUSE PASS result native continue resumes
+REST_PAUSE PASS result prior focus restored
+REST_PAUSE PASS native click opens scripture history
+REST_PAUSE PASS scripture Esc opens menu
+REST_PAUSE PASS scripture music paused
+REST_PAUSE PASS scripture settings receives actual mouse click
+REST_PAUSE PASS scripture settings Esc returns to pause
+REST_PAUSE PASS scripture native continue resumes
+REST_PAUSE PASS scripture prior focus restored
+REST_PAUSE PASS native click opens loser history
+REST_PAUSE PASS loser Esc opens menu
+REST_PAUSE PASS loser music paused
+REST_PAUSE PASS loser settings receives actual mouse click
+REST_PAUSE PASS loser settings Esc returns to pause
+REST_PAUSE PASS loser native continue resumes
+REST_PAUSE PASS loser prior focus restored
+REST_PAUSE PASS fullscreen result pause settings reachable by mouse
+REST_PAUSE PASS settings click exits fullscreen
+REST_PAUSE PASS Esc closes settings and retains pause
+REST_PAUSE PASS pause/history does not advance or mutate result
+REST_PAUSE PASS native pause return goes to usable title
+REST_PAUSE_DONE failures=0

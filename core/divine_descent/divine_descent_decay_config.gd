@@ -6,4 +6,4 @@ extends Resource
 @export var auto_repeat_interval_min_seconds: float = 0.15
 @export var auto_repeat_interval_max_seconds: float = 0.38
 @export var converge_ratio: float = 0.9
-@export var final_emphasis_duration_seconds: float = 1.8
+@export var final_emphasis_duration_seconds: float = 7.0

@@ -1,0 +1,98 @@
+[
+	{
+		"frame_p50_ms": 1.132,
+		"frame_p95_ms": 1.76,
+		"gpu_p50_ms": 0.814000010490417,
+		"gpu_p95_ms": 1.33200001716614,
+		"mode": "original",
+		"resolution": "(1920, 1080)"
+	},
+	{
+		"frame_p50_ms": 0.602,
+		"frame_p95_ms": 1.313,
+		"gpu_p50_ms": 0.373999986797571,
+		"gpu_p95_ms": 0.788999997079372,
+		"mode": "standard",
+		"resolution": "(1920, 1080)"
+	},
+	{
+		"frame_p50_ms": 0.584,
+		"frame_p95_ms": 1.368,
+		"gpu_p50_ms": 0.355999987572432,
+		"gpu_p95_ms": 0.731999998912215,
+		"mode": "low",
+		"resolution": "(1920, 1080)"
+	},
+	{
+		"frame_p50_ms": 0.377,
+		"frame_p95_ms": 1.305,
+		"gpu_p50_ms": 0.18299999833107,
+		"gpu_p95_ms": 0.197999998927116,
+		"mode": "off",
+		"resolution": "(1920, 1080)"
+	},
+	{
+		"frame_p50_ms": 1.132,
+		"frame_p95_ms": 1.853,
+		"gpu_p50_ms": 0.815999984741211,
+		"gpu_p95_ms": 1.4539999961853,
+		"mode": "original",
+		"resolution": "(1920, 1080)"
+	},
+	{
+		"frame_p50_ms": 0.601,
+		"frame_p95_ms": 1.324,
+		"gpu_p50_ms": 0.375999994575977,
+		"gpu_p95_ms": 0.635000012814999,
+		"mode": "standard",
+		"resolution": "(1920, 1080)"
+	},
+	{
+		"frame_p50_ms": 0.576,
+		"frame_p95_ms": 1.124,
+		"gpu_p50_ms": 0.423000007867813,
+		"gpu_p95_ms": 0.828999996185303,
+		"mode": "original",
+		"resolution": "(1280, 720)"
+	},
+	{
+		"frame_p50_ms": 0.376,
+		"frame_p95_ms": 0.799,
+		"gpu_p50_ms": 0.236999996006489,
+		"gpu_p95_ms": 0.25,
+		"mode": "standard",
+		"resolution": "(1280, 720)"
+	},
+	{
+		"frame_p50_ms": 0.361,
+		"frame_p95_ms": 0.728,
+		"gpu_p50_ms": 0.222000000998378,
+		"gpu_p95_ms": 0.234000004827976,
+		"mode": "low",
+		"resolution": "(1280, 720)"
+	},
+	{
+		"frame_p50_ms": 0.266,
+		"frame_p95_ms": 1.02,
+		"gpu_p50_ms": 0.129999995231628,
+		"gpu_p95_ms": 0.14300000667572,
+		"mode": "off",
+		"resolution": "(1280, 720)"
+	},
+	{
+		"frame_p50_ms": 0.567,
+		"frame_p95_ms": 1.051,
+		"gpu_p50_ms": 0.42399999499321,
+		"gpu_p95_ms": 0.453000009059906,
+		"mode": "original",
+		"resolution": "(1280, 720)"
+	},
+	{
+		"frame_p50_ms": 0.379,
+		"frame_p95_ms": 0.845,
+		"gpu_p50_ms": 0.238000001758337,
+		"gpu_p95_ms": 0.252000000327826,
+		"mode": "standard",
+		"resolution": "(1280, 720)"
+	}
+]
