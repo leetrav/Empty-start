@@ -115,7 +115,10 @@ func fit_current_texture() -> void:
 	var bounds: Rect2 = _visible_bounds.get(texture, Rect2(Vector2.ZERO, texture.get_size()))
 	var guard: float = minf(visible_edge_guard_px, minf(size.x, size.y) * 0.1)
 	var available: Vector2 = (size - Vector2.ONE * guard * 2.0).max(Vector2.ONE)
-	var fit_scale: float = minf(available.x / _maximum_visible_size.x, available.y / _maximum_visible_size.y)
+	# 每张原图按自己的完整画布比例适配镜头，恢复 PA-14 的 TextureRect 尺寸逻辑。
+	# _maximum_visible_size 只作图像测量参考，不再缩小较短/较窄的阶段姿态。
+	var raw_size: Vector2 = texture.get_size().max(Vector2.ONE)
+	var fit_scale: float = minf(available.x / raw_size.x, available.y / raw_size.y)
 	var ground_ratio: Vector2 = visible_anchor_ratio.clamp(Vector2.ZERO, Vector2.ONE)
 	var visible_size: Vector2 = bounds.size * fit_scale
 	var visible_top: float = clampf(
