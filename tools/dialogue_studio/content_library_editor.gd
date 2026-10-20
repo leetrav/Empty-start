@@ -66,6 +66,7 @@ var _form: VBoxContainer
 var _preview_panel: PanelContainer
 var _preview_text: RichTextLabel
 var _preview_meta: Label
+var _reference_ids_cache: Dictionary = {}
 var _status: Label
 var _validation: Label
 var _switch_confirm: ConfirmationDialog
@@ -503,6 +504,10 @@ func _validate_rows() -> Array[String]:
 			errors.append("%s 已启用但文案为空。" % row_id)
 		if _table_index == 0 and enabled and str(row.get("trigger_key", "")).strip_edges().is_empty():
 			errors.append("%s 已启用但触发键为空。" % row_id)
+		if _table_index == 1 and enabled:
+			var viewer_id := str(row.get("viewer_id", "")).strip_edges()
+			if viewer_id.is_empty() or not _reference_ids("res://data/source_tables/25_直播观众账号.csv", "viewer_id").has(viewer_id):
+				errors.append("%s 引用了不存在的观众 ID：%s。" % [row_id, viewer_id])
 		for numeric_key_value in config["numeric"]:
 			var numeric_key := str(numeric_key_value)
 			var numeric_value := str(row.get(numeric_key, "")).strip_edges()
@@ -547,8 +552,36 @@ func _save() -> void:
 		_set_status("写入失败：" + error_string(result))
 		return
 	_dirty = false
+	_reference_ids_cache.clear()
 	_set_status("✓ 已保存 %s：%d 条。游戏下一次加载对应数据时读取新内容。" % [config["label"], _rows.size()])
 	_update_validation()
+
+
+func _reference_ids(path: String, id_column: String) -> Dictionary:
+	var cache_key := path + "::" + id_column
+	if _reference_ids_cache.has(cache_key):
+		return _reference_ids_cache[cache_key]
+	var ids: Dictionary = {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		_reference_ids_cache[cache_key] = ids
+		return ids
+	var headers := file.get_csv_line()
+	var id_index := headers.find(id_column)
+	if id_index < 0:
+		file.close()
+		_reference_ids_cache[cache_key] = ids
+		return ids
+	while not file.eof_reached():
+		var values := file.get_csv_line()
+		if values.size() != headers.size():
+			continue
+		var value := str(values[id_index]).strip_edges()
+		if not value.is_empty():
+			ids[value] = true
+	file.close()
+	_reference_ids_cache[cache_key] = ids
+	return ids
 
 
 func _duplicate_selected() -> void:
