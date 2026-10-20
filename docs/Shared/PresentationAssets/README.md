@@ -2,7 +2,7 @@
 
 ## PTF-04 立绘与 PK 视图修复（2026-10-16）
 
-`OpponentTierPortrait` 从原 Texture 的 alpha 可见边界计算同角色全套贴图的共同缩放，统一可见锚点；PA-17 每次换待机/过渡/击败图通过注入的 `fit_current_texture` 回调复用排版。没有改 PNG 或表 23。默认延续居中意图，`visible_anchor_ratio=(0.5,1)` 的贴底仅作为人工对照预览，不能把几何锚点误差 0px 当作艺术验收通过。
+`OpponentTierPortrait` 从原 Texture 的 alpha 可见边界计算同角色全套贴图的共同缩放，统一可见锚点；PA-17 每次换待机/过渡/击败图通过注入的 `fit_current_texture` 回调复用排版。PA-23 将默认锚点定为可见边界底部中点 `(0.5, 1.0)`，依据真实 Godot 4.7.2 截图核验四名对手的阶段图与击败图。没有修改 PNG 或表 23。
 
 HUD 的 PK 输入统一走 `refresh_pk()`；`on_tier_changed()` 只播放档位动作，避免晚到旧 PK 再写入进度动画。`get_pk_display_snapshot()` 同时提供真实输入、平滑显示、皮肤和百分比文本；原 0.16 秒显示动画保留。超宽父框改为等比缩放/居中，人物、字体和准心保持比例，Android 物理安全区仍由 A/E 提供。
 
@@ -74,6 +74,12 @@ Windows 验证入口为 `tests/presentation/pa14_portrait_motion_smoke.tscn`：�
 `systems/presentation/opponent_tier_portrait.gd` 附着在 PA-14 的对手待机层中，保留原 `OpponentPortraitArt`。`refresh_pk()` 读取运行 Tier：T1 idle，T2 idle 加循环下滑淡出的程序汗滴，T3～T5 对应变化图 01～03，T6 保留变化图 03。不同底图在横向收窄的中点换图并短促弹出漫画冲击线；T1↔T2 只抖动和增减汗滴。快速改档会取消旧翻转，落到最新 Tier。
 
 正式关卡集成方先调用原 `configure_streamer_assets()`，再调用 `configure_opponent_tier_textures(idle, tier_01, tier_02, tier_03)`；现有 CombatStage → Sandbox → `refresh_pk()` 的阶段通知继续驱动画面。四张图由关卡配置提供；当前 `LevelProfile` 尚未接入策划 02/23 表，因此示例关卡只有 idle 占位。三名角色的现成图片和映射见 `assets/README.md`。独立演示场景为 `scenes/demos/pa15_portrait_demo.tscn`，正式 HUD 冒烟为 `tests/presentation/pa15_hud_smoke.tscn`。详见 [PA-15 日志](表现资产_PA-15_2026-10-10_log.md)。
+
+## PA-23 主播立绘可见底边锚点（2026-10-20）
+
+对手 T1～T6、击败过渡和击败贴图通过统一 alpha 可见矩形与共同缩放排版。默认 `visible_anchor_ratio=(0.5, 1.0)`，把各贴图可见边界底部中点对齐到同一直播槽基线；Inspector 可调整该比例以处理单角色特殊支撑点。PA-14 的 `body_pivot=(0.5, 0.65)`、翻牌、受击与 PA-17 击败时序保持原值。主角仓鼠采用坐姿与桌沿遮挡，沿用当前桌面构图和 `hamster_idle.png`，不套用对手站立基线。
+
+真实 Godot 截图按修改前、修改后分别保存在 [`previews/pa23-ground-anchor/`](previews/pa23-ground-anchor/)，包含仓鼠射击动作和四名对手的 T1、T3、T5、击败状态；当前采用 D3D12 / AMD Radeon、1920×1080、Godot 4.7.2。详细验证与交接见 [PA-23 日志](表现资产_PA-23_2026-10-20_log.md)。
 
 ## PA-07 取消记录（2026-10-11）
 

@@ -12,8 +12,8 @@ signal flip_finished(tier: int)
 @export var kiwi_burst_scale: float = 1.09
 @export var kiwi_shake_pixels: float = 7.0
 @export_range(0.7, 1.0, 0.01) var alien_tier_scale: float = 0.90
-# 保持原直播框居中意图；可在独立预览中比较底部锚点，正式取舍由人工确认。
-@export var visible_anchor_ratio: Vector2 = Vector2(0.5, 0.5)
+# 以全套贴图 alpha 可见边界的底部中点作为公共站立线，特殊素材仍可在 Inspector 微调。
+@export var visible_anchor_ratio: Vector2 = Vector2(0.5, 1.0)
 
 var current_tier: int = 0
 var fx: OpponentTierFx
