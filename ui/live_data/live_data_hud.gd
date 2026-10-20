@@ -202,6 +202,7 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	identity.name = "FanIdentity"
 	identity.custom_minimum_size = plate_size
 	identity.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	identity.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	identity.clip_contents = true
 	identity.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(identity)
