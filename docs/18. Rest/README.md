@@ -136,6 +136,8 @@ ID-09 页面在 `_ready()` 连接自身 `opening_saved(run_data)` 到 `_on_openi
 成功击破保留结果反馈、复读涌现与静音过渡；反馈完成后 `ContradictionOracleFlow` 一次性提交普通命中历史与倾向，创建 `breakthrough_oracle_complete` RestSession 并经 `rest_ready` 交给 Sandbox。此路径不创建 FinalOracle Session、不显示候选、不开放候选攻击、不执行神谕确认或神谕奖励。未击破仍通过 `pk_win_unbroken` Rest 结算。
 
 Continue / Stop 继续复用 RS-13 幂等提交：普通关 Continue 在当前 Sandbox 遮幕下开始下一场，Stop 回房后开播恢复下一关；末关 Continue 进入 DivineDescent，末关 Stop 保存完整普通周目标记并在之后开播恢复 DivineDescent。烟测结果见 [INT-25 日志](../Integration/INT-25_2026-10-21_log.md)。
+
+底部 WordHand 三卡统一为 160 逻辑 px 高，正文参考字号 20px，属性图标 32×32px；棋盘按 160px 固定基准重算可见高度，左右评论区不变。
 ## LD-10：本场直播结果展示
 
 结果页面新增 `LiveResult` 文本标签，展示真实观看、点赞、评论、本场粉丝增量和总粉丝。`show_result()` 首次调用 `RestSession.capture_live_result(run_data)` 从直播数据公开 getter 冻结数值，随后 `get_live_result_snapshot()` 只返回副本。冻结值属于当前 RestSession；重复查看及重新创建页面均读取同一场结果，跨关也保持原值。页面没有粉丝入账入口，缺数据 / 缺历史增量明确提示。
