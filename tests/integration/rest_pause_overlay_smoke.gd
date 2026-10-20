@@ -12,7 +12,7 @@ func _ready() -> void:
 		get_tree().quit(2))
 	_run.call_deferred()
 
-# 正式Sandbox结算组合层，检查原结算与两个历史子页真实鼠标能点击暂停菜单。
+# 正式 Sandbox 结算组合层：结算页只保留结果与 Continue / Stop，可正常暂停。
 func _run() -> void:
 	SceneRouter.game_scene_override=GAME
 	SaveManager.new_game()
@@ -29,16 +29,10 @@ func _run() -> void:
 	await _wait()
 	_check(result.get_node("%Overlay").visible,"actual result view shown")
 	_check(menu.layer>result.layer and menu.layer<SceneRouter.get("_loading_layer").layer,"pause above result and below loading")
+	_check(result.find_child("ScriptureHistoryButton",true,false)==null and result.find_child("LoserCardHistoryButton",true,false)==null,"trimmed history actions absent")
+	_check(result.find_child("NewRewardsEmpty",true,false)==null,"trimmed reward empty state absent")
 	var original := session.get_result_snapshot()
 	await _exercise("result")
-	await _click(result.get_node("%ScriptureHistoryButton"))
-	_check(result.get_node("%ScriptureHistoryView").visible,"native click opens scripture history")
-	await _exercise("scripture")
-	await _click(result.get_node("%ScriptureHistoryView").get_node("%BackButton"))
-	await _click(result.get_node("%LoserCardHistoryButton"))
-	_check(result.get_node("%LoserCardHistoryView").visible,"native click opens loser history")
-	await _exercise("loser")
-	await _click(result.get_node("%LoserCardHistoryView").get_node("%BackButton"))
 	SettingsManager.set_fullscreen(true)
 	await _wait()
 	await _escape()

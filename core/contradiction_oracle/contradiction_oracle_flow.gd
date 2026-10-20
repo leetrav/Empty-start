@@ -279,10 +279,6 @@ func start(run_data: SaveData, catalog: LevelCatalog, current_level: LevelProfil
 	if _run_data != run_data or _catalog != catalog:
 		_run_data = run_data
 		_catalog = catalog
-		_oracle_confirmation_state = FinalOracleConfirmationState.new(run_data)
-		# Scripture 先同步写入，流程再读取保存结果，不能将确认广播当作写入成功。
-		run_data.scripture_data.bind_confirmation_state(_oracle_confirmation_state, catalog)
-		_oracle_confirmation_state.confirmation_committed.connect(_on_oracle_confirmation_committed)
 	_current_level = current_level
 	_hit_resolution = hit_resolution
 	_combat_stage = combat_stage
@@ -317,7 +313,6 @@ func start(run_data: SaveData, catalog: LevelCatalog, current_level: LevelProfil
 	_oracle_transition_timer.timeout.connect(_on_oracle_silence_finished)
 	add_child(_oracle_transition_timer)
 	_attack_charge_input.shot_snapshot_created.connect(_on_contradiction_shot_created)
-	_attack_charge_input.selection_target_hit.connect(_on_oracle_selection_target_hit)
 	# 关卡配置是本场阶段数据；复制基础演出配置，避免改写共享 Resource。
 	var runtime_window_config := window_config.duplicate(true) as ContradictionWindowConfig
 	runtime_window_config.duration_seconds = current_level.paradox_window_seconds
@@ -443,60 +438,15 @@ func _is_repeat_climax_ready() -> bool:
 	return _climax_complete
 
 
-# 静音过渡结束才把本场普通历史与复读统计交给 13 系统的真实入口。
+# 静音过渡结束且结果反馈完成后，直接提交本场普通历史并交付 Rest。
 func _on_oracle_silence_finished() -> void:
 	if _stopped or _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
 		return
 	if not _result_feedback_complete:
 		_oracle_silence_finished_pending = true
 		return
-	var current_level: LevelProfile = _current_level
-	if current_level == null:
-		return
-	_final_oracle_session = FinalOracleSession.new()
-	if not _final_oracle_session.open_after_breakthrough(
-		current_level.level_id,
-		_get_oracle_history_with_sentence_text(current_level),
-		_repeat_queue.get_generation_stats(),
-		_oracle_confirmation_state,
-		_oracle_maximum_candidates
-	):
-		push_error("ContradictionOracleFlow: 终结神谕入口拒绝本场击破结果。")
-		return
-	_contradiction_stage_active = false
-	_repeat_queue.clear_contradiction_queue()
-	_barrage_area.stop_normal_generation()
-	_barrage_area.stop_contradiction_generation()
-	_barrage_area.clear_barrages()
-	_opponent_pk_bar.stop_pullback()
-	var confirmed_candidate: Dictionary = _final_oracle_session.get_confirmed_selection()
-	if not confirmed_candidate.is_empty():
-		_attack_charge_input.clear_selection_targets()
-		_attack_charge_input.set_combat_active(false)
-		_oracle_candidate_display.show_confirmed_candidate(confirmed_candidate)
-		state_text_changed.emit("终结神谕已确认")
-		oracle_opened.emit(_final_oracle_session)
-		commit_confirmed_rewards()
-		return
-	var candidates: Array[Dictionary] = _final_oracle_session.get_display_candidates()
-	var target_controls: Array[Control] = _oracle_candidate_display.show_candidates(candidates)
-	if target_controls.size() != candidates.size():
-		push_error("ContradictionOracleFlow: 神谕候选正文未能显示到主游戏区。")
-		return
-	if not _attack_charge_input.set_selection_targets(target_controls):
-		_oracle_candidate_display.clear_display()
-		push_error("ContradictionOracleFlow: 神谕候选没有可攻击的目标控件。")
-		return
-	_attack_charge_input.set_contradiction_mode(false)
-	_attack_charge_input.set_combat_active(true)
-	_oracle_selection_timer = FinalOracleSelectionTimer.new()
-	_oracle_selection_timer.remaining_time_changed.connect(_on_oracle_selection_time_changed)
-	_oracle_selection_timer.expired.connect(_on_oracle_selection_expired)
-	state_text_changed.emit("神谕选择 · %.1f 秒" % _oracle_selection_duration_seconds)
-	if not _oracle_selection_timer.start(_oracle_selection_duration_seconds):
-		push_error("ContradictionOracleFlow: 神谕选择时长无效。")
-		return
-	oracle_opened.emit(_final_oracle_session)
+	_oracle_silence_finished_pending = false
+	_open_rest_after_breakthrough()
 
 
 # 给展示快照补上静态关卡原句文本，不把展示字段写回 HitResolution 历史。
@@ -609,6 +559,61 @@ func _open_rest_after_oracle(run_data: SaveData, session: FinalOracleSession) ->
 	rest_ready.emit(_rest_session)
 
 
+# 矛盾击破后沿用真实反馈与静音过渡，直接提交普通历史并交付 Rest。
+func _open_rest_after_breakthrough() -> void:
+	if not _result_feedback_complete:
+		return
+	if _contradiction_break == null or _contradiction_break.get_outcome() != ContradictionBreakSystem.Outcome.BREAKTHROUGH:
+		return
+	_open_rest_result("breakthrough_oracle_complete", true)
+
+
+# 成功与未击破共用一次普通历史 / 倾向提交；两种结果都不发神谕奖励。
+func _open_rest_result(result_kind: String, contradiction_broken: bool) -> bool:
+	if _stopped or not is_inside_tree() or _rest_handoff_pending:
+		return false
+	if _rest_session != null and _rest_session.is_open():
+		return false
+	var expected_outcome: int = (
+		ContradictionBreakSystem.Outcome.BREAKTHROUGH
+		if contradiction_broken else ContradictionBreakSystem.Outcome.NOT_BROKEN
+	)
+	if _contradiction_break == null or _contradiction_break.get_outcome() != expected_outcome:
+		return false
+	var current_level: LevelProfile = _current_level
+	if current_level == null:
+		return false
+	_rest_handoff_pending = true
+	if not _commit_history_and_tendency():
+		_rest_handoff_pending = false
+		return false
+	var result := RestSession.new()
+	if not result.open_result({
+		"level_id": current_level.level_id,
+		"result_kind": result_kind,
+		"pk_won": true,
+		"contradiction_broken": contradiction_broken,
+	}):
+		_rest_handoff_pending = false
+		return _fail_commit("矛盾结果无法创建 RestSession")
+	_rest_session = result
+	_stop_battle()
+	_contradiction_stage_active = false
+	_repeat_queue.clear_contradiction_queue()
+	if is_instance_valid(_oracle_transition_timer):
+		_oracle_transition_timer.stop()
+	_oracle_selection_timer = null
+	_attack_charge_input.clear_selection_targets()
+	_attack_charge_input.lock_new_attacks()
+	_attack_charge_input.set_contradiction_mode(false)
+	_attack_charge_input.set_combat_active(false)
+	if is_instance_valid(_oracle_candidate_display):
+		_oracle_candidate_display.clear_display()
+	state_text_changed.emit("休息时刻")
+	rest_ready.emit(_rest_session)
+	return true
+
+
 # 正式满蓄释放时立即按冻结的矛盾原句判定；飞行计时只保留演出。
 func _on_contradiction_shot_created(snapshot: AttackTargetSnapshot) -> void:
 	if _stopped or not _contradiction_stage_active or _contradiction_break == null:
@@ -667,24 +672,4 @@ func _open_rest_after_unbroken() -> void:
 	# 沿用成功分支的展示结束条件；输入与生成已停止，空命中和超时无需等待。
 	if not _is_repeat_climax_ready():
 		return
-	var current_level: LevelProfile = _current_level
-	if current_level == null:
-		return
-	if not _commit_history_and_tendency():
-		return
-	_rest_session = RestSession.new()
-	if not _rest_session.open_result({
-		"level_id": current_level.level_id,
-		"result_kind": "pk_win_unbroken",
-		"pk_won": true,
-		"contradiction_broken": false,
-		"new_scripture_entries": [], "new_loser_cards": [], "new_assimilation": [],
-	}):
-		_rest_session = null
-		_fail_commit("未击破 Rest 结果接收失败")
-		return
-	_contradiction_stage_active = false
-	_repeat_queue.clear_contradiction_queue()
-	_attack_charge_input.set_combat_active(false)
-	state_text_changed.emit("PK 胜利 · 未击破矛盾 · 休息时刻")
-	rest_ready.emit(_rest_session)
+	_open_rest_result("pk_win_unbroken", false)
