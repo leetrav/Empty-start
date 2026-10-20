@@ -122,6 +122,7 @@ func request_tutorial_counterattack(
 		"skill_id": skill_id,
 		"skill_name_cn": _get_counterattack_skill_name_cn(skill_id, skill_mapping),
 		"trigger_event": "tutorial_scripted_counterattack",
+		"tutorial_scripted": true,
 		"target_unit_id": opponent_unit_ids[_rng.randi_range(0, opponent_unit_ids.size() - 1)],
 		"effect_id": effect_id,
 		"effect_parameters": {
@@ -216,20 +217,30 @@ func update_counterattack(
 	if not _pending_counterattack.is_empty():
 		if _awaiting_counterattack_result:
 			return
-		var pending_player_count: int = int(faction_counts.get("player", 0))
-		var pending_opponent_count: int = int(faction_counts.get("opponent", 0))
-		var pending_lead_margin: int = int(_profile.get("counterattack_lead_margin", 0))
-		if pending_player_count - pending_opponent_count < pending_lead_margin:
-			_resolve_pending_without_effect("player_lead_lost")
-			return
+		if not bool(_pending_counterattack.get("tutorial_scripted", false)):
+			var pending_player_count: int = int(faction_counts.get("player", 0))
+			var pending_opponent_count: int = int(faction_counts.get("opponent", 0))
+			var pending_lead_margin: int = int(_profile.get("counterattack_lead_margin", 0))
+			if pending_player_count - pending_opponent_count < pending_lead_margin:
+				_resolve_pending_without_effect("player_lead_lost")
+				return
 		var target_unit_id: String = str(_pending_counterattack.get("target_unit_id", ""))
 		if not _get_unit_ids_for_team(opponent_unit_snapshots, "opponent").has(target_unit_id):
-			_resolve_pending_without_effect("target_unavailable")
-			return
+			if bool(_pending_counterattack.get("tutorial_scripted", false)):
+				var replacement_ids := _get_unit_ids_for_team(opponent_unit_snapshots, "opponent")
+				if replacement_ids.is_empty():
+					_resolve_pending_without_effect("target_unavailable")
+					return
+				_pending_counterattack["target_unit_id"] = replacement_ids[0]
+				_windup_remaining = minf(_windup_remaining, 0.25)
+			else:
+				_resolve_pending_without_effect("target_unavailable")
+				return
 		_windup_remaining = maxf(0.0, _windup_remaining - elapsed)
 		if _windup_remaining <= 0.0:
 			_request_counterattack_effect()
 		return
+
 	if _counterattack_cooldown_remaining > 0.0:
 		return
 	var round_tier: int = _get_next_counterattack_round_tier()
