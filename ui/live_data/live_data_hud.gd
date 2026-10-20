@@ -29,6 +29,9 @@ const STAT_ICON_PATHS_BY_SIDE: Dictionary = {
 # 默认订阅玩家当前周目；其他数据来源由组合方关闭此项并显式注入。
 @export var auto_bind_player_session: bool = true
 
+## 正式直播侧栏使用单排四项数据，其他历史页面保留原纵排。
+@export var horizontal_metrics: bool = false
+
 # 正式PNG优先显示；资源缺失时使用对应Emoji安全回退，数值仍复用原刷新入口。
 @export_group("指标图标")
 @export var viewer_icon: String = "👤":
@@ -109,6 +112,18 @@ func _ready() -> void:
 
 ## 将四项原有数值标签放入左右镜像行，图标层与数值更新保持分离。
 func _setup_metric_rows() -> void:
+	var row_parent: BoxContainer = _metrics
+	if horizontal_metrics:
+		# 内容止于手绘框内，底部给圆角留空；滚动裁剪只影响显示，不影响评论事实。
+		clip_contents = true
+		_metrics.offset_bottom = -112.0
+		var strip := HBoxContainer.new()
+		strip.name = "HorizontalStats"
+		strip.add_theme_constant_override("separation", 6)
+		strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_metrics.add_child(strip)
+		_metrics.move_child(strip, 0)
+		row_parent = strip
 	var metric_specs: Array[Dictionary] = [
 		{"metric_id": "viewer_count", "metric": _viewer_metric},
 		{"metric_id": "like_count", "metric": _like_metric},
@@ -124,14 +139,14 @@ func _setup_metric_rows() -> void:
 		_metrics.remove_child(metric)
 		var row := HBoxContainer.new()
 		row.name = "%sRow" % metric.name
-		row.custom_minimum_size.y = metric.custom_minimum_size.y
+		row.custom_minimum_size.y = 32.0 if horizontal_metrics else metric.custom_minimum_size.y
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_theme_constant_override("separation", 6)
+		row.add_theme_constant_override("separation", 4 if horizontal_metrics else 6)
 		var icon_rect := TextureRect.new()
 		icon_rect.name = "%sIcon" % metric_id
-		icon_rect.custom_minimum_size = Vector2(28.0, 28.0)
+		icon_rect.custom_minimum_size = Vector2(24.0, 24.0) if horizontal_metrics else Vector2(28.0, 28.0)
 		icon_rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -139,10 +154,14 @@ func _setup_metric_rows() -> void:
 		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		metric.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		metric.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		if horizontal_metrics:
+			metric.custom_minimum_size = Vector2.ZERO
+			metric.add_theme_font_size_override("normal_font_size", 18)
 		row.add_child(icon_rect)
 		row.add_child(metric)
-		_metrics.add_child(row)
-		_metrics.move_child(row, original_index)
+		row_parent.add_child(row)
+		if not horizontal_metrics:
+			_metrics.move_child(row, original_index)
 		_metric_rows[metric_id] = row
 		_metric_icon_rects[metric_id] = icon_rect
 	_refresh_stat_icon_side()
