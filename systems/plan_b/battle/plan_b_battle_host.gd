@@ -241,10 +241,37 @@ func request_tutorial_counterattack(round_number: int) -> bool:
 			or _opponent_director == null
 			or not _opponent_director.has_method("request_tutorial_counterattack")):
 		return false
+	var snapshots: Array[Dictionary] = get_unit_snapshots()
 	var opponent_snapshots: Array[Dictionary] = []
-	for snapshot: Dictionary in get_unit_snapshots():
+	for snapshot: Dictionary in snapshots:
 		if str(snapshot.get("team", "")) == "opponent":
 			opponent_snapshots.append(snapshot)
+	# 玩家首张牌可能恰好感染了全部初始费米；补回一名合法费米信徒，保证真实技能仍可执行。
+	if opponent_snapshots.is_empty():
+		var neutral_unit_id: Variant = null
+		for snapshot: Dictionary in snapshots:
+			if str(snapshot.get("team", "")) == "neutral":
+				neutral_unit_id = snapshot.get("unit_id", null)
+				break
+		if neutral_unit_id == null:
+			return false
+		for word_id: String in get_available_word_ids("opponent"):
+			var definition: Dictionary = get_word_definition(word_id)
+			if definition.is_empty():
+				continue
+			if bool(_simulation.call(
+					"seed_unit", int(_normalize_unit_id(neutral_unit_id)),
+					&"opponent", definition, _next_word_order)):
+				_used_word_ids.append(word_id)
+				_next_word_order += 1
+				break
+		snapshots = get_unit_snapshots()
+		opponent_snapshots.clear()
+		for snapshot: Dictionary in snapshots:
+			if str(snapshot.get("team", "")) == "opponent":
+				opponent_snapshots.append(snapshot)
+	if opponent_snapshots.is_empty():
+		return false
 	return bool(_opponent_director.call(
 		"request_tutorial_counterattack", round_number, opponent_snapshots, get_current_tier()
 	))
