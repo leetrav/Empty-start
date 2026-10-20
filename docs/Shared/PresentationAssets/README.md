@@ -2,7 +2,7 @@
 
 ## PTF-04 立绘与 PK 视图修复（2026-10-16）
 
-`OpponentTierPortrait` 在 PTF-04 曾使用同角色全套 alpha 边界共同缩放，使较短/较窄的阶段图明显缩小。**PA-23-FIX 现按每张原图完整画布的宽高比适配直播框**，恢复 PA-14 的显示尺度：保留原图比例、翻牌 Pivot、角色专属修正系数；同时将可见主体放在 `(0.5,0.94)` 安全站立线附近，四周预留 5px 边距，较高姿态优先完整显示。PA-17 的过渡和击败图继续调用 `fit_current_texture()`。Fox 的 `level_004.tres.streamer_live_background` 已引用仓库存在的 `fox/background.png`。最终视觉取舍由策划验收。
+`OpponentTierPortrait` 在 PTF-04 曾使用同角色全套 alpha 边界共同缩放，使较短/较窄的阶段图明显缩小。**PA-23-FIX 现按每张原图完整画布的宽高比适配直播框**，恢复 PA-14 的显示尺度：保留原图比例、翻牌 Pivot、角色专属修正系数；同时将可见主体底边放在 `(0.5,1.0)` 站立线上（保留 5px 画面内安全距离），四周预留 5px 边距，较高姿态优先完整显示。PA-17 的过渡和击败图继续调用 `fit_current_texture()`。Fox 的 `level_004.tres.streamer_live_background` 已引用仓库存在的 `fox/background.png`。最终视觉取舍由策划验收。
 
 HUD 的 PK 输入统一走 `refresh_pk()`；`on_tier_changed()` 只播放档位动作，避免晚到旧 PK 再写入进度动画。`get_pk_display_snapshot()` 同时提供真实输入、平滑显示、皮肤和百分比文本；原 0.16 秒显示动画保留。超宽父框改为等比缩放/居中，人物、字体和准心保持比例，Android 物理安全区仍由 A/E 提供。
 
@@ -77,7 +77,7 @@ Windows 验证入口为 `tests/presentation/pa14_portrait_motion_smoke.tscn`：�
 
 ## PA-23 主播立绘可见底边锚点（2026-10-20）
 
-原 PA-23 的 alpha 可见底部中点 `(0.5,1.0)` 锚点方案已经由 PA-23-FIX 替代，现有默认 `(0.5,0.94)`，并按**单张原图宽高**适配 432px 直播镜头。PA-14 的 `body_pivot=(0.5,0.65)`、翻牌、受击与 PA-17 击败时序保持原值。仓鼠仍采用坐姿及桌沿遮挡。原 PA-23 图仅作为历史对比，正式结果见 [PA-23-FIX 日志](表现资产_PA-23-FIX_2026-10-20_log.md)。
+原 PA-23 的 alpha 可见底部中点 `(0.5,1.0)` 锚点方案已经由 PA-23-FIX 替代，现有默认 `(0.5,1.0)`，并按**单张原图宽高**适配 432px 直播镜头。PA-14 的 `body_pivot=(0.5,0.65)`、翻牌、受击与 PA-17 击败时序保持原值。仓鼠仍采用坐姿及桌沿遮挡。原 PA-23 图仅作为历史对比，正式结果见 [PA-23-FIX 日志](表现资产_PA-23-FIX_2026-10-20_log.md)。
 
 真实 Godot 截图按修改前、修改后分别保存在 [`previews/pa23-ground-anchor/`](previews/pa23-ground-anchor/)，包含仓鼠射击动作和四名对手的 T1、T3、T5、击败状态；当前采用 D3D12 / AMD Radeon、1920×1080、Godot 4.7.2。详细验证与交接见 [PA-23 日志](表现资产_PA-23_2026-10-20_log.md)。
 
