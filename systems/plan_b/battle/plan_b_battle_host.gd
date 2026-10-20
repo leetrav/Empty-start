@@ -936,16 +936,41 @@ func _on_counterattack_windup_started(request: Dictionary) -> void:
 
 func _on_counterattack_effect_requested(request: Dictionary) -> void:
 	# 没有可注入 Callable 时仍由 A 接收 C 的请求并转调 B，再回报 C。
-	var applied: bool = _apply_counterattack_effect(request)
+	var effect_result: Dictionary = _apply_counterattack_effect(request)
 	if _opponent_director != null and _opponent_director.has_method("report_counterattack_result"):
-		_opponent_director.call("report_counterattack_result", applied)
+		_opponent_director.call("report_counterattack_result", effect_result)
 
 
-func _apply_counterattack_effect(request: Dictionary) -> bool:
-	# C 的控制器不直接修改 B；A 将效果请求交给模拟模块公开入口。
+func _apply_counterattack_effect(request: Dictionary) -> Dictionary:
+	# A 只补足当前关合法词池和全局顺序号；B 仍独占所有单位状态变更。
 	if _simulation == null or not _simulation.has_method("apply_counterattack_effect"):
-		return false
-	return bool(_simulation.call("apply_counterattack_effect", request))
+		return {"ok": false, "applied": false, "reason": "simulation_unavailable"}
+	var effect_request: Dictionary = request.duplicate(true)
+	if str(effect_request.get("streamer_id", "")) == "kiwi":
+		effect_request["available_opponent_words"] = _get_available_opponent_word_definitions("kiwi")
+		effect_request["word_order"] = _next_word_order
+	var result_value: Variant = _simulation.call("apply_counterattack_effect", effect_request)
+	if not result_value is Dictionary:
+		return {"ok": false, "applied": false, "reason": "invalid_effect_result"}
+	var result: Dictionary = result_value.duplicate(true)
+	if bool(result.get("ok", false)) and str(effect_request.get("streamer_id", "")) == "kiwi":
+		var word_id: String = str(result.get("word_id", ""))
+		if not word_id.is_empty() and not _used_word_ids.has(word_id):
+			_used_word_ids.append(word_id)
+			_next_word_order = maxi(_next_word_order, int(result.get("word_order", _next_word_order)) + 1)
+	return result
+
+
+## PB-27 的奥格尔改口只能消费当前关、当前主播尚未使用的正式敌方词条。
+func _get_available_opponent_word_definitions(streamer_id: String) -> Array[Dictionary]:
+	var definitions: Array[Dictionary] = []
+	for word_id: String in get_available_word_ids("opponent"):
+		var definition: Dictionary = get_word_definition(word_id)
+		if str(definition.get("available_to", "")) != "opponent" \
+			or str(definition.get("streamer_id", "")) != streamer_id:
+			continue
+		definitions.append(definition)
+	return definitions
 
 
 func _on_counterattack_resolved(result: Dictionary) -> void:
