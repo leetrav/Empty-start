@@ -95,7 +95,7 @@ func _build_credits() -> void:
 	for side in ["top", "bottom"]:
 		margin.add_theme_constant_override("margin_"+side, 32)
 	content.add_child(margin)
-	content.move_child(margin,0)
+	# 静态结局页保留主图、教名、圣典与判词优先，鸣谢滚动区放在末尾。
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 20)
 	margin.add_child(column)
