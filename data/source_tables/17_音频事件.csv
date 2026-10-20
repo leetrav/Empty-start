@@ -43,7 +43,9 @@ repeat_batch,sfx,assets/audio/sfx/kenney_interface-sounds/Audio/maximize_006.ogg
 repeat_flood,sfx,,,1,1,false,,系统案10｜大量复读刷屏整体声势
 contradiction_spawn,sfx,,,1,1,false,,系统案12｜矛盾弹幕出现
 contradiction_false_hit,sfx,,,1,1,false,,系统案12｜假矛盾错误命中
-contradiction_break,sfx,assets/audio/sfx/kenney_impact-sounds/Audio/impactPunch_heavy_003.ogg,0,1,1,false,,系统案12｜真矛盾正确击破｜资产审计2026-10-15：第二轮试听 contradiction_break 当前候选，但备注要求逆转裁判“异议”感、再选一批；Godot原magical_7待替换；volume_db=0dB暂按Unity初值，正式试听混音可调。
+contradiction_break,sfx,assets/audio/sfx/comic/break_impact.ogg,-2,1,1,false,,AU-07｜真矛盾正确击破｜Kenney CC0重击叠少量玻璃碎裂；不强制署名。
+contradiction_slash,sfx,assets/audio/sfx/comic/break_sweep.ogg,-6,1,1,false,,AU-07｜矛盾击破横幅实际斜切首帧｜Kenney CC0短扫入音。
+contradiction_banner_impact,sfx,assets/audio/sfx/comic/break_impact.ogg,-3,1,1,false,,AU-07｜横幅文字落定同步重击｜仅表现事件；与真击破判定分开。
 contradiction_emphasis,sfx,,,1,1,false,,系统案12｜全屏强调冲击
 oracle_candidates,sfx,,,1,1,false,,系统案13｜候选文字浮出
 oracle_select_move,ui,,,1,1,false,,系统案13｜候选切换提示
@@ -69,7 +71,7 @@ divine_descent_lock,sfx,assets/audio/sfx/magical/magical_6.ogg,0,1,1,false,,现�
 music_divine_descent,music,,,1,1,true,divine,现有后续系统占位；不来自本次系统案正文
 music_ending,music,,,1,1,true,ending,现有后续系统占位；不来自本次系统案正文
 ui_error,ui,assets/audio/sfx/kenney_interface-sounds/Audio/error_004.ogg,0,1,1,false,,第二轮试听 ui_error 选中；新增独立稳定事件ID，当前Godot尚未接线。
-comic_write,ui,assets/audio/sfx/comic/typewriter.wav,-10,1,1,false,,2026-10-15 从现有已合并INT-11的Godot audio_event_config.tres 回读，漫画打字音，已接入。
+comic_write,ui,assets/audio/sfx/comic/text_tick.ogg,-20,0.98,1.04,false,,AU-07｜Kenney CC0轻短字音60ms；80ms节流；替代原机械打字机。
 comic_page,ui,assets/audio/sfx/comic/book_flip.ogg,-6,1,1,false,,2026-10-15 从现有已合并INT-11的Godot audio_event_config.tres 回读，漫画翻页声，已接入。
 divine_descent_start,sfx,assets/audio/sfx/magical/magical_7.ogg,0,1,1,false,,2026-10-15 从现有Godot audio_event_config.tres回读，神降临开始事件已有绑定。
 music_alien_low,music,assets/audio/music/fermi/teek_low.ogg,0,1,1,true,battle_alien,AU-03 费米Teek Teek Teek三段循环

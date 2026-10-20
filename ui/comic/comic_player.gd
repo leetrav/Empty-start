@@ -29,6 +29,8 @@ var _effects: ComicEffects
 var _caption_views: Array[ComicCaptionView] = []
 var _elapsed: float = 0.0
 var _transition: ColorRect
+# 短轻音共用节流，多个旁白同帧补字只响一次，不反复重启长打字机采样。
+var _writing_cooldown: float = 0.0
 
 # 路由只传播放目的；场景内建立独立演出节点并复用 ID-12 控制器。
 func _ready() -> void:
@@ -169,6 +171,7 @@ func _show_frame(number: int) -> void:
 		_canvas.add_child(view)
 		_caption_views.append(view)
 	_elapsed = 0.0
+	_writing_cooldown = 0.0
 	if _frame.transition_seconds > 0:
 		if _animation == null:
 			_animation = create_tween().set_parallel(true)
@@ -199,6 +202,7 @@ func _process(delta: float) -> void:
 	if _paused or _finished or _frame == null:
 		return
 	_elapsed += delta
+	_writing_cooldown = maxf(0.0,_writing_cooldown-delta)
 	var spoke := false
 	var danmaku_index := 0
 	for view in _caption_views:
@@ -212,7 +216,7 @@ func _process(delta: float) -> void:
 				view.label.visible_characters = count
 				spoke = true
 	if spoke and is_instance_valid(_sound):
-		AudioManager.play_event_player(_sound)
+		_play_writing_tick()
 	# 纯图片显现、等待或运动均不触发打字声。
 	if _frame.text.is_empty():
 		return
@@ -223,7 +227,14 @@ func _process(delta: float) -> void:
 	if next_count > _caption.visible_characters:
 		_caption.visible_characters = next_count
 		if is_instance_valid(_sound):
-			AudioManager.play_event_player(_sound)
+			_play_writing_tick()
+
+# 只有字数真实增长才调用；不改变逐字速度、快进、停顿或暂停规则。
+func _play_writing_tick() -> void:
+	if _writing_cooldown>0.0 or not is_instance_valid(_sound):
+		return
+	if AudioManager.play_event_player(_sound):
+		_writing_cooldown=0.08
 
 # 普通按键快进分镜；Esc保留给统一暂停菜单，不再直接跳出剧情。
 func _input(event: InputEvent) -> void:

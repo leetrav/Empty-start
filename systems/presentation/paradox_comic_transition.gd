@@ -45,6 +45,10 @@ enum PlaybackMode { IDLE, TRANSITION, RESULT }
 var _mode: PlaybackMode = PlaybackMode.IDLE
 var _elapsed: float = 0.0
 var _result_success: bool = false
+var _slash_sound: AudioStreamPlayer
+var _impact_sound: AudioStreamPlayer
+var _slash_played: bool = false
+var _impact_played: bool = false
 
 @onready var _title_shadow: Label = $TitleShadow
 @onready var _title: Label = $Title
@@ -58,12 +62,22 @@ func _ready() -> void:
 	resized.connect(_on_resized)
 	call_deferred("_on_resized")
 	visible = false
+	# 仅消费正式音效事件，跟随实际分镜时间和全局暂停，不依赖额外Timer。
+	_slash_sound = AudioManager.create_event_player(&"contradiction_slash",self)
+	_impact_sound = AudioManager.create_event_player(&"contradiction_banner_impact",self)
 
 # 跟进转场时序并在到点后发出表现完成通知。
 func _process(delta: float) -> void:
 	if _mode == PlaybackMode.IDLE:
 		return
 	_elapsed += delta
+	if _mode == PlaybackMode.TRANSITION:
+		if not _slash_played and _elapsed>=silence_seconds:
+			_slash_played=true
+			AudioManager.play_event_player(_slash_sound)
+		if not _impact_played and _elapsed>=silence_seconds+slash_seconds:
+			_impact_played=true
+			AudioManager.play_event_player(_impact_sound)
 	_update_title_pose()
 	queue_redraw()
 	if _mode == PlaybackMode.TRANSITION and _elapsed >= _transition_duration():
@@ -78,6 +92,9 @@ func _process(delta: float) -> void:
 
 ## 从空场开始完整播放斜切、撞击字和撕幕；完成后由组合方开始可操作窗口。
 func play_transition() -> void:
+	_stop_visual_sounds()
+	_slash_played=false
+	_impact_played=false
 	_elapsed = 0.0
 	_mode = PlaybackMode.TRANSITION
 	_title.text = title_text
@@ -91,6 +108,7 @@ func play_transition() -> void:
 
 ## 显示本场矛盾结果漫画字，完成信号可交回既有后续流程。
 func play_result_feedback(success: bool) -> void:
+	_stop_visual_sounds()
 	_elapsed = 0.0
 	_result_success = success
 	_mode = PlaybackMode.RESULT
@@ -105,12 +123,19 @@ func play_result_feedback(success: bool) -> void:
 
 ## 重开或中断时立即收起全部遮罩与文案，不广播完成事件。
 func reset_for_attempt() -> void:
+	_stop_visual_sounds()
 	_elapsed = 0.0
 	_mode = PlaybackMode.IDLE
 	visible = false
 	_title.visible = false
 	_title_shadow.visible = false
 	queue_redraw()
+
+# 重开/中断取消当前分镜尾音，成功判定音仍归BattleAudioPresenter，避免重复播放。
+func _stop_visual_sounds() -> void:
+	for sound: AudioStreamPlayer in [_slash_sound,_impact_sound]:
+		if is_instance_valid(sound):
+			sound.stop()
 
 
 # 按播放状态重绘全屏图形效果。
