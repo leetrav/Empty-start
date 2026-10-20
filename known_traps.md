@@ -425,3 +425,16 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - 现象：结算页Esc后游戏停止，Overlay.visible=true，却看不到菜单，也点不到设置。
 - 条件：RestResultView CanvasLayer30高于原PauseMenu20，后加的结算页覆盖原菜单。仅断言暂停与visible不足以发现。
 - 处理：共享PauseMenu统一为90，加载遮幕保持100；结算／圣典历史／败者卡历史必须真实Esc并截图，鼠标点击设置/继续，覆盖全屏退出路径。不靠增加重复暂停菜单解决。
+
+### SYNC-02：上游损坏PNG会在新工作区再次造成脚本解析连锁错误
+- main@dd943b11 中石剪布三个 PNG 存在 PLTE CRC 和后续块结构损坏；旧本地已修不代表远端已修。首次导入会留下 valid=false 侧文件。
+- PR #355 合流时必须保留最新 main 中三张已交付的正式 PNG（ui_PK_bu/jiandao/shitou.png），不能被旧分支里的临时替代图覆盖；损坏原件仅归档到 original_corrupt/，由 .gdignore 排除导入。
+- 正式启动和战斗180帧运行无资源/脚本错误。依赖 Autoload 的 UI 不宜以单独 --check-only 失败断定生产脚本有错，需在正式项目上下文确认。
+
+### AU-10：正常通关与结局回看共享漫画，不代表自动共享结尾曲
+- ComicPlayer按ending/epilogue加载同一结局，但旧音乐分支仅识别epilogue，导致ending错误播放开场《街》并按开场时长偏移。
+- ending独立回看从0秒使用EndingMusicPresenter的《天導》；epilogue延续神谕结束时已起播同曲。开场只播放《街》。复验回放起点、暂停恢复和返回标题；正常通关交接不重置时间。
+
+### PK-FRAME-01：透明化顶部面板仍可能裁掉背景圆角外框下沿
+- 原直播图外框约90px高，现有PK顶栏仅72px，棋盘背景从72px起绘制，直接露底图会再次遮住下沿。
+- 原图外框使用AtlasTexture整体适配到原72px槽内，状态区与暂停按钮常态透底；不要修改棋盘范围来处理纯外观问题。ProgressBar复用面板StyleBox时需去掉12px上下内边距，否则宣称16px的条会实际长到24px。

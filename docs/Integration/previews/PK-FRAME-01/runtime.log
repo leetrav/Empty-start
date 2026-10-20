@@ -1,0 +1,22 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+INT24 PASS artwork texture loaded
+INT24 PASS artwork ignores input
+INT24 PASS board geometry unchanged
+INT24 TUTORIAL active=true step=pb25_intro_publish
+INT24 PORTRAIT rect=[P: (24.0, 158.0), S: (396.0, 432.0)]
+INT24 PASS portrait aligned to artwork video frame
+INT24 PORTRAIT rect=[P: (1504.0, 158.0), S: (396.0, 432.0)]
+INT24 PASS portrait aligned to artwork video frame
+INT24 PASS echo summary hidden
+INT24 PASS echo summary hidden
+PK_FRAME rect=[P: (463.0, 47.0), S: (890.0, 16.0)]
+PK_FRAME rect=[P: (463.0, 47.0), S: (890.0, 16.0)]
+PK_FRAME rect=[P: (463.0, 47.0), S: (890.0, 16.0)]
+PK_FRAME rect=[P: (463.0, 47.0), S: (890.0, 16.0)]
+PK_FRAME rect=[P: (463.0, 47.0), S: (890.0, 16.0)]
+INT24 PASS transparent pause button still opens menu
+INT24 PASS Esc resumes after pause
+INT24 PASS real card and board clicks publish once
+INT24_DONE failures=0

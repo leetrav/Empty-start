@@ -12,6 +12,8 @@ signal opponent_result_presentation_finished(broken: bool)
 signal restart_requested
 signal pause_requested
 
+const LIVESTREAM_BACKGROUND: Texture2D = preload("res://assets/ui/live/livestream_layout_background.png")
+
 const UnitFieldScript = preload("res://ui/plan_b/plan_b_unit_field.gd")
 const StreamerPanelScript = preload("res://ui/plan_b/plan_b_streamer_panel.gd")
 const PK_BAR_SKIN_SCENE: PackedScene = preload("res://systems/presentation/pk_bar_skin.tscn")
@@ -993,11 +995,27 @@ func _show_field_event(message: String, seconds: float = 2.2) -> void:
 
 func _build_view() -> void:
 	# 逻辑画布按 448 / 1024 / 448 固定切分；主播信息留在两侧，操作集中在中间。
-	var background := ColorRect.new()
+	var background := TextureRect.new()
+	background.name = "LivestreamArtworkBackground"
+	background.texture = LIVESTREAM_BACKGROUND
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.stretch_mode = TextureRect.STRETCH_SCALE
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.color = Color("#071018")
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
+	# 原图外框高约90px，完整映射到现有72px顶栏，避免棋盘从72px开始裁掉框的下沿。
+	var frame_texture := AtlasTexture.new()
+	frame_texture.atlas = LIVESTREAM_BACKGROUND
+	frame_texture.region = Rect2(432.0, 0.0, 1044.0, 90.0)
+	var frame := TextureRect.new()
+	frame.name = "PkArtworkFrame"
+	frame.texture = frame_texture
+	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame.stretch_mode = TextureRect.STRETCH_SCALE
+	frame.position = Vector2(432.0, 0.0)
+	frame.size = Vector2(1044.0, 72.0)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(frame)
 
 	var columns := HBoxContainer.new()
 	columns.name = "ThreeColumnLayout"
@@ -1013,6 +1031,7 @@ func _build_view() -> void:
 	_player_panel.size_flags_horizontal = Control.SIZE_FILL
 	_player_panel.connect("shutdown_finished", Callable(self, "_on_player_shutdown_finished"))
 	columns.add_child(_player_panel)
+	_reveal_livestream_artwork(_player_panel)
 
 	var center := Control.new()
 	center.name = "BattleCenter"
@@ -1030,6 +1049,7 @@ func _build_view() -> void:
 	_opponent_panel.connect("connection_finished", Callable(self, "_on_opponent_connection_finished"))
 	_opponent_panel.connect("result_presentation_finished", Callable(self, "_on_opponent_result_presentation_finished"))
 	columns.add_child(_opponent_panel)
+	_reveal_livestream_artwork(_opponent_panel)
 
 	# 旧准星以全画布坐标跟随鼠标；透明、忽略鼠标事件，不改变棋盘点击判定。
 	_aim_reticle = AIM_RETICLE_SCENE.instantiate()
@@ -1040,6 +1060,22 @@ func _build_view() -> void:
 	_aim_reticle.connect("animation_finished", Callable(self, "_on_aim_animation_finished"))
 	add_child(_aim_reticle)
 
+
+
+## 总底图位于既有三列后方；仅弱化侧栏旧底色并露出画框，不改变棋盘坐标或主播行为。
+func _reveal_livestream_artwork(panel: Control) -> void:
+	for child: Node in panel.get_children():
+		if child is ColorRect:
+			child.color.a = 0.36
+		elif child is VBoxContainer:
+			# 按原图视频窗内沿对齐左右主播；三列总宽和中央操作区不变。
+			child.offset_left = 24.0 if panel == _player_panel else 32.0
+			child.offset_right = -28.0 if panel == _player_panel else -20.0
+			# 原画视频窗从158px开始，至590px结束；下方仍留490px给原指标与评论。
+			var header := child.get_child(0) as Control
+			var live_data := child.get_child(2) as Control
+			header.custom_minimum_size.y = 158.0
+			live_data.custom_minimum_size.y = 490.0
 
 
 func _build_center(parent: Control) -> void:
@@ -1065,10 +1101,11 @@ func _build_pk_bar(parent: Container) -> void:
 	var panel := PanelContainer.new()
 	panel.name = "PkTierBar"
 	panel.custom_minimum_size = Vector2(0.0, 72.0)
-	var status_style := _panel_style(Color("#101f29"), Color("#29414c"), 0, 0)
+	# 原直播大图已含圆角PK外框，状态面板只保留布局留白，避免矩形盖住手绘边缘。
+	var status_style := _panel_style(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0)
 	# 字体行高加默认留白为78px；收紧到原设计72px，避免顶栏与棋盘几何重叠。
-	status_style.content_margin_top = 9.0
-	status_style.content_margin_bottom = 9.0
+	status_style.content_margin_top = 17.0
+	status_style.content_margin_bottom = 1.0
 	panel.add_theme_stylebox_override("panel", status_style)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1094,6 +1131,10 @@ func _build_pk_bar(parent: Container) -> void:
 	_tier_value_label = _label("T0", 18, Color("#ffd59b"))
 	_tier_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	heading.add_child(_tier_value_label)
+	for label: Label in [_pk_value_label, _counts_label, _tier_value_label]:
+		label.add_theme_color_override("font_color", Color("#fff5e8"))
+		label.add_theme_color_override("font_outline_color", Color("#33233d"))
+		label.add_theme_constant_override("outline_size", 3)
 
 	_pk_bar = ProgressBar.new()
 	_pk_bar.name = "PkProgress"
@@ -1105,6 +1146,11 @@ func _build_pk_bar(parent: Container) -> void:
 	_pk_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pk_bar.add_theme_stylebox_override("background", _panel_style(Color("#20333d"), Color("#20333d"), 7, 0))
 	_pk_bar.add_theme_stylebox_override("fill", _panel_style(Color("#42bdd8"), Color("#42bdd8"), 7, 0))
+	# 进度条样式不使用面板的12px上下留白，确保填充真正落在手绘框内部。
+	for style_name: String in ["background", "fill"]:
+		var bar_style := _pk_bar.get_theme_stylebox(style_name) as StyleBoxFlat
+		bar_style.content_margin_top = 0.0
+		bar_style.content_margin_bottom = 0.0
 	rows.add_child(_pk_bar)
 	_pk_bar_skin = PK_BAR_SKIN_SCENE.instantiate()
 	_pk_bar_skin.name = "PkBarSkin"
@@ -1124,6 +1170,10 @@ func _build_pk_bar(parent: Container) -> void:
 		style.content_margin_bottom = 4.0
 		style.content_margin_left = 8.0
 		style.content_margin_right = 8.0
+		# 暂停文字仍留在原触控范围；常态透出同一条手绘外框。
+		if style is StyleBoxFlat:
+			style.bg_color = Color(0.08, 0.10, 0.14, 0.18 if state in ["hover", "pressed", "hover_pressed"] else 0.0)
+			style.border_color = Color.TRANSPARENT
 		pause_button.add_theme_stylebox_override(state,style)
 	pause_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	pause_button.pressed.connect(func(): pause_requested.emit())

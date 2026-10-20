@@ -278,25 +278,25 @@ func _build_header(parent: VBoxContainer) -> void:
 	header.custom_minimum_size.y = 128.0
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(header)
-	var role := _label("你的直播间" if streamer_side == "player" else "对手直播间", 16, Color("#aeb8ca"))
-	role.position = Vector2(28.0, 14.0)
-	role.size = Vector2(390.0, 28.0)
-	header.add_child(role)
 	_name_label = _label("玩家主播" if streamer_side == "player" else "当前主播", 29, Color("#f1f4fa"))
-	_name_label.position = Vector2(28.0, 45.0)
-	_name_label.size = Vector2(190.0, 56.0)
+	_name_label.position = Vector2(20.0, 57.0)
+	_name_label.size = Vector2(356.0, 40.0)
+	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_name_label.clip_text = true
 	_name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS_FORCE
 	header.add_child(_name_label)
 	_fan_group_label = _label("❤粉丝团❤", 19, Color("#f7d6a3"))
-	_fan_group_label.position = Vector2(224.0, 53.0)
-	_fan_group_label.size = Vector2(172.0, 44.0)
-	_fan_group_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_fan_group_label.position = Vector2(20.0, 100.0)
+	_fan_group_label.size = Vector2(240.0, 32.0)
+	_fan_group_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_fan_group_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS_FORCE
 	header.add_child(_fan_group_label)
 	_echo_summary_label = _label("暂无当前复读", 13, Color("#d3dde1"))
 	_echo_summary_label.position = Vector2(28.0, 99.0)
 	_echo_summary_label.size = Vector2(390.0, 24.0)
 	_echo_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# 直播头部不再展示复读诊断小字；保留数据更新接口供其他表现使用。
+	_echo_summary_label.hide()
 	header.add_child(_echo_summary_label)
 
 func _build_camera(parent: VBoxContainer) -> void:
@@ -335,6 +335,7 @@ func _build_live_data(parent: VBoxContainer) -> void:
 	_live_data_hud.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_live_data_hud.set("display_side", 0 if streamer_side == "player" else 1)
 	_live_data_hud.set("auto_bind_player_session", false)
+	_live_data_hud.set("horizontal_metrics", true)
 	parent.add_child(_live_data_hud)
 	_sync_comment_branding()
 
