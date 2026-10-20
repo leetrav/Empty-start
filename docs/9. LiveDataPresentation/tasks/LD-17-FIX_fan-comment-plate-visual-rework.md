@@ -1,6 +1,6 @@
 # LD-17-FIX · 粉丝评论横牌比例、位置与可读性返工
 
-状态：**P0 · 人工视觉验收未通过，待其他 Agent 修复**。原任务：LD-17，已合并 PR [#317](https://github.com/w7775p/Empty-start/pull/317)。本卡为 LD-17 视觉返工，验收权由用户保留。
+状态：**P0 · 修复已实现并完成 Godot 双分辨率截图，PR #326 Draft 待用户人工视觉验收**。原任务 LD-17 已合并 PR [#317](https://github.com/w7775p/Empty-start/pull/317)；本次返工见 [#326](https://github.com/w7775p/Empty-start/pull/326)，验收权由用户保留。
 
 ## 开始前先阅读以下文档
 - `AGENTS.md`、`known_traps.md`、`project.godot`、`docs/Original/任务卡模板.md`。

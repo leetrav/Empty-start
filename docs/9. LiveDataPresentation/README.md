@@ -137,6 +137,7 @@ LD-10 等 18. Rest。
 | [LD-15](tasks/LD-15_camp-fan-badges.md) | 评论按粉丝身份显示双方专属粉丝牌 | LD-14 |
 | [LD-16](tasks/LD-16_chat-feed-lifecycle-wiring.md) | 战斗时启动与重置双方直播评论流 | LD-12～LD-15 |
 | [LD-17](tasks/LD-17_comment-fan-badge-nameplate-fit.md) | 粉丝徽章嵌入 PA-21 横标，主播栏仅显示粉丝团名 | D实现与1920×1080、1280×720截图完成；E验收待做 |
+| [LD-17-FIX](tasks/LD-17-FIX_fan-comment-plate-visual-rework.md) | 评论名牌缩为昵称局部装饰，正文恢复正常流式换行 | [PR #326](https://github.com/w7775p/Empty-start/pull/326) 代码与双分辨率截图已交付，待人工视觉验收 |
 
 当前仓库中 `PresentationAssetConfig.player_fan_badge` 与 `LevelProfile.fan_badge_texture` 已可提供两侧资源；正式风格由现有美术资源替换入口承接。新词库为独立 `19_直播评论词库`，与 `09_直播数据` 数值规则表分别管理。
 
@@ -148,9 +149,10 @@ LD-10 等 18. Rest。
 
 ## LD-17 评论横标与徽章（2026-10-20）
 
-粉丝评论行使用 PA-21 `assets/ui/live/fan_nameplates/<streamer_id>_fan_nameplate.png` 横标，在左侧圆形安全区等比居中显示该侧粉丝徽章；玩家侧沿用 `PresentationAssetConfig.player_fan_badge`，对手徽章缺省时按当前主播稳定 ID 从 PA-21 路径回退。长昵称与评论正文放入横标矩形文本区，并按实际字体测量缩字号；路人保留无徽章的纯文字行。主播栏取消粉丝徽章纹理，`❤粉丝团名❤` 文字位置不变。
+粉丝评论行使用 PA-21 `assets/ui/live/fan_nameplates/<streamer_id>_fan_nameplate.png` 横标，在左侧圆形安全区等比居中显示该侧粉丝徽章；玩家侧沿用 `PresentationAssetConfig.player_fan_badge`，对手徽章缺省时按当前主播稳定 ID 从 PA-21 路径回退。**LD-17-FIX** 将横牌改为**随昵称实测宽度伸缩、高度固定46px**的局部装饰（测试宽度约112～208px，昵称始终在整张横牌的水平中心）；用 NinePatchRect 仅横向伸缩中间纯色部分，徽章圆圈和尖角形状不变，17px 昵称在矩形安全区内超长自动省略，评论正文置于右侧独立 `RichTextLabel`，继续使用表 22 配置的正文字号（最低 16px）完整换行。路人与粉丝行高接近，行数上限与滚动依旧使用原有逻辑。主播栏只显示纯文字 `❤粉丝团名❤`。
 
 Godot 双分辨率截图和验证限制见 [LD-17 日志](直播数据表现系统_LD-17_2026-10-20_log.md)。
+返工的实际 UI 截图、运行 SHA 与五条评论密度验证见 [LD-17-FIX 完成日志](直播数据表现系统_LD-17-FIX_2026-10-20_log.md)。
 
 ## INT-14 正式评论展示接线（2026-10-15）
 
