@@ -6,6 +6,7 @@ var recording_text: bool = false
 var ticks: Array[int] = []
 var text_capture := AudioEffectCapture.new()
 var music_capture := AudioEffectCapture.new()
+var impact_capture := AudioEffectCapture.new()
 func _ready() -> void:
 	process_mode=Node.PROCESS_MODE_ALWAYS
 	get_tree().current_scene=null
@@ -16,6 +17,8 @@ func _ready() -> void:
 	music_capture.buffer_length=4.0
 	AudioServer.add_bus_effect(AudioServer.get_bus_index(&"UI"),text_capture)
 	AudioServer.add_bus_effect(AudioServer.get_bus_index(&"Music"),music_capture)
+	impact_capture.buffer_length=5.0
+	AudioServer.add_bus_effect(AudioServer.get_bus_index(&"SFX"),impact_capture)
 	get_tree().create_timer(35.0).timeout.connect(func(): get_tree().quit(2))
 	_run.call_deferred()
 
@@ -77,6 +80,32 @@ func _run() -> void:
 	fx.play_transition()
 	await get_tree().create_timer(1.5).timeout
 	_check(_count(&"contradiction_slash")==2 and _count(&"contradiction_banner_impact")==2,"replay has one cue of each")
+	await get_tree().create_timer(0.9).timeout
+	impact_capture.clear_buffer()
+	await get_tree().create_timer(0.15).timeout
+	var sound: AudioStreamPlayer=fx.get("_impact_sound")
+	_check(sound.playing and _peak(impact_capture)>0.003,"actual extended tail remains audible during title hold")
+	var elapsed: float=fx.get("_elapsed")
+	var position := sound.get_playback_position()
+	get_tree().paused=true
+	await get_tree().create_timer(0.2).timeout
+	_check(fx.get("_elapsed")==elapsed and absf(sound.get_playback_position()-position)<0.08,"tail and visual clock pause together")
+	get_tree().paused=false
+	await get_tree().create_timer(0.45).timeout
+	var expected: float=db_to_linear(-3.0)*fx.get_node("Title").modulate.a
+	_check(sound.playing and absf(sound.volume_linear-expected)<0.01 and sound.volume_db < -9.0,"tail fades with actual title opacity")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("D:/src/playtest-20261020/au09-tail-fade.png")
+	await get_tree().create_timer(0.8).timeout
+	_check(not fx.visible and not sound.playing,"tail stops when transition disappears")
+	# 另录一次不含暂停的完整演出，让用户试听正常节奏；不拼接或合成运行音轨。
+	var recorder := AudioEffectRecord.new()
+	AudioServer.add_bus_effect(AudioServer.get_bus_index(&"SFX"),recorder)
+	recorder.set_recording_active(true)
+	fx.play_transition()
+	await get_tree().create_timer(3.8).timeout
+	recorder.set_recording_active(false)
+	recorder.get_recording().save_to_wav("D:/src/playtest-20261020/au09-banner-demo.wav")
 	fx.reset_for_attempt()
 	var presenter: Node=load("res://core/audio/battle_audio_presenter.gd").new()
 	add_child(presenter)
@@ -102,6 +131,10 @@ func _on_event(id: StringName, player: AudioStreamPlayer) -> void:
 	if id==&"comic_write" and recording_text: ticks.append(Time.get_ticks_msec())
 	if id in [&"comic_write",&"contradiction_slash",&"contradiction_banner_impact",&"contradiction_break"]:
 		_check(not "typewriter.wav" in player.stream.resource_path,"actual player uses new asset: "+str(id))
+	if id==&"contradiction_banner_impact":
+		_check(player.stream.resource_path.ends_with("punch_tail.ogg") and player.stream.get_length()>2.5,"banner uses selected extended hit10")
+	if id==&"contradiction_break":
+		_check(player.stream.resource_path.ends_with("punch_hit.ogg"),"successful hit uses selected hit10 dry sound")
 func _count(id: StringName) -> int:
 	var count := 0
 	for event: Dictionary in events:

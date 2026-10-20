@@ -43,9 +43,9 @@ repeat_batch,sfx,assets/audio/sfx/kenney_interface-sounds/Audio/maximize_006.ogg
 repeat_flood,sfx,,,1,1,false,,系统案10｜大量复读刷屏整体声势
 contradiction_spawn,sfx,,,1,1,false,,系统案12｜矛盾弹幕出现
 contradiction_false_hit,sfx,,,1,1,false,,系统案12｜假矛盾错误命中
-contradiction_break,sfx,assets/audio/sfx/comic/break_impact.ogg,-2,1,1,false,,AU-07｜真矛盾正确击破｜Kenney CC0重击叠少量玻璃碎裂；不强制署名。
+contradiction_break,sfx,assets/audio/sfx/comic/punch_hit.ogg,-2,1,1,false,,AU-09｜真矛盾正确击破｜Independent.nu 37 hits/punches第10条裁切干声；CC0。
 contradiction_slash,sfx,assets/audio/sfx/comic/break_sweep.ogg,-6,1,1,false,,AU-07｜矛盾击破横幅实际斜切首帧｜Kenney CC0短扫入音。
-contradiction_banner_impact,sfx,assets/audio/sfx/comic/break_impact.ogg,-3,1,1,false,,AU-07｜横幅文字落定同步重击｜仅表现事件；与真击破判定分开。
+contradiction_banner_impact,sfx,assets/audio/sfx/comic/punch_tail.ogg,-3,1,1,false,,AU-09｜横幅落字第10条重击及延展尾音；退场包络由横幅时钟控制；Independent.nu CC0。
 contradiction_emphasis,sfx,,,1,1,false,,系统案12｜全屏强调冲击
 oracle_candidates,sfx,,,1,1,false,,系统案13｜候选文字浮出
 oracle_select_move,ui,,,1,1,false,,系统案13｜候选切换提示

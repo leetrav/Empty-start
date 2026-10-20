@@ -179,7 +179,7 @@ END-01的静态鸣谢与音乐时序已由下方END-02更新；原圣典/判词�
 
 EndingPage复用已有制作组与特别鸣谢Label/VBox，正常链下作为分组时间线播放；直接打开页面仍是静态鸣谢/圣典。结尾动画0.9秒慢慢淡出→纯黑停留至少0.6秒→制作组标题0.5秒渐显→全名单父VBox一起0.8秒渐显→停留8秒→整组0.6秒渐隐→特别鸣谢全组0.8秒渐显→停留12秒→0.6秒渐隐→原始标题界面整体1秒揭幕。同轮用户取消独立Thank you阶段，运行时不创建该文字节点。片尾背景与各边界遮幕均为纯黑。没有逐行延迟、逐字或新粒子；标题和名单是两个动画对象，组与组完全隐藏后才切换。Esc暂停Tween与阅读时间，正常片尾暂停菜单禁用返回，不增加跳过。
 
-制作分工：策划昂昂；程序昂昂、Akai；场景美术小火车；角色美术番茄牛腩；UI番茄牛腩、小火车；音乐音效Akai。按用户追加意见删除旧连写人名；鸣谢局部使用已有NotoSansSC-VF.ttf的wght500/650，其他界面主题不改。音频作者、十首曲名、出处和CC0音效信息完整保留。
+制作分工：策划昂昂；程序昂昂、Akai；场景美术小火车；角色美术番茄牛腩；UI番茄牛腩、小火车；音乐音效Akai。按用户追加意见删除旧连写人名；鸣谢局部使用已有NotoSansSC-VF.ttf的wght500/650，其他界面主题不改。AU-09用户修订后，特别鸣谢仅保留音乐作者、十首曲名和出处，移除CC0音效作者／链接／授权段；本地音效来源、许可和加工记录仍保留，详见Shared/Audio。
 
 SceneRouter持有epilogue→credits→title资格状态，仅正式goto_ending(session,true)或真实ending_roll_pending存档可建立。静态goto_saved_ending/F6打开页面不建立资格。标题遮幕完全揭开、当前标题已存在后，才调用SettingsManager.mark_ending_replay_unlocked保存应用级story/ending_replay_unlocked，再清除并保存SaveData.ending_roll_pending。该事实跨重启、新周目、音量设置重置保留；旧存档字段缺失默认false，不从最终Boss记录或快照猜测解锁。
 

@@ -102,8 +102,7 @@ func _build_credits() -> void:
 	_credit_label(_special_group,"特别鸣谢",30,Color("#d5bc7e"))
 	_credit_label(_special_group,"音乐　煉獄庭園 ／ 作曲・編曲：煉獄小僧",24)
 	_credit_label(_special_group,"街 ／ Cafe de Fineday ／ Pop Sky ／ Pure Soul ／ 夢灯 -YumeAkari-\n天導 -Tendoh- ／ Teek Teek Teek ／ 美哀 -Blai- ／ 草原ダンスィング♪-RemakeVer- ／ FELT LOVE\nhttps://note.com/rengokuteien",18,Color("#bdc8ce"))
-	_credit_label(_special_group,"音效　Kenney ／ ObsydianX ／ Cassie-OrbitGames ／ JaggedStone",24)
-	_credit_label(_special_group,"Kenney：Interface Sounds · Impact Sounds · Sci-Fi Sounds · RPG Audio（CC0）\nhttps://kenney.nl/assets\nObsydianX：Interface SFX Pack 1（CC0）\nhttps://obsydianx.itch.io/interface-sfx-pack-1\nCassie-OrbitGames：Typewriter sounds（CC0）\nhttps://opengameart.org/content/typewriter-sounds\nJaggedStone：Magic Spell SFX（CC0）\nhttps://opengameart.org/content/magic-spell-sfx",18,Color("#bdc8ce"))
+	# 用户取消片尾CC0音效致谢；原作者、许可与加工记录继续保留在素材README。
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation",24)

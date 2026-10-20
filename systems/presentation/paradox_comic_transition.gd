@@ -49,6 +49,7 @@ var _slash_sound: AudioStreamPlayer
 var _impact_sound: AudioStreamPlayer
 var _slash_played: bool = false
 var _impact_played: bool = false
+var _impact_base_db: float = 0.0
 
 @onready var _title_shadow: Label = $TitleShadow
 @onready var _title: Label = $Title
@@ -78,9 +79,13 @@ func _process(delta: float) -> void:
 		if not _impact_played and _elapsed>=silence_seconds+slash_seconds:
 			_impact_played=true
 			AudioManager.play_event_player(_impact_sound)
+			if is_instance_valid(_impact_sound):
+				_impact_base_db = _impact_sound.volume_db
 	_update_title_pose()
+	_update_impact_tail()
 	queue_redraw()
 	if _mode == PlaybackMode.TRANSITION and _elapsed >= _transition_duration():
+		_stop_visual_sounds()
 		_mode = PlaybackMode.IDLE
 		visible = false
 		transition_finished.emit()
@@ -130,6 +135,15 @@ func reset_for_attempt() -> void:
 	_title.visible = false
 	_title_shadow.visible = false
 	queue_redraw()
+
+# 延展尾声与标题透明度共用时钟，不增加独立Timer或Tween。
+func _update_impact_tail() -> void:
+	if _mode != PlaybackMode.TRANSITION or not _impact_played or not is_instance_valid(_impact_sound):
+		return
+	# 同一视觉时钟控制音量，文字/横幅退场时尾音同步淡出；暂停不会单独消耗尾声。
+	var reveal := _ease_out(clampf((_elapsed-_reveal_start_time())/maxf(reveal_seconds,0.001),0.0,1.0))
+	_impact_sound.volume_db = _impact_base_db + linear_to_db(maxf(1.0-reveal,0.0001))
+
 
 # 重开/中断取消当前分镜尾音，成功判定音仍归BattleAudioPresenter，避免重复播放。
 func _stop_visual_sounds() -> void:

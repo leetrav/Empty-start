@@ -64,8 +64,10 @@ func _run() -> void:
 	_check(static_page.get_credits_stage()==&"static" and SceneRouter.finish_ending_credits(static_page)==ERR_UNCONFIGURED,"static credits cannot unlock")
 	var source_text := ""
 	for label: Node in static_page.get("_special_group").get_children(): source_text += label.text
-	for source in ["煉獄小僧","FELT LOVE","Kenney","ObsydianX","Cassie-OrbitGames","JaggedStone","CC0","https://opengameart.org/content/magic-spell-sfx"]:
+	for source in ["煉獄小僧","FELT LOVE","https://note.com/rengokuteien"]:
 		_check(source in source_text,"source retained: "+source)
+	for removed in ["Kenney","ObsydianX","Cassie-OrbitGames","JaggedStone","Independent.nu","CC0"]:
+		_check(not removed in source_text,"CC0 audio credits removed as requested: "+removed)
 	static_page.find_child("CreditsMainMenu",true,false).pressed.emit()
 	await _settle()
 	_check(not SettingsManager.ending_replay_unlocked and get_tree().current_scene.get_node("%ReplayEndingButton").disabled,"ordinary return stays locked")

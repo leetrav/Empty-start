@@ -245,3 +245,9 @@ AudioManager.get_music_loop_offset()返回当前OGG循环起点（非OGG或不�
 漫画至标题复用全局加载层：末幕0.45秒淡入黑幕，完整遮幕至少0.25秒，标题0.60秒淡入。旧曲《街》先淡出；音乐淡出期间不预先暂停全树，避免音频Tween首帧冻结。随后加载与新场景揭幕沿用原暂停保护。其他游戏场景的过渡时长沿用LOAD-01。
 
 CoverMenuButton悬停事件ui_menu_hover使用Kenney Interface Sounds的drop_003.ogg（CC0），每次进入一次，70ms全菜单限流，禁用项不响。点击仍使用原事件，用户UI总线设置继续生效。
+
+## AU-09 · 指定第10条重击与片尾音效致谢（2026-10-20）
+
+用户指定Independent.nu的37 hits/punches包（OpenGameArt，CC0），当前选hit10.mp3.flac：contradiction_break播放约0.284秒干声punch_hit.ogg，横幅contradiction_banner_impact播放3秒延展punch_tail.ogg。原蓄势／斜切时序保持，标题出现时重击、退场音量按实际标题alpha衰减，完全消失即停止；暂停、复播和中断使用原表现时钟，不循环拳击起音。源音、哈希、处理方式与可复现脚本见assets/audio/sfx/comic/sources/README.md。默认横幅在起音后约2.3秒结束，若未来显著延长原演出时长，应同步延展尾音资源。
+
+按用户后续修订，特别鸣谢只保留现有音乐署名和曲目来源，移除所有CC0音效作者／链接／许可标签；制作组与本地来源许可记录不删。音乐自定义许可署名继续保留。当前优化仍基于原本地分支，未拉取或合并用户刚同步的最新main，待用户验收后再处理。
