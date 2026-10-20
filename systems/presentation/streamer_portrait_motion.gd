@@ -4,11 +4,7 @@ extends Control
 signal shot_motion_started
 signal shot_motion_finished
 
-@export var idle_period: float = 3.4
-@export var idle_phase: float = 0.0
-@export var float_distance: float = 3.0
-@export var breath_amount: float = 0.02
-@export var sway_degrees: float = 0.6
+# PA-23-FIX: 停用循环待机漂浮、呼吸缩放和旋转，保持角色脚底稳定。
 @export var body_pivot: Vector2 = Vector2(0.5, 0.65)
 @export var shot_direction: Vector2 = Vector2.RIGHT
 @export var shot_distance: float = 9.0
@@ -18,9 +14,7 @@ signal shot_motion_finished
 
 var idle_strength: float = 1.0
 var _idle_layer: Control
-var _idle_tween: Tween
 var _shot_tween: Tween
-var _strength_tween: Tween
 
 
 # 在原立绘槽中插入事件层与待机层；外部事件继续作用于原槽或立绘本体。
@@ -44,52 +38,18 @@ func attach_portrait(portrait: TextureRect) -> void:
 	restart_idle()
 
 
-# 每个角色使用不同周期和相位；可继续通过导出参数微调。
-func configure_character(character_id: String) -> void:
-	match character_id:
-		"kiwi":
-			idle_period = 2.9
-			idle_phase = 1.7
-			float_distance = 2.0
-			breath_amount = 0.025
-			sway_degrees = 0.8
-		"fox":
-			idle_period = 4.1
-			idle_phase = 3.2
-			float_distance = 2.5
-			breath_amount = 0.015
-			sway_degrees = 0.5
-		"alien":
-			idle_period = 3.8
-			idle_phase = 2.2
-			float_distance = 4.0
-			breath_amount = 0.02
-			sway_degrees = 0.7
-		_:
-			idle_period = 3.4
-			idle_phase = 0.0
-			float_distance = 3.0
-			breath_amount = 0.02
-			sway_degrees = 0.6
-	if _idle_layer != null:
-		restart_idle()
+# 接口供正式 HUD / Plan B 兼容；人物差异只由阶段贴图和演出维护。
+func configure_character(_character_id: String) -> void:
+	restart_idle()
 
 
-# 原生 Tween 循环推进相位，正弦端点连续，暂停随所属场景处理。
+# 静态待机。层级保留，PA-17 结局演出和射击 Tween 仍使用外层变换。
 func restart_idle() -> void:
-	if _idle_tween != null:
-		_idle_tween.kill()
-	_apply_idle(0.0)
-	_idle_tween = create_tween().set_loops()
-	_idle_tween.tween_method(_apply_idle, 0.0, TAU, maxf(idle_period, 0.1))
-
-
-# 漂浮、呼吸和微摆只写待机层，射击与受击变换可在其他层叠加。
-func _apply_idle(phase: float) -> void:
-	var wave: float = sin(phase + idle_phase) * idle_strength
-	_idle_layer.position = Vector2(0.0, wave * float_distance)
-	_idle_layer.scale = Vector2(1.0 - wave * breath_amount * 0.35, 1.0 + wave * breath_amount)
-	_idle_layer.rotation = deg_to_rad(sway_degrees) * sin(phase + idle_phase + 0.7) * idle_strength
+	if _idle_layer == null:
+		return
+	_idle_layer.position = Vector2.ZERO
+	_idle_layer.scale = Vector2.ONE
+	_idle_layer.rotation = 0.0
 
 
 # 枢轴随槽尺寸更新，运动围绕角色躯干。
@@ -116,7 +76,7 @@ func play_shot() -> void:
 	_shot_tween.tween_callback(shot_motion_finished.emit)
 
 
-# 重开或中断只复位事件层，待机保持连续。
+# 重开或中断复位射击层；待机保持静止。
 func reset_shot() -> void:
 	if _shot_tween != null:
 		_shot_tween.kill()
@@ -125,9 +85,7 @@ func reset_shot() -> void:
 	rotation = 0.0
 
 
-# CRT 或受击演出可暂时降低待机幅度，再调用同入口平顺恢复。
-func set_idle_strength(value: float, seconds: float = 0.15) -> void:
-	if _strength_tween != null:
-		_strength_tween.kill()
-	_strength_tween = create_tween()
-	_strength_tween.tween_property(self, "idle_strength", clampf(value, 0.0, 1.0), maxf(seconds, 0.01))
+# 兼容旧调用，但不再驱动循环呼吸变换。
+func set_idle_strength(value: float, _seconds: float = 0.15) -> void:
+	idle_strength = clampf(value, 0.0, 1.0)
+
