@@ -988,6 +988,19 @@ func _build_view() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
+	# 原图外框高约90px，完整映射到现有72px顶栏，避免棋盘从72px开始裁掉框的下沿。
+	var frame_texture := AtlasTexture.new()
+	frame_texture.atlas = LIVESTREAM_BACKGROUND
+	frame_texture.region = Rect2(432.0, 0.0, 1044.0, 90.0)
+	var frame := TextureRect.new()
+	frame.name = "PkArtworkFrame"
+	frame.texture = frame_texture
+	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame.stretch_mode = TextureRect.STRETCH_SCALE
+	frame.position = Vector2(432.0, 0.0)
+	frame.size = Vector2(1044.0, 72.0)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(frame)
 
 	var columns := HBoxContainer.new()
 	columns.name = "ThreeColumnLayout"
@@ -1073,10 +1086,11 @@ func _build_pk_bar(parent: Container) -> void:
 	var panel := PanelContainer.new()
 	panel.name = "PkTierBar"
 	panel.custom_minimum_size = Vector2(0.0, 72.0)
-	var status_style := _panel_style(Color("#101f29"), Color("#29414c"), 0, 0)
+	# 原直播大图已含圆角PK外框，状态面板只保留布局留白，避免矩形盖住手绘边缘。
+	var status_style := _panel_style(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0)
 	# 字体行高加默认留白为78px；收紧到原设计72px，避免顶栏与棋盘几何重叠。
-	status_style.content_margin_top = 9.0
-	status_style.content_margin_bottom = 9.0
+	status_style.content_margin_top = 17.0
+	status_style.content_margin_bottom = 1.0
 	panel.add_theme_stylebox_override("panel", status_style)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1102,6 +1116,10 @@ func _build_pk_bar(parent: Container) -> void:
 	_tier_value_label = _label("T0", 18, Color("#ffd59b"))
 	_tier_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	heading.add_child(_tier_value_label)
+	for label: Label in [_pk_value_label, _counts_label, _tier_value_label]:
+		label.add_theme_color_override("font_color", Color("#fff5e8"))
+		label.add_theme_color_override("font_outline_color", Color("#33233d"))
+		label.add_theme_constant_override("outline_size", 3)
 
 	_pk_bar = ProgressBar.new()
 	_pk_bar.name = "PkProgress"
@@ -1113,6 +1131,11 @@ func _build_pk_bar(parent: Container) -> void:
 	_pk_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pk_bar.add_theme_stylebox_override("background", _panel_style(Color("#20333d"), Color("#20333d"), 7, 0))
 	_pk_bar.add_theme_stylebox_override("fill", _panel_style(Color("#42bdd8"), Color("#42bdd8"), 7, 0))
+	# 进度条样式不使用面板的12px上下留白，确保填充真正落在手绘框内部。
+	for style_name: String in ["background", "fill"]:
+		var bar_style := _pk_bar.get_theme_stylebox(style_name) as StyleBoxFlat
+		bar_style.content_margin_top = 0.0
+		bar_style.content_margin_bottom = 0.0
 	rows.add_child(_pk_bar)
 	_pk_bar_skin = PK_BAR_SKIN_SCENE.instantiate()
 	_pk_bar_skin.name = "PkBarSkin"
@@ -1132,6 +1155,10 @@ func _build_pk_bar(parent: Container) -> void:
 		style.content_margin_bottom = 4.0
 		style.content_margin_left = 8.0
 		style.content_margin_right = 8.0
+		# 暂停文字仍留在原触控范围；常态透出同一条手绘外框。
+		if style is StyleBoxFlat:
+			style.bg_color = Color(0.08, 0.10, 0.14, 0.18 if state in ["hover", "pressed", "hover_pressed"] else 0.0)
+			style.border_color = Color.TRANSPARENT
 		pause_button.add_theme_stylebox_override(state,style)
 	pause_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	pause_button.pressed.connect(func(): pause_requested.emit())
