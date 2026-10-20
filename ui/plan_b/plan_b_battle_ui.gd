@@ -26,7 +26,14 @@ const COLOR_OPPONENT := Color("#ff9f68")
 const COLOR_NEUTRAL := Color("#92a2ad")
 const COLOR_TEXT := Color("#eef5f6")
 const COLOR_MUTED := Color("#91a4ae")
-const BOARD_FALLBACK_BOUNDS := Rect2(Vector2(448.0, 72.0), Vector2(1024.0, 828.0))
+const LOGICAL_CANVAS_HEIGHT := 1080.0
+const BATTLE_TOP_BAR_HEIGHT := 72.0
+const WORD_CARD_HEIGHT := 160.0
+const WORD_HAND_PANEL_MIN_HEIGHT := 242.0 # 160px卡片加标题、状态行、间距与面板边距后的内容最小高度。
+const BOARD_FALLBACK_BOUNDS := Rect2(
+	Vector2(448.0, BATTLE_TOP_BAR_HEIGHT),
+	Vector2(1024.0, LOGICAL_CANVAS_HEIGHT - BATTLE_TOP_BAR_HEIGHT - WORD_HAND_PANEL_MIN_HEIGHT)
+)
 const MAX_ACTIVE_GROUP_BUBBLES := 1
 const GROUP_BUBBLE_MIN_INTERVAL_MSEC := 1800
 const GROUP_BUBBLE_DURATION_SECONDS := 1.2
@@ -1079,7 +1086,7 @@ func _reveal_livestream_artwork(panel: Control) -> void:
 
 
 func _build_center(parent: Control) -> void:
-	# 中央区固定由 PK 72、棋盘 828、话语栏 180 三段组成。
+	# PK 固定72px；棋盘填满剩余空间，底部话语栏留足三张160px卡片与说明行。
 	var column := VBoxContainer.new()
 	column.name = "BattleColumn"
 	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1189,10 +1196,10 @@ func _on_pause_button_touch(event: InputEvent, button: Button) -> void:
 
 
 func _build_field(parent: Container) -> void:
-	# 棋盘绘制与点击命中共用 B 的全局坐标，不覆盖模拟拥有者状态。
+	# 棋盘占用底栏以上的剩余高度；绘制和点击使用同一块实际布局矩形映射。
 	var field_host := Control.new()
 	field_host.name = "UnitFieldHost"
-	field_host.custom_minimum_size = Vector2(1024.0, 828.0)
+	field_host.custom_minimum_size = Vector2(1024.0, 0.0)
 	field_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	field_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	field_host.clip_contents = true
@@ -1200,7 +1207,7 @@ func _build_field(parent: Container) -> void:
 
 	_field = UnitFieldScript.new()
 	_field.name = "UnitField"
-	_field.custom_minimum_size = Vector2(1024.0, 828.0)
+	_field.custom_minimum_size = Vector2(1024.0, 0.0)
 	_field.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_field.set_density_profile(_density_profile)
 	_field.call("set_unit_sprite_textures", {
@@ -1254,10 +1261,10 @@ func _build_field(parent: Container) -> void:
 
 
 func _build_word_hand(parent: Container) -> void:
-	# 三张固定卡只展示 A/C 的槽位事实；刷新时机和随机补位由 A/C 负责。
+	# 三张固定卡保持160px高；外层预留标题、状态、边距，保持中心棋盘映射一致。
 	var panel := PanelContainer.new()
 	panel.name = "WordHand"
-	panel.custom_minimum_size = Vector2(0.0, 180.0)
+	panel.custom_minimum_size = Vector2(0.0, WORD_HAND_PANEL_MIN_HEIGHT)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color("#101f29"), Color("#29414c"), 0, 0))
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	_word_hand_panel = panel
@@ -1270,37 +1277,38 @@ func _build_word_hand(parent: Container) -> void:
 	var heading := HBoxContainer.new()
 	heading.add_theme_constant_override("separation", 8)
 	content.add_child(heading)
-	var title := _label("选一句 · 按 1–3 选句 · 克制：", 14, Color("#75d9f0"))
+	var title := _label("选一句 · 按 1–3 选句 · 克制：", 16, Color("#75d9f0"))
 	heading.add_child(title)
 	_add_type_legend_icon(heading, TYPE_ICON_STONE)
-	heading.add_child(_label("克", 13, Color("#a9c7d1")))
+	heading.add_child(_label("克", 14, Color("#a9c7d1")))
 	_add_type_legend_icon(heading, TYPE_ICON_SCISSORS)
-	heading.add_child(_label(" · ", 13, Color("#a9c7d1")))
+	heading.add_child(_label(" · ", 14, Color("#a9c7d1")))
 	_add_type_legend_icon(heading, TYPE_ICON_SCISSORS)
-	heading.add_child(_label("克", 13, Color("#a9c7d1")))
+	heading.add_child(_label("克", 14, Color("#a9c7d1")))
 	_add_type_legend_icon(heading, TYPE_ICON_PAPER)
-	heading.add_child(_label(" · ", 13, Color("#a9c7d1")))
+	heading.add_child(_label(" · ", 14, Color("#a9c7d1")))
 	_add_type_legend_icon(heading, TYPE_ICON_PAPER)
-	heading.add_child(_label("克", 13, Color("#a9c7d1")))
+	heading.add_child(_label("克", 14, Color("#a9c7d1")))
 	_add_type_legend_icon(heading, TYPE_ICON_STONE)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(spacer)
-	_hand_count_label = _label("等待 A/C 提供三槽", 14, COLOR_MUTED)
+	_hand_count_label = _label("等待 A/C 提供三槽", 16, COLOR_MUTED)
 	_hand_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	heading.add_child(_hand_count_label)
 
 	var cards := HBoxContainer.new()
 	cards.add_theme_constant_override("separation", 8)
-	cards.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	cards.custom_minimum_size.y = WORD_CARD_HEIGHT
+	cards.size_flags_vertical = Control.SIZE_FILL
 	content.add_child(cards)
 	for index in range(3):
 		var button := Button.new()
 		button.name = "WordCard%d" % (index + 1)
-		button.custom_minimum_size = Vector2(0.0, 98.0)
+		button.custom_minimum_size = Vector2(0.0, WORD_CARD_HEIGHT)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		button.clip_contents = true
+		button.size_flags_vertical = Control.SIZE_FILL
+		button.clip_contents = false
 		button.mouse_filter = Control.MOUSE_FILTER_STOP
 		button.add_theme_stylebox_override("disabled", _panel_style(Color("#101a21"), Color("#23343c"), 10))
 		button.add_theme_color_override("font_disabled_color", Color("#82929a"))
@@ -1320,33 +1328,36 @@ func _build_word_hand(parent: Container) -> void:
 
 		var type_row := HBoxContainer.new()
 		type_row.name = "TypeRow"
-		type_row.custom_minimum_size.y = 24.0
+		type_row.custom_minimum_size.y = 32.0
 		type_row.add_theme_constant_override("separation", 5)
 		type_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card_content.add_child(type_row)
 		var type_icon := TextureRect.new()
 		type_icon.name = "BattleTypeIcon"
-		type_icon.custom_minimum_size = Vector2(24.0, 24.0)
+		type_icon.custom_minimum_size = Vector2(32.0, 32.0)
 		type_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		type_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		type_icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		type_icon.texture = _battle_type_icon(_battle_type_for_slot(index))
 		type_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		type_row.add_child(type_icon)
-		var key_label := _label("%d" % (index + 1), 12, Color("#7dd9ef"))
+		var key_label := _label("%d" % (index + 1), 15, Color("#7dd9ef"))
 		key_label.name = "KeyLabel"
 		key_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		key_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		key_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		type_row.add_child(key_label)
 		_hand_type_icons.append(type_icon)
-		var phrase_label := _label("等待词池", 18, COLOR_TEXT)
+		var phrase_label := _label("等待词池", 20, COLOR_TEXT)
 		phrase_label.name = "PhraseLabel"
-		phrase_label.custom_minimum_size.y = 42.0
+		phrase_label.custom_minimum_size.y = 48.0
+		phrase_label.custom_maximum_size = Vector2(300.0, WORD_CARD_HEIGHT)
 		phrase_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		phrase_label.max_lines_visible = 2
+		phrase_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+		phrase_label.max_lines_visible = -1
+		phrase_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card_content.add_child(phrase_label)
-		var meta_label := _label("", 11, COLOR_MUTED)
+		var meta_label := _label("", 15, COLOR_MUTED)
 		meta_label.name = "MetaLabel"
 		card_content.add_child(meta_label)
 
@@ -1361,9 +1372,8 @@ func _build_word_hand(parent: Container) -> void:
 		_hand_button_tendency_state.append("")
 		_hand_button_tutorial_highlight_state.append(false)
 
-	_hand_status_label = _label(_status_text, 14, COLOR_MUTED)
+	_hand_status_label = _label(_status_text, 16, COLOR_MUTED)
 	_hand_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_hand_status_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	content.add_child(_hand_status_label)
 	_refresh_hand_view()
 	_build_paradox_footer(parent)
@@ -1371,10 +1381,10 @@ func _build_word_hand(parent: Container) -> void:
 
 
 func _build_paradox_footer(parent: Container) -> void:
-	# 矛盾阶段替换底部手牌区但保留 180px 高度，避免棋盘逻辑矩形变化。
+	# 矛盾阶段替换底部手牌区但保留相同底栏高度，避免棋盘逻辑矩形变化。
 	_paradox_footer = PanelContainer.new()
 	_paradox_footer.name = "ParadoxFooter"
-	_paradox_footer.custom_minimum_size = Vector2(0.0, 180.0)
+	_paradox_footer.custom_minimum_size = Vector2(0.0, WORD_HAND_PANEL_MIN_HEIGHT)
 	_paradox_footer.add_theme_stylebox_override("panel", _panel_style(Color("#171523"), Color("#56486d"), 0, 0))
 	_paradox_footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_paradox_footer.visible = false
@@ -1395,7 +1405,7 @@ func _build_oracle_footer(parent: Container) -> void:
 	# 神谕候选层由 A 放进 overlay，底部仍保留固定高度。
 	_oracle_footer = PanelContainer.new()
 	_oracle_footer.name = "FinalOracleFooter"
-	_oracle_footer.custom_minimum_size = Vector2(0.0, 180.0)
+	_oracle_footer.custom_minimum_size = Vector2(0.0, WORD_HAND_PANEL_MIN_HEIGHT)
 	_oracle_footer.add_theme_stylebox_override("panel", _panel_style(Color("#1a1721"), Color("#665979"), 0, 0))
 	_oracle_footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_oracle_footer.visible = false
@@ -1461,10 +1471,17 @@ func _style_button(button: Button, selected: bool, tendency_id: String, tutorial
 		hover_edge = Color("#fff0b7")
 		pressed_edge = Color("#fff6d0")
 		disabled_edge = Color("#c8a950")
+	var hover_style := _panel_style(Color("#203c49").lerp(tendency_color, 0.15), hover_edge, 11)
+	var pressed_style := _panel_style(Color("#244a5a").lerp(tendency_color, 0.22), pressed_edge, 11)
+	var disabled_style := _panel_style(Color("#141e25").lerp(tendency_color, 0.08), disabled_edge, 11)
+	# 三张卡统一加宽左右留白；冷却与教程状态只改颜色，不改变正文可用区域。
+	for card_style: StyleBoxFlat in [normal_style, hover_style, pressed_style, disabled_style]:
+		card_style.content_margin_left = 16.0
+		card_style.content_margin_right = 16.0
 	button.add_theme_stylebox_override("normal", normal_style)
-	button.add_theme_stylebox_override("hover", _panel_style(Color("#203c49").lerp(tendency_color, 0.15), hover_edge, 11))
-	button.add_theme_stylebox_override("pressed", _panel_style(Color("#244a5a").lerp(tendency_color, 0.22), pressed_edge, 11))
-	button.add_theme_stylebox_override("disabled", _panel_style(Color("#141e25").lerp(tendency_color, 0.08), disabled_edge, 11))
+	button.add_theme_stylebox_override("hover", hover_style)
+	button.add_theme_stylebox_override("pressed", pressed_style)
+	button.add_theme_stylebox_override("disabled", disabled_style)
 	button.add_theme_color_override("font_color", COLOR_TEXT)
 	button.add_theme_color_override("font_disabled_color", Color("#829098"))
 	button.add_theme_color_override("font_hover_color", Color("#ffffff"))
@@ -1520,7 +1537,7 @@ func _battle_type_icon(battle_type: String) -> Texture2D:
 
 func _add_type_legend_icon(parent: Container, icon_texture: Texture2D) -> void:
 	var icon := TextureRect.new()
-	icon.custom_minimum_size = Vector2(18.0, 18.0)
+	icon.custom_minimum_size = Vector2(20.0, 20.0)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
