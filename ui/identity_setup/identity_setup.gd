@@ -99,7 +99,7 @@ func _ready() -> void:
 	_confirm_button.pressed.connect(_confirm_opening)
 	_fan_group_name_input.text_submitted.connect(func(_value: String): _confirm_opening())
 	_fan_back = _fan_page.get_node("Center/Panel/Content/Back")
-	_fan_back.text = "返回房间转场"
+	_fan_back.text = "返回房间"
 	_fan_back.show()
 	_fan_back.pressed.connect(_back_to_room_transition)
 	_status_label = _fan_page.get_node("Center/Panel/Content/Status")

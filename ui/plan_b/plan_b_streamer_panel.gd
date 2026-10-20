@@ -279,6 +279,8 @@ func _build_header(parent: VBoxContainer) -> void:
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(header)
 	_name_label = _label("玩家主播" if streamer_side == "player" else "当前主播", 29, Color("#f1f4fa"))
+	# 双方主播名明确使用已有站酷快乐体，不依赖默认主题字体。
+	_name_label.add_theme_font_override("font", preload("res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"))
 	_name_label.position = Vector2(20.0, 57.0)
 	_name_label.size = Vector2(356.0, 40.0)
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

@@ -108,7 +108,7 @@ var _tracker_unit_snapshot_work_total: int = 0
 var _selected_word_id := ""
 var _battle_over := false
 var _pk_value := 50.0
-var _tier_label := "T—"
+var _tier_label := ""
 var _cooldown_remaining := 0.0
 var _status_text := "先选一句，再点击棋盘位置发表。"
 var _status_kind := "info"
@@ -540,9 +540,9 @@ func set_battle_tier(tier: int) -> void:
 	# 档位只接受 A 提供的临时事实；UI 不按 PK 阈值自行计算。
 	var tier_changed := maxi(tier, 0) != _battle_tier
 	_battle_tier = maxi(tier, 0)
-	_tier_label = "T%d" % _battle_tier
+	_tier_label = "" # 阶段编号仅用于内部状态，不向玩家显示。
 	if _tier_value_label != null:
-		_tier_value_label.text = "T6 · 矛盾" if _paradox_stage_active else _tier_label
+		_tier_value_label.text = "矛盾" if _paradox_stage_active else _tier_label
 	if _opponent_panel != null:
 		_opponent_panel.call("set_tier", _battle_tier)
 		if tier_changed:
@@ -696,7 +696,7 @@ func refresh_pk(player_pk: float, current_tier: int) -> void:
 func set_paradox_stage_active(active: bool, current_tier: int) -> void:
 	_paradox_stage_active = active
 	_battle_tier = maxi(current_tier, 0)
-	_tier_label = "T%d" % _battle_tier
+	_tier_label = "" # 阶段编号仅用于内部状态，不向玩家显示。
 	_refresh_special_stage_layout()
 	if active and not _final_oracle_stage_active:
 		_show_field_event("矛盾阶段 · 蓄力射击", 2.5)
@@ -704,7 +704,7 @@ func set_paradox_stage_active(active: bool, current_tier: int) -> void:
 	if _opponent_panel != null:
 		_opponent_panel.call("set_tier", _battle_tier)
 	if _tier_value_label != null:
-		_tier_value_label.text = "T6 · 矛盾" if active else _tier_label
+		_tier_value_label.text = "矛盾" if active else _tier_label
 	if _pk_bar_skin != null:
 		_pk_bar_skin.call("set_display_state", _actual_player_pk, _battle_tier, active)
 	_refresh_view()
@@ -1113,7 +1113,7 @@ func _build_pk_bar(parent: Container) -> void:
 	_counts_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_counts_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	heading.add_child(_counts_label)
-	_tier_value_label = _label("T0", 18, Color("#ffd59b"))
+	_tier_value_label = _label("", 18, Color("#ffd59b"))
 	_tier_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	heading.add_child(_tier_value_label)
 	for label: Label in [_pk_value_label, _counts_label, _tier_value_label]:
@@ -1368,7 +1368,7 @@ func _build_paradox_footer(parent: Container) -> void:
 	copy.alignment = BoxContainer.ALIGNMENT_CENTER
 	copy.add_theme_constant_override("separation", 8)
 	_paradox_footer.add_child(copy)
-	var heading := _label("T6 · 矛盾射击", 24, Color("#eadfff"))
+	var heading := _label("矛盾射击", 24, Color("#eadfff"))
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	copy.add_child(heading)
 	var instruction := _label("按住蓄力。准心接近满格时瞄准，再松开发射。", 16, Color("#c5b7db"))
@@ -1888,7 +1888,7 @@ func _refresh_view() -> void:
 		_pk_value_label.text = pk_text
 	if _pk_bar.value != _pk_value:
 		_pk_bar.value = _pk_value
-	var tier_text := "T6 · 矛盾" if _paradox_stage_active else _tier_label
+	var tier_text := "矛盾" if _paradox_stage_active else _tier_label
 	if _tier_value_label.text != tier_text:
 		_tier_value_label.text = tier_text
 	var player_count := int(_counts.get("player", 0))
@@ -2214,7 +2214,7 @@ func show_counterattack_windup(request: Dictionary) -> void:
 	var skill_name := _counterattack_skill_name(request, skill_id)
 	var qualification_tier: int = int(request.get("qualification_tier", 0))
 	var round_number: int = int(request.get("counterattack_round", 0))
-	var round_label: String = "T%d第%d轮" % [qualification_tier, round_number] if qualification_tier > 0 else "特殊反击"
+	var round_label: String = "第%d轮" % round_number if qualification_tier > 0 else "特殊反击"
 	var windup := float(request.get("pre_windup_seconds", 0.0))
 	if not target_id.is_empty():
 		_field.call("show_unit_feedback", target_id, "counterattack")
@@ -2235,7 +2235,7 @@ func show_counterattack_result(result: Dictionary) -> void:
 	var applied := bool(result.get("applied", false))
 	var qualification_tier: int = int(result.get("qualification_tier", 0))
 	var round_number: int = int(result.get("counterattack_round", 0))
-	var round_label: String = "T%d第%d轮" % [qualification_tier, round_number] if qualification_tier > 0 else "特殊反击"
+	var round_label: String = "第%d轮" % round_number if qualification_tier > 0 else "特殊反击"
 	var affected_count: int = int(result.get("affected_count", result.get("spawned_count", 0)))
 	var affected_ids_value: Variant = result.get("affected_unit_ids", [])
 	var affected_ids: Array = affected_ids_value if affected_ids_value is Array else []

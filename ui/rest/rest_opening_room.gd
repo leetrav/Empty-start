@@ -20,6 +20,10 @@ const LOSER_CARD_CATALOG: LoserCardCatalog = preload("res://data/loser_card/lose
 
 # 入口只负责房间电脑和只读历史页；旧周目、暂停、开播路由保持原状。
 func _ready() -> void:
+	# 电脑菜单复用纸面按钮配色，保留原菜单框和房间背景。
+	var menu_theme := preload("res://ui/theme/base_theme.tres").duplicate() as Theme
+	preload("res://ui/theme/paper_background.gd").apply_button_palette(menu_theme)
+	_menu_layer.theme = menu_theme
 	var pause := PAUSE_MENU.instantiate()
 	add_child(pause)
 	pause.set_restart_available(false)
