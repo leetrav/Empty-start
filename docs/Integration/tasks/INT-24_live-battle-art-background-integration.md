@@ -1,6 +1,6 @@
 # INT-24 · 战斗界面现有美术底图接线
 
-状态：P1，待开发；Owner：领取 `ui/plan_b/plan_b_battle_ui.gd` 的界面整合 Agent。**本卡只做现有资源的接线和遮挡调整。**
+状态：2026-10-20 本地已实现，正式1920×1080 GUI与点击检查通过，待用户视觉确认；未推送。Owner：当前优化会话（`fix/int24-live-background-20261020`）。**本卡只做现有资源的接线和遮挡调整。**
 
 ## 开始前先阅读以下文档
 - `AGENTS.md`、`project.godot`、`known_traps.md`、`docs/Original/任务卡模板.md`。
@@ -41,3 +41,5 @@ Godot 4.7.2、GDScript、Windows PC；1920×1080 逻辑画布。工程操作 God
 - 直播总底图在**正式游戏画面**实际显示，按原图比例呈现，不遮住主播、三卡、棋盘或文字；原有点击行为正常。
 - 矛盾条底图若有对应旧容器即完成替换，若无则明确记录并放行本卡，不虚构新功能。
 - PR 附最少 1 张真实 Godot 截图（标注分辨率、commit SHA），短述素材映射、改动位置与遗留问题；未经人工确认不自动合并。
+
+本地完成日志：`docs/Integration/INT-24_2026-10-20_log.md`；证据：`docs/Integration/previews/INT-24/live-1920.png`。
