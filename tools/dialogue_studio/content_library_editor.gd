@@ -374,10 +374,13 @@ func _update_preview(row: Dictionary, config: Dictionary) -> void:
 	var body := str(row.get(str(config["text_key"]), ""))
 	var rich_text := str(row.get("rich_text", "")).strip_edges()
 	var style_warning := ""
+	_preview_text.bbcode_enabled = false
 	_preview_text.text = body
 	if _table_index == 3 and not rich_text.is_empty():
+		_preview_text.bbcode_enabled = true
 		_preview_text.text = rich_text
 		if _preview_text.get_parsed_text() != body:
+			_preview_text.bbcode_enabled = false
 			_preview_text.text = body
 			style_warning = "富文本与正文不一致，游戏运行时会回退纯文本"
 	var parts: Array[String] = []
