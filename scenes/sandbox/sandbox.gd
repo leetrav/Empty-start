@@ -267,7 +267,7 @@ func _ready() -> void:
 		return
 	if use_plan_b_campaign:
 		if not _battle_attempt_flow.set_external_pk_source(
-				Callable(_plan_b_host, "get_pk_fraction")):
+				Callable(self, "_get_plan_b_pk_fraction_for_flow")):
 			push_error("Sandbox: 无法把 Plan B Host 绑定为唯一普通 PK 源。")
 			return
 		if not _plan_b_host.set_tier_source(
@@ -593,6 +593,7 @@ func _on_attempt_started(current_level: LevelProfile, _hit: HitResolution, stage
 	if _battle_hud.has_method("set_tutorial_highlighted_battle_types"):
 		_battle_hud.call("set_tutorial_highlighted_battle_types", [])
 	_tutorial_runner.begin(tutorial_config_id, SaveManager.data.completed_tutorial_step_ids)
+	_sync_pb25_tutorial_completion_gate()
 	var streamer_id: String = str(presentation.get("streamer_id", current_level.streamer_id))
 	var opponent_name: String = str(presentation.get("streamer_name", current_level.streamer_name))
 	var fan_group_name: String = str(presentation.get("fan_group_name", current_level.fan_group_name))
@@ -697,6 +698,36 @@ func _refresh_plan_b_hand(hand: Array[Dictionary]) -> void:
 	_battle_hud.call("set_word_hand", hand, draw_pool_remaining)
 	if _battle_hud.has_method("set_player_slot_states"):
 		_battle_hud.call("set_player_slot_states", _plan_b_host.get_player_slot_states())
+
+
+## PB-25 前四步暂缓普通胜利阈值，但 HUD 仍读取受限的真实 PK 快照。
+func _get_plan_b_pk_fraction_for_flow() -> float:
+	if _plan_b_host == null:
+		return 0.0
+	var current_pk: float = _plan_b_host.get_pk_fraction()
+	if _pb25_should_hold_normal_completion():
+		return minf(current_pk, 0.999)
+	return current_pk
+
+
+## 只在教学步骤 1-4 限制完成矛盾阶段；达到第五步后恢复 Host 原始 PK。
+func _pb25_should_hold_normal_completion() -> bool:
+	if not _pb25_tutorial_active or _tutorial_runner == null:
+		return false
+	return _tutorial_runner.get_active_step_id() in [
+		PB25_STEP_INTRO, PB25_STEP_FIRST_COUNTERATTACK,
+		PB25_STEP_PAPER_S1, PB25_STEP_CONVERSION,
+	]
+
+
+func _sync_pb25_tutorial_completion_gate(recheck_pk: bool = false) -> void:
+	if _plan_b_host == null:
+		return
+	var blocked: bool = _pb25_should_hold_normal_completion()
+	_plan_b_host.set_tutorial_completion_blocked(blocked)
+	if (recheck_pk and not blocked and _battle_attempt_flow != null
+			and _battle_attempt_flow.is_normal_combat_active()):
+		_battle_attempt_flow.notify_external_pk_changed()
 
 
 func _on_plan_b_pk_changed(_pk_percent: float) -> void:
@@ -981,10 +1012,10 @@ func _on_opponent_result_finished(broken: bool) -> void:
 
 
 # PA-12 结果漫画结束后才允许显示已有 Owner 提交的后续页面。
-func _on_paradox_result_feedback_finished(_success: bool) -> void:
+func _on_paradox_result_feedback_finished(success: bool) -> void:
 	if not _result_feedback_active or _result_feedback_system != _contradiction_oracle_flow.get_contradiction_system():
 		return
-	if (_pb25_tutorial_active and _tutorial_runner != null
+	if (success and _pb25_tutorial_active and _tutorial_runner != null
 			and _tutorial_runner.get_active_step_id() == PB25_STEP_CONTRADICTION):
 		_tutorial_runner.notify_event(PB25_EVENT_CONTRADICTION_BREAK_FINISHED)
 	_result_feedback_active = false
@@ -1649,10 +1680,13 @@ func _on_tutorial_step_completed(step_id: String) -> void:
 	SaveManager.data.completed_tutorial_step_ids.append(step_id)
 	if SaveManager.save_game() != OK:
 		push_error("Sandbox: 教学进度保存失败。")
+	_sync_pb25_tutorial_completion_gate(step_id == PB25_STEP_CONVERSION)
 
 
 ## PB-25 每次正式重开清空临时棋子引用和计时；只保留 SaveData 中的稳定步骤 ID。
 func _reset_pb25_tutorial_attempt_state() -> void:
+	if _plan_b_host != null:
+		_plan_b_host.set_tutorial_completion_blocked(false)
 	if _pb25_tutorial_ai_paused:
 		_set_pb25_tutorial_ai_paused(false)
 	_pb25_tutorial_active = false
@@ -1822,6 +1856,9 @@ func _pb25_request_tutorial_paper_s1() -> bool:
 	if not _plan_b_host.request_tutorial_type_c_s1_draw():
 		return false
 	_pb25_tutorial_paper_draw_requested = true
+	if not _refresh_pb25_invasion_targets():
+		_pb25_tutorial_paper_draw_requested = false
+		return false
 	return true
 
 
@@ -1833,6 +1870,17 @@ func _capture_pb25_initial_stones() -> bool:
 				and str(snapshot.get("battle_type", "")) == "type_a"):
 			_pb25_tutorial_initial_stone_unit_ids[str(snapshot.get("unit_id", ""))] = true
 	return _pb25_tutorial_initial_stone_unit_ids.size() == 2
+
+## 开场发表可能已感染初始费米；S1 阶段刷新仍存活的 type_a 目标列表。
+func _refresh_pb25_invasion_targets() -> bool:
+	_pb25_tutorial_initial_stone_unit_ids.clear()
+	if _plan_b_host == null:
+		return false
+	for snapshot: Dictionary in _plan_b_host.get_unit_snapshots():
+		if (str(snapshot.get("team", "")) == "opponent"
+				and str(snapshot.get("battle_type", "")) == "type_a"):
+			_pb25_tutorial_initial_stone_unit_ids[str(snapshot.get("unit_id", ""))] = true
+	return not _pb25_tutorial_initial_stone_unit_ids.is_empty()
 
 
 ## PB-23 只报告真实成功 S1；PB-25 额外要求玩家此前旧友军实际改口至少一名。
@@ -1857,7 +1905,7 @@ func _on_pb25_player_s1_rewrite_resolved(result: Dictionary) -> void:
 	_try_complete_pb25_paper_stage()
 
 
-## 只接受初始石头在真实转换后变成当前玩家✋话语的单位变化。
+## 只接受当前教学 type_a 目标在真实转换后变成当前玩家✋话语的单位变化。
 func _on_pb25_unit_changed(unit_id: String, reason: StringName) -> void:
 	if (not _pb25_tutorial_active or reason != &"convert"
 			or not _pb25_tutorial_initial_stone_unit_ids.has(unit_id)):
@@ -1883,6 +1931,13 @@ func _try_complete_pb25_paper_stage() -> void:
 
 ## 仅当自然接触未成功时，按 simulation 的正式克制表为一对现存棋子执行一次感染。
 func _apply_pb25_tutorial_conversion_fallback() -> bool:
+	if _plan_b_host == null:
+		return false
+	if not _refresh_pb25_invasion_targets():
+		if not _plan_b_host.ensure_tutorial_type_a_target():
+			return false
+		if not _refresh_pb25_invasion_targets():
+			return false
 	var snapshots: Array[Dictionary] = _plan_b_host.get_unit_snapshots()
 	# 优先让已经真实改口的老友军完成剧情感染，失效时才退到同批其他✋单位。
 	var source_unit_ids: Array[String] = _pb25_tutorial_rewrite_unit_ids.duplicate()
@@ -1972,6 +2027,7 @@ func _on_tutorial_completed(config_id: String) -> void:
 	if config_id != PB25_TUTORIAL_CONFIG_ID or not _pb25_tutorial_active:
 		return
 	_pb25_tutorial_active = false
+	_sync_pb25_tutorial_completion_gate()
 	_pb25_tutorial_force_conversion_remaining = 0.0
 	_pb25_tutorial_counterattack_pending_round = 0
 	_pb25_tutorial_counterattack_remaining = 0.0

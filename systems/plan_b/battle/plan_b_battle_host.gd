@@ -44,6 +44,7 @@ var _tier_source: Callable
 var _battle_state: int = BattleState.IDLE
 var _battle_elapsed: float = 0.0
 var _pk: float = 0.5
+var _tutorial_completion_blocked: bool = false
 var _current_tier: int = 0
 var _next_word_order: int = 1
 var _used_word_ids: Array[String] = []
@@ -53,6 +54,7 @@ var _player_slot_refresh_word_ids: Array[String] = ["", "", ""]
 var _player_slot_definitions: Array[Dictionary] = [{}, {}, {}]
 var _tutorial_type_c_s1_pending: bool = false
 var _tutorial_type_c_s1_draw_used: bool = false
+var _tutorial_type_c_s1_word_id: String = ""
 var _tutorial_initial_opponent_battle_type: StringName = &""
 var _simulation_uses_integer_unit_ids: bool = false
 
@@ -103,6 +105,7 @@ func start_battle(arena_size: Vector2, arena_origin: Vector2 = Vector2.ZERO) -> 
 	_used_word_ids.clear()
 	_tutorial_type_c_s1_pending = false
 	_tutorial_type_c_s1_draw_used = false
+	_tutorial_type_c_s1_word_id = ""
 	_last_published_at = {"player": -1000000.0, "opponent": -1000000.0}
 	for slot_id: int in PLAYER_WORD_SLOT_COUNT:
 		_player_slot_refresh_remaining[slot_id] = 0.0
@@ -235,6 +238,11 @@ func set_counterattack_paused(paused: bool) -> bool:
 	return bool(_opponent_director.call("set_counterattack_paused", paused))
 
 
+## PB-25 在前四个教学步骤中保留普通战斗窗口，避免满 PK 抢先结束教程。
+func set_tutorial_completion_blocked(blocked: bool) -> void:
+	_tutorial_completion_blocked = blocked
+
+
 ## PB-25 使用当前关卡的真实对手单位与正式反击执行器触发指定教学轮次。
 func request_tutorial_counterattack(round_number: int) -> bool:
 	if (_battle_state != BattleState.RUNNING or available_level != "level_001"
@@ -309,7 +317,7 @@ func set_player_pk_for_debug(player_pk: float) -> bool:
 	pk_changed.emit(get_pk())
 	if _pk <= 0.0:
 		end_battle(&"failed")
-	elif _pk >= 1.0:
+	elif _pk >= 1.0 and not _tutorial_completion_blocked:
 		end_battle(&"enter_contradiction")
 	return is_equal_approx(_pk, updated_pk)
 
@@ -472,6 +480,8 @@ func request_tutorial_type_c_s1_draw() -> bool:
 	if available_level != "level_001" or _battle_state != BattleState.RUNNING \
 		or _tutorial_type_c_s1_draw_used:
 		return false
+	if not ensure_tutorial_type_a_target():
+		return false
 	if _tutorial_type_c_s1_pending:
 		return true
 	_tutorial_type_c_s1_pending = true
@@ -481,6 +491,70 @@ func request_tutorial_type_c_s1_draw() -> bool:
 		return true
 	_tutorial_type_c_s1_pending = false
 	return false
+
+
+## S1 教学前确保场上有可被 type_c 克制的 type_a；没有时从中立单位按正式词库补位。
+func ensure_tutorial_type_a_target() -> bool:
+	for snapshot: Dictionary in get_unit_snapshots():
+		if (str(snapshot.get("team", "")) == "opponent"
+			and str(snapshot.get("battle_type", "")) == "type_a"):
+			return true
+	if _simulation == null:
+		return false
+	var neutral_unit_id: Variant = null
+	for snapshot: Dictionary in get_unit_snapshots():
+		if str(snapshot.get("team", "")) == "neutral":
+			neutral_unit_id = snapshot.get("unit_id", null)
+			break
+	if neutral_unit_id == null:
+		return false
+	for word_id: String in get_available_word_ids("opponent"):
+		var definition: Dictionary = get_word_definition(word_id)
+		if str(definition.get("battle_type", "")) != "type_a":
+			continue
+		var seeded: bool = bool(_simulation.call(
+			"seed_unit",
+			int(_normalize_unit_id(neutral_unit_id)),
+			&"opponent",
+			definition,
+			_next_word_order
+		))
+		if seeded:
+			_used_word_ids.append(word_id)
+			_next_word_order += 1
+			return true
+	return false
+
+
+## PB-25 S1 在点击位置没有旧友军时，仍用正式 Simulation 接口改写最近的旧友军。
+func _find_tutorial_s1_rewrite_anchor(
+		preferred_position: Vector2, candidate_order: int, excluded_unit_ids: Array
+) -> Dictionary:
+	var excluded_ids: Dictionary = {}
+	for value: Variant in excluded_unit_ids:
+		var unit_id: int = int(_normalize_unit_id(value))
+		if unit_id >= 0:
+			excluded_ids[unit_id] = true
+	var best_distance_squared: float = INF
+	var best_position: Vector2 = Vector2.ZERO
+	var found_target := false
+	for snapshot: Dictionary in get_unit_snapshots():
+		var unit_id: int = int(_normalize_unit_id(snapshot.get("unit_id", -1)))
+		if (unit_id < 0 or excluded_ids.has(unit_id)
+				or str(snapshot.get("team", "")) != "player"
+				or str(snapshot.get("word_id", "")).is_empty()
+				or int(snapshot.get("word_order", 0)) >= candidate_order):
+			continue
+		var position_value: Variant = snapshot.get("position", null)
+		if not position_value is Vector2:
+			continue
+		var candidate_position: Vector2 = position_value
+		var distance_squared: float = candidate_position.distance_squared_to(preferred_position)
+		if distance_squared < best_distance_squared:
+			best_distance_squared = distance_squared
+			best_position = candidate_position
+			found_target = true
+	return {"found": found_target, "position": best_position}
 
 
 ## 当前✋槽可用时立即换成合法S1；排队请求则在五秒计时结束时由补牌路径消费。
@@ -499,6 +573,7 @@ func _draw_tutorial_type_c_s1_now() -> bool:
 	var definition: Dictionary = _draw_player_word_candidate(occupied_word_ids, slot_id, 1)
 	if definition.is_empty():
 		return false
+	_tutorial_type_c_s1_word_id = str(definition.get("word_id", ""))
 	_player_slot_definitions[slot_id] = definition
 	if _player_slot_refresh_remaining[slot_id] > 0.0:
 		_player_slot_refresh_word_ids[slot_id] = str(definition.get("word_id", ""))
@@ -580,6 +655,12 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2,
 		failure["reason"] = &"invalid_strength"
 		return _report_publish_result(team, word_id, failure)
 	var candidate_order: int = _next_word_order
+	var is_pb25_tutorial_s1: bool = (
+		team == "player" and slot_id == 2
+		and _tutorial_type_c_s1_draw_used and word_id == _tutorial_type_c_s1_word_id
+		and str(definition.get("battle_type", "")) == "type_c"
+		and int(definition.get("strength", 0)) == 1
+	)
 	var batch_result: Dictionary = _simulation.call(
 		"spawn_word_batch", spawn_position, StringName(team), definition, candidate_order, spawn_count
 	)
@@ -606,6 +687,17 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2,
 		)
 		if rewrite_ids_value is Array:
 			rewrite_unit_ids = rewrite_ids_value.duplicate()
+	if is_pb25_tutorial_s1 and rewrite_unit_ids.is_empty():
+		var anchor: Dictionary = _find_tutorial_s1_rewrite_anchor(
+			spawn_position, candidate_order, batch_unit_ids
+		)
+		if bool(anchor.get("found", false)):
+			var fallback_ids_value: Variant = _simulation.call(
+				"rewrite_player_units_nearby_after_s1",
+				anchor.get("position", spawn_position), definition, candidate_order, batch_unit_ids
+			)
+			if fallback_ids_value is Array:
+				rewrite_unit_ids = fallback_ids_value.duplicate()
 	_used_word_ids.append(word_id)
 	if team == "player":
 		_player_slot_refresh_remaining[slot_id] = PLAYER_WORD_SLOT_REFILL_SECONDS
@@ -635,6 +727,8 @@ func _publish_word_batch(team: String, word_id: String, spawn_position: Vector2,
 			"rewrite_count": rewrite_unit_ids.size(),
 			"rewrite_unit_ids": rewrite_unit_ids.duplicate(),
 		})
+	if is_pb25_tutorial_s1:
+		_tutorial_type_c_s1_word_id = ""
 	return _report_publish_result(team, word_id, success)
 
 
@@ -698,7 +792,7 @@ func update_pk(delta: float) -> void:
 		pk_changed.emit(get_pk())
 	if _pk <= 0.0:
 		end_battle(&"failed")
-	elif _pk >= 1.0:
+	elif _pk >= 1.0 and not _tutorial_completion_blocked:
 		end_battle(&"enter_contradiction")
 
 
