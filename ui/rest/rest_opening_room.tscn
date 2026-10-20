@@ -1,10 +1,8 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://ui/rest/rest_opening_room.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/rest/rest_room_environment.tscn" id="2"]
 [ext_resource type="Texture2D" path="res://assets/environment/player_room/laptop_start_stream.png" id="3_laptop"]
-[ext_resource type="PackedScene" path="res://ui/rest/scripture_history_view.tscn" id="4_scripture"]
-[ext_resource type="PackedScene" path="res://ui/rest/loser_card_history_view.tscn" id="5_cards"]
 
 [sub_resource type="Shader" id="LaptopOutlineShader"]
 code = "shader_type canvas_item;\nuniform vec4 glow_color : source_color = vec4(1.0, 0.83, 0.33, 0.93);\nuniform float glow_radius = 10.0;\nvoid fragment() {\n    vec4 original = texture(TEXTURE, UV);\n    vec2 step_size = TEXTURE_PIXEL_SIZE * glow_radius;\n    float nearby = 0.0;\n    nearby = max(nearby, texture(TEXTURE, UV + vec2(step_size.x, 0.0)).a);\n    nearby = max(nearby, texture(TEXTURE, UV - vec2(step_size.x, 0.0)).a);\n    nearby = max(nearby, texture(TEXTURE, UV + vec2(0.0, step_size.y)).a);\n    nearby = max(nearby, texture(TEXTURE, UV - vec2(0.0, step_size.y)).a);\n    nearby = max(nearby, texture(TEXTURE, UV + step_size * 0.7071).a);\n    nearby = max(nearby, texture(TEXTURE, UV - step_size * 0.7071).a);\n    nearby = max(nearby, texture(TEXTURE, UV + step_size * vec2(0.7071, -0.7071)).a);\n    nearby = max(nearby, texture(TEXTURE, UV + step_size * vec2(-0.7071, 0.7071)).a);\n    float rim = max(nearby - original.a, 0.0);\n    COLOR = vec4(mix(glow_color.rgb, original.rgb, original.a), max(original.a, rim * glow_color.a));\n}\n"
@@ -123,23 +121,3 @@ custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 theme_type_variation = &"PrimaryButton"
 text = "继续直播"
-
-[node name="GalleryButton" type="Button" parent="MenuLayer/Center/Panel/Rows"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-theme_type_variation = &"SecondaryButton"
-text = "查看图鉴"
-
-[node name="ScriptureButton" type="Button" parent="MenuLayer/Center/Panel/Rows"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-theme_type_variation = &"SecondaryButton"
-text = "查看圣典"
-
-[node name="ScriptureHistoryView" parent="." instance=ExtResource("4_scripture")]
-unique_name_in_owner = true
-
-[node name="LoserCardHistoryView" parent="." instance=ExtResource("5_cards")]
-unique_name_in_owner = true

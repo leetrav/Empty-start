@@ -15,43 +15,21 @@ var _aim_input_was_enabled: bool = false
 var _aim_suspended: bool = false
 var _room_music: RoomMusicPresenter
 
-# 只保留当前休息上下文引用，历史事实由 15 / 16 各自持有。
-var _history_scripture: ScriptureData
-var _history_level_catalog: LevelCatalog
-var _history_loser_cards: LoserCardData
-var _history_loser_card_catalog: LoserCardCatalog
-
 @onready var _overlay: Control = %Overlay
 @onready var _room_environment: RestRoomEnvironment = %RoomEnvironment
 @onready var _result_title: Label = %ResultTitle
 @onready var _result_description: Label = %ResultDescription
 @onready var _live_result: Label = %LiveResult
-@onready var _new_rewards_empty: Label = %NewRewardsEmpty
-@onready var _history_empty_states: VBoxContainer = %HistoryEmptyStates
-@onready var _scripture_history_empty: Label = %ScriptureHistoryEmpty
-@onready var _loser_card_history_empty: Label = %LoserCardHistoryEmpty
-@onready var _scripture_history_button: Button = %ScriptureHistoryButton
-@onready var _scripture_history_unavailable: Label = %ScriptureHistoryUnavailable
-@onready var _scripture_history: ScriptureHistoryView = %ScriptureHistoryView
-@onready var _loser_card_history_button: Button = %LoserCardHistoryButton
-@onready var _loser_card_history_unavailable: Label = %LoserCardHistoryUnavailable
-@onready var _loser_card_history: LoserCardHistoryView = %LoserCardHistoryView
 @onready var _continue_button: Button = %ContinueButton
 @onready var _stop_streaming_button: Button = %StopStreamingButton
 
 
-# 隐藏结果及历史面板，连接查看、返回与继续请求。
+# 隐藏结果面板并连接 Continue / Stop 请求。
 func _ready() -> void:
 	_room_music = RoomMusicPresenter.new()
 	add_child(_room_music)
 	_overlay.hide()
-	_scripture_history.hide()
-	_loser_card_history.hide()
 	_continue_button.pressed.connect(_on_continue_pressed)
-	_scripture_history_button.pressed.connect(_on_scripture_history_requested)
-	_scripture_history.back_requested.connect(_on_scripture_history_back_requested)
-	_loser_card_history_button.pressed.connect(_on_loser_card_history_requested)
-	_loser_card_history.back_requested.connect(_on_loser_card_history_back_requested)
 	_stop_streaming_button.pressed.connect(_on_stop_streaming_pressed)
 	_set_menu_input_enabled(false)
 
@@ -72,12 +50,10 @@ func show_unbroken_result(session: RestSession) -> bool:
 	return show_result(session)
 
 
-# 每次打开都只刷新已提交结果和历史；显示与隐藏页面不发奖、不触发继续请求。
+# 每次打开只冻结并显示本场结果；显示页面不负责提交奖励或推进关卡。
 func show_result(
 		session: RestSession,
 		run_data: SaveData = null,
-		level_catalog: LevelCatalog = null,
-		loser_card_catalog: LoserCardCatalog = null,
 		wait_for_performance: bool = false
 	) -> bool:
 	if session == null or not session.is_open():
@@ -96,40 +72,11 @@ func show_result(
 	# 首次展示冻结真实数据；重复查看只读同一快照，粉丝提交仍归 PK 胜利入口。
 	session.capture_live_result(run_data)
 	_render_live_result(session.get_live_result_snapshot())
-
-	var rewards: Dictionary = session.read_committed_rewards(run_data, level_catalog, loser_card_catalog)
-	var new_assimilation: Dictionary = rewards["new_assimilation"]
-	_new_rewards_empty.visible = (
-		rewards["new_scripture_entry"] == null
-		and rewards["new_loser_card"] == null
-		and new_assimilation.is_empty()
-	)
-	_history_scripture = run_data.scripture_data if run_data != null else null
-	_history_level_catalog = level_catalog
-	_scripture_history_button.disabled = _history_scripture == null or _history_level_catalog == null
-	_scripture_history_unavailable.visible = _scripture_history_button.disabled
-	_history_loser_cards = run_data.loser_card_data if run_data != null else null
-	_history_loser_card_catalog = loser_card_catalog
-	# 目录缺失仍能查看已获 ID；只有缺少周目获卡数据才禁用入口。
-	_loser_card_history_button.disabled = _history_loser_cards == null
-	_loser_card_history_unavailable.visible = _loser_card_history_button.disabled
-	# 缺少数据表示未知；真实历史集合为空时才显示对应空提示。
-	_scripture_history_empty.visible = (
-		_history_scripture != null and _history_level_catalog != null
-		and _history_scripture.get_ordered_entries().is_empty()
-	)
-	_loser_card_history_empty.visible = (
-		_history_loser_cards != null
-		and _history_loser_cards.get_acquired_cards(loser_card_catalog).is_empty()
-	)
-	_history_empty_states.visible = _scripture_history_empty.visible or _loser_card_history_empty.visible
 	# 环境只消费 17 已提交的主导倾向，不读取精确分数或本场暂存。
 	var tendency_id: String = ""
 	if run_data != null and run_data.tendency_state != null:
 		tendency_id = run_data.tendency_state.get_primary_tendency_id()
 	_room_environment.apply_tendency(tendency_id)
-	_scripture_history.hide()
-	_loser_card_history.hide()
 	_overlay.show()
 	_result_active = true
 	_room_music.start(true)
@@ -157,7 +104,7 @@ func _render_live_result(result: Dictionary) -> void:
 	]
 
 
-# 重开时同步收起结果与历史面板，释放本次上下文引用。
+# 重开时收起结果面板并释放本次上下文。
 func hide_result() -> void:
 	_room_music.stop()
 	_result_active = false
@@ -167,59 +114,11 @@ func hide_result() -> void:
 	_set_menu_input_enabled(false)
 	_overlay.hide()
 	_room_environment.apply_tendency("")
-	_scripture_history.hide()
-	_loser_card_history.hide()
-	_history_scripture = null
-	_history_level_catalog = null
-	_history_loser_cards = null
-	_history_loser_card_catalog = null
 
 
-# 共享暂停菜单由组合根转发，历史页面仍属于同一次休息音乐上下文。
+# 共享暂停菜单由组合根转发，Rest 音乐沿用同一上下文。
 func set_music_paused(paused: bool) -> void:
 	_room_music.set_paused(paused)
-
-
-# 主动查看当前周目正式圣典，子面板复用现成章节适配与显示组件。
-func _on_scripture_history_requested() -> void:
-	if not _menu_input_enabled or _scripture_history_button.disabled:
-		return
-	_loser_card_history.hide()
-	_scripture_history.show_history(_history_scripture, _history_level_catalog)
-	_overlay.hide()
-
-
-# 返回原休息面板并恢复可用按钮焦点，结果与继续信号保持原状态。
-func _on_scripture_history_back_requested() -> void:
-	if not _menu_input_enabled:
-		return
-	_scripture_history.hide()
-	_overlay.show()
-	if _scripture_history_button.disabled:
-		_continue_button.grab_focus()
-	else:
-		_scripture_history_button.grab_focus()
-
-
-# 主动查看已获卡片，允许档案缺失时展示正式读取接口保留的 ID。
-func _on_loser_card_history_requested() -> void:
-	if not _menu_input_enabled or _loser_card_history_button.disabled:
-		return
-	_scripture_history.hide()
-	_loser_card_history.show_history(_history_loser_cards, _history_loser_card_catalog)
-	_overlay.hide()
-
-
-# 返回原结果面板，恢复败者卡入口焦点并保留既有继续行为。
-func _on_loser_card_history_back_requested() -> void:
-	if not _menu_input_enabled:
-		return
-	_loser_card_history.hide()
-	_overlay.show()
-	if _loser_card_history_button.disabled:
-		_continue_button.grab_focus()
-	else:
-		_loser_card_history_button.grab_focus()
 
 
 # 继续流程由外层组合方决定；路由完成前保留结果提示。
@@ -277,8 +176,6 @@ func _set_menu_input_enabled(enabled: bool) -> void:
 	_menu_input_enabled = enabled
 	_continue_button.disabled = not enabled
 	_stop_streaming_button.disabled = not enabled
-	_scripture_history_button.disabled = not enabled or _history_scripture == null or _history_level_catalog == null
-	_loser_card_history_button.disabled = not enabled or _history_loser_cards == null
 	if not enabled:
 		var focus_owner: Control = get_viewport().gui_get_focus_owner()
 		if focus_owner != null:
@@ -300,7 +197,7 @@ func configure_battle_aim(aim: AimReticle) -> void:
 		_suspend_battle_aim()
 
 
-# 进入休息时暂停准心事件，历史页仍可使用原生鼠标拖动滚动。
+# 进入休息时暂停准心事件，避免结果菜单期间继续攻击。
 func _suspend_battle_aim() -> void:
 	if not _aim_suspended and is_instance_valid(_battle_aim):
 		_aim_input_was_enabled = _battle_aim.is_processing_input()
