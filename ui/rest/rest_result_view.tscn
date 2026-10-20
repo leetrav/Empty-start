@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://ui/rest/rest_result_view.gd" id="1_rest_result_view"]
 [ext_resource type="PackedScene" path="res://ui/rest/scripture_history_view.tscn" id="2_scripture_history"]
 [ext_resource type="PackedScene" path="res://ui/rest/loser_card_history_view.tscn" id="3_loser_card_history"]
 [ext_resource type="PackedScene" path="res://ui/rest/rest_room_environment.tscn" id="4_room_environment"]
+
+[ext_resource type="PackedScene" path="res://ui/theme/paper_background.tscn" id="paper_bg"]
 
 [node name="RestResultView" type="CanvasLayer"]
 layer = 30
@@ -45,6 +47,9 @@ grow_vertical = 2
 custom_minimum_size = Vector2(760, 0)
 layout_mode = 2
 theme_type_variation = &"DialogPanel"
+
+[node name="PaperBackground" parent="Overlay/CenterContainer/PanelContainer" instance=ExtResource("paper_bg")]
+layout_mode = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="Overlay/CenterContainer/PanelContainer"]
 layout_mode = 2

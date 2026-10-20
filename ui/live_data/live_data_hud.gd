@@ -182,13 +182,10 @@ func _refresh_stat_icon_side() -> void:
 		var metric: RichTextLabel = _metric_label_for_id(metric_id)
 		if row == null or metric == null:
 			continue
-		row.alignment = BoxContainer.ALIGNMENT_END if side_key == "opponent" else BoxContainer.ALIGNMENT_BEGIN
-		if side_key == "opponent":
-			row.move_child(metric, 0)
-			row.move_child(icon_rect, 1)
-		else:
-			row.move_child(icon_rect, 0)
-			row.move_child(metric, 1)
+		# 两侧按相同坐标顺序展示：图标在前、数值在后，不镜像交换。
+		row.alignment = BoxContainer.ALIGNMENT_BEGIN
+		row.move_child(icon_rect, 0)
+		row.move_child(metric, 1)
 
 
 func _metric_label_for_id(metric_id: String) -> RichTextLabel:
@@ -491,12 +488,12 @@ func _render_metric(metric: RichTextLabel, icon: String, value: int, metric_id: 
 	else:
 		metric.tooltip_text = ""
 	metric.horizontal_alignment = (
-		HORIZONTAL_ALIGNMENT_RIGHT if display_side == DisplaySide.OPPONENT_RIGHT
+		HORIZONTAL_ALIGNMENT_RIGHT if display_side == DisplaySide.OPPONENT_RIGHT and not horizontal_metrics
 		else HORIZONTAL_ALIGNMENT_LEFT
 	)
 	if has_stat_texture:
 		metric.text = number_text
-	elif display_side == DisplaySide.OPPONENT_RIGHT:
+	elif display_side == DisplaySide.OPPONENT_RIGHT and not horizontal_metrics:
 		metric.text = number_text + icon
 	else:
 		metric.text = icon + number_text

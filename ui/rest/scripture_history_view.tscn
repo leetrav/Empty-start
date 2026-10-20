@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://ui/rest/scripture_history_view.gd" id="1_history"]
+
+[ext_resource type="PackedScene" path="res://ui/theme/paper_background.tscn" id="paper_bg"]
 
 [node name="ScriptureHistoryView" type="Control"]
 visible = false
@@ -38,6 +40,9 @@ theme_override_constants/margin_bottom = 24
 [node name="Panel" type="PanelContainer" parent="Margin"]
 layout_mode = 2
 theme_type_variation = &"DialogPanel"
+
+[node name="PaperBackground" parent="Margin/Panel" instance=ExtResource("paper_bg")]
+layout_mode = 0
 
 [node name="Content" type="VBoxContainer" parent="Margin/Panel"]
 layout_mode = 2

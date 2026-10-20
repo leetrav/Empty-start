@@ -132,10 +132,7 @@ func _build_message_page(node_name: String, title_text: String, status_text: Str
 	page.name = node_name
 	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(page)
-	var background := ColorRect.new()
-	background.color = Color("191611")
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var background := preload("res://ui/theme/paper_background.tscn").instantiate()
 	page.add_child(background)
 	var center := CenterContainer.new()
 	center.name = "Center"
@@ -144,10 +141,8 @@ func _build_message_page(node_name: String, title_text: String, status_text: Str
 	var panel := PanelContainer.new()
 	panel.name = "Panel"
 	panel.custom_minimum_size = Vector2(700, 0)
-	var paper := StyleBoxFlat.new()
-	paper.bg_color = Color("453b2c")
-	paper.border_color = Color("bba477")
-	paper.set_border_width_all(2)
+	# 全页已有空白卡纸面，内容区只保留留白，不再盖深色占位框。
+	var paper := StyleBoxEmpty.new()
 	paper.content_margin_left = 32
 	paper.content_margin_right = 32
 	paper.content_margin_top = 28
@@ -190,10 +185,7 @@ func _build_name_page(node_name: String, title_text: String) -> Control:
 	page.name = node_name
 	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(page)
-	var background := ColorRect.new()
-	background.color = Color("191611")
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var background := preload("res://ui/theme/paper_background.tscn").instantiate()
 	page.add_child(background)
 	var center := CenterContainer.new()
 	center.name = "Center"
@@ -202,10 +194,8 @@ func _build_name_page(node_name: String, title_text: String) -> Control:
 	var panel := PanelContainer.new()
 	panel.name = "Panel"
 	panel.custom_minimum_size = Vector2(560, 0)
-	var paper := StyleBoxFlat.new()
-	paper.bg_color = Color("453b2c")
-	paper.border_color = Color("bba477")
-	paper.set_border_width_all(2)
+	# 全页已有空白卡纸面，内容区只保留留白，不再盖深色占位框。
+	var paper := StyleBoxEmpty.new()
 	paper.content_margin_left = 32
 	paper.content_margin_right = 32
 	paper.content_margin_top = 28

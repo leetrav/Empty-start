@@ -7,6 +7,7 @@ signal credits_stage_changed(stage: StringName)
 # 所有时长使用游戏时间，暂停后保留阅读进度；每阶段内容完全退场才进入下一段。
 const PRODUCTION_HOLD: float = 8.0
 const SPECIAL_THANKS_HOLD: float = 12.0
+const POST_THANKS_BLACK_HOLD: float = 4.0
 
 var _display_data: Dictionary = {}
 var _ending_music: EndingMusicPresenter
@@ -101,7 +102,6 @@ func _build_credits() -> void:
 	column.add_theme_constant_override("separation", 20)
 	margin.add_child(column)
 	_credit_label(column,"鸣谢",48)
-	_credit_label(column,"感谢游玩",24,Color("#b7c4c9"))
 	# 静态成果页与通关演出共用同一组实际控件，标题、完整名单分别作为动画对象。
 	_production_group = _credit_column(column,"ProductionGroup")
 	_production_title = _credit_label(_production_group,"制作组",24,Color("#d5bc7e"))
@@ -217,6 +217,9 @@ func _play_credits() -> void:
 	_credits_tween.tween_callback(_set_credits_stage.bind(&"special_hold"))
 	_credits_tween.tween_interval(SPECIAL_THANKS_HOLD)
 	_credits_tween.tween_property(_special_group,"modulate:a",0.0,0.6)
+	# 鸣谢完全淡出后保持纯黑4秒，再允许进入标题渐显和解锁提交。
+	_credits_tween.tween_callback(_set_credits_stage.bind(&"black_hold"))
+	_credits_tween.tween_interval(POST_THANKS_BLACK_HOLD)
 	_credits_tween.tween_callback(_finish_credits)
 
 # 旧组完全透明并隐藏后再显示下一组，不会同时占用布局或叠加文字。
