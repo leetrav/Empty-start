@@ -7,7 +7,7 @@ func _ready() -> void:
 	process_mode=Node.PROCESS_MODE_ALWAYS
 	get_tree().current_scene=null
 	get_window().size=Vector2i(1280,720)
-	AudioManager.event_played.connect(func(id: StringName, _player: AudioStreamPlayer): events.append(id))
+	AudioManager.event_played.connect(_on_event)
 	capture.buffer_length=8.0
 	AudioServer.add_bus_effect(AudioServer.get_bus_index(&"UI"),capture)
 	get_tree().create_timer(35.0).timeout.connect(func(): get_tree().quit(2))
@@ -53,10 +53,16 @@ func _run() -> void:
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("D:/src/playtest-20261020/au08-cards-initial.png")
 	var cards: Array=selection.get("_buttons")
+	for card: Button in cards:
+		_check(not card.has_focus() and not card.button_pressed,"initial card has no focus highlight or selection")
 	await _click(cards[0])
 	_check(selection.get("_revealed_ids").size()==1 and selection.get_selected_option()==null,"first explicit click reveals only one card without selecting")
 	await _click(cards[0])
 	_check(selection.get_selected_option()==IdentityOptions.CARDS[0],"second explicit click selects revealed card")
+	events.clear()
+	await _click(selection.get_node("%NextButton"))
+	_check(events.count(&"ui_identity_confirm")==1 and events.count(&"ui_click")==0,"identity confirmation uses one bubble without click overlap")
+	page.call("_back_to_identity")
 	# 返回后使用真正鼠标点击，确认没有重复监听或页面重建。
 	page.call("_back_to_player_presentation")
 	await _wait()
@@ -81,6 +87,11 @@ func _run() -> void:
 	await _click(panel.get_node("Center/Panel/Content/Action"))
 	selection=page.get_node("IdentitySelection")
 	_check(selection.get("_revealed_ids").is_empty() and selection.get_selected_option()==null,"mouse entry also keeps all cards face down")
+	for card: Button in selection.get("_buttons"):
+		_check(not card.has_focus() and not card.button_pressed,"mouse entry has no default yellow card")
+	await _key(KEY_TAB)
+	var focused := get_viewport().gui_get_focus_owner()
+	_check(focused in selection.get("_buttons"),"keyboard can start card navigation without default focus")
 	await _wait()
 	var peak := 0.0
 	for sample: Vector2 in capture.get_buffer(capture.get_frames_available()):
@@ -88,6 +99,11 @@ func _run() -> void:
 	_check(peak>0.01,"UI bus has actual audio output")
 	print("AU08_DONE failures=",failures," ui_peak_db=",linear_to_db(peak))
 	get_tree().quit(failures)
+
+func _on_event(id: StringName, player: AudioStreamPlayer) -> void:
+	events.append(id)
+	if id in [&"ui_name_confirm",&"ui_identity_confirm"]:
+		_check(player.stream.resource_path.ends_with("drop_001.ogg") and player.volume_db==-8.0,"real confirmation player uses short CC0 bubble at -8dB")
 
 func _point(button: Button) -> Vector2:
 	return button.get_global_rect().get_center()*Vector2(get_window().size)/get_viewport().get_visible_rect().size

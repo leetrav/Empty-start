@@ -1,7 +1,7 @@
 ﻿event_id,audio_type,asset_path_or_id,volume_db,pitch_min,pitch_max,loop,transition_group,notes
-ui_name_confirm,ui,assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_003.ogg,0,1,1,false,,系统案1 身份系统｜输入确认｜资产审计2026-10-15：第二轮试听 ui_confirm 选中：身份/名字确认共用；volume_db=0dB暂按Unity初值，正式试听混音可调。
+ui_name_confirm,ui,assets/audio/sfx/kenney_interface-sounds/Audio/drop_001.ogg,-8,1,1,false,,AU-08用户听感修订｜名字与身份确认共用Kenney CC0轻短气泡；替代不协调的提示旋律。
 ui_identity_switch,ui,assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg,0,1,1,false,,系统案1｜身份切换｜资产审计2026-10-15：第二轮试听 ui_click 选中：身份切换共用；volume_db=0dB暂按Unity初值，正式试听混音可调。
-ui_identity_confirm,ui,assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_003.ogg,0,1,1,false,,系统案1｜身份确认｜资产审计2026-10-15：第二轮试听 ui_confirm 选中：身份/名字确认共用；volume_db=0dB暂按Unity初值，正式试听混音可调。
+ui_identity_confirm,ui,assets/audio/sfx/kenney_interface-sounds/Audio/drop_001.ogg,-8,1,1,false,,AU-08用户听感修订｜名字与身份确认共用Kenney CC0轻短气泡；替代不协调的提示旋律。
 live_start_transition,sfx,,,1,1,false,,系统案1｜开播转场
 streamer_intro,sfx,,,1,1,false,,系统案2｜主播主题提示
 mechanic_reveal,sfx,,,1,1,false,,系统案2｜首次出现专属玩法辨识音

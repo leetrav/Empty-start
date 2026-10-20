@@ -98,6 +98,8 @@ AU-08：身份流程页面构建完成后，对按钮调用 `AudioManager.bind_u
 
 页面自动安置焦点使用 `focus_ui_silently(control)`，避免把初始化或回退当作玩家选择；不占用该按钮后续鼠标进入的声音。身份步骤切换消费旧步骤输入，防止确认操作继续传递到新页卡片。
 
+AU-08最终听感修订：`ui_name_confirm`、`ui_identity_confirm`均使用Kenney Interface Sounds的`drop_001.ogg`、-8dB，区别于悬停`drop_003.ogg`、-12dB。正式17表与默认Resource一致。首次身份页无选择时释放焦点、显示现有未选择详情占位，不自动高亮第一张；恢复已有选择仍使用静音落焦，Tab导航正常。
+
 `AudioManager._ready()` 已注册 17 表可加载的 23 个事件，先于 Boot、菜单和身份场景；Sandbox 再次注册同 ID 为覆盖行为。`bind_ui_button(button, event_id=&"ui_click") -> bool` 供 UI 拥有者绑定点击/确认/切换。`event_played(event_id, player)` 仅在池播放器实际执行 `play()` 后发出，可核对音量、音高和资源。
 
 HUD 原有 `bind_portrait_attack()` 同时绑定 `BattleAudioPresenter`：读取真实按住/满蓄上升沿、正式发射、最终整发结算与 `BarrageArea.barrage_generated`，播放 charge/ready/fire、normal/trap、spawn/repeat 音效；生成音有可调的 0.15 秒短限流。复读零收益不会冒充普通命中。

@@ -47,7 +47,7 @@ func _ready() -> void:
 	_next.pressed.connect(_request_next)
 	_wire_focus()
 	_refresh_selection()
-	_set_detail_option(_selected_option if _selected_option != null else IdentityOptions.CARDS[0])
+	_set_detail_option(_selected_option)
 	resized.connect(_fit_layout)
 	_card_area.resized.connect(_fit_grid_columns)
 	_scroll.resized.connect(_fit_grid_columns)
@@ -333,7 +333,7 @@ func restore_selection(identity_id: StringName, locked: bool = false) -> void:
 		for index in range(_buttons.size()):
 			var option := IdentityOptions.CARDS[index]
 			_present_card_face(_buttons[index], _revealed_ids.has(option.identity_id))
-		_detail_option = _selected_option if _selected_option != null else IdentityOptions.CARDS[0]
+		_detail_option = _selected_option
 		_refresh_selection()
 
 
@@ -342,14 +342,17 @@ func get_selected_option() -> IdentityOption:
 	return _selected_option
 
 
-# 身份步骤重新显示时恢复焦点；锁定周目把焦点交给可用确认操作。
+# 只恢复玩家已有的选择；首次进入不替玩家聚焦第一张，避免默认黄框。
 func focus_selection() -> void:
 	if _locked:
 		if not _next.disabled:
 			AudioManager.focus_ui_silently(_next)
 		return
 	var index := IdentityOptions.CARDS.find(_selected_option)
-	AudioManager.focus_ui_silently(_buttons[maxi(index, 0)])
+	if index >= 0:
+		AudioManager.focus_ui_silently(_buttons[index])
+	else:
+		get_viewport().gui_release_focus()
 
 
 # 刷新卡片选中态、翻牌按钮状态与详情区，数据仍来自正式身份 Resource。
@@ -362,7 +365,7 @@ func _refresh_selection() -> void:
 	_reveal_all.text = "已全部翻开" if all_revealed else "一键翻开"
 	_next.disabled = _selected_option == null
 	if _detail_option == null:
-		_detail_option = _selected_option if _selected_option != null else IdentityOptions.CARDS[0]
+		_detail_option = _selected_option
 	_refresh_detail_panel()
 
 

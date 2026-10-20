@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="AudioEventConfig" load_steps=79 format=3]
+[gd_resource type="Resource" script_class="AudioEventConfig" load_steps=82 format=3]
 
 [ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/preboss/pop_sky.ogg" id="pop_sky"]
 [ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/music/title/cafe_de_fineday.ogg" id="title_cafe"]
 [ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/kenney_interface-sounds/Audio/drop_003.ogg" id="menu_hover"]
+[ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/kenney_interface-sounds/Audio/drop_001.ogg" id="identity_confirm_bubble"]
 [ext_resource type="Script" path="res://core/audio/audio_event_config.gd" id="1_config"]
 [ext_resource type="Script" path="res://core/audio/audio_event.gd" id="2_event"]
 [ext_resource type="AudioStreamOggVorbis" path="res://assets/audio/sfx/magical/magical_1.ogg" id="3_magical_1"]
@@ -340,6 +341,20 @@ volume_db = -12.0
 pitch_min = 0.96
 pitch_max = 1.04
 
+[sub_resource type="Resource" id="event_ui_name_confirm"]
+script = ExtResource("2_event")
+event_id = &"ui_name_confirm"
+audio_type = 2
+stream = ExtResource("identity_confirm_bubble")
+volume_db = -8.0
+
+[sub_resource type="Resource" id="event_ui_identity_confirm"]
+script = ExtResource("2_event")
+event_id = &"ui_identity_confirm"
+audio_type = 2
+stream = ExtResource("identity_confirm_bubble")
+volume_db = -8.0
+
 [resource]
 script = ExtResource("1_config")
 music_fade_in_seconds = 0.5
@@ -349,4 +364,4 @@ music_duck_seconds = 0.2
 music_restore_seconds = 0.3
 music_silence_seconds = 0.25
 music_duck_volume = 0.25
-events = Array[ExtResource("2_event")]([SubResource("event_music_title_cafe"), SubResource("event_ui_menu_hover"), SubResource("event_music_preboss_pop_sky"), SubResource("event_music_rest_after_pk"), SubResource("event_music_ending_tendoh"), SubResource("event_music_rest_room"), SubResource("event_music_comic_street"), SubResource("event_music_kiwi_intro"), SubResource("event_music_kiwi_low"), SubResource("event_music_kiwi_mid"), SubResource("event_music_kiwi_high"), SubResource("event_music_frog_intro"), SubResource("event_music_frog_low"), SubResource("event_music_frog_mid"), SubResource("event_music_frog_high"), SubResource("event_music_fox_intro"), SubResource("event_music_fox_low"), SubResource("event_music_fox_mid"), SubResource("event_music_fox_high"), SubResource("event_music_fox_entrance"), SubResource("event_music_alien_intro"), SubResource("event_music_alien_low"), SubResource("event_music_alien_mid"), SubResource("event_music_alien_high"), SubResource("event_comic_write"), SubResource("event_comic_page"), SubResource("event_attack_charge"), SubResource("event_attack_ready"), SubResource("event_attack_fire"), SubResource("event_hit_normal"), SubResource("event_hit_trap"), SubResource("event_tier_up"), SubResource("event_contradiction_start"), SubResource("event_contradiction_slash"), SubResource("event_contradiction_banner_impact"), SubResource("event_contradiction_break"), SubResource("event_oracle_confirm"), SubResource("event_divine_descent_start"), SubResource("event_divine_descent_lock")])
+events = Array[ExtResource("2_event")]([SubResource("event_ui_name_confirm"), SubResource("event_ui_identity_confirm"), SubResource("event_music_title_cafe"), SubResource("event_ui_menu_hover"), SubResource("event_music_preboss_pop_sky"), SubResource("event_music_rest_after_pk"), SubResource("event_music_ending_tendoh"), SubResource("event_music_rest_room"), SubResource("event_music_comic_street"), SubResource("event_music_kiwi_intro"), SubResource("event_music_kiwi_low"), SubResource("event_music_kiwi_mid"), SubResource("event_music_kiwi_high"), SubResource("event_music_frog_intro"), SubResource("event_music_frog_low"), SubResource("event_music_frog_mid"), SubResource("event_music_frog_high"), SubResource("event_music_fox_intro"), SubResource("event_music_fox_low"), SubResource("event_music_fox_mid"), SubResource("event_music_fox_high"), SubResource("event_music_fox_entrance"), SubResource("event_music_alien_intro"), SubResource("event_music_alien_low"), SubResource("event_music_alien_mid"), SubResource("event_music_alien_high"), SubResource("event_comic_write"), SubResource("event_comic_page"), SubResource("event_attack_charge"), SubResource("event_attack_ready"), SubResource("event_attack_fire"), SubResource("event_hit_normal"), SubResource("event_hit_trap"), SubResource("event_tier_up"), SubResource("event_contradiction_start"), SubResource("event_contradiction_slash"), SubResource("event_contradiction_banner_impact"), SubResource("event_contradiction_break"), SubResource("event_oracle_confirm"), SubResource("event_divine_descent_start"), SubResource("event_divine_descent_lock")])
