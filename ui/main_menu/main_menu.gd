@@ -23,7 +23,6 @@ func _ready() -> void:
 	_settings_button.pressed.connect(_on_settings_button_pressed)
 	%QuitButton.pressed.connect(_on_quit_button_pressed)
 	%ReplayToggleButton.pressed.connect(_toggle_replays)
-	%ReplayFullOpeningButton.pressed.connect(_replay_comic.bind(&"intro"))
 	%ReplayOpeningButton.pressed.connect(_replay_comic.bind(&"opening"))
 	%ReplayEndingButton.pressed.connect(_replay_comic.bind(&"ending"))
 	%ReplayBackButton.pressed.connect(_close_replays)
@@ -95,7 +94,7 @@ func _on_settings_panel_closed() -> void:
 func _toggle_replays() -> void:
 	_menu_actions.hide()
 	_replays.show()
-	%ReplayFullOpeningButton.grab_focus()
+	%ReplayOpeningButton.grab_focus()
 
 func _close_replays() -> void:
 	_replays.hide()
@@ -119,10 +118,11 @@ func _on_title_revealed(_path: String) -> void:
 	_refresh_ending_replay()
 	_start_title_music()
 
-# 原按钮沿用禁用样式；只有应用级完成事实可以放行回看。
+# 未解锁时直接隐藏结局入口，不显示灰色按钮或占位；标题显现后同步完成事实。
 func _refresh_ending_replay() -> void:
+	%ReplayEndingButton.visible = SettingsManager.ending_replay_unlocked
 	%ReplayEndingButton.disabled = not SettingsManager.ending_replay_unlocked
-	%ReplayEndingButton.tooltip_text = "" if SettingsManager.ending_replay_unlocked else "完整观看通关片尾后解锁"
+	%ReplayEndingButton.tooltip_text = ""
 	%ReplayEndingButton.refresh_state()
 
 # 目标加载失败回到当前菜单时恢复标题曲。

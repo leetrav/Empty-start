@@ -58,3 +58,7 @@ PlanBBattleHost.get_pk/pk_changed固定0～100百分点，get_pk_fraction固定0
 ### END-02 片尾完成资格与回放
 
 正常终局goto_ending(session,true)建立epilogue→credits→title资格，finish_ending_epilogue与finish_ending_credits(page)各校验当前页面/阶段；只有标题完整1秒揭幕后才提交应用级ending_replay_unlocked。goto_saved_ending及单独打开EndingPage不解锁。SaveData.ending_roll_pending保存正常片尾未结束事实；resume_ending_roll供载入中断周目，重播原结尾后走同一完整链。正常片尾保持Esc暂停/设置，返回菜单按钮禁用；标题渐显结束后恢复交互。标题PackedScene资源留存复用，始终只实例化一个菜单。见20.Ending的END-02。
+
+### STORY-01 剧情回放菜单
+
+标题原左下角“开场回看”更名“剧情回放”，初始即可打开独立ReplayActions子菜单。初始只显示开场回放与返回菜单；返回坐标/尺寸/字号与原左下角入口相同。仅SettingsManager.ending_replay_unlocked为真时显示结局回放，无禁用占位。移除重复完整开场按钮，开场复用opening的原P1–P4共13格，结局复用ending的原P5/P6共6格。未解锁直接调用路由仍拒绝，剧情回放自身不改变通关标记。见Integration/STORY-01日志。
