@@ -11,6 +11,7 @@ const SFX_PLAYER_COUNT: int = 8
 const UI_PLAYER_COUNT: int = 4
 const UI_BUTTON_AUDIO_META := &"audio_manager_ui_event"
 const UI_SLIDER_AUDIO_META := &"audio_manager_ui_slider_event"
+const UI_SELECTION_AUDIO_META := &"audio_manager_ui_selection"
 const DIALOGUE_VOICE_SYNTHESIZER: Script = preload("res://core/audio/dialogue_voice_synthesizer.gd")
 const VOICE_PRIORITY_EVENTS: Array[StringName] = [
 	&"ui_error", &"ui_name_confirm", &"ui_identity_confirm", &"oracle_confirm",
@@ -57,6 +58,8 @@ var _dialogue_voice_music_ducked: bool = false
 var _voice_priority_queue: Array[StringName] = []
 var _last_ui_event_frame: int = -1
 var _last_ui_event_stream_path: String = ""
+var _last_selection_msec: int = -1000
+var _silent_ui_focus: bool = false
 var _play_sequence: int = 0
 var _loop_events: Dictionary = {}
 
@@ -212,11 +215,22 @@ func set_music_paused(paused: bool) -> void:
 		if is_instance_valid(player):
 			player.stream_paused = paused
 	for tween: Tween in [_music_tween, _duck_tween]:
-		if tween != null and tween.is_valid():
+		# 完成回调所在帧Tween仍可能valid，但已不能play；只恢复仍有循环的暂停Tween。
+		if tween != null and tween.is_valid() and tween.get_loops_left() != 0:
 			if paused:
 				tween.pause()
-			else:
+			elif not tween.is_running():
 				tween.play()
+
+# 仅场景交接的短遮幕期间保持两路音乐及已有增益Tween运行；Esc仍显式暂停。
+# 结束交接恢复原继承模式，不把音效池或战斗系统改成常驻运行。
+func set_music_handoff_processing(enabled: bool) -> void:
+	for player: AudioStreamPlayer in [_music_player, _outgoing_music_player]:
+		if is_instance_valid(player):
+			player.process_mode = Node.PROCESS_MODE_ALWAYS if enabled else Node.PROCESS_MODE_INHERIT
+	for tween: Tween in [_music_tween, _duck_tween]:
+		if tween != null and tween.is_valid():
+			tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS if enabled else Tween.TWEEN_PAUSE_BOUND)
 
 
 # 使用配置时长淡出并停止，适用于离开当前音乐阶段。
@@ -347,7 +361,7 @@ func play_event(event_id: StringName) -> void:
 			if _voice_priority_queue.size() < 8:
 				_voice_priority_queue.append(event_id)
 			return
-	if event.audio_type == AudioEvent.AudioType.UI:
+	if event.audio_type == AudioEvent.AudioType.UI and event_id != &"ui_menu_hover":
 		# 供延迟通用按钮绑定识别同帧已播放的专用反馈；独立业务事件仍各自播放。
 		_last_ui_event_frame = Engine.get_process_frames()
 		_last_ui_event_stream_path = event.stream.resource_path
@@ -397,6 +411,51 @@ func bind_ui_button(button: BaseButton, event_id: StringName = &"ui_click") -> b
 	return true
 
 
+# 自动安置焦点保持静音，真实鼠标进入和键盘导航继续播放反馈。
+func focus_ui_silently(control: Control) -> void:
+	# 页面初始/回退自动安置焦点不是玩家选定，仍保留后续鼠标进入反馈。
+	var previous := _silent_ui_focus
+	_silent_ui_focus = true
+	control.grab_focus()
+	_silent_ui_focus = previous
+
+
+# 页面按需接入选定声；鼠标与焦点合并成同一个激活状态，不重复连接。
+func bind_ui_selection(button: BaseButton) -> void:
+	if button == null or button.has_meta(UI_SELECTION_AUDIO_META):
+		return
+	button.set_meta(UI_SELECTION_AUDIO_META, {"mouse": false, "focus": false})
+	button.mouse_entered.connect(_on_ui_selection_changed.bind(button, "mouse", true))
+	button.mouse_exited.connect(_on_ui_selection_changed.bind(button, "mouse", false))
+	button.focus_entered.connect(_on_ui_selection_changed.bind(button, "focus", true))
+	button.focus_exited.connect(_on_ui_selection_changed.bind(button, "focus", false))
+	button.visibility_changed.connect(_on_ui_selection_visibility.bind(button))
+
+
+# 隐藏步骤清掉鼠标状态，避免再次显示后第一次进入没有声音。
+func _on_ui_selection_visibility(button: BaseButton) -> void:
+	if not button.is_visible_in_tree():
+		button.set_meta(UI_SELECTION_AUDIO_META, {"mouse": false, "focus": false})
+
+
+func _on_ui_selection_changed(button: BaseButton, source: String, active: bool) -> void:
+	var state: Dictionary = button.get_meta(UI_SELECTION_AUDIO_META)
+	var was_active: bool = state.mouse or state.focus
+	if source == "focus" and active and _silent_ui_focus:
+		state.focus = false
+		button.set_meta(UI_SELECTION_AUDIO_META, state)
+		return
+	state[source] = active
+	button.set_meta(UI_SELECTION_AUDIO_META, state)
+	if was_active or not active or button.disabled or not button.is_visible_in_tree() or not button.can_process() or SceneRouter.is_transitioning():
+		return
+	var now: int = Time.get_ticks_msec()
+	if now - _last_selection_msec < 70:
+		return
+	_last_selection_msec = now
+	play_event(&"ui_menu_hover")
+
+
 ## 递归绑定当前界面和后续动态添加的 BaseButton，不碰装饰性Control。
 func _bind_ui_buttons_in_subtree(root: Node) -> void:
 	if root is BaseButton:
@@ -439,7 +498,8 @@ func _play_bound_ui_button_event(event_id: StringName, input_frame: int) -> void
 		var event: AudioEvent = _audio_config.find_event(event_id)
 		if event == null or event.stream == null:
 			return
-		if _last_ui_event_frame == input_frame and _last_ui_event_stream_path == event.stream.resource_path:
+		# 名字/身份确认等业务音已反馈本次点击时，不再叠通用点击；悬停不占此标记。
+		if _last_ui_event_frame == input_frame:
 			return
 	play_event(event_id)
 

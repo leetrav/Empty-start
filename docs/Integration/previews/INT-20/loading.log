@@ -1,0 +1,47 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+LIVE_LOADING PASS room route accepted
+LIVE_LOADING PASS real room starts live 1
+LIVE_LOADING PASS duplicate start rejected
+LIVE_LOADING_COVER 1 opaque_indicator_ms=611
+LIVE_LOADING PASS spinner remains visible through minimum cover
+LIVE_LOADING PASS covered gameplay is frozen
+LIVE_LOADING PASS correct level after cover
+LIVE_LOADING PASS battle revealed and running
+LIVE_LOADING PASS real PK failure shows restart
+LIVE_LOADING PASS failure button uses loading cover
+LIVE_LOADING_COVER 2 opaque_indicator_ms=520
+LIVE_LOADING PASS spinner remains visible through minimum cover
+LIVE_LOADING PASS covered gameplay is frozen
+LIVE_LOADING PASS restart reuses same scene and rebuilds once
+LIVE_LOADING PASS failed live restarts successfully
+LIVE_LOADING_COVER 3 opaque_indicator_ms=540
+LIVE_LOADING PASS spinner remains visible through minimum cover
+LIVE_LOADING PASS covered gameplay is frozen
+LIVE_LOADING PASS paused restart reveals a running attempt
+LIVE_LOADING PASS room route accepted
+LIVE_LOADING PASS real room starts live 2
+LIVE_LOADING PASS duplicate start rejected
+LIVE_LOADING_COVER 4 opaque_indicator_ms=606
+LIVE_LOADING PASS spinner remains visible through minimum cover
+LIVE_LOADING PASS covered gameplay is frozen
+LIVE_LOADING PASS correct level after cover
+LIVE_LOADING PASS battle revealed and running
+LIVE_LOADING PASS room route accepted
+LIVE_LOADING PASS real room starts live 3
+LIVE_LOADING PASS duplicate start rejected
+LIVE_LOADING_COVER 5 opaque_indicator_ms=610
+LIVE_LOADING PASS spinner remains visible through minimum cover
+LIVE_LOADING PASS covered gameplay is frozen
+LIVE_LOADING PASS correct level after cover
+LIVE_LOADING PASS battle revealed and running
+LIVE_LOADING PASS room route accepted
+LIVE_LOADING PASS real room starts live 4
+LIVE_LOADING PASS duplicate start rejected
+LIVE_LOADING_COVER 6 opaque_indicator_ms=606
+LIVE_LOADING PASS spinner remains visible through minimum cover
+LIVE_LOADING PASS covered gameplay is frozen
+LIVE_LOADING PASS correct level after cover
+LIVE_LOADING PASS battle revealed and running
+LIVE_LOADING_DONE failures=0 checked_covers=6

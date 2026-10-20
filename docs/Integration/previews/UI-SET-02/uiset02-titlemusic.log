@@ -1,0 +1,24 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+TITLE_AUDIO PASS opening route accepted
+TITLE_AUDIO PASS opening contains four acts / 13 panels
+TITLE_AUDIO PASS street fades while last act is covered
+TITLE_AUDIO PASS street stops before title starts
+TITLE_AUDIO PASS title revealed after curtain
+TITLE_AUDIO PASS title plays Cafe de Fineday
+TITLE_AUDIO PASS title starts from near silence
+TITLE_AUDIO PASS title reaches -12dB after fade
+TITLE_AUDIO PASS title loops natively
+TITLE_DIAG settings before=1.82340389987946 after=1.82988293100739 event=music_title_cafe
+TITLE_AUDIO PASS settings do not restart music
+TITLE_HOVER_EVENT count=1
+TITLE_AUDIO PASS hover uses bubble on UI bus
+TITLE_AUDIO PASS one bubble per entry
+TITLE_HOVER_EVENT count=2
+TITLE_AUDIO PASS hover uses bubble on UI bus
+TITLE_AUDIO PASS reenter plays another bubble
+TITLE_AUDIO PASS disabled item stays silent
+TITLE_AUDIO PASS leaving title fades its music
+TITLE_AUDIO PASS no title music left on name page
+TITLE_AUDIO_DONE failures=0

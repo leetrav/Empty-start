@@ -260,7 +260,7 @@ func set_player_pk_for_debug(player_pk: float) -> bool:
 	if _battle_state != BattleState.RUNNING or not is_finite(player_pk):
 		return false
 	var updated_pk: float = clampf(player_pk, 0.0, 1.0)
-	if is_equal_approx(updated_pk, _pk):
+	if updated_pk == _pk:
 		return true
 	_pk = updated_pk
 	_update_tier()
@@ -648,8 +648,9 @@ func update_pk(delta: float) -> void:
 		return
 	var player_difference: float = float(int(counts.get("player", 0)) - int(counts.get("opponent", 0)))
 	var change_ratio: float = pk_rate_pp_per_second * player_difference / float(total_count) * delta / 100.0
+	# PK是权威累计状态，不能用近似相等吞掉小幅增长或抵达0/1的最后一步。
 	var updated_pk: float = clampf(_pk + change_ratio, 0.0, 1.0)
-	if not is_equal_approx(updated_pk, _pk):
+	if updated_pk != _pk:
 		_pk = updated_pk
 		_update_tier()
 		pk_changed.emit(get_pk())

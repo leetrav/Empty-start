@@ -78,7 +78,7 @@ func _run() -> void:
 		scene.get_node("BattleHud").tier_breakthrough_fading.connect(_on_arrow_fading)
 		await create_timer(0.2).timeout
 		var flow: BattleAttemptFlow = scene.get_battle_attempt_flow()
-		_check(flow.get_current_level_profile().streamer_id == id and audio.get_music_event_id() == &"", id + " 身份与T0专属策略")
+		_check(flow.get_current_level_profile().streamer_id == id and audio.get_music_event_id() == TierMusicPresenter.PREBOSS_EVENT, id + " 身份与T0通用音乐")
 		if OS.get_cmdline_user_args().has("--terminal-only"):
 			scene.debug_set_player_pk(1.0)
 			var terminal_wait: float = 7.0

@@ -1,0 +1,23 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+PK_TOUCH_PAUSE PASS formal PK route
+PK_TOUCH_PAUSE PASS PK has visible native pause button
+PK_TOUCH_PAUSE PASS original board geometry unchanged
+PK_TOUCH_PAUSE PASS pause touch area does not overlap board
+PK_TOUCH_PAUSE PASS 720p touch target at least 48 pixels
+PK_TOUCH_PAUSE PASS mouse button opens original pause menu
+PK_TOUCH_PAUSE PASS PK and BGM freeze while paused
+PK_TOUCH_PAUSE PASS settings reachable from PK button
+PK_TOUCH_PAUSE PASS original continue resumes
+PK_TOUCH_PAUSE PASS raw ScreenTouch opens pause with mouse emulation disabled
+PK_TOUCH_PAUSE PASS pause input does not charge shoot or publish
+PK_TOUCH_PAUSE PASS Esc still opens same menu
+PK_TOUCH_PAUSE PASS Esc still resumes
+PK_TOUCH_PAUSE_WIDE rect=[P: (1376.0, 0.0), S: (96.0, 72.0)] board=[P: (448.0, 72.0), S: (1024.0, 828.0)] window=(2400, 1080) viewport=[P: (0.0, 0.0), S: (1920.0, 1080.0)] emulation=true
+PK_TOUCH_PAUSE PASS 20:9 button stays inside viewport
+PK_TOUCH_PAUSE PASS 20:9 button stays outside board
+PK_TOUCH_PAUSE_WIDE requests=3 tree_paused=true
+PK_TOUCH_PAUSE PASS 20:9 touch opens menu
+PK_TOUCH_PAUSE PASS 20:9 resume has no leaked combat input
+PK_TOUCH_PAUSE_DONE failures=0
