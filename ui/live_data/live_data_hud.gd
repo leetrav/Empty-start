@@ -173,7 +173,7 @@ func _add_next_comment() -> void:
 
 
 ## 粉丝牌宽度跟随昵称的实际字体宽度；圆徽章和右侧尖角始终保持原形。
-## 横牌只承担身份展示，长 ID 至多占用约半条评论宽度，正文优先保留可读空间。
+## 横牌只承担身份展示，长 ID 占用受限宽度，正文优先保留可读空间。
 func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Control:
 	var preferred_size: int = maxi(16, int(_comment_params.get("comment_font_size_px", 20)))
 	var plate_height: float = 46.0
@@ -189,7 +189,7 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	var plate_width: float = clampf(
 		ceilf(50.0 + name_width + 17.0),
 		96.0,
-		maxf(96.0, minf(224.0, row_width - 168.0))
+		maxf(96.0, minf(208.0, row_width - 184.0))
 	)
 	var plate_size := Vector2(plate_width, plate_height)
 	var row := HBoxContainer.new()
