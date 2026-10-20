@@ -2,7 +2,7 @@
 
 ## PTF-04 立绘与 PK 视图修复（2026-10-16）
 
-`OpponentTierPortrait` 从原 Texture 的 alpha 可见边界计算同角色全套贴图的共同缩放，统一可见锚点；PA-17 每次换待机/过渡/击败图通过注入的 `fit_current_texture` 回调复用排版。PA-23 将默认锚点定为可见边界底部中点 `(0.5, 1.0)`，依据真实 Godot 4.7.2 截图核验四名对手的阶段图与击败图。没有修改 PNG 或表 23。
+`OpponentTierPortrait` 从原 Texture 的 alpha 可见边界计算同角色全套贴图的共同缩放，统一可见锚点；PA-17 每次换待机/过渡/击败图通过注入的 `fit_current_texture` 回调复用排版。PA-23-FIX 修复 PA-23 将底锚点设为 `(0.5, 1.0)` 导致的裁切回归：保留共同可见缩放及翻牌 Pivot，仅将可见画面放在安全底线 `(0.5, 0.94)` 附近；较高姿态优先完整显示，保留 5px 上下防抖余量。Fox 的 `level_004.tres.streamer_live_background` 接入实际已有的 `fox/background.png`，其余三关仍按既有 Resource 显示。具体以 PA-23-FIX 的实际 GUI 人工验收为准。
 
 HUD 的 PK 输入统一走 `refresh_pk()`；`on_tier_changed()` 只播放档位动作，避免晚到旧 PK 再写入进度动画。`get_pk_display_snapshot()` 同时提供真实输入、平滑显示、皮肤和百分比文本；原 0.16 秒显示动画保留。超宽父框改为等比缩放/居中，人物、字体和准心保持比例，Android 物理安全区仍由 A/E 提供。
 
