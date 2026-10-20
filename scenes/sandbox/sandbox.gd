@@ -216,6 +216,8 @@ func _ready() -> void:
 	if use_plan_b_campaign:
 		%RestartButton.pressed.connect(Callable(_battle_hud, "request_restart"))
 		_battle_hud.connect("restart_requested", Callable(self, "restart_current_attempt"))
+		# HUD触屏入口与Esc共用原PauseMenu，取消攻击／冻结音乐仍由既有暂停信号处理。
+		_battle_hud.connect("pause_requested", Callable(%PauseMenu, "pause_game"))
 	else:
 		%RestartButton.pressed.connect(restart_current_attempt)
 	%PauseMenu.restart_requested.connect(restart_current_attempt)

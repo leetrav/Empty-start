@@ -10,6 +10,7 @@ signal tier_breakthrough_finished(previous_tier: int, current_tier: int, complet
 signal failure_presentation_finished
 signal opponent_result_presentation_finished(broken: bool)
 signal restart_requested
+signal pause_requested
 
 const UnitFieldScript = preload("res://ui/plan_b/plan_b_unit_field.gd")
 const StreamerPanelScript = preload("res://ui/plan_b/plan_b_streamer_panel.gd")
@@ -1016,12 +1017,22 @@ func _build_center(parent: Control) -> void:
 
 func _build_pk_bar(parent: Container) -> void:
 	# PK 比例与 Tier 只读 A/Host 提供的数值，原皮肤资源继续呈现档位变化。
+	var status_row := HBoxContainer.new()
+	status_row.name = "PkStatusRow"
+	status_row.custom_minimum_size.y = 72.0
+	status_row.add_theme_constant_override("separation", 8)
+	parent.add_child(status_row)
 	var panel := PanelContainer.new()
 	panel.name = "PkTierBar"
 	panel.custom_minimum_size = Vector2(0.0, 72.0)
-	panel.add_theme_stylebox_override("panel", _panel_style(Color("#101f29"), Color("#29414c"), 0, 0))
+	var status_style := _panel_style(Color("#101f29"), Color("#29414c"), 0, 0)
+	# 字体行高加默认留白为78px；收紧到原设计72px，避免顶栏与棋盘几何重叠。
+	status_style.content_margin_top = 9.0
+	status_style.content_margin_bottom = 9.0
+	panel.add_theme_stylebox_override("panel", status_style)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(panel)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	status_row.add_child(panel)
 
 	var rows := VBoxContainer.new()
 	rows.add_theme_constant_override("separation", 3)
@@ -1058,6 +1069,33 @@ func _build_pk_bar(parent: Container) -> void:
 	_pk_bar_skin = PK_BAR_SKIN_SCENE.instantiate()
 	_pk_bar_skin.name = "PkBarSkin"
 	_pk_bar.add_child(_pk_bar_skin)
+	# 在原72px状态栏内留出触控入口，不挤占棋盘高度；按下即暂停，避免长按积蓄攻击。
+	var pause_button := Button.new()
+	pause_button.name = "PauseButton"
+	pause_button.text = "暂停"
+	pause_button.tooltip_text = "暂停游戏（Esc）"
+	pause_button.custom_minimum_size = Vector2(96.0,72.0)
+	pause_button.add_theme_font_size_override("font_size",22)
+	status_row.add_child(pause_button)
+	# 默认按钮主题的上下留白会把72px栏撑高，只缩小内边距、保留原配色和边框。
+	for state: String in ["normal","hover","pressed","hover_pressed","focus","disabled"]:
+		var style: StyleBox = pause_button.get_theme_stylebox(state).duplicate()
+		style.content_margin_top = 4.0
+		style.content_margin_bottom = 4.0
+		style.content_margin_left = 8.0
+		style.content_margin_right = 8.0
+		pause_button.add_theme_stylebox_override(state,style)
+	pause_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	pause_button.pressed.connect(func(): pause_requested.emit())
+	pause_button.gui_input.connect(_on_pause_button_touch.bind(pause_button))
+
+
+# 直接接收原生触屏，不依赖平台是否启用触屏模拟鼠标，也不把触点传给攻击层。
+func _on_pause_button_touch(event: InputEvent, button: Button) -> void:
+	if event is InputEventScreenTouch:
+		button.accept_event()
+		if event.pressed and not event.canceled and not get_tree().paused and not SceneRouter.is_transitioning() and not button.disabled:
+			button.pressed.emit()
 
 
 func _build_field(parent: Container) -> void:

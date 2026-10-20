@@ -46,6 +46,8 @@ SceneRouter初始启动及每次scene_changed后统一检查当前页面的Pause
 
 PAUSE-02：共享PauseMenu使用CanvasLayer 90，高于RestResultView及其历史页30、DebugPanel21，低于SceneRouter加载层100。结算页不独立创建暂停菜单，仍由当前Sandbox的同一菜单处理Esc；验证必须包含实际截图与鼠标点击设置，不能只看Overlay.visible和SceneTree.paused。
 
+PAUSE-03：Plan B顶部PK状态栏右侧提供原生「暂停」按钮，96×72逻辑像素，HUD发出pause_requested，由Sandbox连接原PauseMenu.pause_game。原生ScreenTouch直接消费并调用同一按钮反馈，关闭触屏模拟鼠标仍可用；按下立即暂停，沿用取消蓄力／冻结音乐／继续恢复，不创建第二套菜单。顶部栏固定为设计72px，按钮不覆盖棋盘或手牌；桌面GUI原生触屏注入已验证，Android真机尚待验收。
+
 Esc使用Input Map的pause Action。首次按下暂停并打开继续/设置/返回面板；再次按下恢复。暂停内设置打开时，Esc先关闭设置，仍保持暂停。全屏时也能经此入口关闭设置里的全屏选项。转场中忽略pause，避免误解除加载层的树暂停。
 
 暂停/恢复统一通知AudioManager；独立ComicPlayer额外调用set_playback_paused冻结分镜Timer、文字和Tween，Esc不再直接退出漫画。暂停返回菜单先完整恢复并发出paused_changed(false)，避免音乐暂停标志留到新页面。
