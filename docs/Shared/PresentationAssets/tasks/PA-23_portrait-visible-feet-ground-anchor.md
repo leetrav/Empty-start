@@ -1,6 +1,6 @@
 # PA-23 · 所有主播切换姿态后脚底对齐、防止浮空
 
-状态：**2026-10-20 已完成开发与真实 Godot 截图验收，提交 PR 待审**；优先级：**P0｜立绘显示BUG**；负责：**程序美术Owner（D）＋HUD场景Owner**。
+状态：**2026-10-20 已完成开发与真实 Godot 截图验收，PR #318 待审**；优先级：**P0｜立绘显示BUG**；负责：**程序美术Owner（D）＋HUD场景Owner**。
 
 ## 开始前先阅读以下文档
 - AGENTS.md、known_traps.md、project.godot、docs/Original/任务卡模板.md。
