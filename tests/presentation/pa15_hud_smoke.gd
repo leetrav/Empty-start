@@ -19,6 +19,12 @@ func _run() -> void:
 	var portrait: TextureRect = hud.get_node("%OpponentPortraitArt")
 	hud.configure_streamer_assets(null, null, null, IDLE, null, null)
 	hud.configure_opponent_tier_textures(IDLE, TIER_01, TIER_02, TIER_03)
+	# 正式四关切换必须同步阶段控制器的角色 ID；只有 frog 才会启用分件上移。
+	for character_id: String in ["alien", "kiwi", "frog", "fox"]:
+		hud.configure_portrait_character(character_id)
+		_check(str(hud.opponent_tier_portrait.get("_character_id")) == character_id,
+			"portrait presenter character %s" % character_id)
+	hud.configure_portrait_character("alien")
 	_check(not hud.opponent_tier_portrait.visible, "T0 opponent hidden")
 	for tier: int in [1, 2, 3, 4, 5, 6, 4, 2, 1]:
 		hud.refresh_pk(0.5, tier)
