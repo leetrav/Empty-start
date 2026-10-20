@@ -2030,13 +2030,16 @@ func show_counterattack_windup(request: Dictionary) -> void:
 	var skill_id := str(request.get("skill_id", request.get("effect_id", "费米反击")))
 	var streamer_name := _counterattack_streamer_name(request)
 	var skill_name := _counterattack_skill_name(request, skill_id)
+	var qualification_tier: int = int(request.get("qualification_tier", 0))
+	var round_number: int = int(request.get("counterattack_round", 0))
+	var round_label: String = "T%d第%d轮" % [qualification_tier, round_number] if qualification_tier > 0 else "特殊反击"
 	var windup := float(request.get("pre_windup_seconds", 0.0))
 	if not target_id.is_empty():
 		_field.call("show_unit_feedback", target_id, "counterattack")
-	_counterattack_label.text = "%s · 反击蓄力 · %s" % [streamer_name, skill_name]
+	_counterattack_label.text = "%s · %s · %s反击蓄力" % [streamer_name, round_label, skill_name]
 	_counterattack_label.visible = true
 	_counterattack_seconds = maxf(windup + 1.2, 1.2)
-	_add_event("[%s 反击前摇] %s · 目标 %s · %.1f 秒" % [streamer_name, skill_name, target_id, windup])
+	_add_event("[%s %s前摇] %s · 目标 %s · %.1f 秒" % [streamer_name, round_label, skill_name, target_id, windup])
 	_set_status("%s正在准备%s，请留意目标棋子的紫色脉冲。" % [streamer_name, skill_name], "warning")
 
 
@@ -2048,13 +2051,28 @@ func show_counterattack_result(result: Dictionary) -> void:
 	var streamer_name := _counterattack_streamer_name(result)
 	var skill_name := _counterattack_skill_name(result, skill_id)
 	var applied := bool(result.get("applied", false))
+	var qualification_tier: int = int(result.get("qualification_tier", 0))
+	var round_number: int = int(result.get("counterattack_round", 0))
+	var round_label: String = "T%d第%d轮" % [qualification_tier, round_number] if qualification_tier > 0 else "特殊反击"
+	var affected_count: int = int(result.get("affected_count", result.get("spawned_count", 0)))
+	var affected_ids_value: Variant = result.get("affected_unit_ids", [])
+	var affected_ids: Array = affected_ids_value if affected_ids_value is Array else []
+	var result_message: String = str(result.get("message", ""))
 	if not target_id.is_empty():
 		_field.call("show_unit_feedback", target_id, "counterattack")
-	_counterattack_label.text = "%s · %s · %s" % [streamer_name, skill_name, "反击生效" if applied else "反击未生效"]
+	if applied:
+		_counterattack_label.text = "%s · %s · %s · 影响%d名" % [streamer_name, round_label, skill_name, affected_count]
+		if result_message.is_empty():
+			result_message = "反击影响%d名单位" % affected_count
+	else:
+		_counterattack_label.text = "%s · %s · %s未生效" % [streamer_name, round_label, skill_name]
+		if result_message.is_empty():
+			result_message = "反击未生效"
 	_counterattack_label.visible = true
 	_counterattack_seconds = 2.4
-	_add_event("[%s · %s] 目标 %s" % [skill_name, "反击生效" if applied else "反击未生效", target_id])
-	_set_status("%s的%s已结算：%s。" % [streamer_name, skill_name, "生效" if applied else "未生效"], "warning" if applied else "info")
+	var target_summary: String = str(affected_ids) if not affected_ids.is_empty() else target_id
+	_add_event("[%s %s · %s] %s · 目标 %s" % [streamer_name, round_label, skill_name, "反击生效" if applied else result_message, target_summary])
+	_set_status("%s的%s已结算：%s。" % [streamer_name, skill_name, result_message], "warning" if applied else "info")
 
 
 ## 兼容 PB-27 新事件名字段，并从现有主播配置保底取当前中文名。
