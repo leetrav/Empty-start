@@ -49,7 +49,7 @@ func _run() -> void:
 		_expect(profile.true_contradictions.size() == 1 and profile.false_contradictions.size() == 5, "真假矛盾完整")
 		_expect(profile.streamer_portrait != null and profile.opponent_tier_03_portrait != null and profile.opponent_defeat_portrait != null, "四关正式立绘")
 		_expect(profile.assimilation_rewards.is_empty(), "禁用奖励没有进入关卡")
-		_expect((profile.streamer_live_background == null) == (profile.streamer_id == "fox"), "Fox缺背景，其余三关已有背景")
+		_expect(profile.streamer_live_background != null, "四关直播背景均已接线（含 Fox）")
 		if profile.streamer_id == "frog":
 			_expect(profile.streamer_live_foreground != null and profile.opponent_defeat_effect_id == &"", "青蛙前景/空特效ID")
 		print("INT-17E LEVEL PASS: ", profile.level_id, " / ", profile.streamer_id)
