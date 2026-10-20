@@ -615,17 +615,19 @@ func _draw_group_bubbles() -> void:
 			float(layout.get("text_block_height", bubble_rect.size.y - text_margin.y * 2.0)),
 			bubble_rect.size.y - 4.0
 		)
+		var font_size := int(layout.get("font_size", StreamerBubbleView.DEFAULT_CURRENT_FONT_SIZE))
 		# 实际文字块在泡体内居中；块内各行沿用主播气泡的左对齐规则。
 		var text_block_width := minf(float(layout.get("text_block_width", text_width)), text_width)
 		var text_origin_x := bubble_rect.position.x + (bubble_rect.size.x - text_block_width) * 0.5
-		var text_origin_y := bubble_rect.position.y + (bubble_rect.size.y - text_block_height) * 0.5
+		# 实际字形边界比排版测量框更靠上；补回字体 ascent，让墨迹落在居中安全区。
+		var text_origin_y := bubble_rect.position.y + (bubble_rect.size.y - text_block_height) * 0.5 + font.get_ascent(font_size)
 		draw_multiline_string(
 			font,
 			Vector2(text_origin_x, text_origin_y),
 			phrase,
 			HORIZONTAL_ALIGNMENT_LEFT,
 			text_width,
-			int(layout.get("font_size", StreamerBubbleView.DEFAULT_CURRENT_FONT_SIZE)),
+			font_size,
 			-1,
 			Color("#36252f")
 		)
