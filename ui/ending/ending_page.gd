@@ -50,6 +50,15 @@ func show_ending(display_data: Dictionary) -> void:
 func _apply_display_data() -> void:
 	_main_art.texture = _display_data.get("main_art") as Texture2D
 	_main_art.visible = _main_art.texture != null
+	# EN-10: reuse identity card back, tint only the hero image using frozen ending data.
+	_main_art.modulate = Color.WHITE
+	match str(_display_data.get("primary_tendency_id", "")):
+		"orthodox":
+			_main_art.modulate = Color(1.0, 0.83, 0.55)
+		"heretical":
+			_main_art.modulate = Color(0.76, 0.63, 1.0)
+		"absurd":
+			_main_art.modulate = Color(0.55, 1.0, 0.85)
 	_religion_name.text = str(_display_data.get("religion_name", ""))
 	_religion_name.visible = not _religion_name.text.is_empty()
 	_judgement_text.text = str(_display_data.get("judgement_text", ""))
