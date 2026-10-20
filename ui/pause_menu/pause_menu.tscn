@@ -31,7 +31,7 @@ expand_mode = 1
 stretch_mode = 6
 mouse_filter = 2
 texture = ExtResource("2_pause_background")
-modulate = Color(1, 1, 1, 0.9)
+modulate = Color(1, 1, 1, 0.95)
 
 [node name="MainPage" type="Control" parent="Overlay"]
 unique_name_in_owner = true
