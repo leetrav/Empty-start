@@ -371,13 +371,24 @@ func _build_preview(row: Dictionary, config: Dictionary) -> void:
 func _update_preview(row: Dictionary, config: Dictionary) -> void:
 	if _preview_text == null or _preview_meta == null:
 		return
-	_preview_text.text = str(row.get(str(config["text_key"]), ""))
+	var body := str(row.get(str(config["text_key"]), ""))
+	var rich_text := str(row.get("rich_text", "")).strip_edges()
+	var style_warning := ""
+	_preview_text.text = body
+	if _table_index == 3 and not rich_text.is_empty():
+		_preview_text.text = rich_text
+		if _preview_text.get_parsed_text() != body:
+			_preview_text.text = body
+			style_warning = "富文本与正文不一致，游戏运行时会回退纯文本"
 	var parts: Array[String] = []
 	for key in ["speaker_side", "streamer_id", "trigger_type", "viewer_id", "audience_type", "side_scope", "tendency", "strength", "type"]:
 		var value := str(row.get(key, ""))
 		if not value.is_empty():
 			parts.append(value)
+	if not style_warning.is_empty():
+		parts.append("⚠ " + style_warning)
 	_preview_meta.text = " · ".join(parts) if not parts.is_empty() else str(config["label"])
+	_preview_meta.add_theme_color_override("font_color", Color("#ff9a8b") if not style_warning.is_empty() else Color("#c5bda9"))
 
 
 func _readonly_summary(row: Dictionary, config: Dictionary) -> String:
