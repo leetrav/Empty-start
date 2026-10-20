@@ -149,7 +149,7 @@ LD-10 等 18. Rest。
 
 ## LD-17 评论横标与徽章（2026-10-20）
 
-粉丝评论行使用 PA-21 `assets/ui/live/fan_nameplates/<streamer_id>_fan_nameplate.png` 横标，在左侧圆形安全区等比居中显示该侧粉丝徽章；玩家侧沿用 `PresentationAssetConfig.player_fan_badge`，对手徽章缺省时按当前主播稳定 ID 从 PA-21 路径回退。**LD-17-FIX** 将横牌限制为 **144×46px** 的昵称局部装饰：徽章等比保留、17px 昵称在矩形安全区内自动省略，评论正文置于右侧独立 `RichTextLabel`，继续使用表 22 配置的正文字号（最低 16px）完整换行。路人与粉丝行高接近，行数上限与滚动依旧使用原有逻辑。主播栏只显示纯文字 `❤粉丝团名❤`。
+粉丝评论行使用 PA-21 `assets/ui/live/fan_nameplates/<streamer_id>_fan_nameplate.png` 横标，在左侧圆形安全区等比居中显示该侧粉丝徽章；玩家侧沿用 `PresentationAssetConfig.player_fan_badge`，对手徽章缺省时按当前主播稳定 ID 从 PA-21 路径回退。**LD-17-FIX** 将横牌改为**随昵称实测宽度伸缩、高度固定46px**的局部装饰（测试宽度约96～208px）；用 NinePatchRect 仅横向伸缩中间纯色部分，徽章圆圈和尖角形状不变，17px 昵称在矩形安全区内超长自动省略，评论正文置于右侧独立 `RichTextLabel`，继续使用表 22 配置的正文字号（最低 16px）完整换行。路人与粉丝行高接近，行数上限与滚动依旧使用原有逻辑。主播栏只显示纯文字 `❤粉丝团名❤`。
 
 Godot 双分辨率截图和验证限制见 [LD-17 日志](直播数据表现系统_LD-17_2026-10-20_log.md)。
 返工的实际 UI 截图、运行 SHA 与五条评论密度验证见 [LD-17-FIX 完成日志](直播数据表现系统_LD-17-FIX_2026-10-20_log.md)。
