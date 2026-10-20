@@ -82,3 +82,9 @@
 - 反击资格使用正式Tier编号：Tier Catalog 的 `tier_1.upgrade_threshold=0.64` 让正式状态进入T2，`tier_3.upgrade_threshold=0.79` 让状态进入T4；导演不复制百分比常量。
 - `opponent_config.csv` 四关统一配置领先2名、成功冷却25秒、前摇1.2秒、每局成功上限2次；T2/T4资格由正式Tier事件派生。效果失败或无目标不消耗成功次数与成功冷却。
 - PB-25 的真实教程调用者需在教学开始/结束时调用 `PlanBBattleHost.set_counterattack_paused(true/false)`。当前 main 尚未包含 Plan B 教学接线。
+
+### PB-27 四主播专属反击效果
+- `PlanBUnitSimulation.apply_counterattack_effect(request) -> Dictionary` 是四种反击效果的权威执行入口，返回 `ok/reason/effect_id/affected_count/affected_unit_ids` 与必要效果数据；A 将实际结果回传 C，C 仅在 `ok=true` 时消耗 PB-26 对应轮次。
+- `alien` 分裂沿用完整快照和人口上限，最多生成2名子体；`kiwi` 按玩家现存信徒属性数量选主流属性，平局顺序为type_a→type_b→type_c，再从当前关合法未用敌方词池选择克制词，最多改写3名Kiwi单位并消费新word_id/word_order。
+- `frog` 以一名现存己方信徒为施法者，将120px内最近的最多3名中立观众改为同阵营、同完整词快照；`fox` 给最多3名现存己方信徒添加一次性reflect。合法的玩家/对手感染都消费接收单位的reflect保护。
+- D 消费 `counterattack_resolved` 中的技能名、影响数量、目标ID与结果消息；分裂/改口/转换/reflect仍通过现有单位更新信号和快照链展示。
