@@ -176,7 +176,8 @@ func _apply_split_sample() -> void:
 		"effect_id": &"split",
 		"effect_parameters": {"child_count": 2},
 	}
-	_split_applied = _simulation.apply_counterattack_effect(request)
+	var split_result: Dictionary = _simulation.apply_counterattack_effect(request)
+	_split_applied = bool(split_result.get("ok", false))
 	if _split_applied:
 		_unit_field.call("show_unit_feedback", str(target_id), "counterattack")
 		_record_visible_event("Fermi split #%d · +2 followers" % target_id)

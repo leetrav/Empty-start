@@ -382,35 +382,289 @@ func rewrite_player_units_nearby_after_s1(
 	return rewritten_unit_ids
 
 
-## 执行 C 的原型反击请求；split 子体完整继承对手目标快照并受人口上限约束。
-func apply_counterattack_effect(request: Dictionary) -> bool:
-	if not _is_running or request.is_empty() or str(request.get("effect_id", "")) != "split":
-		return false
+## 执行四名主播的专属反击；单位事实留在 B，A/C 只调度并回收结果。
+func apply_counterattack_effect(request: Dictionary) -> Dictionary:
+	if not _is_running or request.is_empty():
+		return _counterattack_failure("simulation_unavailable", "")
+	var streamer_id: String = str(request.get("streamer_id", ""))
+	if streamer_id.is_empty() and str(request.get("effect_id", "")) == "split":
+		# 兼容 PB-02 旧反击夹具；正式请求始终带稳定主播 ID。
+		streamer_id = "alien"
+	match streamer_id:
+		"alien":
+			return _apply_alien_split_counterattack(request)
+		"kiwi":
+			return _apply_kiwi_rewrite_counterattack(request)
+		"frog":
+			return _apply_frog_absorb_counterattack(request)
+		"fox":
+			return _apply_fox_reflect_counterattack(request)
+		_:
+			return _counterattack_failure("unknown_streamer", streamer_id)
+
+
+## 费米选中的信徒分裂出最多请求数量的同快照棋子，受全场人口上限约束。
+func _apply_alien_split_counterattack(request: Dictionary) -> Dictionary:
 	var target_id: int = _normalize_unit_id(request.get("target_unit_id", -1))
 	var target_unit := _units_by_id.get(target_id) as PlanBUnit
 	if target_unit == null or target_unit.team != OPPONENT_TEAM or not target_unit.has_word():
-		return false
+		return _counterattack_failure("no_usable_target", "split")
+	if str(target_unit.get_word_snapshot().get("streamer_id", "")) not in ["", "alien"]:
+		return _counterattack_failure("wrong_streamer_target", "split")
 	var parameters_value: Variant = request.get("effect_parameters", {})
-	if not (parameters_value is Dictionary):
-		return false
+	if not parameters_value is Dictionary:
+		return _counterattack_failure("invalid_parameters", "split")
 	var effect_parameters: Dictionary = parameters_value
-	var requested_child_count: int = maxi(int(effect_parameters.get("child_count", 0)), 0)
+	var requested_count: int = maxi(int(effect_parameters.get("child_count", 2)), 0)
 	var available_slots: int = maxi(maximum_population - _units_by_id.size(), 0)
-	var spawned_count: int = mini(requested_child_count, available_slots)
-	if spawned_count <= 0:
-		return false
+	var spawn_count: int = mini(requested_count, available_slots)
+	if spawn_count <= 0:
+		return _counterattack_failure("capacity", "split")
 	var source_definition: Dictionary = target_unit.get_word_snapshot()
-	var source_team: StringName = target_unit.team
-	var source_word_order: int = target_unit.word_order
-	var spawned_any: bool = false
-	for child_index: int in spawned_count:
-		var spawn_position: Vector2 = _get_split_child_position(target_unit, child_index, spawned_count)
+	var spawned_unit_ids: Array[int] = []
+	for child_index: int in spawn_count:
+		var spawn_position: Vector2 = _get_split_child_position(target_unit, child_index, spawn_count)
 		var child_unit: PlanBUnit = _spawn_unit(
-			source_team, source_definition, source_word_order, spawn_position
+			target_unit.team, source_definition, target_unit.word_order, spawn_position
 		)
 		if child_unit != null:
-			spawned_any = true
-	return spawned_any
+			spawned_unit_ids.append(child_unit.unit_id)
+	if spawned_unit_ids.is_empty():
+		return _counterattack_failure("unit_scene_unavailable", "split")
+	return _counterattack_success("split", spawned_unit_ids, {
+		"source_unit_id": target_id,
+		"spawned_count": spawned_unit_ids.size(),
+		"message": "费米分裂生成%d名信徒" % spawned_unit_ids.size(),
+	})
+
+
+## 奥格尔从玩家主流属性的克制方向选一条当前合法敌方词，改写最多三名己方旧信徒。
+func _apply_kiwi_rewrite_counterattack(request: Dictionary) -> Dictionary:
+	var dominant_type: StringName = _get_dominant_player_battle_type()
+	if dominant_type == &"":
+		return _counterattack_failure("no_player_word_type", "kiwi_rewrite")
+	var rewrite_type: StringName = _get_battle_type_that_counters(dominant_type)
+	if rewrite_type == &"":
+		return _counterattack_failure("no_counter_type", "kiwi_rewrite")
+	var available_words_value: Variant = request.get("available_opponent_words", [])
+	if not available_words_value is Array:
+		return _counterattack_failure("no_counter_word", "kiwi_rewrite")
+	var selected_definition: Dictionary = {}
+	for word_value: Variant in available_words_value:
+		if not word_value is Dictionary:
+			continue
+		var definition: Dictionary = _copy_valid_word_definition(word_value)
+		if definition.is_empty() or str(definition.get("battle_type", "")) != str(rewrite_type):
+			continue
+		if str(definition.get("streamer_id", "")) != "kiwi" \
+			or str(definition.get("available_to", "")) != "opponent":
+			continue
+		selected_definition = definition
+		break
+	if selected_definition.is_empty():
+		return _counterattack_failure("no_counter_word", "kiwi_rewrite")
+	var new_word_order: int = int(request.get("word_order", 0))
+	if new_word_order < 1:
+		return _counterattack_failure("invalid_word_order", "kiwi_rewrite")
+	var parameters_value: Variant = request.get("effect_parameters", {})
+	if not parameters_value is Dictionary:
+		return _counterattack_failure("invalid_parameters", "kiwi_rewrite")
+	var effect_parameters: Dictionary = parameters_value
+	var maximum_targets: int = clampi(int(effect_parameters.get("max_targets", 3)), 0, 3)
+	if maximum_targets <= 0:
+		return _counterattack_failure("invalid_parameters", "kiwi_rewrite")
+	var targets: Array[PlanBUnit] = []
+	for unit: PlanBUnit in _get_sorted_units():
+		if unit.team != OPPONENT_TEAM or not unit.has_word():
+			continue
+		if _get_unit_streamer_id(unit) != "kiwi" or unit.word_order >= new_word_order:
+			continue
+		targets.append(unit)
+		if targets.size() >= maximum_targets:
+			break
+	if targets.is_empty():
+		return _counterattack_failure("no_usable_target", "kiwi_rewrite")
+	var affected_unit_ids: Array[int] = []
+	for unit: PlanBUnit in targets:
+		unit.apply_word_snapshot(OPPONENT_TEAM, selected_definition, new_word_order)
+		affected_unit_ids.append(unit.unit_id)
+		unit_changed.emit(unit.unit_id, &"relay")
+	_group_refresh_remaining_seconds = 0.0
+	return _counterattack_success("kiwi_rewrite", affected_unit_ids, {
+		"word_id": str(selected_definition.get("word_id", "")),
+		"word_order": new_word_order,
+		"battle_type": str(rewrite_type),
+		"dominant_player_battle_type": str(dominant_type),
+		"counter_battle_type": str(rewrite_type),
+		"message": "奥格尔改口%d名信徒" % affected_unit_ids.size(),
+	})
+
+
+## 咕拉以一名己方信徒为施法者，将120px内最近的最多三名中立观众转成同属性信徒。
+func _apply_frog_absorb_counterattack(request: Dictionary) -> Dictionary:
+	var caster_id: int = _normalize_unit_id(request.get("target_unit_id", -1))
+	var caster := _units_by_id.get(caster_id) as PlanBUnit
+	if caster == null or caster.team != OPPONENT_TEAM or not caster.has_word() \
+		or _get_unit_streamer_id(caster) != "frog":
+		return _counterattack_failure("no_usable_caster", "frog_absorb")
+	var parameters_value: Variant = request.get("effect_parameters", {})
+	if not parameters_value is Dictionary:
+		return _counterattack_failure("invalid_parameters", "frog_absorb")
+	var effect_parameters: Dictionary = parameters_value
+	var radius: float = maxf(float(effect_parameters.get("radius_pixels", 120.0)), 0.0)
+	var maximum_targets: int = clampi(int(effect_parameters.get("max_targets", 3)), 0, 3)
+	if maximum_targets <= 0:
+		return _counterattack_failure("invalid_parameters", "frog_absorb")
+	var candidates: Array[Dictionary] = []
+	for unit: PlanBUnit in _get_sorted_units():
+		if unit.team != NEUTRAL_TEAM:
+			continue
+		var distance_squared: float = unit.global_position.distance_squared_to(caster.global_position)
+		if distance_squared > radius * radius:
+			continue
+		candidates.append({"unit": unit, "distance_squared": distance_squared, "unit_id": unit.unit_id})
+	candidates.sort_custom(func(first: Dictionary, second: Dictionary) -> bool:
+		var first_distance: float = float(first.get("distance_squared", 0.0))
+		var second_distance: float = float(second.get("distance_squared", 0.0))
+		if first_distance == second_distance:
+			return int(first.get("unit_id", -1)) < int(second.get("unit_id", -1))
+		return first_distance < second_distance
+	)
+	var affected_unit_ids: Array[int] = []
+	var target_count: int = mini(maximum_targets, candidates.size())
+	for candidate_index: int in target_count:
+		var neutral := candidates[candidate_index].get("unit") as PlanBUnit
+		if neutral == null:
+			continue
+		neutral.apply_word_snapshot(OPPONENT_TEAM, caster.get_word_snapshot(), caster.word_order)
+		affected_unit_ids.append(neutral.unit_id)
+		unit_changed.emit(neutral.unit_id, &"convert")
+		contact_resolved.emit(caster.unit_id, neutral.unit_id, &"converted")
+	if affected_unit_ids.is_empty():
+		return _counterattack_failure("no_usable_target", "frog_absorb")
+	_group_refresh_remaining_seconds = 0.0
+	return _counterattack_success("frog_absorb", affected_unit_ids, {
+		"source_unit_id": caster_id,
+		"radius_pixels": radius,
+		"message": "咕拉吞食%d名中立观众" % affected_unit_ids.size(),
+	})
+
+
+## 列巴给最多三名现存信徒添加一次性reflect；合法玩家感染会由原反弹裁决消耗。
+func _apply_fox_reflect_counterattack(request: Dictionary) -> Dictionary:
+	var parameters_value: Variant = request.get("effect_parameters", {})
+	if not parameters_value is Dictionary:
+		return _counterattack_failure("invalid_parameters", "fox_reflect")
+	var effect_parameters: Dictionary = parameters_value
+	var maximum_targets: int = clampi(int(effect_parameters.get("max_targets", 3)), 0, 3)
+	if maximum_targets <= 0:
+		return _counterattack_failure("invalid_parameters", "fox_reflect")
+	var affected_unit_ids: Array[int] = []
+	for unit: PlanBUnit in _get_sorted_units():
+		if unit.team != OPPONENT_TEAM or not unit.has_word() \
+			or _get_unit_streamer_id(unit) != "fox" \
+			or (unit.combat_trait_uses > 0 and unit.combat_trait != &"reflect"):
+			continue
+		# T4可以刷新T2仍未消耗的一次性保护，但不覆盖其他类型的有效特性。
+		unit.set_combat_trait(&"reflect", 1)
+		affected_unit_ids.append(unit.unit_id)
+		unit_changed.emit(unit.unit_id, &"reflect")
+		if affected_unit_ids.size() >= maximum_targets:
+			break
+	if affected_unit_ids.is_empty():
+		return _counterattack_failure("no_usable_target", "fox_reflect")
+	return _counterattack_success("fox_reflect", affected_unit_ids, {
+		"message": "列巴为%d名信徒加上反弹保护" % affected_unit_ids.size(),
+	})
+
+
+func _get_dominant_player_battle_type() -> StringName:
+	var counts: Dictionary = {&"type_a": 0, &"type_b": 0, &"type_c": 0}
+	for unit: PlanBUnit in _get_sorted_units():
+		if unit.team != PLAYER_TEAM or not unit.has_word():
+			continue
+		var battle_type: StringName = unit.get_battle_type()
+		if counts.has(battle_type):
+			counts[battle_type] = int(counts[battle_type]) + 1
+	var dominant_type: StringName = &""
+	var dominant_count: int = 0
+	for battle_type: StringName in [&"type_a", &"type_b", &"type_c"]:
+		var count: int = int(counts.get(battle_type, 0))
+		# 只用严格大于替换，平局稳定保留type_a→type_b→type_c顺序。
+		if count > dominant_count:
+			dominant_type = battle_type
+			dominant_count = count
+	return dominant_type
+
+
+func _get_battle_type_that_counters(target_type: StringName) -> StringName:
+	for attacker_type: StringName in [&"type_a", &"type_b", &"type_c"]:
+		if StringName(str(_type_counter_by_type.get(attacker_type, ""))) == target_type:
+			return attacker_type
+	return &""
+
+
+func _get_unit_streamer_id(unit: PlanBUnit) -> String:
+	return str(unit.get_word_snapshot().get("streamer_id", ""))
+
+
+func _counterattack_failure(reason: String, effect_id: String) -> Dictionary:
+	return {
+		"ok": false,
+		"applied": false,
+		"effect_id": effect_id,
+		"reason": reason,
+		"result_reason": reason,
+		"message": _counterattack_failure_message(reason),
+		"affected_count": 0,
+		"affected_unit_ids": [],
+	}
+
+
+func _counterattack_success(effect_id: String, affected_unit_ids: Array[int], extra_details: Dictionary) -> Dictionary:
+	var result: Dictionary = {
+		"ok": not affected_unit_ids.is_empty(),
+		"applied": not affected_unit_ids.is_empty(),
+		"effect_id": effect_id,
+		"reason": "applied" if not affected_unit_ids.is_empty() else "no_usable_target",
+		"result_reason": "applied" if not affected_unit_ids.is_empty() else "no_usable_target",
+		"message": "反击影响%d名单位" % affected_unit_ids.size(),
+		"affected_count": affected_unit_ids.size(),
+		"affected_unit_ids": affected_unit_ids.duplicate(),
+	}
+	for key: Variant in extra_details:
+		result[str(key)] = extra_details[key]
+	return result
+
+
+func _counterattack_failure_message(reason: String) -> String:
+	match reason:
+		"no_usable_target":
+			return "没有可用反击目标"
+		"no_usable_caster":
+			return "当前主播没有可用信徒"
+		"no_counter_word":
+			return "奥格尔词池没有可用的克制词条"
+		"no_player_word_type":
+			return "没有玩家信徒可用于判断主流属性"
+		"no_counter_type":
+			return "属性克制配置缺少反制类型"
+		"capacity":
+			return "反击效果受人口上限限制"
+		"invalid_parameters":
+			return "反击参数无效"
+		"unit_scene_unavailable":
+			return "分裂棋子生成失败"
+		"invalid_word_order":
+			return "无法分配新的话语顺序"
+		"wrong_streamer_target":
+			return "选中的棋子不属于当前主播"
+		"unknown_streamer":
+			return "当前主播没有可用技能"
+		"simulation_unavailable":
+			return "模拟器当前无法执行反击"
+		_:
+			return "反击未生效：%s" % reason
 
 
 ## 启动或恢复本地物理帧推进；棋子移动和碰撞由模块自身驱动。
@@ -1112,9 +1366,11 @@ func _award_player_batch_trait(word_order_value: int) -> void:
 		word_batch_trait_awarded.emit(word_order_value, recipient.unit_id, &"reflect")
 
 
-## 反弹只抵挡敌方已通过克制合法性检查的感染，并让攻击者短时按反方向移动。
+## 玩家与对手阵营的reflect都只抵挡已通过克制合法性检查的感染。
 func _try_reflect_legal_attack(infecting_unit: PlanBUnit, receiving_unit: PlanBUnit) -> bool:
-	if infecting_unit.team != OPPONENT_TEAM or receiving_unit.team != PLAYER_TEAM:
+	var is_opponent_attacking_player: bool = infecting_unit.team == OPPONENT_TEAM and receiving_unit.team == PLAYER_TEAM
+	var is_player_attacking_opponent: bool = infecting_unit.team == PLAYER_TEAM and receiving_unit.team == OPPONENT_TEAM
+	if not is_opponent_attacking_player and not is_player_attacking_opponent:
 		return false
 	if receiving_unit.combat_trait != &"reflect" or receiving_unit.combat_trait_uses <= 0:
 		return false
