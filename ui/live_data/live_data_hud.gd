@@ -172,11 +172,26 @@ func _add_next_comment() -> void:
 		oldest.queue_free()
 
 
-## 粉丝牌是昵称的局部身份装饰，正文在普通背景上独立排版。
-## 旧版将横标铺满评论宽度、缩字号，导致每条粉丝消息像广告牌。
+## 粉丝牌宽度跟随昵称的实际字体宽度；圆徽章和右侧尖角始终保持原形。
+## 横牌只承担身份展示，长 ID 至多占用约半条评论宽度，正文优先保留可读空间。
 func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Control:
 	var preferred_size: int = maxi(16, int(_comment_params.get("comment_font_size_px", 20)))
-	var plate_size := Vector2(144.0, 46.0)
+	var plate_height: float = 46.0
+	var nickname_font_size: int = 17
+	var font: Font = get_theme_default_font()
+	if font == null:
+		font = ThemeDB.fallback_font
+	var name_width: float = font.get_string_size(display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, nickname_font_size).x
+	var row_width: float = _comment_list.size.x
+	if row_width <= 0.0:
+		row_width = maxf(size.x - 32.0, 240.0)
+	# 牌头 50px 给头像，尾部 17px 留给箭头；确保正文至少有 160px。
+	var plate_width: float = clampf(
+		ceilf(50.0 + name_width + 17.0),
+		96.0,
+		maxf(96.0, minf(224.0, row_width - 168.0))
+	)
+	var plate_size := Vector2(plate_width, plate_height)
 	var row := HBoxContainer.new()
 	row.name = "FanNameplateCommentRow"
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -191,27 +206,31 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	identity.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(identity)
 
-	# 532×144 源图的实际非透明区域为 (10,20)-(326,121)。
-	# 以固定 144×46 尺寸等比显示裁切区域，不再随评论栏宽度拉伸。
-	var plate := TextureRect.new()
+	# NinePatchRect 只横向拉伸原牌中央的纯色部分，左侧圆圈与右侧箭头无变形。
+	# 原图有效范围 316×101。将九宫格整体等比缩放至 46px 高，保持圆圈宽高比。
+	var plate := NinePatchRect.new()
 	plate.name = "Nameplate"
-	plate.position = Vector2.ZERO
-	plate.size = plate_size
-	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	plate.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var atlas := AtlasTexture.new()
 	atlas.atlas = _comment_fan_nameplate
 	atlas.region = FAN_NAMEPLATE_VISIBLE_REGION
 	plate.texture = atlas
+	plate.patch_margin_left = 102
+	plate.patch_margin_right = 36
+	plate.patch_margin_top = 0
+	plate.patch_margin_bottom = 0
+	plate.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
+	var art_scale: float = plate_height / FAN_NAMEPLATE_VISIBLE_REGION.size.y
+	plate.position = Vector2.ZERO
+	plate.size = Vector2(plate_width / art_scale, FAN_NAMEPLATE_VISIBLE_REGION.size.y)
+	plate.scale = Vector2.ONE * art_scale
+	plate.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	identity.add_child(plate)
 
-	# 左端内圆与昵称分别使用固定的安全区，徽章始终保持原始比例。
 	var badge := TextureRect.new()
 	badge.name = "FanBadge"
 	badge.size = Vector2(31.0, 31.0)
-	badge.position = Vector2(plate_size.x * 0.17, plate_size.y * 0.51) - badge.size * 0.5
+	badge.position = Vector2(24.0, 23.5) - badge.size * 0.5
 	badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	badge.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -222,9 +241,9 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	var nickname := Label.new()
 	nickname.name = "FanNickname"
 	nickname.text = display_name
-	nickname.position = Vector2(plate_size.x * 0.35, 4.0)
-	nickname.size = Vector2(plate_size.x * 0.59, plate_size.y - 8.0)
-	nickname.add_theme_font_size_override("font_size", 17)
+	nickname.position = Vector2(50.0, 4.0)
+	nickname.size = Vector2(maxf(1.0, plate_width - 67.0), plate_height - 8.0)
+	nickname.add_theme_font_size_override("font_size", nickname_font_size)
 	nickname.add_theme_color_override("font_color", _comment_nameplate_text_color)
 	nickname.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	nickname.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -233,7 +252,6 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	nickname.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	identity.add_child(nickname)
 
-	# 正文持有剩余宽度并自行换行；短/长 ID 都不会缩小评论字号。
 	var message := RichTextLabel.new()
 	message.name = "CommentText"
 	message.text = "：" + comment_text
@@ -241,7 +259,7 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	message.fit_content = true
 	message.scroll_active = false
 	message.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	message.custom_minimum_size = Vector2(0.0, maxf(plate_size.y, float(preferred_size) * 1.5))
+	message.custom_minimum_size = Vector2(0.0, maxf(plate_height, float(preferred_size) * 1.5))
 	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	message.add_theme_font_size_override("normal_font_size", preferred_size)
 	message.add_theme_color_override("default_color", Color("#e7edf5"))
