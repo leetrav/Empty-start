@@ -1,6 +1,5 @@
 extends Control
 
-signal final_oracle_opened(session: FinalOracleSession)
 signal rest_opened(session: RestSession)
 signal rest_continue_requested(session: RestSession)
 signal divine_descent_entered(session: DivineDescentSession)
@@ -99,7 +98,6 @@ var _paradox_comic: ParadoxComicTransition
 var _paradox_entry_level: LevelProfile
 var _paradox_entry_hit: HitResolution
 var _paradox_entry_repeat_stats: RepeatGenerationStats
-var _pending_oracle_session: FinalOracleSession
 var _pending_rest_session: RestSession
 var _result_feedback_active: bool = false
 var _battle_music: TierMusicPresenter
@@ -168,13 +166,9 @@ func _ready() -> void:
 		return
 	_contradiction_oracle_flow = ContradictionOracleFlow.new()
 	add_child(_contradiction_oracle_flow)
-	if not _configure_oracle_parameters():
-		push_error("Sandbox: 正式神谕参数不可用。")
-		return
 	_contradiction_oracle_flow.state_text_changed.connect(_battle_hud.show_battle_state)
 	_contradiction_oracle_flow.entered.connect(_on_contradiction_stage_entered)
 	_contradiction_oracle_flow.outcome_resolved.connect(_on_contradiction_outcome_resolved)
-	_contradiction_oracle_flow.oracle_opened.connect(_on_final_oracle_opened)
 	_contradiction_oracle_flow.rest_ready.connect(_on_rest_ready)
 	var opponent_pk_bar := OpponentPKBar.new()
 	opponent_pk_bar.name = "OpponentPKBar"
@@ -915,21 +909,6 @@ func _on_plan_b_paradox_shot_created(snapshot: AttackTargetSnapshot) -> void:
 		_tutorial_runner.notify_event("tutorial_normal_hit")
 
 
-# 神谕接管阶段展示时恢复当前 CombatStage 档位，再转发既有对外事件。
-func _on_final_oracle_opened(session: FinalOracleSession) -> void:
-	if _result_feedback_active:
-		_pending_oracle_session = session
-		return
-	if use_plan_b_campaign:
-		_barrage_area.visible = false
-	_battle_hud.set_paradox_stage_active(false, _battle_attempt_flow.get_current_tier())
-	if use_plan_b_campaign:
-		_battle_hud.set_final_oracle_stage_active(true)
-		_clear_pb25_tutorial_bubble()
-	final_oracle_opened.emit(session)
-	_refresh_mobile_touch_phase()
-
-
 # 满值结算后先完成 PA-12 转场；矛盾流程此时仍未创建窗口或开放输入。
 func _on_normal_combat_completed(
 		level: LevelProfile, hit_resolution: HitResolution, repeat_stats: RepeatGenerationStats
@@ -991,10 +970,6 @@ func _on_paradox_result_feedback_finished(_success: bool) -> void:
 	_result_feedback_active = false
 	_contradiction_oracle_flow.complete_result_presentation(_result_feedback_system)
 	_result_feedback_system = null
-	if _pending_oracle_session != null:
-		var oracle_session := _pending_oracle_session
-		_pending_oracle_session = null
-		_on_final_oracle_opened(oracle_session)
 	if _pending_rest_session != null:
 		var rest_session := _pending_rest_session
 		_pending_rest_session = null
@@ -1006,7 +981,6 @@ func _reset_paradox_presentation() -> void:
 	_paradox_entry_level = null
 	_paradox_entry_hit = null
 	_paradox_entry_repeat_stats = null
-	_pending_oracle_session = null
 	_pending_rest_session = null
 	_result_feedback_active = false
 	_result_feedback_system = null
@@ -1286,7 +1260,7 @@ func _show_rest_result(result: RestSession) -> void:
 	_battle_hud.set_paradox_stage_active(false, _battle_attempt_flow.get_current_tier())
 	if use_plan_b_campaign:
 		_battle_hud.set_final_oracle_stage_active(false)
-	if not _rest_result_view.show_result(result, SaveManager.data, level_catalog, loser_card_catalog):
+	if not _rest_result_view.show_result(result, SaveManager.data):
 		push_error("Sandbox: 无法显示本场 Rest 结果。")
 		return
 	rest_opened.emit(result)
@@ -1646,21 +1620,6 @@ func _on_failure_presentation_finished() -> void:
 	if use_plan_b_campaign:
 		%FailureOverlay.show()
 	_battle_hud.show_failure()
-
-
-## 12 表正式字段直接交给已有 Flow，避免再次维护一组默认数值。
-func _configure_oracle_parameters() -> bool:
-	var file := FileAccess.open("res://data/source_tables/12_神谕参数.csv", FileAccess.READ)
-	if file == null:
-		return false
-	file.get_csv_line()
-	var values: Dictionary = {}
-	while not file.eof_reached():
-		var row := file.get_csv_line()
-		if row.size() >= 2:
-			values[row[0]] = row[1]
-	return _contradiction_oracle_flow.configure_oracle_parameters(
-		float(values.get("selection_time_s", 0)), int(values.get("max_candidates", 0)))
 
 
 ## 真实教学完成后立即保存步骤；失败重开及跨场景恢复均消费同一记录。
