@@ -425,3 +425,8 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - 现象：结算页Esc后游戏停止，Overlay.visible=true，却看不到菜单，也点不到设置。
 - 条件：RestResultView CanvasLayer30高于原PauseMenu20，后加的结算页覆盖原菜单。仅断言暂停与visible不足以发现。
 - 处理：共享PauseMenu统一为90，加载遮幕保持100；结算／圣典历史／败者卡历史必须真实Esc并截图，鼠标点击设置/继续，覆盖全屏退出路径。不靠增加重复暂停菜单解决。
+
+### SYNC-02：上游损坏PNG会在新工作区再次造成脚本解析连锁错误
+- main@dd943b11 中石剪布三个 PNG 存在 PLTE CRC 和后续块结构损坏；旧本地已修不代表远端已修。首次导入会留下 valid=false 侧文件。
+- 本次保留 original_corrupt/.gdignore 归档，并复用旧本地从图集提取的同义图标临时替代；移动失败侧文件后重新导入。正式原美术待重交，不能将临时替代称为无损修复。
+- 正式启动和战斗180帧运行无资源/脚本错误。依赖 Autoload 的 UI 不宜以单独 --check-only 失败断定生产脚本有错，需在正式项目上下文确认。
