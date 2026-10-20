@@ -103,6 +103,7 @@ func _ready() -> void:
 	_fan_back.show()
 	_fan_back.pressed.connect(_back_to_room_transition)
 	_status_label = _fan_page.get_node("Center/Panel/Content/Status")
+	_bind_selection_audio(self)
 
 	if _run_data != null:
 		_streamer_name_input.text = _run_data.streamer_name
@@ -114,6 +115,15 @@ func _ready() -> void:
 	if _run_data == null:
 		_streamer_page.get_node("Center/Panel/Content/Status").text = "请从主菜单开始新周目。"
 		_streamer_continue.disabled = true
+
+
+# 身份流程的静态卡片与动态按钮共用选定声。
+func _bind_selection_audio(root: Node) -> void:
+	# 等动态页面构建完成后统一绑定，所有步骤复用同一轻气泡反馈。
+	if root is BaseButton:
+		AudioManager.bind_ui_selection(root)
+	for child: Node in root.get_children():
+		_bind_selection_audio(child)
 
 
 # 构建仅由现有主题与控件组成的演出占位页，未来美术可替换显示层。

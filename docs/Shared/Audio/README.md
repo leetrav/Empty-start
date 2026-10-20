@@ -94,6 +94,8 @@ AU-04 本次只完成源码接线；当前机器没有可调用的Godot运行时
 
 ## INT-17D 正式消费端（2026-10-16）
 
+AU-08：身份流程页面构建完成后，对按钮调用 `AudioManager.bind_ui_selection(button)`，将鼠标悬停和键盘焦点合并为一次轻气泡反馈，使用现有 `ui_menu_hover`（Kenney drop_003.ogg / CC0）；不改变按钮外观。该绑定按需调用，不为全游戏按钮自动追加悬停声。点击继续复用全局 `bind_ui_button`；同帧已有专用业务确认音时，延迟通用点击不再叠播，悬停事件不占用点击去重标记。
+
 `AudioManager._ready()` 已注册 17 表可加载的 23 个事件，先于 Boot、菜单和身份场景；Sandbox 再次注册同 ID 为覆盖行为。`bind_ui_button(button, event_id=&"ui_click") -> bool` 供 UI 拥有者绑定点击/确认/切换。`event_played(event_id, player)` 仅在池播放器实际执行 `play()` 后发出，可核对音量、音高和资源。
 
 HUD 原有 `bind_portrait_attack()` 同时绑定 `BattleAudioPresenter`：读取真实按住/满蓄上升沿、正式发射、最终整发结算与 `BarrageArea.barrage_generated`，播放 charge/ready/fire、normal/trap、spawn/repeat 音效；生成音有可调的 0.15 秒短限流。复读零收益不会冒充普通命中。
