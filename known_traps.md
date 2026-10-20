@@ -425,4 +425,3 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - 现象：结算页Esc后游戏停止，Overlay.visible=true，却看不到菜单，也点不到设置。
 - 条件：RestResultView CanvasLayer30高于原PauseMenu20，后加的结算页覆盖原菜单。仅断言暂停与visible不足以发现。
 - 处理：共享PauseMenu统一为90，加载遮幕保持100；结算／圣典历史／败者卡历史必须真实Esc并截图，鼠标点击设置/继续，覆盖全屏退出路径。不靠增加重复暂停菜单解决。
-
