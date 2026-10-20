@@ -1,6 +1,6 @@
 # PB-25 · 费米第一关剧情教学与矛盾击破提示
 
-**状态：2026-10-21 V2 已接入；待 Godot 运行验证与视觉验收。优先级：P0。Owner：A（Sandbox/事件接线）／C（费米反击执行入口）／D（现有气泡 UI）。**
+**状态：PR #358 已合入；Godot 4.7.2 六步受控 runtime smoke 通过。P0 同帧步骤切换修复由 PR #361 提交；GUI 视觉验收待人工。Owner：A（Sandbox/事件接线）／C（费米反击执行入口）／D（现有气泡 UI）。**
 
 ## 开始前先阅读以下文档
 - AGENTS.md、project.godot、known_traps.md、docs/Original/任务卡模板.md。
@@ -72,10 +72,10 @@
 复用 `SaveData.completed_tutorial_step_ids` 保存已完成步骤。重开后重建本局棋子，并依据当前活动步骤恢复引导；两次反击通过正式技能入口触发，若目标被感染则补位合法费米信徒，技能失败会重试，不提前完成教学。
 
 ## 本任务所属分支和文件归属
-- 编号、状态、Owner：PB-25；已实现，Draft PR 待视觉验收；C（教程配置与敌人教学行动）／A（Sandbox）／D（现有提示UI）。
+- 编号、状态、Owner：PB-25；教程实现已合入，受控 runtime 已通过；P0 同帧步骤修复见 PR #361；C（教程配置与敌人教学行动）／A（Sandbox）／D（现有提示UI）。
 - 开发入口：本次用户明确要求从最新 `main` 建分支，PR base 使用 `main`；本任务按该最新指示执行。
-- PR：[#324](https://github.com/w7775p/Empty-start/pull/324)，Draft，等待 GUI 视觉证据。
-- 视觉状态：真实 Sandbox/Host 剧情链与重开恢复已做 headless 验证；尚未取得 GUI 截图，PR 保持 Draft，待人工验收卡片高亮和矛盾提示排版。
+- PR：[#358](https://github.com/w7775p/Empty-start/pull/358) 已合入 `main@62cc1544`；同帧 P0 修复：[PR #361](https://github.com/w7775p/Empty-start/pull/361)。
+- 视觉状态：正式 Sandbox/Host 六步剧情、反击结果、S1 改口与感染、失败重开及成功结果已由 Godot 4.7.2 受控 smoke 验证；未取得 GUI 截图，1280×720 与 1920×1080 气泡排版仍待人工验收。
 - 直接依赖：现有24表Runner、Level001与正式Sandbox。C可以先完成脚本事件表和剧情AI请求，A并行接线；集成验收时消费PB-22的✋S1抽牌、PB-23的改口结果和PB-24的高亮。
 - 文件归属（各文件在任一实施时点由一个Owner修改）：
 - C：data/source_tables/24_新手教学配置.csv；systems/barrage_traits/tutorial_step_runner.gd；systems/plan_b/opponent/fermi_opponent_director.gd（教学定向发表）。

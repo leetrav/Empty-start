@@ -313,6 +313,13 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - **条件**：Sandbox 组合方订阅的 UI 信号没有同步声明到 `PlanBBattleUI`，即使该信号仍由旧 HUD 提供。
 - **处理**：Plan B HUD 声明并转发 `StageArrowFx.fade_started`，只在有效升档箭头淡出时发出转场信号；修改组合方信号连接时核对各 HUD 实现的公开 signal 列表。
 
+### KT-50：S1 感染兜底同帧推进教程后清掉第二轮反击
+
+- **现象**：PB-25 完成 type_c/S1 改口与感染后停在第 4 步，费米第二轮反击没有发出。
+- **条件**：`_advance_pb25_tutorial()` 中的感染兜底同步推进 `TutorialStepRunner`，当前帧继续用开始时缓存的步骤 ID 校验刚设置的第二轮反击请求，随后将请求清零。
+- **处理**：兜底完成感染并推进步骤时立即结束当前 `_advance_pb25_tutorial()`；下一帧重新读取步骤后处理反击。
+- **验证**：Godot 4.7.2 受控 Sandbox smoke 修复前稳定卡在第 4 步；修复后六步、失败重开、成功击破与存档检查全部通过。
+
 ## 六、自查入口
 遇到问题优先按类别检查：
 - UI 不响应 / 空引用：KT-02、KT-04、KT-05。
