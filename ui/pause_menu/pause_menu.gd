@@ -27,7 +27,7 @@ func _ready() -> void:
 
 func _input(event: InputEvent) -> void:
 	# 所有暂停输入统一使用 Input Map 的 pause Action，不硬编码具体键位。
-	if not event.is_action_pressed("pause") or event.is_echo():
+	if SceneRouter.is_transitioning() or not event.is_action_pressed("pause") or event.is_echo():
 		return
 
 	if _settings_panel.visible:
@@ -43,7 +43,7 @@ func _input(event: InputEvent) -> void:
 
 func pause_game() -> void:
 	# 打开暂停界面、暂停 SceneTree，并把焦点交给继续按钮。
-	if get_tree().paused:
+	if get_tree().paused or SceneRouter.is_transitioning():
 		return
 
 	_previous_focus = get_viewport().gui_get_focus_owner()
@@ -88,9 +88,8 @@ func _on_settings_panel_closed() -> void:
 
 func _on_main_menu_button_pressed() -> void:
 	# 切换顶层场景前先解除暂停；失败时恢复可操作的暂停状态。
-	_settings_panel.close()
-	get_tree().paused = false
-
+	# 统一发出恢复事实，避免音乐/漫画仍保留暂停标记而带入下一页。
+	resume_game()
 	var error: Error = SceneRouter.goto_main_menu()
 	if error != OK:
 		get_tree().paused = true

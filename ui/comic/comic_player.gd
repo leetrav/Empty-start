@@ -216,17 +216,16 @@ func _process(delta: float) -> void:
 		if is_instance_valid(_sound):
 			AudioManager.play_event_player(_sound)
 
-# 任意非重复按键快进分镜；Esc 退出演出返回菜单。
+# 普通按键快进分镜；Esc保留给统一暂停菜单，不再直接跳出剧情。
 func _input(event: InputEvent) -> void:
+	if event.is_action("pause"):
+		return
 	if _finished or _paused or not is_visible_in_tree():
 		return
 	# 场景切换会立即使当前节点离树，先消费本次有效输入再执行路由。
 	if event is InputEventKey and event.pressed and not event.echo:
 		get_viewport().set_input_as_handled()
-		if event.keycode == KEY_ESCAPE:
-			_finish(&"exited")
-		else:
-			advance()
+		advance()
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		get_viewport().set_input_as_handled()
 		AudioManager.play_ui_click()

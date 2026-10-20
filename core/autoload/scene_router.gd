@@ -10,6 +10,8 @@ const IDENTITY_SETUP_SCENE_PATH: String = "res://ui/identity_setup/identity_setu
 const OPENING_ROOM_SCENE_PATH: String = "res://ui/rest/rest_opening_room.tscn"
 const GAME_SCENE_PATH: String = "res://scenes/sandbox/sandbox_plan_b.tscn"
 const ENDING_SCENE_PATH: String = "res://ui/ending/ending_page.tscn"
+const PAUSE_MENU_PATH: String = "res://ui/pause_menu/pause_menu.tscn"
+const PAUSE_SCRIPT_PATH: String = "res://ui/pause_menu/pause_menu.gd"
 const LOADING_SCREEN: Script = preload("res://ui/loading_screen.gd")
 const FADE_OUT_SECONDS: float = 0.20
 const FADE_IN_SECONDS: float = 0.25
@@ -43,6 +45,9 @@ func _ready() -> void:
 	_failure_dialog.confirmed.connect(goto_main_menu)
 	_failure_dialog.close_requested.connect(goto_main_menu)
 	add_child(_failure_dialog)
+	# 初次F5/F6和此后每次切换都补齐同一暂停菜单，已有场景菜单继续复用。
+	get_tree().scene_changed.connect(_ensure_global_pause)
+	_ensure_global_pause.call_deferred()
 
 # 鼠标由遮罩拦截，键盘也在最先进入的路由层消费，避免快进穿透下一页面。
 func _input(_event: InputEvent) -> void:
@@ -204,3 +209,33 @@ func _fade_to(alpha: float, seconds: float) -> void:
 	var tween: Tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS).set_ignore_time_scale(true)
 	tween.tween_property(_loading_screen, "modulate:a", alpha, seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	await tween.finished
+
+# 每个正式顶层页面恰有一套暂停入口；保留Sandbox现有重开及指针取消接线。
+func _ensure_global_pause() -> void:
+	var scene: Node = get_tree().current_scene
+	if scene == null:
+		return
+	var pause: Node = null
+	for candidate: Node in scene.find_children("*", "CanvasLayer", true, false):
+		var script: Script = candidate.get_script() as Script
+		if script != null and script.resource_path == PAUSE_SCRIPT_PATH:
+			pause = candidate
+			break
+	if pause == null:
+		var packed: PackedScene = load(PAUSE_MENU_PATH) as PackedScene
+		if packed == null:
+			push_error("SceneRouter: global pause scene could not be loaded")
+			return
+		pause = packed.instantiate()
+		scene.add_child(pause)
+		pause.call("set_restart_available", false)
+	var callback: Callable = Callable(self, "_on_global_pause_changed")
+	if not pause.is_connected("paused_changed", callback):
+		pause.connect("paused_changed", callback)
+
+# 树暂停冻结玩法；漫画还要冻结自己的逐字/动画计时，音乐共用现有暂停接口。
+func _on_global_pause_changed(paused: bool) -> void:
+	AudioManager.set_music_paused(paused)
+	var scene: Node = get_tree().current_scene
+	if scene != null and scene.has_method("set_playback_paused"):
+		scene.call("set_playback_paused", paused)

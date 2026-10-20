@@ -204,3 +204,7 @@ ID-12 提供独立漫画播放控制 Node，按配置发出 1-based 分镜编号
 - `card_front_12` → `identity_heresy_1`
 
 - 2026-10-19：同步写入 `data/source_tables/01_身份配置.csv` 的 icon_asset_id（12 行），正式导表再次生成身份 Resource 时可保留当前暂定映射。
+
+## PAUSE-01 全局Esc覆盖（2026-10-20）
+
+独立漫画和身份设置由SceneRouter自动补齐同一PauseMenu。漫画Esc统一打开暂停，不再退出演出；普通按键/点击快进仍保留。暂停明确冻结ComicPanelPlaybackControl、逐字进度与动画，继续后从原进度恢复。返回主菜单改走暂停面板，避免全屏剧情页没有退出入口。
