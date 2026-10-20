@@ -1,7 +1,11 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://ui/identity_setup/identity_selection.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/ui/identity/identity_selection_background.png" id="2_identity_background"]
+[ext_resource type="Shader" path="res://ui/identity_setup/identity_backdrop_spotlight.gdshader" id="3_identity_spotlight"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_identity_spotlight"]
+shader = ExtResource("3_identity_spotlight")
 
 [node name="IdentitySelection" type="Control"]
 layout_mode = 3
@@ -23,12 +27,13 @@ mouse_filter = 2
 texture = ExtResource("2_identity_background")
 
 [node name="Background" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_identity_spotlight")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
-color = Color(0.09, 0.098, 0.114, 0.68)
+color = Color(1, 1, 1, 1)
 
 [node name="Margins" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -39,13 +44,23 @@ theme_override_constants/margin_bottom = 24
 
 [node name="Content" type="VBoxContainer" parent="Margins"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="Margins/Content"]
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
 text = "选择你的身份"
 horizontal_alignment = 1
+
+[node name="Instructions" type="Label" parent="Margins/Content"]
+layout_mode = 2
+text = "点击身份牌翻开，再次点击选择身份"
+horizontal_alignment = 1
+
+[node name="HeaderToCardsSpacer" type="Control" parent="Margins/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 18)
+mouse_filter = 2
 
 [node name="CardArea" type="HBoxContainer" parent="Margins/Content"]
 unique_name_in_owner = true
@@ -86,42 +101,91 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="IdentityDetailsPanel" type="PanelContainer" parent="Margins/Content/CardArea"]
+[node name="DetailsHolder" type="VBoxContainer" parent="Margins/Content/CardArea"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(240, 0)
-size_flags_vertical = 3
+custom_minimum_size = Vector2(255, 0)
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 10
 
-[node name="DetailsContent" type="VBoxContainer" parent="Margins/Content/CardArea/IdentityDetailsPanel"]
+[node name="IdentityDetailsPanel" type="PanelContainer" parent="Margins/Content/CardArea/DetailsHolder"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(255, 420)
+size_flags_horizontal = 3
+
+[node name="InnerPadding" type="MarginContainer" parent="Margins/Content/CardArea/DetailsHolder/IdentityDetailsPanel"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 12
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 12
 
-[node name="IdentityDetailsTitle" type="Label" parent="Margins/Content/CardArea/IdentityDetailsPanel/DetailsContent"]
+[node name="DetailsContent" type="VBoxContainer" parent="Margins/Content/CardArea/DetailsHolder/IdentityDetailsPanel/InnerPadding"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="IdentityDetailsTitle" type="Label" parent="Margins/Content/CardArea/DetailsHolder/IdentityDetailsPanel/InnerPadding/DetailsContent"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"TitleLabel"
-text = "身份详情"
+text = "身 份 预 览"
 
-[node name="IdentityDetailsName" type="Label" parent="Margins/Content/CardArea/IdentityDetailsPanel/DetailsContent"]
+[node name="DetailsSymbol" type="TextureRect" parent="Margins/Content/CardArea/DetailsHolder/IdentityDetailsPanel/InnerPadding/DetailsContent"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 126)
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="UnknownGlyph" type="Label" parent="Margins/Content/CardArea/DetailsHolder/IdentityDetailsPanel/InnerPadding/DetailsContent"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "?"
+horizontal_alignment = 1
+
+[node name="IdentityDetailsName" type="Label" parent="Margins/Content/CardArea/DetailsHolder/IdentityDetailsPanel/InnerPadding/DetailsContent"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"HeadingLabel"
 autowrap_mode = 3
+horizontal_alignment = 1
 text = "聚焦卡片查看完整名称"
 
-[node name="SelectionStatus" type="Label" parent="Margins/Content/CardArea/IdentityDetailsPanel/DetailsContent"]
+[node name="SelectionStatus" type="Label" parent="Margins/Content/CardArea/DetailsHolder/IdentityDetailsPanel/InnerPadding/DetailsContent"]
 unique_name_in_owner = true
 layout_mode = 2
+visible = false
 theme_type_variation = &"MutedLabel"
 autowrap_mode = 3
 text = "尚未选择身份"
 
-[node name="IdentityDetailsDescription" type="Label" parent="Margins/Content/CardArea/IdentityDetailsPanel/DetailsContent"]
+[node name="UnrevealedHint" type="Label" parent="Margins/Content/CardArea/DetailsHolder/IdentityDetailsPanel/InnerPadding/DetailsContent"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 autowrap_mode = 3
+horizontal_alignment = 0
+text = "请点击身份卡翻开"
+
+[node name="DescriptionScroll" type="ScrollContainer" parent="Margins/Content/CardArea/DetailsHolder/IdentityDetailsPanel/InnerPadding/DetailsContent"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="IdentityDetailsDescription" type="Label" parent="Margins/Content/CardArea/DetailsHolder/IdentityDetailsPanel/InnerPadding/DetailsContent/DescriptionScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
+horizontal_alignment = 0
 text = "聚焦或翻开身份卡查看完整说明。"
 
 [node name="Navigation" type="HBoxContainer" parent="."]
@@ -132,11 +196,11 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 32.0
-offset_top = -88.0
+offset_top = -125.0
 offset_right = -32.0
 offset_bottom = -24.0
 grow_horizontal = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 24
 
 [node name="BackButton" type="Button" parent="Navigation"]
 unique_name_in_owner = true
@@ -147,13 +211,14 @@ text = "返回主播取名"
 
 [node name="RevealAllButton" type="Button" parent="Navigation"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 64)
+custom_minimum_size = Vector2(0, 101)
 layout_mode = 2
+size_flags_horizontal = 3
 text = "一键翻开"
 
 [node name="NextButton" type="Button" parent="Navigation"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 101)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"PrimaryButton"
