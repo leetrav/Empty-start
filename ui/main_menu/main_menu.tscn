@@ -201,4 +201,3 @@ offset_bottom = 1004.0
 script = ExtResource("8")
 caption = "返回菜单"
 text_size = 34
-
