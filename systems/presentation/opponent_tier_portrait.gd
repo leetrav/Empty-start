@@ -12,9 +12,9 @@ signal flip_finished(tier: int)
 @export var kiwi_burst_scale: float = 1.09
 @export var kiwi_shake_pixels: float = 7.0
 @export_range(0.7, 1.0, 0.01) var alien_tier_scale: float = 0.90
-# alpha 中心用于水平对齐；Y 表示安全站立线在镜头高度中的位置。
-# 原 PA-23 的 Y=1.0 会把较高的动作裁出 432px 直播镜头。
-@export var visible_anchor_ratio: Vector2 = Vector2(0.5, 0.94)
+# Y=1 对齐可见脚底到直播框的安全下沿；是否裁切由 fit_current_texture() 负责。
+# 旧版 0.94 在 432px 框中人为留下约 26px 悬空间隙。
+@export var visible_anchor_ratio: Vector2 = Vector2(0.5, 1.0)
 @export_range(0.0, 24.0, 1.0) var visible_edge_guard_px: float = 5.0
 
 var current_tier: int = 0
@@ -106,8 +106,8 @@ func _rebuild_visible_bounds() -> void:
 		_maximum_visible_size = _maximum_visible_size.max(bounds.size)
 
 
-# 保留原来每角色全套姿态的共同尺寸比例。只重算可见内容的安全位置；
-# 使矮姿态下沉，而高姿态的头脚都留在 432px 镜头内，PA-17 复用此函数。
+# 维持单张原图等比适配。可见脚底落到安全下沿，较高姿态向上移动。
+# 考虑缩放动画的实际 scale.y，修正原来按未缩放边界定位造成的悬空。
 func fit_current_texture() -> void:
 	if _portrait == null or _portrait.texture == null or size.x <= 0.0 or size.y <= 0.0:
 		return
@@ -120,20 +120,21 @@ func fit_current_texture() -> void:
 	var raw_size: Vector2 = texture.get_size().max(Vector2.ONE)
 	var fit_scale: float = minf(available.x / raw_size.x, available.y / raw_size.y)
 	var ground_ratio: Vector2 = visible_anchor_ratio.clamp(Vector2.ZERO, Vector2.ONE)
-	var visible_size: Vector2 = bounds.size * fit_scale
+	var display_height: float = bounds.size.y * fit_scale * absf(_portrait.scale.y)
 	var visible_top: float = clampf(
-		size.y * ground_ratio.y - visible_size.y,
+		size.y * ground_ratio.y - guard - display_height,
 		guard,
-		maxf(guard, size.y - guard - visible_size.y)
+		maxf(guard, size.y - guard - display_height)
 	)
 	_portrait.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	_portrait.stretch_mode = TextureRect.STRETCH_SCALE
 	_portrait.size = texture.get_size() * fit_scale
-	# Tween 保持绕可见身体中心翻转，不随脚底锚点改变旋转中心。
+	# 翻牌仍绕可见身体中心旋转；位置补偿 pivot 与 scale 对脚底的影响。
 	_portrait.pivot_offset = (bounds.position + bounds.size * 0.5) * fit_scale
 	_portrait.position = Vector2(
 		size.x * ground_ratio.x - _portrait.pivot_offset.x,
-		visible_top - bounds.position.y * fit_scale
+		visible_top - _portrait.pivot_offset.y
+			- (bounds.position.y * fit_scale - _portrait.pivot_offset.y) * _portrait.scale.y
 	)
 
 
