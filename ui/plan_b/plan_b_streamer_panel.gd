@@ -98,10 +98,13 @@ func configure_opponent_tier_textures(idle: Texture2D, tier_01: Texture2D, tier_
 		_tier_presenter.call("configure_textures", idle, tier_01, tier_02, tier_03)
 
 func configure_portrait_character(character_id: String) -> void:
-	# 保存当前对手 ID，供结算演出与评论粉丝资源一起按稳定 ID 切换。
-	_result_character_id = StringName(character_id.strip_edges())
-	if not character_id.strip_edges().is_empty():
-		_active_streamer_id = character_id.strip_edges()
+	# 角色身份必须同步给阶段立绘，否则青蛙分件和角色专属表现都无法按关卡隔离。
+	var resolved_id: String = character_id.strip_edges()
+	_result_character_id = StringName(resolved_id)
+	if not resolved_id.is_empty():
+		_active_streamer_id = resolved_id
+	if streamer_side == "opponent" and _tier_presenter != null:
+		_tier_presenter.call("configure_character", resolved_id)
 	_sync_comment_branding()
 
 func configure_opponent_foreground(texture: Texture2D) -> void:
