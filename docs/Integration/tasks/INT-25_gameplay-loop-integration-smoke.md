@@ -44,7 +44,7 @@
 - 不修改主菜单标题 PNG、话语池 CSV、教程文案、战斗／人口／PK 平衡参数、棋子运动、主播立绘、音频及无关美术；不触碰 `D:\Godot\Empty-start` 中的未提交本地修改。
 
 ## Godot 开发环境
-Godot 4.7.2、GDScript、Windows PC；逻辑画布 1920×1080，另检查 1280×720。使用 Godot-MCP-Native 与 `godot_mcp`；工作树、缓存、测试输出、日志、截图和录屏均放 D 盘。
+Godot 4.7.2、GDScript、Windows PC；项目根目录：`D:\\Godot\\Empty-start`（实际工作树另建于 D 盘，不覆盖原工作区）；逻辑画布 1920×1080，另检查 1280×720。使用 Godot-MCP-Native 与 `godot_mcp`；工作树、缓存、测试输出、日志、截图和录屏均放 D 盘。
 
 ## 最小执行流程
 1. 确认最新 `main`、PR #341 依赖和唯一文件 Owner；只查本卡涉及的真实接口与现有实现。
