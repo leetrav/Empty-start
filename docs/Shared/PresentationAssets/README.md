@@ -1,5 +1,17 @@
 # PresentationAssets 表现资产接入
 
+## PA-26 主角仓鼠事件表情（2026-10-21）
+
+`PlanBStreamerPanel.show_player_expression(kind, seconds)` 只替换玩家现有 `_portrait_art.texture`；相机槽尺寸、TextureRect 锚点/等比显示、PA-14 射击层、CRT 与桌沿前景保持原状。面板加载 `hamster_idle/smile/happy/angry/evil.png`；非 idle 贴图缺失时回退 idle。一次性 Timer 到期及 `reset_for_attempt()` 都恢复 idle；前一段表情尚未结束时忽略重复 smile，其他新反馈可覆盖当前反馈。
+
+| 现有事件 | 表情与时长 |
+| --- | --- |
+| `resolve_publish_request()` 成功回执 | `smile`，1.2s |
+| `set_paradox_stage_active(false → true)` 首次进入矛盾阶段 | `evil`，1.6s |
+| 反馈到期、面板重开 | `idle` |
+
+`Tier` 升降不映射 `happy/angry`。当前结果流程没有可由玩家面板消费、且能保证在结算覆盖前可见的胜负反馈入口；不为表情新增结果事件。真实运行证据与最小验证见 [PA-26 日志](表现资产_PA-26_2026-10-21_log.md) 及 [`evidence/PA-26-2026-10-21/`](evidence/PA-26-2026-10-21/)。
+
 ## PTF-04 立绘与 PK 视图修复（2026-10-16）
 
 `OpponentTierPortrait` 在 PTF-04 曾使用同角色全套 alpha 边界共同缩放，使较短/较窄的阶段图明显缩小。**PA-23-FIX 现按每张原图完整画布的宽高比适配直播框**，恢复 PA-14 的显示尺度：保留原图比例、翻牌 Pivot、角色专属修正系数；同时将可见主体底边放在 `(0.5,1.0)` 站立线上（保留 5px 画面内安全距离），四周预留 5px 边距，较高姿态优先完整显示。PA-17 的过渡和击败图继续调用 `fit_current_texture()`。Fox 的 `level_004.tres.streamer_live_background` 已引用仓库存在的 `fox/background.png`。最终视觉取舍由策划验收。

@@ -13,6 +13,13 @@ const TIER_PORTRAIT_SCRIPT: Script = preload("res://systems/presentation/opponen
 const CRT_SCRIPT: Script = preload("res://systems/presentation/crt_connection_fx.gd")
 const BREAKTHROUGH_SCENE: PackedScene = preload("res://systems/presentation/opponent_breakthrough_presentation.tscn")
 const HAMSTER_PORTRAIT: Texture2D = preload("res://assets/characters/player/hamster_idle.png")
+const PLAYER_EXPRESSION_PATHS := {
+	"idle": "res://assets/characters/player/hamster_idle.png",
+	"smile": "res://assets/characters/player/hamster_smile.png",
+	"happy": "res://assets/characters/player/hamster_happy.png",
+	"angry": "res://assets/characters/player/hamster_angry.png",
+	"evil": "res://assets/characters/player/hamster_evil.png",
+}
 const HAMSTER_BACKGROUND: Texture2D = preload("res://assets/environment/live/hamster/background.png")
 const HAMSTER_FOREGROUND: Texture2D = preload("res://assets/environment/live/hamster/foreground_desk.png")
 const DEFAULT_PLAYER_FAN_BADGE: Texture2D = preload("res://assets/ui/combat/fan_badges/player_fan_badge_01.png")
@@ -65,6 +72,9 @@ var _result_configured := false
 var _result_active := false
 var _result_character_id: StringName = &""
 var _result_defeat_texture: Texture2D
+var _player_expression_textures: Dictionary = {}
+var _player_idle_texture: Texture2D
+var _player_expression_timer: Timer
 
 func configure_side(side: String) -> void:
 	## 场景组合前声明左右侧，以匹配指标对齐、气泡尾部和主播待机动效。
@@ -74,8 +84,72 @@ func configure_side(side: String) -> void:
 func _ready() -> void:
 	_build_panel()
 	_attach_portrait_motion()
+	_load_player_expression_textures()
 	_apply_default_assets()
 	_build_presentation_layers()
+	if streamer_side == "player":
+		_build_player_expression_timer()
+
+
+func _load_player_expression_textures() -> void:
+	# 复用已有表情 PNG；缺失的非 idle 图由公开切换入口回退到 idle。
+	if streamer_side != "player":
+		return
+	for expression in PLAYER_EXPRESSION_PATHS.keys():
+		var texture := ResourceLoader.load(str(PLAYER_EXPRESSION_PATHS[expression])) as Texture2D
+		if texture != null:
+			_player_expression_textures[expression] = texture
+
+
+func _build_player_expression_timer() -> void:
+	# 一个一次性 Timer 管理单次换图寿命，随面板释放，不留下过期回调。
+	_player_expression_timer = Timer.new()
+	_player_expression_timer.name = "PlayerExpressionTimer"
+	_player_expression_timer.one_shot = true
+	_player_expression_timer.timeout.connect(_on_player_expression_timeout)
+	add_child(_player_expression_timer)
+
+
+func show_player_expression(kind: StringName, seconds: float = 1.2) -> bool:
+	# 仅替换玩家 TextureRect 的贴图，不改相机槽、比例、锚点或前景桌沿。
+	if streamer_side != "player" or _portrait_art == null:
+		return false
+	var expression := String(kind)
+	if not PLAYER_EXPRESSION_PATHS.has(expression):
+		expression = "idle"
+	# 高频成功发表在当前反馈结束前略过，避免表情连续闪烁。
+	if expression == "smile" and _player_expression_timer != null and not _player_expression_timer.is_stopped():
+		return false
+	if _player_expression_timer != null:
+		_player_expression_timer.stop()
+	_portrait_art.texture = _player_expression_texture(expression)
+	if expression == "idle" or seconds <= 0.0:
+		return true
+	if _player_expression_timer == null:
+		reset_player_expression()
+		return false
+	_player_expression_timer.start(maxf(seconds, 0.01))
+	return true
+
+
+func reset_player_expression() -> void:
+	# 重开或显式复位时立即停止计时并恢复本侧配置的 idle 原图。
+	if _player_expression_timer != null:
+		_player_expression_timer.stop()
+	if streamer_side == "player" and _portrait_art != null:
+		_portrait_art.texture = _player_expression_texture("idle")
+
+
+func _on_player_expression_timeout() -> void:
+	reset_player_expression()
+
+
+func _player_expression_texture(expression: String) -> Texture2D:
+	var idle_texture: Texture2D = _player_idle_texture if _player_idle_texture != null else HAMSTER_PORTRAIT
+	if expression == "idle":
+		return idle_texture
+	var texture := _player_expression_textures.get(expression) as Texture2D
+	return texture if texture != null else idle_texture
 
 func configure_identity(display_name: String, fan_group_name: String) -> void:
 	_name_label.text = display_name if not display_name.strip_edges().is_empty() else ("玩家主播" if streamer_side == "player" else "当前主播")
@@ -87,6 +161,9 @@ func configure_assets(portrait: Texture2D, background: Texture2D, fan_badge: Tex
 		foreground = HAMSTER_FOREGROUND
 	_set_texture(_portrait_background, background)
 	_set_texture(_portrait_art, portrait)
+	if streamer_side == "player":
+		_player_idle_texture = portrait if portrait != null else HAMSTER_PORTRAIT
+		reset_player_expression()
 	_set_texture(_portrait_foreground, foreground)
 	_sync_comment_branding(fan_badge)
 	_portrait_placeholder.visible = portrait == null
@@ -160,6 +237,8 @@ func play_opponent_result(broken: bool) -> bool:
 func reset_for_attempt() -> void:
 	_result_active = false
 	_result_configured = false
+	if streamer_side == "player":
+		reset_player_expression()
 	if _breakthrough != null:
 		_breakthrough.call("reset_to_tier_three")
 	if _portrait_motion != null:
