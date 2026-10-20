@@ -2,11 +2,11 @@
 
 [ext_resource type="Script" path="res://ui/main_menu/main_menu.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/settings/settings_panel.tscn" id="2"]
-[ext_resource type="Texture2D" path="res://assets/opening/background.png" id="3"]
-[ext_resource type="Texture2D" path="res://assets/opening/char_hamster.png" id="4"]
-[ext_resource type="Texture2D" path="res://assets/opening/ui_front_bo.png" id="5"]
-[ext_resource type="Texture2D" path="res://assets/opening/ui_front_lai.png" id="6"]
-[ext_resource type="Texture2D" path="res://assets/opening/ui_front_shu.png" id="7"]
+[ext_resource type="Texture2D" path="res://assets/ui/main_menu/cover_background.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/ui/main_menu/cover_hamster.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/ui/main_menu/cover_title_bo.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/ui/main_menu/cover_title_lai.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/ui/main_menu/cover_title_shu.png" id="7"]
 [ext_resource type="Script" path="res://ui/main_menu/cover_menu_button.gd" id="8"]
 [ext_resource type="Shader" path="res://ui/main_menu/previews/pend00_god_rays.gdshader" id="9"]
 
