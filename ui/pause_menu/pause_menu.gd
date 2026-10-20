@@ -1,6 +1,6 @@
 extends CanvasLayer
 
-## 暂停菜单 V2：美术全屏底图 + 纯文字入口，内页以文字控制真实音量。
+## 暂停菜单：美术底图与统一滑块设置页，标题和战斗复用相同实例。
 signal restart_requested
 signal paused_changed(paused: bool)
 signal settings_closed
@@ -16,17 +16,13 @@ var _previous_focus: Control
 var _restart_available := true
 var _resume_button: Button
 var _settings_button: Button
-var _display_settings_button: Button
 var _main_menu_button: Button
 var _reload_button: Button
-var _volume_values: Dictionary = {}
 var _settings_only := false
 
 @onready var _overlay: Control = %Overlay
 @onready var _main_page: Control = %MainPage
 @onready var _main_actions: VBoxContainer = %PauseActions
-@onready var _audio_page: Control = %AudioPage
-@onready var _audio_actions: VBoxContainer = %AudioActions
 @onready var _feedback_label: Label = %FeedbackLabel
 @onready var _settings_panel: SettingsPanel = %SettingsPanel
 
@@ -35,10 +31,8 @@ func _ready() -> void:
 	# 场景层级90高于结算/历史层30、低于加载层100；暂停时继续处理输入和按钮。
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_main_page()
-	_build_audio_page()
-	_settings_panel.closed.connect(_on_display_settings_closed)
+	_settings_panel.closed.connect(_on_settings_closed)
 	_main_page.show()
-	_audio_page.hide()
 	_overlay.hide()
 
 
@@ -79,128 +73,21 @@ func _build_main_page() -> void:
 	set_restart_available(_restart_available)
 
 
-func _build_audio_page() -> void:
-	_audio_actions.add_theme_constant_override("separation", 18)
-	var title := Label.new()
-	title.text = "音量设置"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_override("font", MENU_FONT)
-	title.add_theme_font_size_override("font_size", 54)
-	title.add_theme_color_override("font_color", COLOR_GOLD)
-	title.custom_minimum_size = Vector2(0, 92)
-	_audio_actions.add_child(title)
-	for info in [
-		["master", "主音量"],
-		["music", "音乐音量"],
-		["sfx", "音效音量"],
-		["ui", "界面音量"]
-	]:
-		_add_volume_row(String(info[0]), String(info[1]))
-	_display_settings_button = _make_text_button("更多设置", COLOR_GOLD, 36, 65, _open_display_settings)
-	_audio_actions.add_child(_display_settings_button)
-	_audio_actions.add_child(_make_text_button("返回", COLOR_EXIT, 49, 95, _leave_audio_page))
-
-
-# 新版音量页的更多设置保留全屏、重置等功能，统一读取SettingsManager。
-func _open_display_settings() -> void:
-	_audio_page.hide()
+# 标题和暂停入口共享唯一美术滑块页，不再叠加“更多设置”二级旧面板。
+func _open_audio_page() -> void:
+	_feedback_label.text = ""
+	_main_page.hide()
+	$Overlay/ArtworkBackground.hide()
 	_settings_panel.open()
 
 
-func _on_display_settings_closed() -> void:
-	_refresh_volumes()
-	_audio_page.show()
-	_display_settings_button.grab_focus()
-
-
-func _add_volume_row(key: String, display_name: String) -> void:
-	var row := HBoxContainer.new()
-	row.name = key + "_volume_row"
-	row.custom_minimum_size = Vector2(0, 78)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 2)
-	_audio_actions.add_child(row)
-
-	var heading := Label.new()
-	heading.text = display_name
-	heading.custom_minimum_size = Vector2(224, 0)
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	heading.add_theme_font_override("font", MENU_FONT)
-	heading.add_theme_font_size_override("font_size", 36)
-	heading.add_theme_color_override("font_color", COLOR_GOLD)
-	row.add_child(heading)
-
-	var minus := _make_text_button("－", COLOR_GOLD, 40, 75, _change_volume.bind(key, -VOLUME_STEP))
-	minus.custom_minimum_size.x = 63
-	minus.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	row.add_child(minus)
-
-	var value := Label.new()
-	value.name = key + "_volume_value"
-	value.custom_minimum_size = Vector2(130, 0)
-	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	value.add_theme_font_override("font", MENU_FONT)
-	value.add_theme_font_size_override("font_size", 35)
-	value.add_theme_color_override("font_color", Color("#f3d89c"))
-	row.add_child(value)
-	_volume_values[key] = value
-
-	var plus := _make_text_button("＋", COLOR_GOLD, 40, 75, _change_volume.bind(key, VOLUME_STEP))
-	plus.custom_minimum_size.x = 63
-	plus.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	row.add_child(plus)
-
-
-func _read_volume(key: String) -> float:
-	match key:
-		"master": return SettingsManager.master_volume
-		"music": return SettingsManager.music_volume
-		"sfx": return SettingsManager.sfx_volume
-		"ui": return SettingsManager.ui_volume
-	return 0.0
-
-
-func _change_volume(key: String, delta: float) -> void:
-	# 四条 Audio Bus 使用已有 SettingsManager；步进 5% 即时生效。
-	var next_value := clampf(roundf((_read_volume(key) + delta) / VOLUME_STEP) * VOLUME_STEP, 0.0, 1.0)
-	match key:
-		"master": SettingsManager.set_master_volume(next_value)
-		"music": SettingsManager.set_music_volume(next_value)
-		"sfx": SettingsManager.set_sfx_volume(next_value)
-		"ui": SettingsManager.set_ui_volume(next_value)
-	_refresh_volumes()
-
-
-func _refresh_volumes() -> void:
-	for key in _volume_values:
-		(_volume_values[key] as Label).text = "%d%%" % roundi(_read_volume(key) * 100.0)
-
-
-func _open_audio_page() -> void:
-	_feedback_label.text = ""
-	_refresh_volumes()
-	_main_page.hide()
-	_audio_page.show()
-	# 首行减号可键盘聚焦。
-	(_audio_actions.get_child(1) as HBoxContainer).get_child(1).grab_focus()
-
-
-func _leave_audio_page() -> void:
-	# 和旧 SettingsPanel 一样：修改立即生效，离开页面时持久化配置。
-	var result: Error = SettingsManager.save_settings()
+func _on_settings_closed() -> void:
+	$Overlay/ArtworkBackground.show()
 	if _settings_only:
 		resume_game()
-		return
-	_audio_page.hide()
-	_main_page.show()
-	if result != OK:
-		_feedback_label.text = "音量设置保存失败，请重试"
 	else:
-		_feedback_label.text = ""
-	_settings_button.grab_focus()
-
+		_main_page.show()
+		_settings_button.grab_focus()
 
 # 标题选项直接显示同一音量内页，以遮罩和隐藏标题按钮阻止穿透，不暂停音乐。
 func open_settings() -> void:
@@ -231,15 +118,11 @@ func _input(event: InputEvent) -> void:
 	if _settings_only:
 		if _settings_panel.visible:
 			_settings_panel.close()
-		else:
-			_leave_audio_page()
 		get_viewport().set_input_as_handled()
 		return
 	if get_tree().paused:
 		if _settings_panel.visible:
 			_settings_panel.close()
-		elif _audio_page.visible:
-			_leave_audio_page()
 		else:
 			resume_game()
 	else:
@@ -257,7 +140,6 @@ func pause_game() -> void:
 	_main_menu_button.disabled = SceneRouter.is_ending_performance_active()
 	_feedback_label.text = ""
 	_settings_panel.hide()
-	_audio_page.hide()
 	_main_page.show()
 	_overlay.show()
 	get_tree().paused = true
@@ -270,10 +152,6 @@ func resume_game() -> void:
 	_settings_only = false
 	if _settings_panel.visible:
 		_settings_panel.close()
-	if _audio_page.visible:
-		# 兼容来自外部系统的直接恢复调用。
-		SettingsManager.save_settings()
-		_audio_page.hide()
 	_main_page.show()
 	_overlay.hide()
 	var was_paused := get_tree().paused

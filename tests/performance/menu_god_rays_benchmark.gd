@@ -81,10 +81,10 @@ func _settings_smoke() -> void:
 	_check(SettingsManager.menu_rays_quality == 1 and rays.visible)
 	menu._on_settings_button_pressed()
 	var pause: Node = menu.find_child("PauseMenu", true, false)
-	_check(pause.get_node("%AudioPage").is_visible_in_tree())
+	_check(pause.get_node("%SettingsPanel").is_visible_in_tree())
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(OUT+"/settings.png")
-	pause.call("_leave_audio_page")
+	pause.get_node("%SettingsPanel").close()
 	print("RAYS_SETTINGS_PASS")
 func _compare_images() -> void:
 	var before := Image.load_from_file(OUT+"/original_1920.png").get_data()

@@ -98,7 +98,6 @@ func _run() -> void:
 	var menu: Node = _pause_menu()
 	await _capture("ending_fullscreen_paused")
 	menu.get("_settings_button").pressed.emit()
-	menu.get("_display_settings_button").pressed.emit()
 	var settings: SettingsPanel = menu.get_node("%SettingsPanel") as SettingsPanel
 	_check(settings.visible, "pause opens settings while paused")
 	settings.get_node("%FullscreenCheck").set_pressed(false)

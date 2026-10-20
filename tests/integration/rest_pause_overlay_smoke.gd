@@ -43,7 +43,6 @@ func _run() -> void:
 	await _wait()
 	await _escape()
 	await _click(menu.get("_settings_button"))
-	await _click(menu.get("_display_settings_button"))
 	var settings: Control=menu.get_node("%SettingsPanel")
 	_check(settings.visible,"fullscreen result pause settings reachable by mouse")
 	await _click(settings.get_node("%FullscreenCheck"))
@@ -51,7 +50,6 @@ func _run() -> void:
 	await _escape()
 	_check(get_tree().paused and not settings.visible,"Esc closes settings and retains pause")
 	_check(session.get_result_snapshot()==original and SaveManager.data.completed_normal_level_ids.is_empty(),"pause/history does not advance or mutate result")
-	await _escape()
 	await _click(menu.get("_main_menu_button"))
 	await _settle()
 	_check(not get_tree().paused and get_tree().current_scene.scene_file_path==SceneRouter.MAIN_MENU_SCENE_PATH,"native pause return goes to usable title")
@@ -69,11 +67,9 @@ func _exercise(label: String) -> void:
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("D:/src/playtest-20261020/rest-pause-"+label+".png")
 	await _click(menu.get("_settings_button"))
-	await _click(menu.get("_display_settings_button"))
 	_check(menu.get_node("%SettingsPanel").visible,label+" settings receives actual mouse click")
 	await _escape()
 	_check(get_tree().paused and not menu.get_node("%SettingsPanel").visible,label+" settings Esc returns to pause")
-	await _escape()
 	await _click(menu.get("_resume_button"))
 	_check(not get_tree().paused and not menu.get_node("%Overlay").visible,label+" native continue resumes")
 	_check(get_viewport().gui_get_focus_owner()==previous,label+" prior focus restored")
@@ -93,7 +89,7 @@ func _escape() -> void:
 		Input.flush_buffered_events()
 		await get_tree().process_frame
 func _click(button: BaseButton) -> void:
-	var point := button.get_global_rect().get_center()*Vector2(get_window().size)/get_viewport().get_visible_rect().size
+	var point := get_viewport().get_final_transform()*button.get_global_rect().get_center()
 	var move := InputEventMouseMotion.new()
 	move.position=point
 	Input.parse_input_event(move)
