@@ -383,3 +383,9 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - Godot 4.7.2 Windows：菜单、身份和房间可载入；后台请求正式 Plan B 场景在 headless 中超过40秒仍为 `THREAD_LOAD_IN_PROGRESS`，原页面和加载遮罩仍在，无脚本解析错误。相同场景链 GUI Compatibility 可完成。
 - 路由仅在 headless 中沿用同步 ResourceLoader 读取；图形版仍使用后台读取并轮询状态，30秒超时显示恢复入口。无窗口读取与 GUI 都复验，不能据此推断两者性能相同。
 - 引擎仓库有相关但未确认同根因的报告：<https://github.com/godotengine/godot/issues/124139>、<https://github.com/godotengine/godot/issues/120827>。
+
+### AU-06：先暂停全树会冻结加载遮幕期间的音乐淡出
+
+- 条件：路由在淡出旧画面前先设置SceneTree.paused=true，而AudioManager音乐Tween继承暂停；视觉淡出仍跑，旧曲增益却不下降。
+- 本次漫画收尾至标题、标题离场：输入先锁定，旧音乐与旧画面先一起淡出，再在全黑期间暂停全树完成加载/初始化。标题揭幕完成后起标题曲，避免新曲淡入也被黑幕暂停消耗。
+- 验证必须观察真实播放器增益随帧下降和旧曲停止事实，不能只检查事件ID或把固定首帧140ms当成Tween已经更新。
