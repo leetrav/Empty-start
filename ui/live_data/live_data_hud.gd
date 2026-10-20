@@ -172,71 +172,85 @@ func _add_next_comment() -> void:
 		oldest.queue_free()
 
 
-## 粉丝行按 PA-21 532×144 横标原比例绘制；徽章放入内圆，完整“昵称：正文”限于右侧文本安全区。
+## 粉丝牌是昵称的局部身份装饰，正文在普通背景上独立排版。
+## 旧版将横标铺满评论宽度、缩字号，导致每条粉丝消息像广告牌。
 func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Control:
-	var row_width := _comment_list.size.x
-	if row_width <= 0.0:
-		row_width = maxf(size.x - 32.0, 160.0)
-	# PA-21 源图在 532×144 画布上的有效横标范围是 (10,20)-(326,121)，右侧还有透明留白。
-	# 裁到真实标牌后再等比放大到评论宽度，文字不会跑进透明区。
-	var row_height: float = row_width * FAN_NAMEPLATE_VISIBLE_REGION.size.y / FAN_NAMEPLATE_VISIBLE_REGION.size.x
-	var row := Control.new()
+	var preferred_size: int = maxi(16, int(_comment_params.get("comment_font_size_px", 20)))
+	var plate_size := Vector2(144.0, 46.0)
+	var row := HBoxContainer.new()
 	row.name = "FanNameplateCommentRow"
-	row.custom_minimum_size = Vector2(0.0, row_height)
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.clip_contents = true
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var nameplate := TextureRect.new()
-	var visible_nameplate := AtlasTexture.new()
-	visible_nameplate.atlas = _comment_fan_nameplate
-	visible_nameplate.region = FAN_NAMEPLATE_VISIBLE_REGION
-	nameplate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	nameplate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	nameplate.stretch_mode = TextureRect.STRETCH_SCALE
-	nameplate.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	nameplate.texture = visible_nameplate
-	nameplate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(nameplate)
+	row.add_theme_constant_override("separation", 8)
 
-	# PA-21 横标左侧是直径144px的徽章位；缩放后再留出安全边距。
-	var badge_size: float = row_height * 0.68
+	var identity := Control.new()
+	identity.name = "FanIdentity"
+	identity.custom_minimum_size = plate_size
+	identity.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	identity.clip_contents = true
+	identity.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(identity)
+
+	# 532×144 源图的实际非透明区域为 (10,20)-(326,121)。
+	# 以固定 144×46 尺寸等比显示裁切区域，不再随评论栏宽度拉伸。
+	var plate := TextureRect.new()
+	plate.name = "Nameplate"
+	plate.position = Vector2.ZERO
+	plate.size = plate_size
+	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	plate.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var atlas := AtlasTexture.new()
+	atlas.atlas = _comment_fan_nameplate
+	atlas.region = FAN_NAMEPLATE_VISIBLE_REGION
+	plate.texture = atlas
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	identity.add_child(plate)
+
+	# 左端内圆与昵称分别使用固定的安全区，徽章始终保持原始比例。
 	var badge := TextureRect.new()
-	var badge_center := Vector2(row_width * 0.17, row_height * 0.51)
-	badge.position = badge_center - Vector2.ONE * badge_size * 0.5
-	badge.size = Vector2.ONE * badge_size
+	badge.name = "FanBadge"
+	badge.size = Vector2(31.0, 31.0)
+	badge.position = Vector2(plate_size.x * 0.17, plate_size.y * 0.51) - badge.size * 0.5
 	badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	badge.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	badge.texture = _comment_fan_badge
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(badge)
+	identity.add_child(badge)
 
-	var text_rect := Rect2(
-		Vector2(row_width * 0.34, row_height * 0.12),
-		Vector2(row_width * 0.62, row_height * 0.76)
-	)
-	var safe_name := display_name.replace("[", "[lb]")
-	var safe_text := comment_text.replace("[", "[lb]")
-	var plain_text := "%s：%s" % [display_name, comment_text]
-	var font_size := _fit_comment_text_font_size(plain_text, text_rect.size, int(_comment_params.get("comment_font_size_px", 20)))
-	var label := RichTextLabel.new()
-	label.position = text_rect.position
-	label.size = text_rect.size
-	label.custom_minimum_size = text_rect.size
-	label.bbcode_enabled = true
-	label.fit_content = false
-	label.scroll_active = false
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.name = "CommentText"
-	label.add_theme_font_size_override("normal_font_size", font_size)
-	var text_color := "#" + _comment_nameplate_text_color.to_html(false)
-	label.text = "[b][color=%s]%s[/color][/b]：[color=%s]%s[/color]" % [text_color, safe_name, text_color, safe_text]
-	row.add_child(label)
+	var nickname := Label.new()
+	nickname.name = "FanNickname"
+	nickname.text = display_name
+	nickname.position = Vector2(plate_size.x * 0.35, 4.0)
+	nickname.size = Vector2(plate_size.x * 0.59, plate_size.y - 8.0)
+	nickname.add_theme_font_size_override("font_size", 17)
+	nickname.add_theme_color_override("font_color", _comment_nameplate_text_color)
+	nickname.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	nickname.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	nickname.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	nickname.clip_text = true
+	nickname.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	identity.add_child(nickname)
+
+	# 正文持有剩余宽度并自行换行；短/长 ID 都不会缩小评论字号。
+	var message := RichTextLabel.new()
+	message.name = "CommentText"
+	message.text = "：" + comment_text
+	message.bbcode_enabled = false
+	message.fit_content = true
+	message.scroll_active = false
+	message.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	message.custom_minimum_size = Vector2(0.0, maxf(plate_size.y, float(preferred_size) * 1.5))
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message.add_theme_font_size_override("normal_font_size", preferred_size)
+	message.add_theme_color_override("default_color", Color("#e7edf5"))
+	message.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(message)
 	return row
 
 
-## 路人或缺少粉丝素材时保留纯文字评论，正文仍可完整换行。
+## 路人或缺少粉丝素材时保留纯文字评论，正文自然换行。
 func _create_plain_comment_row(display_name: String, comment_text: String) -> RichTextLabel:
 	var safe_name := display_name.replace("[", "[lb]")
 	var safe_text := comment_text.replace("[", "[lb]")
@@ -246,27 +260,13 @@ func _create_plain_comment_row(display_name: String, comment_text: String) -> Ri
 	label.fit_content = true
 	label.scroll_active = false
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var font_size: int = int(_comment_params.get("comment_font_size_px", 20))
-	label.custom_minimum_size = Vector2(0.0, float(font_size) * 1.5)
+	var font_size: int = maxi(16, int(_comment_params.get("comment_font_size_px", 20)))
+	label.custom_minimum_size = Vector2(0.0, maxf(46.0, float(font_size) * 1.5))
 	label.add_theme_font_size_override("normal_font_size", font_size)
-	label.text = "[color=#b8c0ce]%s[/color]  %s" % [safe_name, safe_text]
+	label.text = "[color=#b8c0ce]%s[/color]：%s" % [safe_name, safe_text]
 	return label
-
-
-## 长 ID 和正文先尝试策划字号；空间不足时逐级缩小到可读下限以完整装入横标文本区。
-func _fit_comment_text_font_size(text: String, bounds: Vector2, preferred_size: int) -> int:
-	var font: Font = get_theme_default_font()
-	if font == null:
-		font = ThemeDB.fallback_font
-	var font_size: int = maxi(preferred_size, 12)
-	var minimum_font_size: int = 12
-	while font_size > minimum_font_size:
-		var measured: Vector2 = font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, bounds.x, font_size)
-		if measured.y <= bounds.y:
-			break
-		font_size -= 1
-	return font_size
 
 
 func _pick_weighted_comment() -> Dictionary:
