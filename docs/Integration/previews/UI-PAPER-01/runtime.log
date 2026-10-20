@@ -1,0 +1,18 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+PAPER_UI PASS message page has blank card background
+PAPER_UI PASS side 0 icon before value
+PAPER_UI PASS side 0 icon before value
+PAPER_UI PASS side 0 icon before value
+PAPER_UI PASS side 0 icon before value
+PAPER_UI PASS side 1 icon before value
+PAPER_UI PASS side 1 icon before value
+PAPER_UI PASS side 1 icon before value
+PAPER_UI PASS side 1 icon before value
+PAPER_UI PASS thank-you text removed
+PAPER_UI PASS credits keep pure black backdrop
+PAPER_UI PASS still black after 3.7 seconds
+PAPER_UI PASS additional black hold measured 4003ms
+PAPER_UI PASS title returns after black hold
+PAPER_UI_DONE failures=0
