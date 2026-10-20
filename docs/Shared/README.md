@@ -25,3 +25,11 @@ DBG-01 通过 F3 显示共用 DEBUG 面板。面板只读取当前 Sandbox 与�
 2026-10-09 补齐独立预览的未绑定提示、业务按钮禁用及视口高度适配；调试层改为 21。当前 Sandbox 接线已存在。真实 TEST_ONLY 场景 90 项检查通过，环境权限错误及人工验收范围见 `Debug/DBG-01_2026-10-09_log.md`。
 
 2026-10-20 DBG-02 恢复正式 Plan B Sandbox 的面板绑定与 Host 所有权调试入口；具体按钮与状态范围见 `Debug/README.md` 及本卡完成日志。
+
+## 全局加载与 SceneRouter（2026-10-20，LOAD-01）
+
+所有顶层 `goto_*()` 与 `reload_current_scene()` 统一走常驻加载层：约 0.20 秒淡出、至少 0.12 秒完整遮罩、目标 ready 后约 0.25 秒淡入。较慢的后台加载显示转动圆点与“正在加载”；场景实例化仍由 Godot 主线程执行，遮罩期间不展示空树。漫画切格、身份设置场景内分页、战斗内阶段演出保持原有职责。
+
+`Error == OK` 表示请求已接受，不表示新页面已可操作。业务逻辑可订阅 `transition_finished(scene_path)`；若仅需读取新节点，可等待 `SceneTree.scene_changed`。加载中再次请求返回 `ERR_BUSY`，无效路径同步返回错误；异步错误发出 `transition_failed(scene_path, error)`，保留原页面与原暂停状态，并提供返回主菜单入口。新场景在淡入结束前暂停，避免对白与自动计时在黑幕下提前消耗。
+
+图形版使用 `ResourceLoader.load_threaded_request/get_status/get`；headless 因本机 dummy renderer 对战斗资源后台读取停在 `IN_PROGRESS`，沿用同步读取。实际视觉验收使用 GUI，不能用 headless 代替。

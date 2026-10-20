@@ -1,86 +1,90 @@
 extends Node
 
-# 统一维护主菜单和游戏入口的目标路径，避免 UI 分散保存场景路径。
-# 剧情播放入口独立于正式 EndingSession；只保存本次路由参数。
+signal transition_started(scene_path: String)
+signal transition_finished(scene_path: String)
+signal transition_failed(scene_path: String, error: Error)
+
 const COMIC_SCENE_PATH: String = "res://ui/comic/comic_player.tscn"
-var comic_kind: StringName = &"opening"
-var comic_record_first_view: bool = false
-
-func goto_comic(kind: StringName, record_first_view: bool = false) -> Error:
-	# 仅接受已配置的两段漫画，不创建周目或伪造结局对象。
-	if kind not in [&"intro", &"opening", &"ending"]:
-		return ERR_INVALID_PARAMETER
-	var scene: PackedScene = _load_scene(COMIC_SCENE_PATH)
-	if scene == null:
-		return ERR_FILE_NOT_FOUND
-	comic_kind = kind
-	comic_record_first_view = record_first_view
-	return _change_scene(scene)
-
 const MAIN_MENU_SCENE_PATH: String = "res://ui/main_menu/main_menu.tscn"
 const IDENTITY_SETUP_SCENE_PATH: String = "res://ui/identity_setup/identity_setup.tscn"
 const OPENING_ROOM_SCENE_PATH: String = "res://ui/rest/rest_opening_room.tscn"
 const GAME_SCENE_PATH: String = "res://scenes/sandbox/sandbox_plan_b.tscn"
 const ENDING_SCENE_PATH: String = "res://ui/ending/ending_page.tscn"
+const LOADING_SCREEN: Script = preload("res://ui/loading_screen.gd")
+const FADE_OUT_SECONDS: float = 0.20
+const FADE_IN_SECONDS: float = 0.25
+const MINIMUM_COVER_SECONDS: float = 0.12
 
-# 集成夹具可显式替换游戏入口，默认仍加载正式场景。
+var comic_kind: StringName = &"opening"
+var comic_record_first_view: bool = false
+# 集成夹具仍可显式替换游戏入口。
 var game_scene_override: PackedScene
 var _ending_session: EndingSession
 var _saved_ending_display: Dictionary = {}
+var _transitioning: bool = false
+var _loading_layer: CanvasLayer
+var _failure_dialog: AcceptDialog
+var _loading_screen: Control
 
+# 常驻层在暂停菜单和场景销毁期间继续工作，所有顶层入口共用同一过渡。
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	_loading_layer = CanvasLayer.new()
+	_loading_layer.layer = 100
+	add_child(_loading_layer)
+	_loading_screen = LOADING_SCREEN.new() as Control
+	_loading_screen.name = "LoadingScreen"
+	_loading_layer.add_child(_loading_screen)
+	_loading_screen.hide()
+	_failure_dialog = AcceptDialog.new()
+	_failure_dialog.title = "加载失败"
+	_failure_dialog.ok_button_text = "返回主菜单"
+	_failure_dialog.process_mode = Node.PROCESS_MODE_ALWAYS
+	_failure_dialog.confirmed.connect(goto_main_menu)
+	_failure_dialog.close_requested.connect(goto_main_menu)
+	add_child(_failure_dialog)
+
+# 鼠标由遮罩拦截，键盘也在最先进入的路由层消费，避免快进穿透下一页面。
+func _input(_event: InputEvent) -> void:
+	if _transitioning:
+		get_viewport().set_input_as_handled()
+
+func is_transitioning() -> bool:
+	return _transitioning
+
+func goto_comic(kind: StringName, record_first_view: bool = false) -> Error:
+	if kind not in [&"intro", &"opening", &"ending"]:
+		return ERR_INVALID_PARAMETER
+	var error: Error = _request_scene(COMIC_SCENE_PATH)
+	if error == OK:
+		comic_kind = kind
+		comic_record_first_view = record_first_view
+	return error
 
 func goto_main_menu() -> Error:
-	# 加载并切换到项目约定的主菜单场景。
-	var scene: PackedScene = _load_scene(MAIN_MENU_SCENE_PATH)
-	if scene == null:
-		return ERR_FILE_NOT_FOUND
-	return _change_scene(scene)
-
+	return _request_scene(MAIN_MENU_SCENE_PATH)
 
 func goto_identity_setup() -> Error:
-	# 新周目的身份设置作为顶层页面统一通过 SceneRouter 切换。
-	var scene: PackedScene = _load_scene(IDENTITY_SETUP_SCENE_PATH)
-	if scene == null:
-		return ERR_FILE_NOT_FOUND
-	return _change_scene(scene)
-
+	return _request_scene(IDENTITY_SETUP_SCENE_PATH)
 
 func goto_opening_room() -> Error:
-	# 身份保存后先进入独立房间；此阶段尚未实例化普通战斗。
-	var scene: PackedScene = _load_scene(OPENING_ROOM_SCENE_PATH)
-	if scene == null:
-		return ERR_FILE_NOT_FOUND
-	return _change_scene(scene)
-
+	return _request_scene(OPENING_ROOM_SCENE_PATH)
 
 func goto_game() -> Error:
-	# 加载并切换到项目约定的游戏入口场景。
-	var scene: PackedScene = game_scene_override if game_scene_override != null else _load_scene(GAME_SCENE_PATH)
-	if scene == null:
-		return ERR_FILE_NOT_FOUND
-	return _change_scene(scene)
+	return _request_scene(GAME_SCENE_PATH, game_scene_override)
 
-
-# 保留唯一接收对象，实际顶层切换完成后把固定显示结果交给现有页面。
+# 请求被接受后保存显示参数；实际创建页面后再交付结局快照。
 func goto_ending(session: EndingSession) -> Error:
 	if session == null or not session.is_received():
 		return ERR_INVALID_PARAMETER
 	if _ending_session == session:
 		return ERR_ALREADY_IN_USE
-	var scene := _load_scene(ENDING_SCENE_PATH)
-	if scene == null:
-		return ERR_FILE_NOT_FOUND
-	_ending_session = session
-	_saved_ending_display.clear()
-	get_tree().scene_changed.connect(_show_ending, CONNECT_ONE_SHOT)
-	var error := _change_scene(scene)
-	if error != OK:
-		get_tree().scene_changed.disconnect(_show_ending)
-		_ending_session = null
+	var error: Error = _request_scene(ENDING_SCENE_PATH)
+	if error == OK:
+		_ending_session = session
+		_saved_ending_display.clear()
 	return error
 
-
-# 新页面由 Godot 初始化完成；不再查询可变的 SaveData。
 func _show_ending() -> void:
 	var page := get_tree().current_scene as EndingPage
 	if page != null and _ending_session != null:
@@ -88,56 +92,103 @@ func _show_ending() -> void:
 	elif page != null and not _saved_ending_display.is_empty():
 		page.show_ending(_saved_ending_display)
 
-
-## 已完成周目读档只呈现保存的 Ending 显示快照，不再次执行终局或奖励。
+# 已完成周目只呈现保存的显示快照，不再次执行奖励。
 func goto_saved_ending(display_data: Dictionary) -> Error:
 	if display_data.is_empty() or not display_data.has("scripture"):
 		return ERR_INVALID_DATA
-	var scene := _load_scene(ENDING_SCENE_PATH)
-	if scene == null:
-		return ERR_FILE_NOT_FOUND
-	_ending_session = null
-	_saved_ending_display = display_data.duplicate(true)
-	get_tree().scene_changed.connect(_show_ending, CONNECT_ONE_SHOT)
-	var error := _change_scene(scene)
-	if error != OK:
-		get_tree().scene_changed.disconnect(_show_ending)
-		_saved_ending_display.clear()
+	var error: Error = _request_scene(ENDING_SCENE_PATH)
+	if error == OK:
+		_ending_session = null
+		_saved_ending_display = display_data.duplicate(true)
 	return error
-
 
 func reload_current_scene() -> Error:
-	# 直接委托 Godot 重载当前场景，保留引擎原生生命周期行为。
-	var error: Error = get_tree().reload_current_scene()
-	if error != OK:
-		push_error("SceneRouter: reload_current_scene failed: %s" % error_string(error))
-	return error
+	var current: Node = get_tree().current_scene
+	if current == null or current.scene_file_path.is_empty():
+		return ERR_UNCONFIGURED
+	return _request_scene(current.scene_file_path)
 
+# 返回 OK 表示请求已接受；异步失败由 transition_failed 报告，恢复原页面和暂停状态。
+func _request_scene(scene_path: String, override_scene: PackedScene = null) -> Error:
+	if _transitioning:
+		return ERR_BUSY
+	if override_scene == null:
+		if not ResourceLoader.exists(scene_path, "PackedScene"):
+			push_error("SceneRouter: scene resource not found: %s" % scene_path)
+			return ERR_FILE_NOT_FOUND
+		# 本机 dummy renderer 后台读取战斗资源会停在 IN_PROGRESS；无窗口验证沿用同步读取。
+		if DisplayServer.get_name() != "headless":
+			var error: Error = ResourceLoader.load_threaded_request(scene_path, "PackedScene")
+			if error != OK:
+				return error
+	_transitioning = true
+	# 延后启动协程，保证调用方先保存漫画/结局参数及按钮状态。
+	_run_transition.call_deferred(scene_path, override_scene)
+	return OK
 
-func _load_scene(scene_path: String) -> PackedScene:
-	# 空场景或损坏资源不能进入切换流程，统一在这里留下可定位的错误。
-	if not ResourceLoader.exists(scene_path, "PackedScene"):
-		push_error("SceneRouter: scene resource not found: %s" % scene_path)
-		return null
-
-	var resource: Resource = ResourceLoader.load(scene_path, "PackedScene")
-	if resource == null or not resource is PackedScene:
-		push_error("SceneRouter: scene resource is not a valid PackedScene: %s" % scene_path)
-		return null
-	return resource as PackedScene
-
-
-func _change_scene(scene: PackedScene) -> Error:
-	# 固定目标场景统一通过 Godot 原生 PackedScene 接口切换并回传错误。
+# 先绘出遮罩再取加载结果；只有后台读取完成才允许 get，避免在这里阻塞资源读取。
+func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
+	var was_paused: bool = get_tree().paused
+	get_tree().paused = true
+	_loading_screen.call("reset_indicator")
+	_loading_screen.modulate.a = 0.0
+	_loading_screen.show()
+	transition_started.emit(scene_path)
+	await _fade_to(1.0, FADE_OUT_SECONDS)
+	var cover_start: int = Time.get_ticks_msec()
+	var scene: PackedScene = override_scene
+	if scene == null and DisplayServer.get_name() == "headless":
+		scene = ResourceLoader.load(scene_path, "PackedScene") as PackedScene
+	elif scene == null:
+		var status: ResourceLoader.ThreadLoadStatus = ResourceLoader.THREAD_LOAD_IN_PROGRESS
+		while status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			if Time.get_ticks_msec() - cover_start > 30000:
+				await _recover_transition(scene_path, ERR_TIMEOUT, was_paused)
+				return
+			status = ResourceLoader.load_threaded_get_status(scene_path)
+			_loading_screen.set("show_indicator", Time.get_ticks_msec() - cover_start > 180)
+			if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+				await get_tree().process_frame
+		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			scene = ResourceLoader.load_threaded_get(scene_path) as PackedScene
 	if scene == null:
-		var invalid_error: Error = ERR_INVALID_PARAMETER
-		push_error("SceneRouter: cannot change to a null PackedScene")
-		return invalid_error
-
+		await _recover_transition(scene_path, ERR_CANT_OPEN, was_paused)
+		return
+	var remaining: float = MINIMUM_COVER_SECONDS - float(Time.get_ticks_msec() - cover_start) / 1000.0
+	if remaining > 0.0:
+		await get_tree().create_timer(remaining, true, false, true).timeout
+	# 遮罩已完整渲染，实例化期间即使出现主线程峰值，也不会暴露空场景。
+	if DisplayServer.get_name() == "headless":
+		await get_tree().process_frame
+	else:
+		await RenderingServer.frame_post_draw
 	var error: Error = get_tree().change_scene_to_packed(scene)
-	if error == OK:
-		# 顶层目标场景独立开始，退出旧暂停页时清除全树暂停状态。
-		get_tree().paused = false
 	if error != OK:
-		push_error("SceneRouter: change_scene_to_packed failed: %s" % error_string(error))
-	return error
+		await _recover_transition(scene_path, error, was_paused)
+		return
+	await get_tree().scene_changed
+	if scene_path == ENDING_SCENE_PATH:
+		_show_ending()
+	# 保持新页面暂停直到淡入完成，避免对白/自动计时在黑幕下提前消耗。
+	_loading_screen.set("show_indicator", false)
+	await _fade_to(0.0, FADE_IN_SECONDS)
+	_loading_screen.hide()
+	get_tree().paused = false
+	_transitioning = false
+	transition_finished.emit(scene_path)
+
+# 加载失败保留旧页面；允许玩家确认错误后继续操作，不让遮罩永久挡住输入。
+func _recover_transition(scene_path: String, error: Error, was_paused: bool) -> void:
+	push_error("SceneRouter: transition failed for %s: %s" % [scene_path, error_string(error)])
+	await _fade_to(0.0, FADE_IN_SECONDS)
+	_loading_screen.hide()
+	get_tree().paused = was_paused
+	_transitioning = false
+	transition_failed.emit(scene_path, error)
+	_failure_dialog.dialog_text = "场景未能载入，请返回主菜单重试。"
+	_failure_dialog.popup_centered()
+
+func _fade_to(alpha: float, seconds: float) -> void:
+	var tween: Tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS).set_ignore_time_scale(true)
+	tween.tween_property(_loading_screen, "modulate:a", alpha, seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await tween.finished

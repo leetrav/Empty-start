@@ -377,3 +377,9 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - 保留StageArrowFx真实淡出事实和过期档位保护，仅首次箭头对仍在开场的费米不放行换段；第二次真实升档才放行。其他三Boss默认false，音乐策略未改。
 ### AU-03：首档引子保持后，独立试听要模拟箭头放行
 正式四Boss已统一保持引子到T2真实箭头淡出。独立试听没有箭头，只有request_tier会继续保持引子；手动选Tier后调用公开release_tier_visual模拟放行。正式Sandbox仍只使用真实HUD信号。试听提示应区分五次升档和三组音乐，不能再写成对白结束自动接T1低段。
+
+### LOAD-01：本机 headless 后台加载战斗资源停在 IN_PROGRESS（2026-10-20）
+
+- Godot 4.7.2 Windows：菜单、身份和房间可载入；后台请求正式 Plan B 场景在 headless 中超过40秒仍为 `THREAD_LOAD_IN_PROGRESS`，原页面和加载遮罩仍在，无脚本解析错误。相同场景链 GUI Compatibility 可完成。
+- 路由仅在 headless 中沿用同步 ResourceLoader 读取；图形版仍使用后台读取并轮询状态，30秒超时显示恢复入口。无窗口读取与 GUI 都复验，不能据此推断两者性能相同。
+- 引擎仓库有相关但未确认同根因的报告：<https://github.com/godotengine/godot/issues/124139>、<https://github.com/godotengine/godot/issues/120827>。
