@@ -328,7 +328,9 @@ func _anchor_samples() -> void:
 		_hud.configure_opponent_tier_textures(profile.streamer_portrait, profile.opponent_tier_01_portrait, profile.opponent_tier_02_portrait, profile.opponent_tier_03_portrait)
 		_hud.configure_opponent_result(profile, consumer.get_level_presentation(profile.level_id))
 		var tier: OpponentTierPortrait = _hud.opponent_tier_portrait
-		tier.visible_anchor_ratio = Vector2(0.5, 1.0) if _bottom_anchor else Vector2(0.5, 0.5)
+		# 默认直接用正式组件的安全站立线；--anchor-bottom 才强制回放历史贴底布局。
+		if _bottom_anchor:
+			tier.visible_anchor_ratio = Vector2(0.5, 1.0)
 		_hud.opponent_portrait_motion.set_idle_strength(0.0, 0.0)
 		for stage: int in [1, 2, 3, 4, 5]:
 			_hud.refresh_pk(0.6, stage)
