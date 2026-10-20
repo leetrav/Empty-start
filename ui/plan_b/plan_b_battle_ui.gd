@@ -1514,7 +1514,7 @@ func _refresh_sources() -> void:
 	var has_host := is_instance_valid(_battle_host)
 	if not _sources_initialized and has_host and _battle_host.has_method("get_pk"):
 		var pk_value := float(_battle_host.call("get_pk"))
-		_actual_player_pk = clampf(pk_value / 100.0 if pk_value > 1.0 else pk_value, 0.0, 1.0)
+		_actual_player_pk = clampf(pk_value / 100.0, 0.0, 1.0)
 		_pk_value = _actual_player_pk * 100.0
 	if not _sources_initialized:
 		_population_limit = _read_population_limit()
@@ -1704,10 +1704,11 @@ func _refresh_view() -> void:
 				0
 			)
 		return
-	var pk_text := "玩家 PK %.0f%%" % _pk_value
+	# 终点显示与真实状态一致：未满不能四舍五入成100%，非零不足1%也不冒充失败。
+	var pk_text := "玩家 PK <1%" if _pk_value > 0.0 and _pk_value < 1.0 else "玩家 PK %d%%" % floori(_pk_value)
 	if _pk_value_label.text != pk_text:
 		_pk_value_label.text = pk_text
-	if not is_equal_approx(_pk_bar.value, _pk_value):
+	if _pk_bar.value != _pk_value:
 		_pk_bar.value = _pk_value
 	var tier_text := "T6 · 矛盾" if _paradox_stage_active else _tier_label
 	if _tier_value_label.text != tier_text:
@@ -1993,7 +1994,8 @@ func _disconnect_signal(source: Object, signal_name: String, callback: Callable)
 
 
 func _on_pk_changed(value: float) -> void:
-	_actual_player_pk = clampf(value / 100.0 if value > 1.0 else value, 0.0, 1.0)
+	# Host的get_pk/pk_changed固定是0到100百分点，1.0是1%而不是满值。
+	_actual_player_pk = clampf(value / 100.0, 0.0, 1.0)
 	_pk_value = _actual_player_pk * 100.0
 	if _pk_bar_skin != null:
 		_pk_bar_skin.call("set_display_state", _actual_player_pk, _battle_tier, _paradox_stage_active)

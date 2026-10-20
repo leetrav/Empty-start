@@ -51,3 +51,6 @@ SettingsManager.menu_rays_quality为0关闭、1低、2标准（默认），set_m
 
 ### END-01 终局动画路由
 SceneRouter.goto_ending(session,play_epilogue=false)默认保持直接显示已有结局结果；正式Sandbox传true，保存同一EndingSession后进入ComicPlayer内部epilogue目的，仅播P5/P6。finish_ending_epilogue只交付已保存快照到EndingPage，不重新计算结算。goto_saved_ending保持直接成果/鸣谢入口；后半回看kind=ending与首次观看记录语义保持。神谕7秒与鸣谢署名详见20.Ending/END-01日志。
+
+### PK-01 PK单位与终点（2026-10-20）
+PlanBBattleHost.get_pk/pk_changed固定0～100百分点，get_pk_fraction固定0～1；PlanBBattleUI的Host读取按百分点解释，HUD.refresh_pk仍接受旧归一化调用。权威PK更新保留所有真实小增量，满值1/零值0分别触发原矛盾与失败入口；未满不能显示100%，正数不足1%显示<1%。见Integration/PK终点_PK-01日志及正式四Boss回归。
