@@ -141,8 +141,12 @@ func _build_message_page(node_name: String, title_text: String, status_text: Str
 	var panel := PanelContainer.new()
 	panel.name = "Panel"
 	panel.custom_minimum_size = Vector2(700, 0)
-	# 全页已有空白卡纸面，内容区只保留留白，不再盖深色占位框。
-	var paper := StyleBoxEmpty.new()
+	# 纸面只替换外层背景；保留原内容框及其浅色字、输入框和按钮。
+	panel.theme = preload("res://ui/theme/base_theme.tres")
+	var paper := StyleBoxFlat.new()
+	paper.bg_color = Color("453b2c")
+	paper.border_color = Color("bba477")
+	paper.set_border_width_all(2)
 	paper.content_margin_left = 32
 	paper.content_margin_right = 32
 	paper.content_margin_top = 28
@@ -194,8 +198,12 @@ func _build_name_page(node_name: String, title_text: String) -> Control:
 	var panel := PanelContainer.new()
 	panel.name = "Panel"
 	panel.custom_minimum_size = Vector2(560, 0)
-	# 全页已有空白卡纸面，内容区只保留留白，不再盖深色占位框。
-	var paper := StyleBoxEmpty.new()
+	# 纸面只替换外层背景；保留原内容框及其浅色字、输入框和按钮。
+	panel.theme = preload("res://ui/theme/base_theme.tres")
+	var paper := StyleBoxFlat.new()
+	paper.bg_color = Color("453b2c")
+	paper.border_color = Color("bba477")
+	paper.set_border_width_all(2)
 	paper.content_margin_left = 32
 	paper.content_margin_right = 32
 	paper.content_margin_top = 28
