@@ -235,6 +235,21 @@ func set_counterattack_paused(paused: bool) -> bool:
 	return bool(_opponent_director.call("set_counterattack_paused", paused))
 
 
+## PB-25 使用当前关卡的真实对手单位与正式反击执行器触发指定教学轮次。
+func request_tutorial_counterattack(round_number: int) -> bool:
+	if (_battle_state != BattleState.RUNNING or available_level != "level_001"
+			or _opponent_director == null
+			or not _opponent_director.has_method("request_tutorial_counterattack")):
+		return false
+	var opponent_snapshots: Array[Dictionary] = []
+	for snapshot: Dictionary in get_unit_snapshots():
+		if str(snapshot.get("team", "")) == "opponent":
+			opponent_snapshots.append(snapshot)
+	return bool(_opponent_director.call(
+		"request_tutorial_counterattack", round_number, opponent_snapshots, get_current_tier()
+	))
+
+
 ## PB-25 缓存下一次正式开局的初始对手类型；进行中调用也只影响下次 start_battle。
 func set_tutorial_initial_opponent_battle_type(battle_type: StringName) -> bool:
 	if str(battle_type) not in ["type_a", "type_b", "type_c"]:
