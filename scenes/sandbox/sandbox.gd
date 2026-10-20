@@ -897,7 +897,7 @@ func _on_contradiction_stage_entered(_system: ContradictionBreakSystem) -> void:
 				_battle_hud.call("set_tutorial_highlighted_battle_types", [])
 				if _tutorial_runner.get_active_step_id() == PB25_STEP_SECOND_COUNTERATTACK:
 					_tutorial_runner.notify_event(PB25_EVENT_CONTRADICTION_STAGE_STARTED)
-				elif (_tutorial_runner.get_active_step_id() == PB25_STEP_CONTRADICTION
+				if (_tutorial_runner.get_active_step_id() == PB25_STEP_CONTRADICTION
 						and _pb25_tutorial_paradox_hint_pending):
 					var current_hint: Dictionary = _tutorial_runner.get_current_hint()
 					var current_hint_text := str(current_hint.get("hint_text", ""))
