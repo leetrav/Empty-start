@@ -5,6 +5,7 @@ extends Button
 @export var text_size: int = 64
 var _label: Label
 var _motion: Tween
+static var _last_hover_msec: int = -1000
 var _hovered := false
 var _pressed := false
 const NORMAL := Color("354536")
@@ -52,7 +53,13 @@ func _animate(target_scale: float, offset: float, color: Color, seconds: float) 
 
 
 func _on_mouse_entered() -> void:
+	var entered: bool = not _hovered
 	_hovered = true
+	# 仅真实进入可用文字按钮时播一次，快速划过全菜单也限流，不与点击音混用。
+	var now: int = Time.get_ticks_msec()
+	if entered and not disabled and is_visible_in_tree() and not SceneRouter.is_transitioning() and not get_tree().paused and now - _last_hover_msec >= 70:
+		_last_hover_msec = now
+		AudioManager.play_event(&"ui_menu_hover")
 	_refresh_feedback()
 
 

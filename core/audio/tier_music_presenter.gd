@@ -4,11 +4,15 @@ extends Node
 ## 场景拥有的音乐消费者：不创建播放器，不计算PK，退出即取消待切换目标。
 signal group_changed(group: int)
 
+const PREBOSS_EVENT: StringName = &"music_preboss_pop_sky"
+const PREBOSS_FADE_SECONDS: float = 1.5
+
 @export var profile: TierMusicProfile = preload("res://data/audio/fermi_tier_music.tres")
 var _host: Node
 var _active: bool = false
 var _paused: bool = false
 var _opening_active: bool = false
+var _preboss_active: bool = false
 var _waiting_for_tier_visual: bool = false
 var _group: int = -1
 var _target: int = -1
@@ -36,24 +40,35 @@ func _ready() -> void:
 	AudioManager.music_changed.connect(_on_music_changed)
 
 
-# 新局T0黑屏等待保持静音；中途恢复非T0时从实际战斗组开始。
+# 四位Boss出场前统一播放Pop Sky；中途恢复非T0时从实际战斗组开始。
 func start_battle(tier: int = 0) -> void:
 	_active = true
 	_paused = false
 	_opening_active = false
+	_preboss_active = false
 	_waiting_for_tier_visual = false
 	_group = -1
 	_target = profile.group_for_tier(tier)
 	_lower_elapsed = 0.0
 	_boundary_remaining = -1.0
-	# 房间离开时的尾音允许在T0淡完，新的Boss起曲会自动取消旧淡出回调。
-	if tier == 0 and AudioManager.get_music_event_id() in [&"music_rest_room", &"music_rest_after_pk"]:
-		AudioManager.set_music_paused(false)
-		AudioManager.fade_out_music()
+	# 先释放房间或上一场尾音，确保本段每场都从零增益开始淡入1.5秒。
+	AudioManager.stop_music()
+	if tier == 0:
+		_play_preboss()
 	else:
-		AudioManager.stop_music()
-	if tier > 0:
 		_play_group(_target, 0.0, true)
+
+
+# 等待期间同一T0通知不重播；音乐所有权仍由当前场景消费者持有。
+func _play_preboss() -> void:
+	if _preboss_active and owns_music():
+		return
+	_preboss_active = true
+	if not AudioManager.change_music(PREBOSS_EVENT, -1.0, 0.0, PREBOSS_FADE_SECONDS):
+		_preboss_active = false
+		_active = false
+		return
+	AudioManager.set_music_paused(_paused)
 
 
 # 同组信号不重播；向更低组连续计时，取消时只保留最新目标。
@@ -62,16 +77,18 @@ func request_tier(tier: int, wait_for_visual: bool = false) -> void:
 		return
 	var target: int = profile.group_for_tier(tier)
 	if tier == 0:
-		# 对手离线/等待时撤销引子和所有延迟切曲，保留普通操作音效。
-		var owned: bool = owns_music()
+		# 回到等待阶段撤销引子和延迟切曲，再播放通用游玩音乐。
+		var already_waiting: bool = _preboss_active and owns_music()
 		_group = -1
 		_target = target
 		_opening_active = false
 		_waiting_for_tier_visual = false
 		_lower_elapsed = 0.0
 		_boundary_remaining = -1.0
-		if owned:
+		if not already_waiting:
+			_preboss_active = false
 			AudioManager.stop_music()
+			_play_preboss()
 		return
 	if _opening_active:
 		# 对白结束前只更新后续战斗目标，不让Tier覆盖柔和引子。
@@ -180,6 +197,8 @@ func get_target_group() -> int:
 
 
 func owns_music() -> bool:
+	if _preboss_active:
+		return AudioManager.get_music_event_id() == PREBOSS_EVENT
 	if _group < 0:
 		return false
 	var event_id: StringName = AudioManager.get_music_event_id()
@@ -187,7 +206,7 @@ func owns_music() -> bool:
 
 
 func _process(delta: float) -> void:
-	if not _active or _paused or not owns_music():
+	if not _active or _paused or _preboss_active or not owns_music():
 		return
 	var position: float = AudioManager.get_music_position()
 	var audio_delta: float = position - _last_position
@@ -212,6 +231,8 @@ func _process(delta: float) -> void:
 
 
 func _play_group(group: int, from_position: float = 0.0, initial: bool = false) -> void:
+	# 在换曲信号发出前转交所有权，避免把正常Boss接管误判为外部抢播。
+	_preboss_active = false
 	var leaving_intro: bool = _group == 0 and group > 0
 	_group = group
 	# 柔和引子单独淡入；战斗段由对应对白/箭头事实放行。
@@ -267,7 +288,7 @@ func _on_battle_state_changed(state: StringName) -> void:
 
 # 其他场景接管音乐或击破静音时使旧场景失效，不再重播费米曲。
 func _on_music_changed(_event_id: StringName) -> void:
-	if _group >= 0 and not owns_music():
+	if (_group >= 0 or _preboss_active) and not owns_music():
 		_active = false
 		_boundary_remaining = -1.0
 

@@ -1,0 +1,18 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.30 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+RAYS_RESULT {"frame_p50_ms":0.834,"frame_p95_ms":1.293,"gpu_p50_ms":0.671000003814697,"gpu_p95_ms":1.10300004482269,"mode":"original","resolution":"(1920, 1080)"}
+RAYS_RESULT {"frame_p50_ms":0.633,"frame_p95_ms":1.081,"gpu_p50_ms":0.480999991297722,"gpu_p95_ms":0.887999996542931,"mode":"standard","resolution":"(1920, 1080)"}
+RAYS_RESULT {"frame_p50_ms":0.604,"frame_p95_ms":1.041,"gpu_p50_ms":0.455999998375773,"gpu_p95_ms":0.865999981760979,"mode":"low","resolution":"(1920, 1080)"}
+RAYS_RESULT {"frame_p50_ms":0.418,"frame_p95_ms":0.931,"gpu_p50_ms":0.279000014066696,"gpu_p95_ms":0.742999970912933,"mode":"off","resolution":"(1920, 1080)"}
+RAYS_RESULT {"frame_p50_ms":0.835,"frame_p95_ms":1.341,"gpu_p50_ms":0.671999990940094,"gpu_p95_ms":1.17400002479553,"mode":"original","resolution":"(1920, 1080)"}
+RAYS_RESULT {"frame_p50_ms":0.64,"frame_p95_ms":1.14,"gpu_p50_ms":0.484000012278557,"gpu_p95_ms":0.966000005602837,"mode":"standard","resolution":"(1920, 1080)"}
+RAYS_RESULT {"frame_p50_ms":0.418,"frame_p95_ms":0.712,"gpu_p50_ms":0.337000012397766,"gpu_p95_ms":0.629999995231628,"mode":"original","resolution":"(1280, 720)"}
+RAYS_RESULT {"frame_p50_ms":0.335,"frame_p95_ms":0.593,"gpu_p50_ms":0.258000001311302,"gpu_p95_ms":0.500999987125397,"mode":"standard","resolution":"(1280, 720)"}
+RAYS_RESULT {"frame_p50_ms":0.313,"frame_p95_ms":0.51,"gpu_p50_ms":0.233999997377396,"gpu_p95_ms":0.296000003814697,"mode":"low","resolution":"(1280, 720)"}
+RAYS_RESULT {"frame_p50_ms":0.266,"frame_p95_ms":0.408,"gpu_p50_ms":0.130999997258186,"gpu_p95_ms":0.131999999284744,"mode":"off","resolution":"(1280, 720)"}
+RAYS_RESULT {"frame_p50_ms":0.42,"frame_p95_ms":0.752,"gpu_p50_ms":0.337000012397766,"gpu_p95_ms":0.638000011444092,"mode":"original","resolution":"(1280, 720)"}
+RAYS_RESULT {"frame_p50_ms":0.335,"frame_p95_ms":0.585,"gpu_p50_ms":0.25900000333786,"gpu_p95_ms":0.502000004053116,"mode":"standard","resolution":"(1280, 720)"}
+RAYS_IMAGE_MEAN_BYTE_ERROR 0.05011115933642
+RAYS_SETTINGS_PASS
+RAYS_DONE failures=0

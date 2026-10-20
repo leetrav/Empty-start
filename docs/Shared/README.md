@@ -25,3 +25,46 @@ DBG-01 通过 F3 显示共用 DEBUG 面板。面板只读取当前 Sandbox 与�
 2026-10-09 补齐独立预览的未绑定提示、业务按钮禁用及视口高度适配；调试层改为 21。当前 Sandbox 接线已存在。真实 TEST_ONLY 场景 90 项检查通过，环境权限错误及人工验收范围见 `Debug/DBG-01_2026-10-09_log.md`。
 
 2026-10-20 DBG-02 恢复正式 Plan B Sandbox 的面板绑定与 Host 所有权调试入口；具体按钮与状态范围见 `Debug/README.md` 及本卡完成日志。
+
+## 全局加载与 SceneRouter（2026-10-20，LOAD-01）
+
+LOAD-02：目标为正式GAME_SCENE_PATH的每次开播／重载固定显示原右下圆点与“正在加载”，完全遮幕至少0.6秒，快缓存不隐藏提示。首次与后续四场仍由房间start_live→goto_game进入。失败／暂停重开调用`SceneRouter.prepare_live_attempt(action: Callable) -> Error`，常驻遮幕完全盖住后同步调用返回bool的原尝试重建动作，不替换Sandbox节点；黑幕与揭幕期间暂停玩法，重复请求返回ERR_BUSY，结束仍发送transition_finished(GAME_SCENE_PATH)。`Sandbox.restart_current_attempt()`为异步玩家入口，不能同帧读取重建后的状态；F3的`debug_restart_current_attempt()`保持同步调试语义。其他顶层转场与片尾时序不变。
+
+所有顶层 `goto_*()` 与 `reload_current_scene()` 统一走常驻加载层：约 0.20 秒淡出、至少 0.12 秒完整遮罩、目标 ready 后约 0.25 秒淡入。较慢的后台加载显示转动圆点与“正在加载”；场景实例化仍由 Godot 主线程执行，遮罩期间不展示空树。漫画切格、身份设置场景内分页、战斗内阶段演出保持原有职责。
+
+`Error == OK` 表示请求已接受，不表示新页面已可操作。业务逻辑可订阅 `transition_finished(scene_path)`；若仅需读取新节点，可等待 `SceneTree.scene_changed`。加载中再次请求返回 `ERR_BUSY`，无效路径同步返回错误；异步错误发出 `transition_failed(scene_path, error)`，保留原页面与原暂停状态，并提供返回主菜单入口。新场景在淡入结束前暂停，避免对白与自动计时在黑幕下提前消耗。
+
+图形版使用 `ResourceLoader.load_threaded_request/get_status/get`；headless 因本机 dummy renderer 对战斗资源后台读取停在 `IN_PROGRESS`，沿用同步读取。实际视觉验收使用 GUI，不能用 headless 代替。
+
+### 开场末幕至标题（2026-10-20，AU-06）
+
+comic_player至main_menu采用0.45秒淡出、至少0.25秒全黑、0.60秒淡入；标题离场淡出0.30秒，其他路由保持LOAD-01时长。漫画收尾和标题离场的旧音乐先随黑幕淡出，之后再暂停全树读取/初始化新页面；否则音乐Tween会随树暂停而无法实际淡出。输入仍从请求接受开始拦截。
+
+## 全页面Esc暂停（2026-10-20，PAUSE-01）
+
+SceneRouter初始启动及每次scene_changed后统一检查当前页面的PauseMenu。Sandbox、房间已有实例继续复用；标题、漫画、身份设置和结局等遗漏页自动补同一现有场景，默认隐藏“重新开始当前关”。每个页面只保留一套，不增加第二种暂停UI，也不替代战斗现有重开/攻击取消回调。
+
+PAUSE-02：共享PauseMenu使用CanvasLayer 90，高于RestResultView及其历史页30、DebugPanel21，低于SceneRouter加载层100。结算页不独立创建暂停菜单，仍由当前Sandbox的同一菜单处理Esc；验证必须包含实际截图与鼠标点击设置，不能只看Overlay.visible和SceneTree.paused。
+
+PAUSE-03：Plan B顶部PK状态栏右侧提供原生「暂停」按钮，96×72逻辑像素，HUD发出pause_requested，由Sandbox连接原PauseMenu.pause_game。原生ScreenTouch直接消费并调用同一按钮反馈，关闭触屏模拟鼠标仍可用；按下立即暂停，沿用取消蓄力／冻结音乐／继续恢复，不创建第二套菜单。顶部栏固定为设计72px，按钮不覆盖棋盘或手牌；桌面GUI原生触屏注入已验证，Android真机尚待验收。
+
+Esc使用Input Map的pause Action。首次按下暂停并打开继续/设置/返回面板；再次按下恢复。暂停内设置打开时，Esc先关闭设置，仍保持暂停。全屏时也能经此入口关闭设置里的全屏选项。转场中忽略pause，避免误解除加载层的树暂停。
+
+暂停/恢复统一通知AudioManager；独立ComicPlayer额外调用set_playback_paused冻结分镜Timer、文字和Tween，Esc不再直接退出漫画。暂停返回菜单先完整恢复并发出paused_changed(false)，避免音乐暂停标志留到新页面。
+
+### 标题光效设置（PA-25）
+SettingsManager.menu_rays_quality为0关闭、1低、2标准（默认），set_menu_rays_quality限制范围并发出menu_rays_quality_changed；SettingsPanel即时生效，返回保存display/menu_rays_quality，旧配置缺失或非法值回退标准。load_settings读取，apply_settings统一通知；reset_to_defaults恢复标准。关闭同时停止标题离屏光效绘制，仅影响标题画面。性能依据见PresentationAssets/表现资产_PA-25_2026-10-20_log.md。
+
+### END-01 终局动画路由
+SceneRouter.goto_ending(session,play_epilogue=false)默认保持直接显示已有结局结果；正式Sandbox传true，保存同一EndingSession后进入ComicPlayer内部epilogue目的，仅播P5/P6。finish_ending_epilogue只交付已保存快照到EndingPage，不重新计算结算。goto_saved_ending保持直接成果/鸣谢入口；后半回看kind=ending与首次观看记录语义保持。神谕7秒与鸣谢署名详见20.Ending/END-01日志。
+
+### PK-01 PK单位与终点（2026-10-20）
+PlanBBattleHost.get_pk/pk_changed固定0～100百分点，get_pk_fraction固定0～1；PlanBBattleUI的Host读取按百分点解释，HUD.refresh_pk仍接受旧归一化调用。权威PK更新保留所有真实小增量，满值1/零值0分别触发原矛盾与失败入口；未满不能显示100%，正数不足1%显示<1%。见Integration/PK终点_PK-01日志及正式四Boss回归。
+
+### END-02 片尾完成资格与回放
+
+正常终局goto_ending(session,true)建立epilogue→credits→title资格，finish_ending_epilogue与finish_ending_credits(page)各校验当前页面/阶段；只有标题完整1秒揭幕后才提交应用级ending_replay_unlocked。goto_saved_ending及单独打开EndingPage不解锁。SaveData.ending_roll_pending保存正常片尾未结束事实；resume_ending_roll供载入中断周目，重播原结尾后走同一完整链。正常片尾保持Esc暂停/设置，返回菜单按钮禁用；标题渐显结束后恢复交互。标题PackedScene资源留存复用，始终只实例化一个菜单。见20.Ending的END-02。
+
+### STORY-01 剧情回放菜单
+
+标题原左下角“开场回看”更名“剧情回放”，初始即可打开独立ReplayActions子菜单。初始只显示开场回放与返回菜单；返回坐标/尺寸/字号与原左下角入口相同。仅SettingsManager.ending_replay_unlocked为真时显示结局回放，无禁用占位。移除重复完整开场按钮，开场复用opening的原P1–P4共13格，结局复用ending的原P5/P6共6格。未解锁直接调用路由仍拒绝，剧情回放自身不改变通关标记。见Integration/STORY-01日志。

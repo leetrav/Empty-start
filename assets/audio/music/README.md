@@ -18,3 +18,11 @@
 开场漫画：《街》，煉獄小僧／煉獄庭園。来源：https://note.com/rengokuteien/n/n5ad9dc0984c2 。加工见opening/README.md；使用同一作者许可与署名。
 
 战后休息与后续开播房间：夢灯 -YumeAkari-／煉獄庭園（作曲・編曲：煉獄小僧）。来源：https://note.com/rengokuteien/n/nf1d13615d3b1 （沿用用户资产表）。本地完整MP3转Vorbis quality5，不变速/变调，原生循环，沿用上述许可及游戏/说明署名。详见rest/README.md。
+
+## AU-05 · Boss出场前通用游玩音乐（2026-10-20）
+
+用户选定《Pop Sky》原曲01:56至结尾片段，四位Boss的T0游玩阶段共用 `music_preboss_pop_sky`；每场/重开从片段0秒以1.5秒淡入，基准-12dB，原生循环。重复T0通知不重播，暂停时冻结、恢复时续播。开始连线时由原有Boss音乐和既有淡变配置接管；其后的分段与对白时机沿用原逻辑。此前文档中“T0静音”的描述由本条替代。
+
+曲目来源：<https://note.com/rengokuteien/n/n2f6eb0bbd7ca>，作曲・编曲：煉獄小僧／煉獄庭園。加工与文件哈希见 `preboss/README.md`；沿用本项目既有作者许可和鸣谢要求。
+
+标题音乐：Cafe de Fineday／煉獄庭園（作曲・編曲：煉獄小僧）。来源：https://note.com/rengokuteien/n/nf9a7557956a2 。完整转码、循环及淡变说明见title/README.md，沿用上述作者素材许可和游戏/说明署名要求。
