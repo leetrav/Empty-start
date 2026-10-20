@@ -1,0 +1,16 @@
+{
+	"burst_max_ms": 9.123,
+	"burst_p50_ms": 7.312,
+	"burst_p95_ms": 9.036,
+	"converted": 445,
+	"failures": 0,
+	"frame_p50_ms": 38.437,
+	"frame_p95_ms": 53.381,
+	"frames": 40,
+	"gpu_p50_ms": 0.377000004053116,
+	"population": {
+		"neutral": 0,
+		"opponent": 83,
+		"player": 13
+	}
+}
