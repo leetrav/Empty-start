@@ -400,3 +400,8 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - 原版逐像素二维噪声和hint_screen_texture的filter_linear_mipmap会增加运算与屏幕缩小链开销。固定噪声y为1时可简化一维，但要保留画面和Screen混合。
 - 正式标题使用独立小尺寸光效掩码，再全尺寸合成；关闭档必须同步停止SubViewport，不能只hide父ColorRect。
 - GPU计时须包含活跃SubViewport，VSync封顶FPS不能说明GPU成本。实际GUI同机开关/原版/优化对照后才给出受限结论；headless不验证GPU性能，单机流畅不能推断策划设备。
+
+### PERF-01：逐球事件触发整盘刷新与即时弧线几何会叠加CPU峰值
+- 转换/改口每个事件立即调用set_unit_snapshots、人数/手牌刷新和待发气泡全队列匹配，会在同一物理帧重复N次全盘工作；保留逐单位逻辑事实，把表现提交合并在绘制前。
+- draw_arc抗锯齿与逐线徽标在96棋子频繁重绘时CPU开销明显。固定几何使用原函数烘焙图集，实时颜色/脉冲仍调制；不要以降低人数或感染概率伪装性能优化。
+- 旧PB05概率/初始人口断言与当前配置不一致；PERF-01保留失败日志，不宣称全套旧规则测试通过。目标设备帧率仍需实机验证，图集CPU收益不能等同所有GPU收益。

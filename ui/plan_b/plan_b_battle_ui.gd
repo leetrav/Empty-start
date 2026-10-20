@@ -87,6 +87,8 @@ var _snapshots: Array = []
 var _snapshot_index_by_id: Dictionary = {}
 var _sources_initialized := false
 var _unit_snapshots_initialized := false
+var _unit_presentation_pending := false
+var _counterable_targets_dirty := false
 var _faction_phrases_dirty := true
 var _word_groups: Array = []
 var _group_bubble_states: Dictionary = {}
@@ -1541,7 +1543,7 @@ func _refresh_sources() -> void:
 			_unit_snapshots_initialized = true
 			_faction_phrases_dirty = true
 			if _field != null:
-				_field.set_unit_snapshots(_snapshots)
+				_queue_unit_presentation_refresh()
 			_update_counterable_targets_if_type_changed()
 	var group_source: Object = _unit_source if _has_method(_unit_source, "get_word_groups") else _battle_host
 	var group_signal_connected := _has_signal(_unit_source, "word_groups_changed")
@@ -1614,7 +1616,7 @@ func _upsert_unit_snapshot(unit_id: String) -> void:
 	if _field != null:
 		if word_texts_changed:
 			_field.set_word_texts(_word_text_by_id)
-		_field.set_unit_snapshots(_snapshots)
+		_queue_unit_presentation_refresh()
 	_faction_phrases_dirty = true
 	if _performance_tracker != null:
 		_accumulate_tracker_unit_snapshot(Time.get_ticks_usec() - tracker_start_usec)
@@ -1640,7 +1642,7 @@ func _remove_unit_snapshot(unit_id: String) -> void:
 	_snapshots.remove_at(int(_snapshot_index_by_id[unit_id]))
 	_reindex_unit_snapshots()
 	if _field != null:
-		_field.set_unit_snapshots(_snapshots)
+		_queue_unit_presentation_refresh()
 	_faction_phrases_dirty = true
 	if _performance_tracker != null:
 		_accumulate_tracker_unit_snapshot(Time.get_ticks_usec() - tracker_start_usec)
@@ -2149,8 +2151,7 @@ func _on_unit_changed(unit_id: String, reason: String) -> void:
 		_queue_group_speech_event([unit_id], false, reason)
 	if (str(previous_snapshot.get("team", "")) != str(current_snapshot.get("team", ""))
 			or str(previous_snapshot.get("battle_type", "")) != str(current_snapshot.get("battle_type", ""))):
-		_refresh_counterable_targets(true)
-	_refresh_faction_counts()
+		_counterable_targets_dirty = true
 	var message := ""
 	match reason:
 		"seed":
@@ -2167,17 +2168,15 @@ func _on_unit_changed(unit_id: String, reason: String) -> void:
 	_field.call("show_unit_feedback", unit_id, reason)
 	if not message.is_empty():
 		_add_event(message)
-	_refresh_sources()
-	_refresh_view()
+	_queue_unit_presentation_refresh()
 
 
 func _on_unit_spawned(unit_id: String) -> void:
 	if _is_special_stage_active():
 		return
 	_upsert_unit_snapshot(unit_id)
-	_refresh_counterable_targets(true)
-	_refresh_faction_counts()
-	_refresh_view()
+	_counterable_targets_dirty = true
+	_queue_unit_presentation_refresh()
 	_add_event("[入场] 新观众 %s 加入" % unit_id)
 
 
@@ -2235,7 +2234,7 @@ func _queue_group_speech_event(unit_ids: Array, is_batch: bool, reason: String) 
 		"reason": reason,
 		"expires_at_msec": Time.get_ticks_msec() + 700,
 	})
-	_apply_pending_group_speech_events()
+	_queue_unit_presentation_refresh()
 
 
 func _apply_pending_group_speech_events() -> void:
@@ -2398,10 +2397,9 @@ func _on_unit_despawned(unit_id: String) -> void:
 	if _is_special_stage_active():
 		return
 	_remove_unit_snapshot(unit_id)
-	_refresh_counterable_targets(true)
-	_refresh_faction_counts()
+	_counterable_targets_dirty = true
 	_field.call("forget_unit_position", unit_id)
-	_refresh_view()
+	_queue_unit_presentation_refresh()
 	_add_event("[离场] 观众 %s 离开" % unit_id)
 
 
@@ -2451,3 +2449,25 @@ func _definition_for(word_id: String) -> Dictionary:
 
 func _clip_text(value: String, max_characters: int) -> String:
 	return value if value.length() <= max_characters else value.left(max_characters - 1) + "…"
+
+## 同一轮物理回调的变化先写入UI快照，再在绘制前提交整盘与面板，避免N次感染做N次全盘刷新。
+func _queue_unit_presentation_refresh() -> void:
+	if _unit_presentation_pending:
+		return
+	_unit_presentation_pending = true
+	_flush_unit_presentation.call_deferred()
+
+func _flush_unit_presentation() -> void:
+	if not _unit_presentation_pending:
+		return
+	_unit_presentation_pending = false
+	if not is_instance_valid(_field) or _is_special_stage_active():
+		return
+	_field.set_unit_snapshots(_snapshots)
+	if _counterable_targets_dirty:
+		_counterable_targets_dirty = false
+		_refresh_counterable_targets(true)
+	_refresh_faction_counts()
+	_refresh_sources()
+	_refresh_view()
+	_apply_pending_group_speech_events()

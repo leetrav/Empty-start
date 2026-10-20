@@ -281,3 +281,6 @@ StageArrowFx.fade_started(direction)在真实淡出首帧报告一次；HUD以ti
 PA-24封面标题绑定注意：assets/opening/ui_front_shu.png实际字形为“播”，ui_front_bo.png实际字形为“鼠”；应按实际字形和封面参考定位，不按文件名推断。“来”使用ui_front_lai.png。当前未重命名原图，main_menu.tscn的Bo/Shu节点已按实际字形绑定。
 ## PA-25 标题光效性能档位（2026-10-20）
 当前正式God rays由ui/main_menu/god_rays.gd管理：标准960×540、低480×270独立计算光束强度，再保留原Screen合成；移除屏幕mipmap并利用噪声y恒为1简化计算。替代PA-24原版全分辨率直接接入的实现。设置→标题光效可切换标准/低/关闭，默认标准，关闭同时停止离屏绘制；美术和文字分辨率不降低。真实GUI测量与前后截图详见PA-25日志；本机数据不代表低配或策划设备结论。
+
+## PERF-01 表现层合并刷新与图集（2026-10-20）
+感染/改口仍逐次更新UI快照，但整盘提交及面板刷新合并在绘制前；固定阵营圈、倾向圈和三种属性徽标由decoration_atlas.res复用，感染反馈/实时位置保持。图集由tests/performance/bake_unit_decorations.gd使用原Godot绘制函数生成，修改圈形或徽标后需同步重烘焙。测试数据、目标设备限制和规则旧测试失败详见Integration/感染性能_PERF-01_2026-10-20_log.md。

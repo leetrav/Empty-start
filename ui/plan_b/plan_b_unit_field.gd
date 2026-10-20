@@ -18,7 +18,9 @@ const TENDENCY_COLORS := {
 	"absurd": Color("#ffd477"),
 	"neutral": Color("#94a3b8"),
 }
+const BADGE_ATLAS_INDEX := {"type_a":7, "type_b":8, "type_c":9}
 const UNIT_VISUAL_RADIUS: float = 32.0
+const DECORATION_ATLAS: Texture2D = preload("res://assets/ui/plan_b/units/decoration_atlas.res")
 
 var world_bounds := Rect2(Vector2.ZERO, Vector2(900.0, 490.0))
 
@@ -419,7 +421,7 @@ func _draw_unit(snapshot: Dictionary) -> void:
 	var is_hovered := unit_id == _hovered_unit_id
 
 	if is_selected or is_hovered:
-		draw_circle(center, radius + 9.0, Color(tint.r, tint.g, tint.b, 0.18))
+		_draw_decoration(6, center, Color(tint.r, tint.g, tint.b, 0.18))
 	var sprite_id := _sprite_id_for(snapshot, team)
 	var token_texture: Texture2D = _unit_sprite_textures.get(sprite_id) as Texture2D
 	if token_texture != null:
@@ -427,25 +429,26 @@ func _draw_unit(snapshot: Dictionary) -> void:
 	else:
 		draw_circle(center, radius + 1.0, Color("#07121b"))
 		draw_circle(center, radius, tint)
-	draw_arc(center, radius + 1.25, 0.0, TAU, 20, tint, 1.5, true)
+	_draw_decoration(0, center, tint)
 	if not is_neutral:
 		var tendency_color := get_tendency_color(str(snapshot.get("tendency", "neutral")))
-		draw_arc(center, radius + 4.25, 0.0, TAU, 32, tendency_color, 2.0, true)
+		_draw_decoration(1, center, tendency_color)
 	if _counterable_unit_ids.has(unit_id):
-		draw_arc(center, radius + 7.0, 0.0, TAU, 32, Color("#b5f2a1", 0.82), 1.6, true)
-	_draw_battle_type_badge(center, radius, str(snapshot.get("battle_type", "")))
+		_draw_decoration(2, center, Color("#b5f2a1", 0.82))
+	var badge_index: int = BADGE_ATLAS_INDEX.get(str(snapshot.get("battle_type", "")), -1)
+	if badge_index >= 0:
+		_draw_decoration(badge_index, center)
 
 	if _feedback_pulses.has(unit_id):
 		var feedback: Dictionary = _feedback_pulses[unit_id]
 		var age := float(Time.get_ticks_msec() - int(feedback.get("time", 0))) / 1500.0
 		var reason := str(feedback.get("reason", ""))
 		var pulse_color := _feedback_color(reason)
-		draw_arc(center, radius + 6.0 + 4.0 * age, 0.0, TAU, 32, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 1.5, true)
+		_draw_decoration(3, center, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0-age), (radius+6.0+4.0*age)/38.0)
 		if reason == "split":
-			draw_arc(center, radius + 2.0 + 2.5 * age, 0.0, TAU, 24, Color(pulse_color.r, pulse_color.g, pulse_color.b, 0.85 * (1.0 - age)), 1.0, true)
+			_draw_decoration(4, center, Color(pulse_color.r, pulse_color.g, pulse_color.b, 0.85*(1.0-age)), (radius+2.0+2.5*age)/34.0)
 		elif reason == "reflect":
-			draw_arc(center, radius + 3.5, -PI * 0.8, -PI * 0.2, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 1.5, true)
-			draw_arc(center, radius + 3.5, PI * 0.2, PI * 0.8, 16, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0 - age), 1.5, true)
+			_draw_decoration(5, center, Color(pulse_color.r, pulse_color.g, pulse_color.b, 1.0-age))
 
 
 ## 64px头像内绘制独立 battle_type 徽标；线稿不依赖外部 Emoji 字体或新图片。
@@ -1157,3 +1160,9 @@ func _contact_color(outcome: String) -> Color:
 			return Color("#a1adbc")
 		_:
 			return Color("#91a4ae")
+
+## 图集只烘焙不变的外圈/徽标；阵营颜色、感染透明度与扩散仍根据实时状态调制。
+func _draw_decoration(index: int, center: Vector2, tint: Color = Color.WHITE, expansion: float = 1.0) -> void:
+	var edge := 96.0 * expansion
+	var source := Rect2(Vector2(float(index % 5), floorf(float(index)/5.0))*192.0, Vector2(192,192))
+	draw_texture_rect_region(DECORATION_ATLAS, Rect2(center-Vector2.ONE*edge*0.5, Vector2.ONE*edge), source, tint)
