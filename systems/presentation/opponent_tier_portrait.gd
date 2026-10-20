@@ -12,8 +12,10 @@ signal flip_finished(tier: int)
 @export var kiwi_burst_scale: float = 1.09
 @export var kiwi_shake_pixels: float = 7.0
 @export_range(0.7, 1.0, 0.01) var alien_tier_scale: float = 0.90
-# 以全套贴图 alpha 可见边界的底部中点作为公共站立线，特殊素材仍可在 Inspector 微调。
-@export var visible_anchor_ratio: Vector2 = Vector2(0.5, 1.0)
+# alpha 中心用于水平对齐；Y 表示安全站立线在镜头高度中的位置。
+# 原 PA-23 的 Y=1.0 会把较高的动作裁出 432px 直播镜头。
+@export var visible_anchor_ratio: Vector2 = Vector2(0.5, 0.94)
+@export_range(0.0, 24.0, 1.0) var visible_edge_guard_px: float = 5.0
 
 var current_tier: int = 0
 var fx: OpponentTierFx
@@ -104,19 +106,32 @@ func _rebuild_visible_bounds() -> void:
 		_maximum_visible_size = _maximum_visible_size.max(bounds.size)
 
 
-# 以同角色全套可见边界的共同缩放和锚点绘制，PA-17 也调用本入口。
+# 保留原来每角色全套姿态的共同尺寸比例。只重算可见内容的安全位置；
+# 使矮姿态下沉，而高姿态的头脚都留在 432px 镜头内，PA-17 复用此函数。
 func fit_current_texture() -> void:
 	if _portrait == null or _portrait.texture == null or size.x <= 0.0 or size.y <= 0.0:
 		return
 	var texture: Texture2D = _portrait.texture
 	var bounds: Rect2 = _visible_bounds.get(texture, Rect2(Vector2.ZERO, texture.get_size()))
-	var fit_scale: float = minf(size.x / _maximum_visible_size.x, size.y / _maximum_visible_size.y)
-	var anchor: Vector2 = visible_anchor_ratio.clamp(Vector2.ZERO, Vector2.ONE)
+	var guard: float = minf(visible_edge_guard_px, minf(size.x, size.y) * 0.1)
+	var available: Vector2 = (size - Vector2.ONE * guard * 2.0).max(Vector2.ONE)
+	var fit_scale: float = minf(available.x / _maximum_visible_size.x, available.y / _maximum_visible_size.y)
+	var ground_ratio: Vector2 = visible_anchor_ratio.clamp(Vector2.ZERO, Vector2.ONE)
+	var visible_size: Vector2 = bounds.size * fit_scale
+	var visible_top: float = clampf(
+		size.y * ground_ratio.y - visible_size.y,
+		guard,
+		maxf(guard, size.y - guard - visible_size.y)
+	)
 	_portrait.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	_portrait.stretch_mode = TextureRect.STRETCH_SCALE
 	_portrait.size = texture.get_size() * fit_scale
-	_portrait.pivot_offset = (bounds.position + bounds.size * anchor) * fit_scale
-	_portrait.position = size * anchor - _portrait.pivot_offset
+	# Tween 保持绕可见身体中心翻转，不随脚底锚点改变旋转中心。
+	_portrait.pivot_offset = (bounds.position + bounds.size * 0.5) * fit_scale
+	_portrait.position = Vector2(
+		size.x * ground_ratio.x - _portrait.pivot_offset.x,
+		visible_top - bounds.position.y * fit_scale
+	)
 
 
 # 三名对手共用白色冲击条；Kiwi 的翻图节奏仍单独处理。
