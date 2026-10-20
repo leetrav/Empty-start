@@ -4,12 +4,18 @@ var failures: int = 0
 var events: Array[Dictionary] = []
 var recording_text: bool = false
 var ticks: Array[int] = []
+var text_capture := AudioEffectCapture.new()
+var music_capture := AudioEffectCapture.new()
 func _ready() -> void:
 	process_mode=Node.PROCESS_MODE_ALWAYS
 	get_tree().current_scene=null
 	get_window().size=Vector2i(1280,720)
 	get_window().title="AU-07 text tick and contradiction audio"
 	AudioManager.event_played.connect(_on_event)
+	text_capture.buffer_length=4.0
+	music_capture.buffer_length=4.0
+	AudioServer.add_bus_effect(AudioServer.get_bus_index(&"UI"),text_capture)
+	AudioServer.add_bus_effect(AudioServer.get_bus_index(&"Music"),music_capture)
 	get_tree().create_timer(35.0).timeout.connect(func(): get_tree().quit(2))
 	_run.call_deferred()
 
@@ -17,10 +23,11 @@ func _ready() -> void:
 func _run() -> void:
 	_check(SceneRouter.goto_comic(&"opening")==OK,"real comic route")
 	await _settle()
-	AudioManager.stop_music()
 	var comic: ComicPlayer=get_tree().current_scene as ComicPlayer
 	var player: AudioStreamPlayer=comic.get("_sound")
-	_check(player.stream.resource_path.ends_with("text_tick.ogg") and player.stream.get_length()<0.08 and player.volume_db==-20.0,"CSV resolves short quiet replacement")
+	_check(player.stream.resource_path.ends_with("text_tick.ogg") and player.stream.get_length()<0.08 and player.volume_db==-5.0,"CSV resolves crisp audible replacement")
+	text_capture.clear_buffer()
+	music_capture.clear_buffer()
 	recording_text=true
 	await get_tree().create_timer(0.6).timeout
 	# 同帧多次请求也只响一次，保证多个旁白块共用短限流。
@@ -34,6 +41,12 @@ func _run() -> void:
 	await _escape()
 	await get_tree().create_timer(0.6).timeout
 	recording_text=false
+	# 保留真实开场BGM，检测两个总线确有输出，避免只测到播放事件却听不到。
+	var text_peak := _peak(text_capture)
+	var music_peak := _peak(music_capture)
+	print("AU07_MIX text_peak_db=",linear_to_db(text_peak)," music_peak_db=",linear_to_db(music_peak))
+	_check(text_peak>0.2 and text_peak<1.0,"text output is audible and below clipping")
+	_check(music_peak>0.001,"real BGM remains audible during narration")
 	_check(ticks.size()>2,"actual progressive narration plays new ticks")
 	for index in range(1,ticks.size()): _check(ticks[index]-ticks[index-1]>=65,"text tick is rate limited")
 	for index in range(40):
@@ -94,6 +107,11 @@ func _count(id: StringName) -> int:
 	for event: Dictionary in events:
 		if event.id==id: count+=1
 	return count
+func _peak(capture: AudioEffectCapture) -> float:
+	var peak := 0.0
+	for sample: Vector2 in capture.get_buffer(capture.get_frames_available()):
+		peak=maxf(peak,maxf(absf(sample.x),absf(sample.y)))
+	return peak
 func _settle() -> void:
 	while SceneRouter.is_transitioning(): await get_tree().process_frame
 	await get_tree().process_frame
