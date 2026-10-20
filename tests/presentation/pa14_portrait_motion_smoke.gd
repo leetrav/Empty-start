@@ -47,15 +47,15 @@ func _run() -> void:
 	var opponent_before: Transform2D = opponent.get_global_transform()
 	await _capture("idle_a")
 	await _wait(0.45)
-	_check(not player.get_global_transform().is_equal_approx(player_before), "player whole PNG moves")
-	_check(not opponent.get_global_transform().is_equal_approx(opponent_before), "opponent whole PNG moves")
+	_check(player.get_global_transform().is_equal_approx(player_before), "player remains static without breathing")
+	_check(opponent.get_global_transform().is_equal_approx(opponent_before), "opponent remains static without breathing")
 	var breath_scale: float = player.get_global_transform().y.length() / _hud.get_global_transform().y.length()
-	_check(breath_scale > 0.97 and breath_scale < 1.03, "breath stays within 3 percent of HUD scale")
+	_check(breath_scale > 0.97 and breath_scale < 1.03, "portrait maintains natural pixel scale without idle breathing")
 	await _capture("idle_b")
 	get_tree().paused = true
 	var paused_transform: Transform2D = player.get_global_transform()
 	await get_tree().create_timer(0.15, true).timeout
-	_check(player.get_global_transform().is_equal_approx(paused_transform), "pause freezes portrait tween")
+	_check(player.get_global_transform().is_equal_approx(paused_transform), "pause keeps static portrait transform")
 	get_tree().paused = false
 	_mouse(true)
 	_mouse(false)
@@ -77,7 +77,7 @@ func _run() -> void:
 	await _wait(0.06)
 	var idle_muted: Transform2D = player.get_global_transform()
 	await _wait(0.08)
-	_check(player.get_global_transform().is_equal_approx(idle_muted), "event can mute idle smoothly")
+	_check(player.get_global_transform().is_equal_approx(idle_muted), "idle-strength compatibility does not move static portrait")
 	_hud.player_portrait_motion.set_idle_strength(1.0, 0.02)
 	var slot: Control = _hud.player_portrait_motion.get_parent()
 	slot.rotation = 0.01

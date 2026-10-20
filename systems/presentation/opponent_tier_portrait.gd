@@ -12,8 +12,14 @@ signal flip_finished(tier: int)
 @export var kiwi_burst_scale: float = 1.09
 @export var kiwi_shake_pixels: float = 7.0
 @export_range(0.7, 1.0, 0.01) var alien_tier_scale: float = 0.90
-# 以全套贴图 alpha 可见边界的底部中点作为公共站立线，特殊素材仍可在 Inspector 微调。
+# Y=1 对齐可见脚底到直播框的安全下沿；是否裁切由 fit_current_texture() 负责。
+# 旧版 0.94 在 432px 框中人为留下约 26px 悬空间隙。
 @export var visible_anchor_ratio: Vector2 = Vector2(0.5, 1.0)
+@export_range(0.0, 24.0, 1.0) var visible_edge_guard_px: float = 5.0
+# 列巴坐姿参考：增大 T1/T2 的 fox_idle.png，让头部略低、身体铺满直播镜头。
+# 两档使用同一贴图，采用同一构图，避免换档瞬间跳动。
+@export_range(1.0, 1.5, 0.01) var fox_idle_zoom: float = 1.08
+@export_range(0.0, 0.25, 0.01) var fox_idle_top_ratio: float = 0.10
 
 var current_tier: int = 0
 var fx: OpponentTierFx
@@ -35,12 +41,14 @@ var _maximum_visible_size: Vector2 = Vector2.ONE
 var _result_textures: Array[Texture2D] = []
 
 
-# 插入 PA-14 的 Idle 层内部，让汗滴、切图与现有呼吸动作共同移动。
+# 保留 PA-14 的 Idle 层级给射击/切图使用；循环呼吸动画已停用。
 func attach_portrait(portrait: TextureRect) -> void:
 	var slot: Control = portrait.get_parent() as Control
 	var index: int = portrait.get_index()
 	name = "OpponentTierPortrait"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 坐姿放大后由直播槽本身裁切；避免肢体溢出到下方评论区域。
+	clip_contents = true
 	slot.add_child(self)
 	slot.move_child(self, index)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -104,19 +112,42 @@ func _rebuild_visible_bounds() -> void:
 		_maximum_visible_size = _maximum_visible_size.max(bounds.size)
 
 
-# 以同角色全套可见边界的共同缩放和锚点绘制，PA-17 也调用本入口。
+# 维持单张原图等比适配。可见脚底落到安全下沿，较高姿态向上移动。
+# 考虑缩放动画的实际 scale.y，修正原来按未缩放边界定位造成的悬空。
 func fit_current_texture() -> void:
 	if _portrait == null or _portrait.texture == null or size.x <= 0.0 or size.y <= 0.0:
 		return
 	var texture: Texture2D = _portrait.texture
 	var bounds: Rect2 = _visible_bounds.get(texture, Rect2(Vector2.ZERO, texture.get_size()))
-	var fit_scale: float = minf(size.x / _maximum_visible_size.x, size.y / _maximum_visible_size.y)
-	var anchor: Vector2 = visible_anchor_ratio.clamp(Vector2.ZERO, Vector2.ONE)
+	var guard: float = minf(visible_edge_guard_px, minf(size.x, size.y) * 0.1)
+	var available: Vector2 = (size - Vector2.ONE * guard * 2.0).max(Vector2.ONE)
+	# 每张原图按自己的完整画布比例适配镜头，恢复 PA-14 的 TextureRect 尺寸逻辑。
+	# _maximum_visible_size 只作图像测量参考，不再缩小较短/较窄的阶段姿态。
+	var raw_size: Vector2 = texture.get_size().max(Vector2.ONE)
+	var fit_scale: float = minf(available.x / raw_size.x, available.y / raw_size.y)
+	var fox_seated: bool = _character_id == "fox" and texture == _idle and current_tier in [1, 2]
+	if fox_seated:
+		fit_scale *= fox_idle_zoom
+	var ground_ratio: Vector2 = visible_anchor_ratio.clamp(Vector2.ZERO, Vector2.ONE)
+	var display_height: float = bounds.size.y * fit_scale * absf(_portrait.scale.y)
+	var visible_top: float = clampf(
+		size.y * ground_ratio.y - guard - display_height,
+		guard,
+		maxf(guard, size.y - guard - display_height)
+	)
+	# 列巴坐姿：完整显示头部，窗口下沿裁掉坐姿多余部分。
+	if fox_seated:
+		visible_top = size.y * fox_idle_top_ratio
 	_portrait.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	_portrait.stretch_mode = TextureRect.STRETCH_SCALE
 	_portrait.size = texture.get_size() * fit_scale
-	_portrait.pivot_offset = (bounds.position + bounds.size * anchor) * fit_scale
-	_portrait.position = size * anchor - _portrait.pivot_offset
+	# 翻牌仍绕可见身体中心旋转；位置补偿 pivot 与 scale 对脚底的影响。
+	_portrait.pivot_offset = (bounds.position + bounds.size * 0.5) * fit_scale
+	_portrait.position = Vector2(
+		size.x * ground_ratio.x - _portrait.pivot_offset.x,
+		visible_top - _portrait.pivot_offset.y
+			- (bounds.position.y * fit_scale - _portrait.pivot_offset.y) * _portrait.scale.y
+	)
 
 
 # 三名对手共用白色冲击条；Kiwi 的翻图节奏仍单独处理。
