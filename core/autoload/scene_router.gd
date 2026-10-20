@@ -16,6 +16,7 @@ const LOADING_SCREEN: Script = preload("res://ui/loading_screen.gd")
 const FADE_OUT_SECONDS: float = 0.20
 const FADE_IN_SECONDS: float = 0.25
 const MINIMUM_COVER_SECONDS: float = 0.12
+const LIVE_MINIMUM_COVER_SECONDS: float = 0.6
 
 var comic_kind: StringName = &"opening"
 var comic_record_first_view: bool = false
@@ -84,6 +85,47 @@ func goto_opening_room() -> Error:
 
 func goto_game() -> Error:
 	return _request_scene(GAME_SCENE_PATH, game_scene_override)
+
+
+# 原场景重开也走同一遮幕，动作必须同步返回bool；顶层开播继续走goto_game。
+func prepare_live_attempt(action: Callable) -> Error:
+	if _transitioning:
+		return ERR_BUSY
+	var current := get_tree().current_scene
+	if current == null or current.scene_file_path != GAME_SCENE_PATH or not action.is_valid():
+		return ERR_UNCONFIGURED
+	_transitioning = true
+	_run_live_attempt.call_deferred(action, current)
+	return OK
+
+
+# 保留当前战斗节点与周目资料，先完全遮住画面再执行原有重建逻辑。
+func _run_live_attempt(action: Callable, owner_scene: Node) -> void:
+	var was_paused := get_tree().paused
+	get_tree().paused = true
+	_loading_screen.set("pure_black", false)
+	_loading_screen.call("reset_indicator")
+	_loading_screen.set("show_indicator", true)
+	_loading_screen.modulate.a = 0.0
+	_loading_screen.show()
+	transition_started.emit(GAME_SCENE_PATH)
+	await _fade_to(1.0, FADE_OUT_SECONDS)
+	if not is_instance_valid(owner_scene) or get_tree().current_scene != owner_scene or not action.is_valid():
+		await _recover_transition(GAME_SCENE_PATH, ERR_UNCONFIGURED, was_paused)
+		return
+	var rebuilt: bool = action.call()
+	# 原重开会恢复暂停菜单；在揭幕前再次冻结新尝试，不能在黑幕后跑计时。
+	get_tree().paused = true
+	if not rebuilt:
+		await _recover_transition(GAME_SCENE_PATH, ERR_CANT_CREATE, was_paused)
+		return
+	await get_tree().create_timer(LIVE_MINIMUM_COVER_SECONDS, true, false, true).timeout
+	_loading_screen.set("show_indicator", false)
+	await _fade_to(0.0, FADE_IN_SECONDS)
+	_loading_screen.hide()
+	get_tree().paused = false
+	_transitioning = false
+	transition_finished.emit(GAME_SCENE_PATH)
 
 # 请求被接受后保存显示参数；实际创建页面后再交付结局快照。
 func goto_ending(session: EndingSession, play_epilogue: bool = false) -> Error:
@@ -169,6 +211,7 @@ func _request_scene(scene_path: String, override_scene: PackedScene = null) -> E
 
 # 先绘出遮罩再取加载结果；只有后台读取完成才允许 get，避免在这里阻塞资源读取。
 func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
+	var live_entry: bool = scene_path == GAME_SCENE_PATH
 	var was_paused: bool = get_tree().paused
 	var previous: Node = get_tree().current_scene
 	var previous_path: String = previous.scene_file_path if previous != null else ""
@@ -186,6 +229,7 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 	if not music_exit:
 		get_tree().paused = true
 	_loading_screen.call("reset_indicator")
+	_loading_screen.set("show_indicator", live_entry)
 	_loading_screen.modulate.a = 0.0
 	_loading_screen.show()
 	transition_started.emit(scene_path)
@@ -205,7 +249,7 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 				await _recover_transition(scene_path, ERR_TIMEOUT, was_paused)
 				return
 			status = ResourceLoader.load_threaded_get_status(scene_path)
-			_loading_screen.set("show_indicator", Time.get_ticks_msec() - cover_start > 180)
+			_loading_screen.set("show_indicator", live_entry or Time.get_ticks_msec() - cover_start > 180)
 			if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 				await get_tree().process_frame
 		if status == ResourceLoader.THREAD_LOAD_LOADED:
@@ -215,7 +259,7 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 		return
 	if scene_path == MAIN_MENU_SCENE_PATH:
 		_main_menu_scene = scene
-	var minimum_cover: float = 0.6 if movie_to_credits else (0.25 if cinematic else MINIMUM_COVER_SECONDS)
+	var minimum_cover: float = LIVE_MINIMUM_COVER_SECONDS if live_entry else (0.6 if movie_to_credits else (0.25 if cinematic else MINIMUM_COVER_SECONDS))
 	var remaining: float = minimum_cover - float(Time.get_ticks_msec() - cover_start) / 1000.0
 	if remaining > 0.0:
 		await get_tree().create_timer(remaining, true, false, true).timeout

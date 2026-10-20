@@ -28,6 +28,8 @@ DBG-01 通过 F3 显示共用 DEBUG 面板。面板只读取当前 Sandbox 与�
 
 ## 全局加载与 SceneRouter（2026-10-20，LOAD-01）
 
+LOAD-02：目标为正式GAME_SCENE_PATH的每次开播／重载固定显示原右下圆点与“正在加载”，完全遮幕至少0.6秒，快缓存不隐藏提示。首次与后续四场仍由房间start_live→goto_game进入。失败／暂停重开调用`SceneRouter.prepare_live_attempt(action: Callable) -> Error`，常驻遮幕完全盖住后同步调用返回bool的原尝试重建动作，不替换Sandbox节点；黑幕与揭幕期间暂停玩法，重复请求返回ERR_BUSY，结束仍发送transition_finished(GAME_SCENE_PATH)。`Sandbox.restart_current_attempt()`为异步玩家入口，不能同帧读取重建后的状态；F3的`debug_restart_current_attempt()`保持同步调试语义。其他顶层转场与片尾时序不变。
+
 所有顶层 `goto_*()` 与 `reload_current_scene()` 统一走常驻加载层：约 0.20 秒淡出、至少 0.12 秒完整遮罩、目标 ready 后约 0.25 秒淡入。较慢的后台加载显示转动圆点与“正在加载”；场景实例化仍由 Godot 主线程执行，遮罩期间不展示空树。漫画切格、身份设置场景内分页、战斗内阶段演出保持原有职责。
 
 `Error == OK` 表示请求已接受，不表示新页面已可操作。业务逻辑可订阅 `transition_finished(scene_path)`；若仅需读取新节点，可等待 `SceneTree.scene_changed`。加载中再次请求返回 `ERR_BUSY`，无效路径同步返回错误；异步错误发出 `transition_failed(scene_path, error)`，保留原页面与原暂停状态，并提供返回主菜单入口。新场景在淡入结束前暂停，避免对白与自动计时在黑幕下提前消耗。

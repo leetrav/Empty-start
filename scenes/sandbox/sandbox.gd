@@ -463,9 +463,18 @@ func _on_pause_changed(paused: bool) -> void:
 
 # 按当前关重建尝试；重开与切到下一关共用清理，保留此前周目成果。
 func restart_current_attempt() -> void:
-	# 已进入终局后不能通过普通重开入口恢复 PK、档位与矛盾规则。
 	if _divine_descent_flow != null and _divine_descent_flow.get_session() != null:
 		return
+	var error := SceneRouter.prepare_live_attempt(_restart_current_attempt_under_cover)
+	if error != OK and error != ERR_BUSY:
+		push_error("Sandbox: 无法开始重开过渡：%s" % error_string(error))
+
+
+# 原有重建顺序保持不变，由常驻遮幕在完全盖住后调用。
+func _restart_current_attempt_under_cover() -> bool:
+	# 已进入终局后不能通过普通重开入口恢复 PK、档位与矛盾规则。
+	if _divine_descent_flow != null and _divine_descent_flow.get_session() != null:
+		return false
 	AudioManager.stop_dialogue_voice()
 	_contradiction_oracle_flow.stop()
 	_reset_paradox_presentation()
@@ -477,12 +486,18 @@ func restart_current_attempt() -> void:
 	%PauseMenu.resume_game()
 	if not _battle_attempt_flow.restart_current_attempt():
 		push_error("Sandbox: 无法重建当前战斗尝试。")
+		return false
 	_refresh_mobile_touch_phase()
+	return true
 
 
 ## DebugPanel 重开后读取真实 Host / Flow 状态，避免把无效请求提示为成功。
 func debug_restart_current_attempt() -> bool:
-	restart_current_attempt()
+	# F3程序探针保持同步；玩家失败／暂停按钮使用正式遮幕入口。
+	if SceneRouter.is_transitioning():
+		return false
+	if not _restart_current_attempt_under_cover():
+		return false
 	if use_plan_b_campaign:
 		return _plan_b_host != null and _plan_b_host.get_battle_state() == &"running"
 	return _battle_attempt_flow != null and _battle_attempt_flow.is_normal_combat_active()
