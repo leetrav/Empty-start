@@ -245,8 +245,6 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	nickname.name = "FanNickname"
 	nickname.text = display_name
 	# 左右留白对称，文字几何中心严格等于 plate_width / 2。
-	nickname.position = Vector2(text_inset, 4.0)
-	nickname.size = Vector2(maxf(1.0, plate_width - text_inset * 2.0), plate_height - 8.0)
 	nickname.add_theme_font_size_override("font_size", nickname_font_size)
 	nickname.add_theme_color_override("font_color", _comment_nameplate_text_color)
 	nickname.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -255,6 +253,10 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	nickname.clip_text = true
 	nickname.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	identity.add_child(nickname)
+	# Godot applies the Label intrinsic min-size when it enters the tree.
+	# Set geometry last so the real bounding-box center matches the plate center.
+	nickname.position = Vector2(text_inset, 4.0)
+	nickname.size = Vector2(maxf(1.0, plate_width - text_inset * 2.0), plate_height - 8.0)
 
 	var message := RichTextLabel.new()
 	message.name = "CommentText"
