@@ -1,0 +1,48 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+GLOBAL_LOADING PASS menu request accepted
+GLOBAL_LOADING PASS duplicate request rejected
+GLOBAL_LOADING PASS menu ready before transition finishes
+GLOBAL_LOADING PASS identity accepted
+GLOBAL_LOADING PASS old page retained during fade out
+GLOBAL_LOADING PASS identity ready
+GLOBAL_LOADING PASS room accepted
+GLOBAL_LOADING PASS room ready
+GLOBAL_LOADING PASS battle accepted
+GLOBAL_LOADING PASS production battle ready
+GLOBAL_LOADING PASS battle unpaused after reveal
+GLOBAL_LOADING PASS reload accepted while paused
+GLOBAL_LOADING PASS restart clears old pause
+GLOBAL_LOADING PASS saved ending accepted
+GLOBAL_LOADING PASS ending routed
+GLOBAL_LOADING PASS ending snapshot delivered after ready
+GLOBAL_LOADING PASS invalid comic rejected
+ERROR: SceneRouter: scene resource not found: res://missing-loading-scene.tscn
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _request_scene (res://core/autoload/scene_router.gd:200)
+       [1] _run (res://tests/integration/global_loading_smoke.gd:73)
+       [2] _settle (res://tests/integration/global_loading_smoke.gd:27)
+GLOBAL_LOADING PASS missing scene rejected before transition
+GLOBAL_LOADING PASS invalid request leaves route unlocked
+GLOBAL_LOADING PASS return menu accepted
+GLOBAL_LOADING PASS invalid packed scene enters async failure path
+ERROR: Failed to instantiate scene state of "", node count is 0. Make sure the PackedScene resource is valid.
+   at: instantiate (scene/resources/packed_scene.cpp:173)
+   GDScript backtrace (most recent call first):
+       [0] _run_transition (res://core/autoload/scene_router.gd:271)
+ERROR: Parameter "new_scene" is null.
+   at: change_scene_to_packed (scene/main/scene_tree.cpp:1717)
+   GDScript backtrace (most recent call first):
+       [0] _run_transition (res://core/autoload/scene_router.gd:271)
+ERROR: SceneRouter: transition failed for TEST_ONLY_invalid_packed_scene: Can't create
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _recover_transition (res://core/autoload/scene_router.gd:294)
+       [1] _run_transition (res://core/autoload/scene_router.gd:273)
+GLOBAL_LOADING PASS async failure reported once
+GLOBAL_LOADING PASS failure retains previous page and pause
+GLOBAL_LOADING PASS failure offers recovery action
+GLOBAL_LOADING PASS recovery returns to usable menu
+GLOBAL_LOADING_DONE failures=0
