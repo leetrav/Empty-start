@@ -395,3 +395,8 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - 原状：Sandbox与开局房间有PauseMenu，结局、标题、身份和独立漫画没有；漫画还在_input消费Esc并退出剧情。只在战斗验证暂停不能代表全局覆盖。
 - 修复：SceneRouter初次启动和scene_changed时自动补齐，已有实例按脚本路径识别并复用；漫画不消费pause输入，音乐/漫画暂停由统一信号同步。转场期间不接受pause。
 - 验证须覆盖结局页全屏→Esc→设置→取消全屏，并确认Esc关闭设置后仍暂停、继续后恢复原页面，不能只直接调用pause_game代替输入分发。
+
+### PA-25：God rays接入成功不等于完成性能验收
+- 原版逐像素二维噪声和hint_screen_texture的filter_linear_mipmap会增加运算与屏幕缩小链开销。固定噪声y为1时可简化一维，但要保留画面和Screen混合。
+- 正式标题使用独立小尺寸光效掩码，再全尺寸合成；关闭档必须同步停止SubViewport，不能只hide父ColorRect。
+- GPU计时须包含活跃SubViewport，VSync封顶FPS不能说明GPU成本。实际GUI同机开关/原版/优化对照后才给出受限结论；headless不验证GPU性能，单机流畅不能推断策划设备。

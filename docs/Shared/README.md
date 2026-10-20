@@ -45,3 +45,6 @@ SceneRouter初始启动及每次scene_changed后统一检查当前页面的Pause
 Esc使用Input Map的pause Action。首次按下暂停并打开继续/设置/返回面板；再次按下恢复。暂停内设置打开时，Esc先关闭设置，仍保持暂停。全屏时也能经此入口关闭设置里的全屏选项。转场中忽略pause，避免误解除加载层的树暂停。
 
 暂停/恢复统一通知AudioManager；独立ComicPlayer额外调用set_playback_paused冻结分镜Timer、文字和Tween，Esc不再直接退出漫画。暂停返回菜单先完整恢复并发出paused_changed(false)，避免音乐暂停标志留到新页面。
+
+### 标题光效设置（PA-25）
+SettingsManager.menu_rays_quality为0关闭、1低、2标准（默认），set_menu_rays_quality限制范围并发出menu_rays_quality_changed；SettingsPanel即时生效，返回保存display/menu_rays_quality，旧配置缺失或非法值回退标准。load_settings读取，apply_settings统一通知；reset_to_defaults恢复标准。关闭同时停止标题离屏光效绘制，仅影响标题画面。性能依据见PresentationAssets/表现资产_PA-25_2026-10-20_log.md。

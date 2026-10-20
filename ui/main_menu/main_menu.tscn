@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://ui/main_menu/main_menu.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/settings/settings_panel.tscn" id="2"]
@@ -8,7 +8,9 @@
 [ext_resource type="Texture2D" path="res://assets/ui/main_menu/cover_title_lai.png" id="6"]
 [ext_resource type="Texture2D" path="res://assets/ui/main_menu/cover_title_shu.png" id="7"]
 [ext_resource type="Script" path="res://ui/main_menu/cover_menu_button.gd" id="8"]
-[ext_resource type="Shader" path="res://ui/main_menu/previews/pend00_god_rays.gdshader" id="9"]
+[ext_resource type="Shader" path="res://ui/main_menu/god_rays_composite.gdshader" id="9"]
+
+[ext_resource type="Script" path="res://ui/main_menu/god_rays.gd" id="10_rays"]
 
 [sub_resource type="ShaderMaterial" id="GodRays"]
 shader = ExtResource("9")
@@ -90,6 +92,7 @@ texture = ExtResource("4")
 expand_mode = 1
 
 [node name="Pend00GodRays" type="ColorRect" parent="CoverCanvas"]
+script = ExtResource("10_rays")
 material = SubResource("GodRays")
 layout_mode = 0
 offset_right = 1920.0
