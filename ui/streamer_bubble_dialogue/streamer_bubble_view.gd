@@ -8,6 +8,8 @@ enum TailDirection { LEFT, RIGHT }
 const DEFAULT_CURRENT_FONT_SIZE: int = 22
 const DEFAULT_MINIMUM_READABLE_FONT_SIZE: int = 18
 const TEN_HANZI_CAPACITY_SAMPLE: String = "这是十个汉字宽度基准"
+# 主播当前主泡与棋盘复读泡共用同一组文字安全边距。
+const DEFAULT_TEXT_MARGIN: Vector2 = Vector2(25.0, 16.0)
 
 @export_enum("Left", "Right") var tail_direction: int = TailDirection.LEFT
 @export_range(0.0, 1.0, 0.01) var tail_position: float = 0.68
@@ -15,7 +17,7 @@ const TEN_HANZI_CAPACITY_SAMPLE: String = "这是十个汉字宽度基准"
 @export_range(120.0, 320.0, 1.0) var min_bubble_width: float = 134.0 # 历史对白泡固定宽度
 @export_range(12.0, 64.0, 1.0) var tail_length: float = 22.0
 @export_range(12.0, 64.0, 1.0) var tail_base_width: float = 26.0
-@export var text_margin: Vector2 = Vector2(25.0, 16.0)
+@export var text_margin: Vector2 = DEFAULT_TEXT_MARGIN
 @export var fill_color: Color = Color("#FFF8EA")
 @export var text_color: Color = Color("#292734")
 @export var outline_color: Color = Color("#252331")

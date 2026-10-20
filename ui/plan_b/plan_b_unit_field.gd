@@ -609,17 +609,25 @@ func _draw_group_bubbles() -> void:
 		var font: Font = get_theme_default_font()
 		if font == null:
 			font = ThemeDB.fallback_font
-		var padding := 12.0
-		var text_width := float(layout.get("text_width", bubble_width - padding * 2.0))
+		var text_margin: Vector2 = layout.get("text_margin", StreamerBubbleView.DEFAULT_TEXT_MARGIN)
+		var text_width := float(layout.get("text_width", bubble_width - text_margin.x * 2.0))
+		var text_block_height := minf(
+			float(layout.get("text_block_height", bubble_rect.size.y - text_margin.y * 2.0)),
+			bubble_rect.size.y - 4.0
+		)
+		var font_size := int(layout.get("font_size", StreamerBubbleView.DEFAULT_CURRENT_FONT_SIZE))
+		# 实际文字块在泡体内居中；块内各行沿用主播气泡的左对齐规则。
 		var text_block_width := minf(float(layout.get("text_block_width", text_width)), text_width)
 		var text_origin_x := bubble_rect.position.x + (bubble_rect.size.x - text_block_width) * 0.5
+		# 实际字形边界比排版测量框更靠上；补回字体 ascent，让墨迹落在居中安全区。
+		var text_origin_y := bubble_rect.position.y + (bubble_rect.size.y - text_block_height) * 0.5 + font.get_ascent(font_size)
 		draw_multiline_string(
 			font,
-			Vector2(text_origin_x, bubble_rect.position.y + padding + 4.0),
+			Vector2(text_origin_x, text_origin_y),
 			phrase,
 			HORIZONTAL_ALIGNMENT_LEFT,
 			text_width,
-			int(layout.get("font_size", StreamerBubbleView.DEFAULT_CURRENT_FONT_SIZE)),
+			font_size,
 			-1,
 			Color("#36252f")
 		)
@@ -661,7 +669,7 @@ func _get_group_bubble_layout(group: Dictionary, group_id: String, member_ids: A
 		if _performance_tracker != null:
 			_tracker_group_layout_cache_hits += 1
 		return cached
-	var padding := 12.0
+	var text_margin: Vector2 = StreamerBubbleView.DEFAULT_TEXT_MARGIN
 	var font: Font = get_theme_default_font()
 	if font == null:
 		font = ThemeDB.fallback_font
@@ -675,15 +683,21 @@ func _get_group_bubble_layout(group: Dictionary, group_id: String, member_ids: A
 		text_width = StreamerBubbleView.measure_ten_hanzi_width(font, font_size)
 		measured = font.get_multiline_string_size(phrase, HORIZONTAL_ALIGNMENT_LEFT, text_width, font_size)
 	var text_block_width: float = minf(measured.x, text_width)
-	var bubble_width := text_width + padding * 2.0
-	var bubble_height := clampf(measured.y + padding * 2.0 + 8.0, 54.0, maxf(54.0, size.y - 16.0))
+	# 留出与主播主泡一致的水平/垂直安全边距，并额外预留描边宽度。
+	var bubble_width := text_width + text_margin.x * 2.0 + 4.0
+	var bubble_height := clampf(
+		measured.y + text_margin.y * 2.0 + 4.0,
+		54.0,
+		maxf(54.0, size.y - 16.0)
+	)
 	var layout := {
 		"signature": signature,
 		"width": bubble_width,
 		"height": bubble_height,
 		"text_width": text_width,
 		"text_block_width": text_block_width,
-		"padding": padding,
+		"text_block_height": measured.y,
+		"text_margin": text_margin,
 		"font_size": font_size,
 		"tail_ids": _choose_tail_member_ids(group, member_ids),
 	}
