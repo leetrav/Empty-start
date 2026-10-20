@@ -18,6 +18,8 @@ func _run() -> void:
 	SaveManager.new_game()
 	_check(SceneRouter.goto_identity_setup()==OK,"identity route")
 	while SceneRouter.is_transitioning(): await get_tree().process_frame
+	print("AU08_ENTRY_EVENTS ",events)
+	_check(events.is_empty(),"entering name page does not play UI sounds")
 	var page := get_tree().current_scene
 	var input: LineEdit=page.get("_streamer_name_input")
 	input.text="音效试听"
@@ -25,6 +27,7 @@ func _run() -> void:
 	events.clear()
 	await _click(page.get("_streamer_continue"))
 	_check(events.count(&"ui_name_confirm")==1 and events.count(&"ui_click")==0,"name confirmation once without generic double sound")
+	_check(events.count(&"ui_menu_hover")==1,"only mouse entry sounds, automatic next-page focus stays silent")
 	var panel: Control=page.get("_player_presentation_page")
 	var action: Button=panel.get_node("Center/Panel/Content/Action")
 	var back: Button=panel.get_node("Center/Panel/Content/Back")
@@ -43,7 +46,23 @@ func _run() -> void:
 	events.clear()
 	await _key(KEY_ENTER)
 	_check(events.count(&"ui_click")==1 and not panel.visible,"keyboard confirmation plays click and advances")
+	_check(events.count(&"ui_menu_hover")==0,"automatic identity focus does not add page-entry sound")
+	var selection: Control=page.get_node("IdentitySelection")
+	print("AU08_IDENTITY_ENTRY ",selection.get("_revealed_ids")," events=",events)
+	_check(selection.get("_revealed_ids").is_empty() and selection.get_selected_option()==null,"identity entry keeps every card face down and unselected")
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("D:/src/playtest-20261020/au08-cards-initial.png")
+	var cards: Array=selection.get("_buttons")
+	await _click(cards[0])
+	_check(selection.get("_revealed_ids").size()==1 and selection.get_selected_option()==null,"first explicit click reveals only one card without selecting")
+	await _click(cards[0])
+	_check(selection.get_selected_option()==IdentityOptions.CARDS[0],"second explicit click selects revealed card")
 	# 返回后使用真正鼠标点击，确认没有重复监听或页面重建。
+	page.call("_back_to_player_presentation")
+	await _wait()
+	events.clear()
+	await _click(action)
+	_check(selection.get("_revealed_ids").size()==1 and selection.get_selected_option()==IdentityOptions.CARDS[0],"return preserves explicit reveal and selection")
 	page.call("_back_to_player_presentation")
 	await _wait()
 	await _move(Vector2(10,10))
@@ -51,6 +70,17 @@ func _run() -> void:
 	events.clear()
 	await _click(back)
 	_check(events.count(&"ui_click")==1 and page.get("_streamer_page").visible,"mouse back plays click and preserves flow")
+	SaveManager.new_game()
+	events.clear()
+	_check(SceneRouter.goto_identity_setup()==OK,"fresh new-game route")
+	while SceneRouter.is_transitioning(): await get_tree().process_frame
+	page=get_tree().current_scene
+	_check(events.is_empty(),"fresh name-page entry stays silent")
+	await _click(page.get("_streamer_continue"))
+	panel=page.get("_player_presentation_page")
+	await _click(panel.get_node("Center/Panel/Content/Action"))
+	selection=page.get_node("IdentitySelection")
+	_check(selection.get("_revealed_ids").is_empty() and selection.get_selected_option()==null,"mouse entry also keeps all cards face down")
 	await _wait()
 	var peak := 0.0
 	for sample: Vector2 in capture.get_buffer(capture.get_frames_available()):

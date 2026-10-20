@@ -346,10 +346,10 @@ func get_selected_option() -> IdentityOption:
 func focus_selection() -> void:
 	if _locked:
 		if not _next.disabled:
-			_next.grab_focus()
+			AudioManager.focus_ui_silently(_next)
 		return
 	var index := IdentityOptions.CARDS.find(_selected_option)
-	_buttons[maxi(index, 0)].grab_focus()
+	AudioManager.focus_ui_silently(_buttons[maxi(index, 0)])
 
 
 # 刷新卡片选中态、翻牌按钮状态与详情区，数据仍来自正式身份 Resource。

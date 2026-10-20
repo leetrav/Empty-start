@@ -59,6 +59,7 @@ var _voice_priority_queue: Array[StringName] = []
 var _last_ui_event_frame: int = -1
 var _last_ui_event_stream_path: String = ""
 var _last_selection_msec: int = -1000
+var _silent_ui_focus: bool = false
 var _play_sequence: int = 0
 var _loop_events: Dictionary = {}
 
@@ -410,6 +411,15 @@ func bind_ui_button(button: BaseButton, event_id: StringName = &"ui_click") -> b
 	return true
 
 
+# 自动安置焦点保持静音，真实鼠标进入和键盘导航继续播放反馈。
+func focus_ui_silently(control: Control) -> void:
+	# 页面初始/回退自动安置焦点不是玩家选定，仍保留后续鼠标进入反馈。
+	var previous := _silent_ui_focus
+	_silent_ui_focus = true
+	control.grab_focus()
+	_silent_ui_focus = previous
+
+
 # 页面按需接入选定声；鼠标与焦点合并成同一个激活状态，不重复连接。
 func bind_ui_selection(button: BaseButton) -> void:
 	if button == null or button.has_meta(UI_SELECTION_AUDIO_META):
@@ -431,6 +441,10 @@ func _on_ui_selection_visibility(button: BaseButton) -> void:
 func _on_ui_selection_changed(button: BaseButton, source: String, active: bool) -> void:
 	var state: Dictionary = button.get_meta(UI_SELECTION_AUDIO_META)
 	var was_active: bool = state.mouse or state.focus
+	if source == "focus" and active and _silent_ui_focus:
+		state.focus = false
+		button.set_meta(UI_SELECTION_AUDIO_META, state)
+		return
 	state[source] = active
 	button.set_meta(UI_SELECTION_AUDIO_META, state)
 	if was_active or not active or button.disabled or not button.is_visible_in_tree() or not button.can_process() or SceneRouter.is_transitioning():

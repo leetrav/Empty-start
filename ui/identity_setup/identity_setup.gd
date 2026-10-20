@@ -246,6 +246,8 @@ func _build_name_page(node_name: String, title_text: String) -> Control:
 
 # 每个步骤切换只隐藏其他视图，保留名称、身份卡翻开状态和当前选择。
 func _show_step(step: Step) -> void:
+	# 当前确认输入只属于旧步骤，不能继续传到新显示的身份卡。
+	get_viewport().set_input_as_handled()
 	_step = step
 	# 身份确认后的房间与命名共用休息曲；回退离开房间时只淡出自己持有的音乐。
 	if step in [Step.ROOM_TRANSITION, Step.FAN_GROUP] and _run_data != null and _selected_option != null:
@@ -259,20 +261,20 @@ func _show_step(step: Step) -> void:
 	_fan_page.visible = step == Step.FAN_GROUP
 	match step:
 		Step.STREAMER:
-			_streamer_name_input.grab_focus()
+			AudioManager.focus_ui_silently(_streamer_name_input)
 		Step.PLAYER_PRESENTATION:
-			_player_presentation_page.get_node("Center/Panel/Content/Action").grab_focus()
+			AudioManager.focus_ui_silently(_player_presentation_page.get_node("Center/Panel/Content/Action"))
 		Step.IDENTITY:
 			_selection.restore_selection(_selected_option.identity_id if _selected_option != null else &"")
 			_selection.focus_selection()
 		Step.ROOM_TRANSITION:
 			_room_transition_action.text = "继续粉丝团命名"
-			_room_transition_action.grab_focus()
+			AudioManager.focus_ui_silently(_room_transition_action)
 			# 复用房间已有背景做淡入，作为身份确认后的自然过渡。
 			_room_environment.modulate.a = 0.0
 			create_tween().tween_property(_room_environment, "modulate:a", 1.0, 0.45)
 		Step.FAN_GROUP:
-			_fan_group_name_input.grab_focus()
+			AudioManager.focus_ui_silently(_fan_group_name_input)
 
 
 # 主播名只暂存于输入控件；确认后请求姓名展示，再由玩家继续。
