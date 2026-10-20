@@ -94,6 +94,54 @@ func set_counterattack_paused(paused: bool) -> bool:
 	return true
 
 
+## 教学专用入口仍复用当前主播技能、正式效果处理器与结果回执；仅跳过Tier资格/领先人数门槛。
+func request_tutorial_counterattack(
+	round_number: int,
+	opponent_unit_snapshots: Array[Dictionary],
+	current_tier: int
+) -> bool:
+	if (not _configured or not counterattack_enabled
+			or not bool(_profile.get("counterattack_enabled", false))
+			or _counterattack_paused or not _pending_counterattack.is_empty()
+			or _awaiting_counterattack_result or round_number not in [1, 2]
+			or _counterattack_uses >= int(_profile.get("counterattack_max_uses", 0))):
+		return false
+	var opponent_unit_ids := _get_unit_ids_for_team(opponent_unit_snapshots, "opponent")
+	if opponent_unit_ids.is_empty():
+		return false
+	var skill_id := str(_profile.get("counterattack_skill_id", ""))
+	var effect_id := StringName(str(_profile.get("counterattack_effect_id", "")))
+	if skill_id.is_empty() or str(effect_id).is_empty():
+		return false
+	var skill_mapping := _get_skill_mapping(skill_id)
+	var request := {
+		"counterattack_round": round_number,
+		"qualification_tier": 2 if round_number == 1 else 4,
+		"current_tier": current_tier,
+		"streamer_id": _streamer_id,
+		"skill_id": skill_id,
+		"skill_name_cn": _get_counterattack_skill_name_cn(skill_id, skill_mapping),
+		"trigger_event": "tutorial_scripted_counterattack",
+		"tutorial_scripted": true,
+		"target_unit_id": opponent_unit_ids[_rng.randi_range(0, opponent_unit_ids.size() - 1)],
+		"effect_id": effect_id,
+		"effect_parameters": {
+			"child_count": int(_profile.get("counterattack_child_count", 0)),
+			"max_targets": 3,
+			"radius_pixels": 120.0,
+		},
+		"pre_windup_seconds": float(_profile.get("counterattack_pre_windup_seconds", 0.0)),
+		"cooldown_seconds": float(_profile.get("counterattack_cooldown_seconds", 0.0)),
+	}
+	_pending_counterattack = request
+	_windup_remaining = float(request["pre_windup_seconds"])
+	_last_counterattack_event = request.duplicate(true)
+	counterattack_windup_started.emit(request.duplicate(true))
+	if _windup_remaining <= 0.0:
+		_request_counterattack_effect()
+	return true
+
+
 ## A 在战斗开始时传入 B 使用的棋盘范围；C 只在范围内选择批次落点。
 func set_spawn_area(spawn_area: Rect2) -> bool:
 	if not spawn_area.has_area() or spawn_area.size.x <= SPAWN_MARGIN_PIXELS * 2.0 \
@@ -169,20 +217,30 @@ func update_counterattack(
 	if not _pending_counterattack.is_empty():
 		if _awaiting_counterattack_result:
 			return
-		var pending_player_count: int = int(faction_counts.get("player", 0))
-		var pending_opponent_count: int = int(faction_counts.get("opponent", 0))
-		var pending_lead_margin: int = int(_profile.get("counterattack_lead_margin", 0))
-		if pending_player_count - pending_opponent_count < pending_lead_margin:
-			_resolve_pending_without_effect("player_lead_lost")
-			return
+		if not bool(_pending_counterattack.get("tutorial_scripted", false)):
+			var pending_player_count: int = int(faction_counts.get("player", 0))
+			var pending_opponent_count: int = int(faction_counts.get("opponent", 0))
+			var pending_lead_margin: int = int(_profile.get("counterattack_lead_margin", 0))
+			if pending_player_count - pending_opponent_count < pending_lead_margin:
+				_resolve_pending_without_effect("player_lead_lost")
+				return
 		var target_unit_id: String = str(_pending_counterattack.get("target_unit_id", ""))
 		if not _get_unit_ids_for_team(opponent_unit_snapshots, "opponent").has(target_unit_id):
-			_resolve_pending_without_effect("target_unavailable")
-			return
+			if bool(_pending_counterattack.get("tutorial_scripted", false)):
+				var replacement_ids := _get_unit_ids_for_team(opponent_unit_snapshots, "opponent")
+				if replacement_ids.is_empty():
+					_resolve_pending_without_effect("target_unavailable")
+					return
+				_pending_counterattack["target_unit_id"] = replacement_ids[0]
+				_windup_remaining = minf(_windup_remaining, 0.25)
+			else:
+				_resolve_pending_without_effect("target_unavailable")
+				return
 		_windup_remaining = maxf(0.0, _windup_remaining - elapsed)
 		if _windup_remaining <= 0.0:
 			_request_counterattack_effect()
 		return
+
 	if _counterattack_cooldown_remaining > 0.0:
 		return
 	var round_tier: int = _get_next_counterattack_round_tier()

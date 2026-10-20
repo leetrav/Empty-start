@@ -21,13 +21,13 @@
 
 ## 当前已有配置
 
-- tutorial_level_001：正式 Plan B 首关教学，4 步；使用仓鼠主播气泡。
+- tutorial_level_001：正式 Plan B 首关教学，6 步；使用仓鼠主播气泡，覆盖出牌、两次费米反击、属性克制感染与矛盾击破。
 - tutorial_legacy_level_001：旧版瞄准/蓄力/射击教学，3 步。
 
 ## 重要注意事项
 
 - hint_text 修改后会被 TutorialStepRunner 在下一次启动对应教学时读取；编辑器不会实时替换正在进行中的教学步骤。
-- 触发/完成事件 ID 必须与程序实际发出的稳定事件 ID 完全一致。只改事件 ID 文本、但没有对应代码事件，教学就可能卡在该步骤。Plan B 当前常用链为 pb25_tutorial_begin → pb25_first_player_publish → pb25_paper_type_c_conversion → pb25_fermi_scissors_published → pb25_final_hint_finished。
+- 触发/完成事件 ID 必须与程序实际发出的稳定事件 ID 完全一致。只改事件 ID 文本、但没有对应代码事件，教学就可能卡在该步骤。Plan B V2 事件链为 pb25_tutorial_begin → pb25_first_player_publish → pb25_v2_first_counterattack_resolved → pb25_paper_type_c_conversion → pb25_v2_second_counterattack_resolved → pb25_v2_contradiction_stage_started → pb25_v2_contradiction_break_finished。
 - step_id 用于记录已完成步骤。更改已有 ID 会影响已有周目中的教学完成记录；修改前请确认是否希望旧存档重新显示该步骤。
 - 保存会重写 CSV 的格式（包含必要的字段引号），不会改写其他策划表，也不会改写当前游戏会话里的步骤状态。
 - 预览用于检查文案和换行；正式表现仍沿用游戏内现有的仓鼠主播气泡 UI。

@@ -1,8 +1,10 @@
 tutorial_config_id,step_id,step_order,trigger_event,hint_text,completion_event,enabled,notes
-tutorial_level_001,pb25_intro_publish,1,pb25_tutorial_begin,"噢快看呐，这里有一群失去了信仰的迷途之物！\n\n让我们的话语来拯救它们！",pb25_first_player_publish,true,PB-25：正式Plan B第一关开场；高亮三张固定卡；玩家首次成功发表后推进。
-tutorial_level_001,pb25_paper_s1_invasion,2,pb25_first_player_publish,"什么！有异端正在尝试污染我们的信仰！\n\n赶紧发表✋神谕，让自己的信徒改口！",pb25_paper_type_c_conversion,true,PB-25：高亮 type_c；请求A的指定type_c/S1抽牌；等待真实改口与✋克✊转换。
-tutorial_level_001,pb25_paper_conversion_success,3,pb25_paper_type_c_conversion,"太好了！\n\n我们的✋信徒开始压制敌人的✊信徒啦~",pb25_fermi_scissors_published,true,PB-25：真实转换后显示成功反馈；随后A剧情发表一条合法type_b话语。
-tutorial_level_001,pb25_fermi_scissors,4,pb25_fermi_scissors_published,"但敌人又发表了✌️神谕！\n\n那么！请帮帮鼠吧！",pb25_final_hint_finished,true,PB-25：剧情type_b发表成功后显示；短时阅读后结束教程并恢复费米普通AI。
+tutorial_level_001,pb25_v2_intro_publish,1,pb25_tutorial_begin,"泥嚎，神大人！吱！\n\n接下来请帮助我吧！\n\n快看呐，中间有一群失去了信仰的迷途之物!\n\n让我们的神谕来拯救它们吧！\n\n请点击下方的卡片，再点击中间任意区域哦~",pb25_first_player_publish,true,PB-25 V2：开场介绍卡片与发表操作；成功发表后进入观察阶段。
+tutorial_level_001,pb25_v2_first_counterattack,2,pb25_first_player_publish,"太棒了！信徒们已经开始布道了吱！",pb25_v2_first_counterattack_resolved,true,PB-25 V2：显示真实费米反击技能结果后推进；首关教程脚本触发第一轮反击。
+tutorial_level_001,pb25_v2_paper_s1_invasion,3,pb25_v2_first_counterattack_resolved,"什么！有异端正在尝试污染我们的信仰！\n\n赶紧发表神谕，让自己的信徒改口！\n\n请记住克制关系吱！",pb25_paper_type_c_conversion,true,PB-25 V2：高亮type_c并请求合法S1；要求真实改口及type_c克制type_a感染。
+tutorial_level_001,pb25_v2_paper_conversion_success,4,pb25_paper_type_c_conversion,"耶！\n\n我们的信徒开始压制敌人的信徒啦！",pb25_v2_second_counterattack_resolved,true,PB-25 V2：真实感染成功后提示；显示第二轮费米反击后进入求助阶段。
+tutorial_level_001,pb25_v2_second_counterattack,5,pb25_v2_second_counterattack_resolved,"可恶！又来了！\n\n万能的神啊......请帮帮鼠吧......",pb25_v2_contradiction_stage_started,true,PB-25 V2：观察并继续出牌；正式进入矛盾阶段后显示蓄力提示。
+tutorial_level_001,pb25_v2_contradiction_break,6,pb25_v2_contradiction_stage_started,"吱吱！\n\n真相只有一个！\n\n按住蓄力！然后发射！击破它的伪装！",pb25_v2_contradiction_break_finished,true,PB-25 V2：矛盾阶段结束并完成结果演出后结束教学。
 tutorial_legacy_level_001,tutorial_001_aim,1,tutorial_target_available,移动准心，对准一条飘过的话！,tutorial_aim_acquired,true,旧弹幕战：准心对准普通话语后完成；继续复用原准心与输入逻辑。
 tutorial_legacy_level_001,tutorial_001_charge,2,tutorial_aim_acquired,按住攻击，等准心外圈亮满！,tutorial_charge_full,true,旧弹幕战：读取实际蓄满事件；提前松开可重新蓄力。
 tutorial_legacy_level_001,tutorial_001_fire,3,tutorial_charge_full,松开攻击，把这句话打回去！,tutorial_normal_hit,true,旧弹幕战：只有正式有效普通命中完成此步骤。
