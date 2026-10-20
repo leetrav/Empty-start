@@ -3,4 +3,4 @@ new_word_decay_s,12,s,从开始到新话生成率降为0的时间
 auto_repeat_interval_min_s,0.15,s,扩散阶段自动复读最短间隔
 auto_repeat_interval_max_s,0.38,s,扩散阶段自动复读最长间隔
 converge_ratio,0.9,ratio,锁定原句可见占比达到此值后进入收束
-final_emphasis_duration_s,1.8,s,全屏强调持续时间
+final_emphasis_duration_s,7.0,s,全屏强调持续时间

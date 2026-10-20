@@ -15,6 +15,8 @@ var _previous_focus: Control
 var _restart_available := true
 var _resume_button: Button
 var _settings_button: Button
+var _display_settings_button: Button
+var _main_menu_button: Button
 var _reload_button: Button
 var _volume_values: Dictionary = {}
 
@@ -24,12 +26,15 @@ var _volume_values: Dictionary = {}
 @onready var _audio_page: Control = %AudioPage
 @onready var _audio_actions: VBoxContainer = %AudioActions
 @onready var _feedback_label: Label = %FeedbackLabel
+@onready var _settings_panel: SettingsPanel = %SettingsPanel
 
 
 func _ready() -> void:
+	# 场景层级90高于结算/历史层30、低于加载层100；暂停时继续处理输入和按钮。
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_main_page()
 	_build_audio_page()
+	_settings_panel.closed.connect(_on_display_settings_closed)
 	_main_page.show()
 	_audio_page.hide()
 	_overlay.hide()
@@ -67,7 +72,8 @@ func _build_main_page() -> void:
 	_main_actions.add_child(_settings_button)
 	_reload_button = _make_text_button("重新开始", COLOR_GOLD, 48, 82, _on_reload_button_pressed)
 	_main_actions.add_child(_reload_button)
-	_main_actions.add_child(_make_text_button("返回主菜单", COLOR_EXIT, 53, 92, _on_main_menu_button_pressed))
+	_main_menu_button = _make_text_button("返回主菜单", COLOR_EXIT, 53, 92, _on_main_menu_button_pressed)
+	_main_actions.add_child(_main_menu_button)
 	set_restart_available(_restart_available)
 
 
@@ -88,7 +94,21 @@ func _build_audio_page() -> void:
 		["ui", "界面音量"]
 	]:
 		_add_volume_row(String(info[0]), String(info[1]))
+	_display_settings_button = _make_text_button("更多设置", COLOR_GOLD, 36, 65, _open_display_settings)
+	_audio_actions.add_child(_display_settings_button)
 	_audio_actions.add_child(_make_text_button("返回", COLOR_EXIT, 49, 95, _leave_audio_page))
+
+
+# 保留新版美术音量内页，并复用设置面板提供全屏和光效档位，避免丢失已验收功能。
+func _open_display_settings() -> void:
+	_audio_page.hide()
+	_settings_panel.open()
+
+
+func _on_display_settings_closed() -> void:
+	_refresh_volumes()
+	_audio_page.show()
+	_display_settings_button.grab_focus()
 
 
 func _add_volume_row(key: String, display_name: String) -> void:
@@ -190,10 +210,13 @@ func _save_completed_progress() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if not event.is_action_pressed("pause") or event.is_echo():
+	# 所有暂停输入统一使用 Input Map 的 pause Action，不硬编码具体键位。
+	if SceneRouter.is_transitioning() or not event.is_action_pressed("pause") or event.is_echo():
 		return
 	if get_tree().paused:
-		if _audio_page.visible:
+		if _settings_panel.visible:
+			_settings_panel.close()
+		elif _audio_page.visible:
 			_leave_audio_page()
 		else:
 			resume_game()
@@ -203,10 +226,14 @@ func _input(event: InputEvent) -> void:
 
 
 func pause_game() -> void:
-	if get_tree().paused:
+	# 打开暂停界面、暂停 SceneTree，并把焦点交给继续按钮。
+	if get_tree().paused or SceneRouter.is_transitioning():
 		return
 	_previous_focus = get_viewport().gui_get_focus_owner()
+	# 通关片尾可暂停和设置，但不能通过返回按钮跳过片尾。
+	_main_menu_button.disabled = SceneRouter.is_ending_performance_active()
 	_feedback_label.text = ""
+	_settings_panel.hide()
 	_audio_page.hide()
 	_main_page.show()
 	_overlay.show()
@@ -216,6 +243,8 @@ func pause_game() -> void:
 
 
 func resume_game() -> void:
+	if _settings_panel.visible:
+		_settings_panel.close()
 	if _audio_page.visible:
 		# 兼容来自外部系统的直接恢复调用。
 		SettingsManager.save_settings()
@@ -240,18 +269,16 @@ func set_restart_available(available: bool) -> void:
 
 
 func _on_main_menu_button_pressed() -> void:
-	# 顶层切换前必须解除 SceneTree 暂停，路由失败时保持菜单可操作。
-	if _audio_page.visible:
-		SettingsManager.save_settings()
-	get_tree().paused = false
-	var result: Error = SceneRouter.goto_main_menu()
-	if result != OK:
-		get_tree().paused = true
-		_overlay.show()
-		_audio_page.hide()
-		_main_page.show()
-		_feedback_label.text = "返回主菜单失败：%s" % error_string(result)
-		push_error("PauseMenu: goto_main_menu failed: %s" % error_string(result))
+	if SceneRouter.is_ending_performance_active():
+		return
+	# 切换顶层场景前先解除暂停；失败时恢复可操作的暂停状态。
+	# 统一发出恢复事实，避免音乐/漫画仍保留暂停标记而带入下一页。
+	resume_game()
+	var error: Error = SceneRouter.goto_main_menu()
+	if error != OK:
+		pause_game()
+		_feedback_label.text = "返回主菜单失败：%s" % error_string(error)
+		push_error("PauseMenu: goto_main_menu failed: %s" % error_string(error))
 
 
 func _on_reload_button_pressed() -> void:

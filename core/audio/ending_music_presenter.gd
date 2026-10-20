@@ -7,9 +7,9 @@ var _started: bool = false
 var _handoff: bool = false
 
 
-# 最终收束进度满才起曲，忽略中途扩散/锁句进度，重复通知不重播。
+# 神谕先按原时长停留并退字，完成事实到来后才淡入结尾曲；重复通知不重播。
 func on_divine_phase(phase: StringName, _prompt: String, progress: float) -> void:
-	if phase in [&"emphasis", &"completed"] and progress >= 1.0:
+	if phase == &"completed" and progress >= 1.0:
 		start()
 
 

@@ -1,5 +1,8 @@
 extends Node
 
+signal menu_rays_quality_changed(quality: int)
+var menu_rays_quality: int = 2
+
 const SETTINGS_FILE_PATH: String = "user://settings.cfg"
 
 const AUDIO_SECTION: String = "audio"
@@ -30,6 +33,19 @@ var fullscreen: bool = DEFAULT_FULLSCREEN
 
 # 应用级观看事实独立于音量/显示默认值及周目存档。
 var opening_comic_seen: bool = false
+# 应用级通关观看事实，开始新周目和恢复音量默认值均不清除。
+var ending_replay_unlocked: bool = false
+
+# 只在完整片尾返回标题且显现完毕后调用；写盘失败回滚内存。
+func mark_ending_replay_unlocked() -> Error:
+	if ending_replay_unlocked:
+		return OK
+	ending_replay_unlocked = true
+	var error := save_settings()
+	if error != OK:
+		ending_replay_unlocked = false
+		_config.set_value("story", "ending_replay_unlocked", false)
+	return error
 
 func mark_opening_comic_seen() -> Error:
 	# 写盘失败时保持未观看，下一次启动允许重试。
@@ -58,6 +74,7 @@ func load_settings() -> void:
 	# 读取五项设置；文件或字段异常时仅回退对应默认值。
 	_config = ConfigFile.new()
 	opening_comic_seen = false
+	ending_replay_unlocked = false
 	_set_default_values()
 	_settings_need_save = false
 
@@ -75,8 +92,12 @@ func load_settings() -> void:
 	sfx_volume = _read_volume_setting(SFX_VOLUME_KEY, DEFAULT_SFX_VOLUME)
 	ui_volume = _read_volume_setting(UI_VOLUME_KEY, DEFAULT_UI_VOLUME)
 	fullscreen = _read_fullscreen_setting()
+	var quality: Variant = _config.get_value(DISPLAY_SECTION, "menu_rays_quality", 2)
+	menu_rays_quality = quality if quality is int and quality >= 0 and quality <= 2 else 2
 	var seen: Variant = _config.get_value("story", "opening_intro_v2_seen", false)
 	opening_comic_seen = seen if seen is bool else false
+	var unlocked: Variant = _config.get_value("story", "ending_replay_unlocked", false)
+	ending_replay_unlocked = unlocked if unlocked is bool else false
 
 
 func save_settings() -> Error:
@@ -86,7 +107,9 @@ func save_settings() -> Error:
 	_config.set_value(AUDIO_SECTION, SFX_VOLUME_KEY, sfx_volume)
 	_config.set_value(AUDIO_SECTION, UI_VOLUME_KEY, ui_volume)
 	_config.set_value(DISPLAY_SECTION, FULLSCREEN_KEY, fullscreen)
+	_config.set_value(DISPLAY_SECTION, "menu_rays_quality", menu_rays_quality)
 	_config.set_value("story", "opening_intro_v2_seen", opening_comic_seen)
+	_config.set_value("story", "ending_replay_unlocked", ending_replay_unlocked)
 
 	var save_error: Error = _config.save(SETTINGS_FILE_PATH)
 	if save_error != OK:
@@ -104,6 +127,7 @@ func apply_settings() -> void:
 	_apply_bus_volume(SFX_BUS_NAME, sfx_volume)
 	_apply_bus_volume(UI_BUS_NAME, ui_volume)
 	_apply_fullscreen()
+	menu_rays_quality_changed.emit(menu_rays_quality)
 
 
 func reset_to_defaults() -> void:
@@ -152,6 +176,7 @@ func _set_default_values() -> void:
 	sfx_volume = DEFAULT_SFX_VOLUME
 	ui_volume = DEFAULT_UI_VOLUME
 	fullscreen = DEFAULT_FULLSCREEN
+	menu_rays_quality = 2
 
 
 func _read_volume_setting(key: String, default_value: float) -> float:
@@ -210,3 +235,8 @@ func _apply_fullscreen() -> void:
 	# 只在窗口与全屏两种模式之间切换，不处理其他显示设置。
 	var window_mode: DisplayServer.WindowMode = DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 	DisplayServer.window_set_mode(window_mode)
+
+# 质量设置只作用于标题光效，通过信号立即更新已打开的菜单。
+func set_menu_rays_quality(value: int) -> void:
+	menu_rays_quality = clampi(value, 0, 2)
+	menu_rays_quality_changed.emit(menu_rays_quality)

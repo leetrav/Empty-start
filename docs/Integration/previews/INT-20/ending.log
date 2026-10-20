@@ -1,0 +1,82 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+END02 PASS fresh profile locked
+END02 PASS locked replay rejected by router
+END02 PASS static entry
+END02 PASS static credits cannot unlock
+END02 PASS source retained: 煉獄小僧
+END02 PASS source retained: FELT LOVE
+END02 PASS source retained: https://note.com/rengokuteien
+END02 PASS CC0 audio credits removed as requested: Kenney
+END02 PASS CC0 audio credits removed as requested: ObsydianX
+END02 PASS CC0 audio credits removed as requested: Cassie-OrbitGames
+END02 PASS CC0 audio credits removed as requested: JaggedStone
+END02 PASS CC0 audio credits removed as requested: Independent.nu
+END02 PASS CC0 audio credits removed as requested: CC0
+END02 PASS ordinary return stays locked
+END02 PASS identity fixture
+END02 PASS formal game route
+END02 PASS last rest fixture
+END02 PASS real convergence
+END02 PASS ending BGM waits until oracle finishes
+END02 PASS oracle Esc pause
+END02 PASS oracle full reading hold precedes ending BGM
+END02 PASS oracle exit opaque black 0
+END02 PASS oracle exit opaque black 1
+END02 PASS oracle exit opaque black 2
+END02 PASS oracle exit opaque black 3
+END02 PASS oracle exit opaque black 4
+END02 PASS oracle exit opaque black 5
+END02 PASS oracle exit opaque black 6
+END02 PASS oracle exit opaque black 7
+END02 PASS oracle exit opaque black 8
+END02 PASS oracle exit opaque black 9
+END02 PASS oracle exit opaque black 10
+END02 PASS oracle exit opaque black 11
+END02 PASS real P5/P6
+END02 PASS six original panels reused
+END02 PASS ending BGM starts with movie handoff
+END02 PASS movie locked with pending run
+END02 PASS pending saved on disk
+END02 PASS normal movie cannot skip
+END02_PANEL 2 paused=false
+END02_PANEL 3 paused=false
+END02_PANEL 4 paused=false
+END02_PANEL 5 paused=false
+END02_PANEL 6 paused=false
+END02 PASS movie auto completion
+END02 PASS movie fades 0.9s plus black hold 0.6s and reveal
+END02 PASS same music clock continuous through tree-paused handoff
+END02 PASS actual Music samples have no handoff gap over 100ms
+END02_AUDIO elapsed=2.113 advanced=2.10445919006348 frames=100864 max_silence=0.0
+END02_STAGE production_title ms=56356
+END02 PASS title appears independently before roster
+END02_STAGE production_roster ms=56835
+END02 PASS roster children share parent opacity
+END02_STAGE production_hold ms=57647
+END02 PASS only role roster; concatenated names removed
+END02 PASS duplicate start and early finish rejected
+END02 PASS credits timeline pauses
+END02 PASS pause return disabled
+END02 PASS return callback cannot skip
+END02_STAGE special_thanks ms=66756
+END02_STAGE special_hold ms=67557
+END02 PASS all special thanks fit screen
+END02 PASS pure black credits and no Thank you node
+END02_STAGE complete ms=80153
+END02 PASS whole menu input locked until reveal
+END02 PASS native Enter cannot operate title during fade
+END02 PASS full credits and title natural completion
+END02 PASS strict stage order without Thank you [&"production_title", &"production_roster", &"production_hold", &"special_thanks", &"special_hold", &"complete"]
+END02 PASS continuous GUI monitoring and whole roster fade
+END02 PASS production reading hold
+END02 PASS special reading hold is twelve seconds
+END02 PASS movie to credits audio continuity verified
+END02 PASS unlock after title reveal
+END02 PASS replay enabled
+END02 PASS new run retains unlock
+END02 PASS run completion persisted
+END02 PASS menu interaction restored
+END02 PASS unlocked replay works
+END02_GUI_DONE failures=0 frames=3973 title_frames=112

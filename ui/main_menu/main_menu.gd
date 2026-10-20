@@ -1,5 +1,7 @@
 extends Control
 
+const TITLE_MUSIC: StringName = &"music_title_cafe"
+
 @onready var _canvas: Control = $CoverCanvas
 @onready var _menu_actions: Control = %MenuActions
 @onready var _settings_button: Button = %SettingsButton
@@ -12,6 +14,7 @@ var _title_origins: Array[Vector2] = []
 
 # 主菜单组合既有路由与纯文字表现，不新增存档或音频服务。
 func _ready() -> void:
+	_refresh_ending_replay()
 	_continue_button.disabled = not SaveManager.has_save()
 	_continue_button.call("refresh_state")
 	_continue_button.tooltip_text = "" if not _continue_button.disabled else "暂无存档，请先开始游戏"
@@ -20,7 +23,6 @@ func _ready() -> void:
 	_settings_button.pressed.connect(_on_settings_button_pressed)
 	%QuitButton.pressed.connect(_on_quit_button_pressed)
 	%ReplayToggleButton.pressed.connect(_toggle_replays)
-	%ReplayFullOpeningButton.pressed.connect(_replay_comic.bind(&"intro"))
 	%ReplayOpeningButton.pressed.connect(_replay_comic.bind(&"opening"))
 	%ReplayEndingButton.pressed.connect(_replay_comic.bind(&"ending"))
 	%ReplayBackButton.pressed.connect(_close_replays)
@@ -34,6 +36,12 @@ func _ready() -> void:
 		_title_origins.append(title.position)
 	resized.connect(_fit_cover)
 	_fit_cover()
+	# 路由揭幕后才起曲，避免黑幕暂停消耗淡入；F6独立预览则直接播放。
+	if SceneRouter.is_transitioning():
+		SceneRouter.transition_finished.connect(_on_title_revealed, CONNECT_ONE_SHOT)
+	else:
+		_start_title_music()
+	SceneRouter.transition_failed.connect(_on_route_failed)
 
 # 完整画布等比适配，非16:9窗口留边而不裁剪菜单与标题。
 func _fit_cover() -> void:
@@ -54,7 +62,7 @@ func _on_continue_button_pressed() -> void:
 	var error := SaveManager.load_game()
 	if error == OK:
 		if not SaveManager.data.ending_display_data.is_empty():
-			error = SceneRouter.goto_saved_ending(SaveManager.data.ending_display_data)
+			error = SceneRouter.resume_ending_roll() if SaveManager.data.ending_roll_pending else SceneRouter.goto_saved_ending(SaveManager.data.ending_display_data)
 		elif not SaveManager.data.identity_id.is_empty():
 			error = SceneRouter.goto_opening_room()
 		else:
@@ -86,7 +94,7 @@ func _on_settings_panel_closed() -> void:
 func _toggle_replays() -> void:
 	_menu_actions.hide()
 	_replays.show()
-	%ReplayFullOpeningButton.grab_focus()
+	%ReplayOpeningButton.grab_focus()
 
 func _close_replays() -> void:
 	_replays.hide()
@@ -94,6 +102,35 @@ func _close_replays() -> void:
 	%ReplayToggleButton.grab_focus()
 
 func _replay_comic(kind: StringName) -> void:
+	if kind == &"ending" and not SettingsManager.ending_replay_unlocked:
+		return
 	var error: Error = SceneRouter.goto_comic(kind)
 	if error != OK:
 		push_error("MainMenu: 无法播放漫画：%s" % error_string(error))
+
+# 标题和设置/回看子菜单共用音乐，不因面板切换而重播。
+func _start_title_music() -> void:
+	AudioManager.set_music_paused(false)
+	AudioManager.restore_music()
+	AudioManager.change_music(TITLE_MUSIC, 1.5, 0.0, 1.5, false)
+
+func _on_title_revealed(_path: String) -> void:
+	_refresh_ending_replay()
+	_start_title_music()
+
+# 未解锁时直接隐藏结局入口，不显示灰色按钮或占位；标题显现后同步完成事实。
+func _refresh_ending_replay() -> void:
+	%ReplayEndingButton.visible = SettingsManager.ending_replay_unlocked
+	%ReplayEndingButton.disabled = not SettingsManager.ending_replay_unlocked
+	%ReplayEndingButton.tooltip_text = ""
+	%ReplayEndingButton.refresh_state()
+
+# 目标加载失败回到当前菜单时恢复标题曲。
+func _on_route_failed(_path: String, _error: Error) -> void:
+	if get_tree().current_scene == self:
+		_start_title_music()
+
+# 非路由退出也只淡出本菜单仍持有的曲目，不能停掉后续页面接管的新曲。
+func _exit_tree() -> void:
+	if AudioManager.get_music_event_id() == TITLE_MUSIC:
+		AudioManager.fade_to_silence()

@@ -10,6 +10,7 @@ signal tier_breakthrough_finished(previous_tier: int, current_tier: int, complet
 signal failure_presentation_finished
 signal opponent_result_presentation_finished(broken: bool)
 signal restart_requested
+signal pause_requested
 
 const UnitFieldScript = preload("res://ui/plan_b/plan_b_unit_field.gd")
 const StreamerPanelScript = preload("res://ui/plan_b/plan_b_streamer_panel.gd")
@@ -87,6 +88,8 @@ var _snapshots: Array = []
 var _snapshot_index_by_id: Dictionary = {}
 var _sources_initialized := false
 var _unit_snapshots_initialized := false
+var _unit_presentation_pending := false
+var _counterable_targets_dirty := false
 var _faction_phrases_dirty := true
 var _word_groups: Array = []
 var _group_bubble_states: Dictionary = {}
@@ -1014,12 +1017,22 @@ func _build_center(parent: Control) -> void:
 
 func _build_pk_bar(parent: Container) -> void:
 	# PK 比例与 Tier 只读 A/Host 提供的数值，原皮肤资源继续呈现档位变化。
+	var status_row := HBoxContainer.new()
+	status_row.name = "PkStatusRow"
+	status_row.custom_minimum_size.y = 72.0
+	status_row.add_theme_constant_override("separation", 8)
+	parent.add_child(status_row)
 	var panel := PanelContainer.new()
 	panel.name = "PkTierBar"
 	panel.custom_minimum_size = Vector2(0.0, 72.0)
-	panel.add_theme_stylebox_override("panel", _panel_style(Color("#101f29"), Color("#29414c"), 0, 0))
+	var status_style := _panel_style(Color("#101f29"), Color("#29414c"), 0, 0)
+	# 字体行高加默认留白为78px；收紧到原设计72px，避免顶栏与棋盘几何重叠。
+	status_style.content_margin_top = 9.0
+	status_style.content_margin_bottom = 9.0
+	panel.add_theme_stylebox_override("panel", status_style)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(panel)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	status_row.add_child(panel)
 
 	var rows := VBoxContainer.new()
 	rows.add_theme_constant_override("separation", 3)
@@ -1056,6 +1069,33 @@ func _build_pk_bar(parent: Container) -> void:
 	_pk_bar_skin = PK_BAR_SKIN_SCENE.instantiate()
 	_pk_bar_skin.name = "PkBarSkin"
 	_pk_bar.add_child(_pk_bar_skin)
+	# 在原72px状态栏内留出触控入口，不挤占棋盘高度；按下即暂停，避免长按积蓄攻击。
+	var pause_button := Button.new()
+	pause_button.name = "PauseButton"
+	pause_button.text = "暂停"
+	pause_button.tooltip_text = "暂停游戏（Esc）"
+	pause_button.custom_minimum_size = Vector2(96.0,72.0)
+	pause_button.add_theme_font_size_override("font_size",22)
+	status_row.add_child(pause_button)
+	# 默认按钮主题的上下留白会把72px栏撑高，只缩小内边距、保留原配色和边框。
+	for state: String in ["normal","hover","pressed","hover_pressed","focus","disabled"]:
+		var style: StyleBox = pause_button.get_theme_stylebox(state).duplicate()
+		style.content_margin_top = 4.0
+		style.content_margin_bottom = 4.0
+		style.content_margin_left = 8.0
+		style.content_margin_right = 8.0
+		pause_button.add_theme_stylebox_override(state,style)
+	pause_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	pause_button.pressed.connect(func(): pause_requested.emit())
+	pause_button.gui_input.connect(_on_pause_button_touch.bind(pause_button))
+
+
+# 直接接收原生触屏，不依赖平台是否启用触屏模拟鼠标，也不把触点传给攻击层。
+func _on_pause_button_touch(event: InputEvent, button: Button) -> void:
+	if event is InputEventScreenTouch:
+		button.accept_event()
+		if event.pressed and not event.canceled and not get_tree().paused and not SceneRouter.is_transitioning() and not button.disabled:
+			button.pressed.emit()
 
 
 func _build_field(parent: Container) -> void:
@@ -1512,7 +1552,7 @@ func _refresh_sources() -> void:
 	var has_host := is_instance_valid(_battle_host)
 	if not _sources_initialized and has_host and _battle_host.has_method("get_pk"):
 		var pk_value := float(_battle_host.call("get_pk"))
-		_actual_player_pk = clampf(pk_value / 100.0 if pk_value > 1.0 else pk_value, 0.0, 1.0)
+		_actual_player_pk = clampf(pk_value / 100.0, 0.0, 1.0)
 		_pk_value = _actual_player_pk * 100.0
 	if not _sources_initialized:
 		_population_limit = _read_population_limit()
@@ -1541,7 +1581,7 @@ func _refresh_sources() -> void:
 			_unit_snapshots_initialized = true
 			_faction_phrases_dirty = true
 			if _field != null:
-				_field.set_unit_snapshots(_snapshots)
+				_queue_unit_presentation_refresh()
 			_update_counterable_targets_if_type_changed()
 	var group_source: Object = _unit_source if _has_method(_unit_source, "get_word_groups") else _battle_host
 	var group_signal_connected := _has_signal(_unit_source, "word_groups_changed")
@@ -1614,7 +1654,7 @@ func _upsert_unit_snapshot(unit_id: String) -> void:
 	if _field != null:
 		if word_texts_changed:
 			_field.set_word_texts(_word_text_by_id)
-		_field.set_unit_snapshots(_snapshots)
+		_queue_unit_presentation_refresh()
 	_faction_phrases_dirty = true
 	if _performance_tracker != null:
 		_accumulate_tracker_unit_snapshot(Time.get_ticks_usec() - tracker_start_usec)
@@ -1640,7 +1680,7 @@ func _remove_unit_snapshot(unit_id: String) -> void:
 	_snapshots.remove_at(int(_snapshot_index_by_id[unit_id]))
 	_reindex_unit_snapshots()
 	if _field != null:
-		_field.set_unit_snapshots(_snapshots)
+		_queue_unit_presentation_refresh()
 	_faction_phrases_dirty = true
 	if _performance_tracker != null:
 		_accumulate_tracker_unit_snapshot(Time.get_ticks_usec() - tracker_start_usec)
@@ -1702,10 +1742,11 @@ func _refresh_view() -> void:
 				0
 			)
 		return
-	var pk_text := "玩家 PK %.0f%%" % _pk_value
+	# 终点显示与真实状态一致：未满不能四舍五入成100%，非零不足1%也不冒充失败。
+	var pk_text := "玩家 PK <1%" if _pk_value > 0.0 and _pk_value < 1.0 else "玩家 PK %d%%" % floori(_pk_value)
 	if _pk_value_label.text != pk_text:
 		_pk_value_label.text = pk_text
-	if not is_equal_approx(_pk_bar.value, _pk_value):
+	if _pk_bar.value != _pk_value:
 		_pk_bar.value = _pk_value
 	var tier_text := "T6 · 矛盾" if _paradox_stage_active else _tier_label
 	if _tier_value_label.text != tier_text:
@@ -1991,7 +2032,8 @@ func _disconnect_signal(source: Object, signal_name: String, callback: Callable)
 
 
 func _on_pk_changed(value: float) -> void:
-	_actual_player_pk = clampf(value / 100.0 if value > 1.0 else value, 0.0, 1.0)
+	# Host的get_pk/pk_changed固定是0到100百分点，1.0是1%而不是满值。
+	_actual_player_pk = clampf(value / 100.0, 0.0, 1.0)
 	_pk_value = _actual_player_pk * 100.0
 	if _pk_bar_skin != null:
 		_pk_bar_skin.call("set_display_state", _actual_player_pk, _battle_tier, _paradox_stage_active)
@@ -2149,8 +2191,7 @@ func _on_unit_changed(unit_id: String, reason: String) -> void:
 		_queue_group_speech_event([unit_id], false, reason)
 	if (str(previous_snapshot.get("team", "")) != str(current_snapshot.get("team", ""))
 			or str(previous_snapshot.get("battle_type", "")) != str(current_snapshot.get("battle_type", ""))):
-		_refresh_counterable_targets(true)
-	_refresh_faction_counts()
+		_counterable_targets_dirty = true
 	var message := ""
 	match reason:
 		"seed":
@@ -2167,17 +2208,15 @@ func _on_unit_changed(unit_id: String, reason: String) -> void:
 	_field.call("show_unit_feedback", unit_id, reason)
 	if not message.is_empty():
 		_add_event(message)
-	_refresh_sources()
-	_refresh_view()
+	_queue_unit_presentation_refresh()
 
 
 func _on_unit_spawned(unit_id: String) -> void:
 	if _is_special_stage_active():
 		return
 	_upsert_unit_snapshot(unit_id)
-	_refresh_counterable_targets(true)
-	_refresh_faction_counts()
-	_refresh_view()
+	_counterable_targets_dirty = true
+	_queue_unit_presentation_refresh()
 	_add_event("[入场] 新观众 %s 加入" % unit_id)
 
 
@@ -2235,7 +2274,7 @@ func _queue_group_speech_event(unit_ids: Array, is_batch: bool, reason: String) 
 		"reason": reason,
 		"expires_at_msec": Time.get_ticks_msec() + 700,
 	})
-	_apply_pending_group_speech_events()
+	_queue_unit_presentation_refresh()
 
 
 func _apply_pending_group_speech_events() -> void:
@@ -2398,10 +2437,9 @@ func _on_unit_despawned(unit_id: String) -> void:
 	if _is_special_stage_active():
 		return
 	_remove_unit_snapshot(unit_id)
-	_refresh_counterable_targets(true)
-	_refresh_faction_counts()
+	_counterable_targets_dirty = true
 	_field.call("forget_unit_position", unit_id)
-	_refresh_view()
+	_queue_unit_presentation_refresh()
 	_add_event("[离场] 观众 %s 离开" % unit_id)
 
 
@@ -2451,3 +2489,25 @@ func _definition_for(word_id: String) -> Dictionary:
 
 func _clip_text(value: String, max_characters: int) -> String:
 	return value if value.length() <= max_characters else value.left(max_characters - 1) + "…"
+
+## 同一轮物理回调的变化先写入UI快照，再在绘制前提交整盘与面板，避免N次感染做N次全盘刷新。
+func _queue_unit_presentation_refresh() -> void:
+	if _unit_presentation_pending:
+		return
+	_unit_presentation_pending = true
+	_flush_unit_presentation.call_deferred()
+
+func _flush_unit_presentation() -> void:
+	if not _unit_presentation_pending:
+		return
+	_unit_presentation_pending = false
+	if not is_instance_valid(_field) or _is_special_stage_active():
+		return
+	_field.set_unit_snapshots(_snapshots)
+	if _counterable_targets_dirty:
+		_counterable_targets_dirty = false
+		_refresh_counterable_targets(true)
+	_refresh_faction_counts()
+	_refresh_sources()
+	_refresh_view()
+	_apply_pending_group_speech_events()

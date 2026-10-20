@@ -1,0 +1,17 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+STORY01 PASS restart reads expected persisted unlock
+STORY01 PASS title route
+STORY01 PASS initial entry named and usable
+STORY01 PASS native click opens independent submenu
+STORY01 PASS no duplicate opening entry
+STORY01 PASS return at original lower-left position and size
+STORY01 PASS exact visible buttons: ["开场回放", "返回菜单"]
+STORY01 PASS locked ending fully hidden, no placeholder
+STORY01 PASS native return restores same original menu
+STORY01 PASS opening replay uses existing first four acts
+STORY01 PASS opening replay returns to title
+STORY01 PASS hidden ending also rejected by router
+STORY01 PASS replays do not fabricate or clear completion
+STORY01_DONE failures=0 unlocked=false

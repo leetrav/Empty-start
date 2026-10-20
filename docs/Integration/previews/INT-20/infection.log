@@ -1,0 +1,4 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+INFECTION_PRODUCTION {"converted":30,"counts":{"neutral":2,"opponent":46,"player":48},"cpu_p95_ms":21.437,"frame_p50_ms":16.632,"frame_p95_ms":20.261,"frames":892,"groups":12,"physics_p95_ms":10.054,"stage":"running","ui":{"active_group_bubble_count":2,"group_snapshot_count":12,"pending_group_speech_events":0,"unit_snapshot_count":96}}

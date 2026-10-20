@@ -1,0 +1,67 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+PB-05 strength contact rates={ 1: 0.51231527093596, 2: 0.61244019138756, 3: 0.70754716981132 }
+ERROR: FAIL PB-05: C strength 1 概率为 20%
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _finish (res://tests/plan_b/pb05_public_api_smoke.gd:557)
+       [1] _run (res://tests/plan_b/pb05_public_api_smoke.gd:34)
+       [2] _test_unit_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:277)
+       [3] _test_birth_and_despawn (res://tests/plan_b/pb05_public_api_smoke.gd:401)
+       [4] _dispose_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:535)
+ERROR: FAIL PB-05: C strength 2 概率为 35%
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _finish (res://tests/plan_b/pb05_public_api_smoke.gd:557)
+       [1] _run (res://tests/plan_b/pb05_public_api_smoke.gd:34)
+       [2] _test_unit_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:277)
+       [3] _test_birth_and_despawn (res://tests/plan_b/pb05_public_api_smoke.gd:401)
+       [4] _dispose_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:535)
+ERROR: FAIL PB-05: C strength 3 概率为 50%
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _finish (res://tests/plan_b/pb05_public_api_smoke.gd:557)
+       [1] _run (res://tests/plan_b/pb05_public_api_smoke.gd:34)
+       [2] _test_unit_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:277)
+       [3] _test_birth_and_despawn (res://tests/plan_b/pb05_public_api_smoke.gd:401)
+       [4] _dispose_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:535)
+ERROR: FAIL PB-05: 开局应由A使用B两个中立播种位建立76中立/2费米人口；实际={ "player": 0, "opponent": 2, "neutral": 30 }
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _finish (res://tests/plan_b/pb05_public_api_smoke.gd:557)
+       [1] _run (res://tests/plan_b/pb05_public_api_smoke.gd:34)
+       [2] _test_unit_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:277)
+       [3] _test_birth_and_despawn (res://tests/plan_b/pb05_public_api_smoke.gd:401)
+       [4] _dispose_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:535)
+ERROR: FAIL PB-05: strength 1 观测感染率接近配置值
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _finish (res://tests/plan_b/pb05_public_api_smoke.gd:557)
+       [1] _run (res://tests/plan_b/pb05_public_api_smoke.gd:34)
+       [2] _test_unit_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:277)
+       [3] _test_birth_and_despawn (res://tests/plan_b/pb05_public_api_smoke.gd:401)
+       [4] _dispose_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:535)
+ERROR: FAIL PB-05: strength 2 观测感染率接近配置值
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _finish (res://tests/plan_b/pb05_public_api_smoke.gd:557)
+       [1] _run (res://tests/plan_b/pb05_public_api_smoke.gd:34)
+       [2] _test_unit_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:277)
+       [3] _test_birth_and_despawn (res://tests/plan_b/pb05_public_api_smoke.gd:401)
+       [4] _dispose_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:535)
+ERROR: FAIL PB-05: strength 3 观测感染率接近配置值
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _finish (res://tests/plan_b/pb05_public_api_smoke.gd:557)
+       [1] _run (res://tests/plan_b/pb05_public_api_smoke.gd:34)
+       [2] _test_unit_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:277)
+       [3] _test_birth_and_despawn (res://tests/plan_b/pb05_public_api_smoke.gd:401)
+       [4] _dispose_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:535)
+ERROR: FAIL PB-05: 人口补充时发出出生事件
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _finish (res://tests/plan_b/pb05_public_api_smoke.gd:557)
+       [1] _run (res://tests/plan_b/pb05_public_api_smoke.gd:34)
+       [2] _test_unit_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:277)
+       [3] _test_birth_and_despawn (res://tests/plan_b/pb05_public_api_smoke.gd:401)
+       [4] _dispose_simulation (res://tests/plan_b/pb05_public_api_smoke.gd:535)

@@ -2,6 +2,8 @@
 
 独立可注入触摸适配场景：`res://ui/mobile/mobile_touch_aim.tscn`。默认关闭，正式布局尚待真人选择；没有在Sandbox自动挂载，也没有新增Autoload。
 
+2026-10-20 PAUSE-03：正式Plan B界面另提供顶部PK栏右侧的「暂停」原生按钮，不依赖MobileTouchAim是否启用。HUD只发pause_requested，宿主连接既有PauseMenu.pause_game；支持ScreenTouch与鼠标，消费按钮触点避免攻击层接手。720p有效区域64×48像素；2400×1080宽屏窗口在现有16:9内容黑边策略下可正常触摸。此为Windows真实GUI输入注入验收，尚非Android硬件／APK验收。
+
 ## 接入顺序（A / D）
 
 依赖C的PTF-03公开指针API，原提交`c1e753a`，PR #257。本E分支只安全引入该提交，未改其实现。

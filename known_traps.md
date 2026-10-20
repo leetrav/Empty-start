@@ -377,3 +377,52 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - 保留StageArrowFx真实淡出事实和过期档位保护，仅首次箭头对仍在开场的费米不放行换段；第二次真实升档才放行。其他三Boss默认false，音乐策略未改。
 ### AU-03：首档引子保持后，独立试听要模拟箭头放行
 正式四Boss已统一保持引子到T2真实箭头淡出。独立试听没有箭头，只有request_tier会继续保持引子；手动选Tier后调用公开release_tier_visual模拟放行。正式Sandbox仍只使用真实HUD信号。试听提示应区分五次升档和三组音乐，不能再写成对白结束自动接T1低段。
+
+### LOAD-01：本机 headless 后台加载战斗资源停在 IN_PROGRESS（2026-10-20）
+
+- Godot 4.7.2 Windows：菜单、身份和房间可载入；后台请求正式 Plan B 场景在 headless 中超过40秒仍为 `THREAD_LOAD_IN_PROGRESS`，原页面和加载遮罩仍在，无脚本解析错误。相同场景链 GUI Compatibility 可完成。
+- 路由仅在 headless 中沿用同步 ResourceLoader 读取；图形版仍使用后台读取并轮询状态，30秒超时显示恢复入口。无窗口读取与 GUI 都复验，不能据此推断两者性能相同。
+- 引擎仓库有相关但未确认同根因的报告：<https://github.com/godotengine/godot/issues/124139>、<https://github.com/godotengine/godot/issues/120827>。
+
+### AU-06：先暂停全树会冻结加载遮幕期间的音乐淡出
+
+- 条件：路由在淡出旧画面前先设置SceneTree.paused=true，而AudioManager音乐Tween继承暂停；视觉淡出仍跑，旧曲增益却不下降。
+- 本次漫画收尾至标题、标题离场：输入先锁定，旧音乐与旧画面先一起淡出，再在全黑期间暂停全树完成加载/初始化。标题揭幕完成后起标题曲，避免新曲淡入也被黑幕暂停消耗。
+- 验证必须观察真实播放器增益随帧下降和旧曲停止事实，不能只检查事件ID或把固定首帧140ms当成Tween已经更新。
+
+### PAUSE-01：局部挂载PauseMenu不能保证全页面Esc可用
+
+- 原状：Sandbox与开局房间有PauseMenu，结局、标题、身份和独立漫画没有；漫画还在_input消费Esc并退出剧情。只在战斗验证暂停不能代表全局覆盖。
+- 修复：SceneRouter初次启动和scene_changed时自动补齐，已有实例按脚本路径识别并复用；漫画不消费pause输入，音乐/漫画暂停由统一信号同步。转场期间不接受pause。
+- 验证须覆盖结局页全屏→Esc→设置→取消全屏，并确认Esc关闭设置后仍暂停、继续后恢复原页面，不能只直接调用pause_game代替输入分发。
+
+### PA-25：God rays接入成功不等于完成性能验收
+- 原版逐像素二维噪声和hint_screen_texture的filter_linear_mipmap会增加运算与屏幕缩小链开销。固定噪声y为1时可简化一维，但要保留画面和Screen混合。
+- 正式标题使用独立小尺寸光效掩码，再全尺寸合成；关闭档必须同步停止SubViewport，不能只hide父ColorRect。
+- GPU计时须包含活跃SubViewport，VSync封顶FPS不能说明GPU成本。实际GUI同机开关/原版/优化对照后才给出受限结论；headless不验证GPU性能，单机流畅不能推断策划设备。
+
+### PERF-01：逐球事件触发整盘刷新与即时弧线几何会叠加CPU峰值
+- 转换/改口每个事件立即调用set_unit_snapshots、人数/手牌刷新和待发气泡全队列匹配，会在同一物理帧重复N次全盘工作；保留逐单位逻辑事实，把表现提交合并在绘制前。
+- draw_arc抗锯齿与逐线徽标在96棋子频繁重绘时CPU开销明显。固定几何使用原函数烘焙图集，实时颜色/脉冲仍调制；不要以降低人数或感染概率伪装性能优化。
+- 旧PB05概率/初始人口断言与当前配置不一致；PERF-01保留失败日志，不宣称全套旧规则测试通过。目标设备帧率仍需实机验证，图集CPU收益不能等同所有GPU收益。
+
+### END-01：结束的Tween非null也不能再次play
+- 漫画淡入完成后Tween引用仍存在，稍后Esc恢复调用play会报Tween invalid。暂停、恢复和清理前检查is_valid；不能只检查非null。
+- 神降临CanvasLayer原强调20/提示21可能覆盖PauseMenu20；当前终局表现15/14，暂停90（PAUSE-02修订）、加载100。验证要在真实强调和漫画中发送Esc，确认面板实际可见及计时冻结。
+
+### PK-01：近似相等不可用于权威累计和终点写入
+- 现象：99.9995%经界面四舍五入成100%，实际Host仍running；连续1000次正增量也无法走入1.0。
+- 原因：update_pk在is_equal_approx相等时忽略状态赋值，终点却使用精确>=1判定；小优势/高频小delta也会完全不累计。
+- 修复：权威PK使用精确变化比较并保留0/1夹取，原单次结束守卫不变；近似相等不能提前吞掉最后一步。界面向下取整，0<PK<1%用<1%。Host事件单位固定0～100百分点，1%不能根据数值猜成归一化1。
+- 验证：微小增量、多次累计、0/1两端及正式四Boss信号链均覆盖；F3直接设置精确1不能替代从1附近正常推进的测试。
+
+### END-02：神谕退场不能把黑底一起淡走
+- 最终文字与背景共用overlay.modulate淡出再hide会重新露出下层PK，随后路由才盖黑。改为只退Sentence，保留黑底至换场；完成信号仍只来自原Tween，不提前发奖或路由。
+- 开启EndingPage不等于完整通关。路由保存正常片尾资格，标题整体显现后才写持久解锁；中断留pending，静态成果与回看入口不能伪造资格。
+- AudioManager恢复时，Tween在完成回调帧可能仍is_valid但已结束；get_loops_left()==0时不能play。真实跨页音乐淡出/恢复需覆盖，不能只看非null或valid。
+# PAUSE-02：暂停状态正确但菜单被结算层遮挡
+
+- 现象：结算页Esc后游戏停止，Overlay.visible=true，却看不到菜单，也点不到设置。
+- 条件：RestResultView CanvasLayer30高于原PauseMenu20，后加的结算页覆盖原菜单。仅断言暂停与visible不足以发现。
+- 处理：共享PauseMenu统一为90，加载遮幕保持100；结算／圣典历史／败者卡历史必须真实Esc并截图，鼠标点击设置/继续，覆盖全屏退出路径。不靠增加重复暂停菜单解决。
+

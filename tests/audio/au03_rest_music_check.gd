@@ -65,8 +65,8 @@ func _run() -> void:
 	var game := current_scene
 	assert(game.scene_file_path.ends_with("sandbox.tscn"))
 	await create_timer(2.0).timeout
-	assert(audio.get_music_event_id() == &"")
-	print("PASS 实际房间起曲/暂停/继续/开播后T0淡出")
+	assert(audio.get_music_event_id() == TierMusicPresenter.PREBOSS_EVENT)
+	print("PASS 实际房间起曲/暂停/继续/开播后T0播放Pop Sky")
 	var view: Node = game.get_rest_result_view()
 	var catalog: Resource = load("res://data/level_configuration/level_catalog.tres")
 	var cards: Resource = load("res://data/loser_card/loser_card_catalog.tres")

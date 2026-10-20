@@ -94,6 +94,12 @@ AU-04 本次只完成源码接线；当前机器没有可调用的Godot运行时
 
 ## INT-17D 正式消费端（2026-10-16）
 
+AU-08：身份流程页面构建完成后，对按钮调用 `AudioManager.bind_ui_selection(button)`，将鼠标悬停和键盘焦点合并为一次轻气泡反馈，使用现有 `ui_menu_hover`（Kenney drop_003.ogg / CC0）；不改变按钮外观。该绑定按需调用，不为全游戏按钮自动追加悬停声。点击继续复用全局 `bind_ui_button`；同帧已有专用业务确认音时，延迟通用点击不再叠播，悬停事件不占用点击去重标记。
+
+页面自动安置焦点使用 `focus_ui_silently(control)`，避免把初始化或回退当作玩家选择；不占用该按钮后续鼠标进入的声音。身份步骤切换消费旧步骤输入，防止确认操作继续传递到新页卡片。
+
+AU-08最终听感修订：`ui_name_confirm`、`ui_identity_confirm`均使用Kenney Interface Sounds的`drop_001.ogg`、-8dB，区别于悬停`drop_003.ogg`、-12dB。正式17表与默认Resource一致。首次身份页无选择时释放焦点、显示现有未选择详情占位，不自动高亮第一张；恢复已有选择仍使用静音落焦，Tab导航正常。
+
 `AudioManager._ready()` 已注册 17 表可加载的 23 个事件，先于 Boot、菜单和身份场景；Sandbox 再次注册同 ID 为覆盖行为。`bind_ui_button(button, event_id=&"ui_click") -> bool` 供 UI 拥有者绑定点击/确认/切换。`event_played(event_id, player)` 仅在池播放器实际执行 `play()` 后发出，可核对音量、音高和资源。
 
 HUD 原有 `bind_portrait_attack()` 同时绑定 `BattleAudioPresenter`：读取真实按住/满蓄上升沿、正式发射、最终整发结算与 `BarrageArea.barrage_generated`，播放 charge/ready/fire、normal/trap、spawn/repeat 音效；生成音有可调的 0.15 秒短限流。复读零收益不会冒充普通命中。
@@ -225,3 +231,23 @@ AudioManager.get_music_loop_offset()返回当前OGG循环起点（非OGG或不�
 - Fermi Profile改为hold_intro_through_first_tier=true：56%连线起曲从0秒保留首次约4秒静音；第一次箭头淡出、对白结束都不切曲/不重播；64%第二次箭头淡出才接中段。后续T3同组、T4/T5高段与稳定降档规则不变。F3直接调档仍走明确试听旁路。
 - teek_intro原生loop_offset=4.8继续保留，等待期间可持续循环有声伴奏，不重放静音前缀；未重编码素材或改变原曲速度/音高。删除已被更正的intro_before_connection属性。
 - 保留StageArrowFx真实淡出事实和过期档位保护，仅首次箭头对仍在开场的费米不放行换段；第二次真实升档才放行。其他三Boss默认false，音乐策略未改。
+
+## AU-05 · Boss出场前游玩音乐（2026-10-20）
+
+四位Boss的T0游玩阶段统一使用music_preboss_pop_sky：用户提供的Pop Sky原曲01:56起至结尾片段。每场/重开从0秒开始，1.5秒淡入，基准-12dB，原生循环。等待期不进入Boss分组调度；重复T0信号不重播。暂停/继续、失败/离场以及Boss连线接管仍由TierMusicPresenter和AudioManager统一拥有。
+
+正式17表负责事件映射，AudioEventConfig强引用资源用于稳定收录；素材来源/加工见assets/audio/music/preboss/README.md。验收入口为tests/audio/preboss_pop_sky_smoke.tscn。
+
+## AU-06 · 标题音乐、开场遮幕和菜单悬停（2026-10-20）
+
+标题使用用户选定的Cafe de Fineday完整曲，music_title_cafe，-12dB、1.5秒淡入、原生循环。标题揭幕后起播；设置和回看入口不重播。离开标题由SceneRouter先让音乐随遮幕淡出，非路由离树也只释放本菜单仍拥有的曲目。
+
+漫画至标题复用全局加载层：末幕0.45秒淡入黑幕，完整遮幕至少0.25秒，标题0.60秒淡入。旧曲《街》先淡出；音乐淡出期间不预先暂停全树，避免音频Tween首帧冻结。随后加载与新场景揭幕沿用原暂停保护。其他游戏场景的过渡时长沿用LOAD-01。
+
+CoverMenuButton悬停事件ui_menu_hover使用Kenney Interface Sounds的drop_003.ogg（CC0），每次进入一次，70ms全菜单限流，禁用项不响。点击仍使用原事件，用户UI总线设置继续生效。
+
+## AU-09 · 指定第10条重击与片尾音效致谢（2026-10-20）
+
+用户指定Independent.nu的37 hits/punches包（OpenGameArt，CC0），当前选hit10.mp3.flac：contradiction_break播放约0.284秒干声punch_hit.ogg，横幅contradiction_banner_impact播放3秒延展punch_tail.ogg。原蓄势／斜切时序保持，标题出现时重击、退场音量按实际标题alpha衰减，完全消失即停止；暂停、复播和中断使用原表现时钟，不循环拳击起音。源音、哈希、处理方式与可复现脚本见assets/audio/sfx/comic/sources/README.md。默认横幅在起音后约2.3秒结束，若未来显著延长原演出时长，应同步延展尾音资源。
+
+按用户后续修订，特别鸣谢只保留现有音乐署名和曲目来源，移除所有CC0音效作者／链接／许可标签；制作组与本地来源许可记录不删。音乐自定义许可署名继续保留。当前优化仍基于原本地分支，未拉取或合并用户刚同步的最新main，待用户验收后再处理。

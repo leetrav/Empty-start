@@ -1,0 +1,43 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.30 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 Laptop GPU
+
+GLOBAL_PAUSE PASS exactly one pause menu: res://ui/main_menu/main_menu.tscn
+GLOBAL_PAUSE PASS title Esc opens pause
+GLOBAL_PAUSE PASS title music clock frozen
+GLOBAL_PAUSE PASS title Esc does not leave page
+GLOBAL_PAUSE PASS title Esc resumes
+GLOBAL_PAUSE PASS exactly one pause menu: res://ui/comic/comic_player.tscn
+GLOBAL_PAUSE PASS comic Esc opens pause
+GLOBAL_PAUSE PASS comic music clock frozen
+GLOBAL_PAUSE PASS comic Esc does not leave page
+GLOBAL_PAUSE PASS comic explicitly paused
+GLOBAL_PAUSE PASS comic Esc resumes
+GLOBAL_PAUSE PASS comic resumes without ending
+GLOBAL_PAUSE PASS exactly one pause menu: res://ui/identity_setup/identity_setup.tscn
+GLOBAL_PAUSE PASS name / identity Esc opens pause
+GLOBAL_PAUSE PASS name / identity music clock frozen
+GLOBAL_PAUSE PASS name / identity Esc does not leave page
+GLOBAL_PAUSE PASS name / identity Esc resumes
+GLOBAL_PAUSE PASS exactly one pause menu: res://ui/rest/rest_opening_room.tscn
+GLOBAL_PAUSE PASS opening room Esc opens pause
+GLOBAL_PAUSE PASS opening room music clock frozen
+GLOBAL_PAUSE PASS opening room Esc does not leave page
+GLOBAL_PAUSE PASS opening room Esc resumes
+GLOBAL_PAUSE PASS exactly one pause menu: res://scenes/sandbox/sandbox_plan_b.tscn
+GLOBAL_PAUSE PASS battle Esc opens pause
+GLOBAL_PAUSE PASS battle music clock frozen
+GLOBAL_PAUSE PASS battle Esc does not leave page
+GLOBAL_PAUSE PASS battle Esc resumes
+GLOBAL_PAUSE PASS exactly one pause menu: res://ui/ending/ending_page.tscn
+GLOBAL_PAUSE PASS ending Esc opens pause
+GLOBAL_PAUSE PASS ending music clock frozen
+GLOBAL_PAUSE PASS ending Esc does not leave page
+GLOBAL_PAUSE PASS ending Esc resumes
+GLOBAL_PAUSE PASS fullscreen ending can pause
+GLOBAL_PAUSE PASS exactly one pause menu: res://ui/ending/ending_page.tscn
+GLOBAL_PAUSE PASS pause opens settings while paused
+GLOBAL_PAUSE PASS settings exits fullscreen
+GLOBAL_PAUSE PASS Esc closes settings but retains pause
+GLOBAL_PAUSE PASS pause can return to usable title
+GLOBAL_PAUSE PASS return clears music pause state
+GLOBAL_PAUSE_DONE failures=0
