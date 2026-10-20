@@ -8,6 +8,12 @@ signal counterattack_resolved(result: Dictionary)
 signal opponent_word_pool_exhausted(level_id: String, streamer_id: String)
 
 const SPAWN_MARGIN_PIXELS := 16.0
+const COUNTERATTACK_SKILL_NAMES_ZH: Dictionary = {
+	"alien": "分裂",
+	"kiwi": "复制／改口反制",
+	"frog": "吞食",
+	"fox": "反弹",
+}
 
 var speech_enabled: bool = true
 var counterattack_enabled: bool = true
@@ -194,7 +200,7 @@ func update_counterattack(
 		_emit_counterattack_preflight_failure(round_tier, "missing_skill_id", "")
 		return
 	var skill_mapping: Dictionary = _get_skill_mapping(skill_id)
-	var skill_name_cn: String = str(skill_mapping.get("trait_name", "特殊反击"))
+	var skill_name_cn: String = _get_counterattack_skill_name_cn(skill_id, skill_mapping)
 	var request := {
 		"counterattack_round": 1 if round_tier == 2 else 2,
 		"qualification_tier": round_tier,
@@ -207,6 +213,8 @@ func update_counterattack(
 		"effect_id": StringName(str(_profile.get("counterattack_effect_id", ""))),
 		"effect_parameters": {
 			"child_count": int(_profile.get("counterattack_child_count", 0)),
+			"max_targets": 3,
+			"radius_pixels": 120.0,
 		},
 		"pre_windup_seconds": float(_profile.get("counterattack_pre_windup_seconds", 0.0)),
 		"cooldown_seconds": float(_profile.get("counterattack_cooldown_seconds", 0.0)),
@@ -228,18 +236,32 @@ func update_counterattack(
 
 
 ## A/B 完成效果后回报结果；本模块据此更新尝试次数和冷却，不改棋子状态。
-func report_counterattack_result(applied: bool) -> bool:
+func report_counterattack_result(effect_result: Variant) -> bool:
 	if not _configured or _pending_counterattack.is_empty() or not _awaiting_counterattack_result:
 		return false
 	var result: Dictionary = _pending_counterattack.duplicate(true)
+	var effect_details: Dictionary = {}
+	var applied: bool = false
+	if effect_result is Dictionary:
+		effect_details = effect_result.duplicate(true)
+		applied = bool(effect_details.get("ok", effect_details.get("applied", false)))
+	elif effect_result is bool:
+		applied = bool(effect_result)
+	for detail_key: Variant in effect_details:
+		if str(detail_key) not in ["ok", "applied"]:
+			result[str(detail_key)] = effect_details[detail_key]
 	result["applied"] = applied
 	if applied:
 		_counterattack_uses += 1
 		_counterattack_cooldown_remaining = float(_pending_counterattack.get("cooldown_seconds", 0.0))
-		result["result_reason"] = "applied"
-		result["message"] = "反击已生效"
+		result["result_reason"] = str(effect_details.get("result_reason", effect_details.get("reason", "applied")))
+		if not result.has("message"):
+			result["message"] = "反击已生效"
 	else:
-		result["result_reason"] = "effect_not_applied"
+		var failure_reason: String = str(effect_details.get("result_reason", effect_details.get("reason", "effect_not_applied")))
+		result["result_reason"] = failure_reason
+		if not result.has("message"):
+			result["message"] = _counterattack_result_message(failure_reason)
 		var failed_round_tier: int = int(result.get("qualification_tier", 0))
 		if failed_round_tier > 0:
 			_no_target_result_reported_by_tier[failed_round_tier] = true
@@ -356,6 +378,14 @@ func _get_skill_mapping(skill_id: String) -> Dictionary:
 	return {}
 
 
+## PB-27 的正式主播专属技能名优先于临时21表trait名。
+func _get_counterattack_skill_name_cn(skill_id: String, mapping: Dictionary) -> String:
+	var fixed_name: String = str(COUNTERATTACK_SKILL_NAMES_ZH.get(_streamer_id, ""))
+	if not fixed_name.is_empty():
+		return fixed_name
+	return str(mapping.get("trait_name", "特殊反击"))
+
+
 ## 候选缺少配置或目标时回报一次明确失败，保留当前轮次等待后续有效状态。
 func _emit_counterattack_preflight_failure(
 	round_tier: int,
@@ -373,7 +403,7 @@ func _emit_counterattack_preflight_failure(
 			"qualification_tier": round_tier,
 			"streamer_id": _streamer_id,
 			"skill_id": skill_id,
-			"skill_name_cn": str(_get_skill_mapping(skill_id).get("trait_name", "特殊反击")),
+			"skill_name_cn": _get_counterattack_skill_name_cn(skill_id, _get_skill_mapping(skill_id)),
 			"trigger_event": str(_profile.get("counterattack_trigger_event", "tier_2_tier_4")),
 			"target_unit_id": "",
 		}
@@ -424,7 +454,7 @@ func _request_counterattack_effect() -> void:
 	_last_counterattack_event = _pending_counterattack.duplicate(true)
 	var request: Dictionary = _pending_counterattack.duplicate(true)
 	if _counterattack_effect_handler.is_valid():
-		# 执行入口由 A 注入并转接 B；返回值只表示本次效果是否成功应用。
-		report_counterattack_result(bool(_counterattack_effect_handler.call(request)))
+		# 执行入口由 A 注入并转接 B；结果携带成功状态、实际目标和效果数量。
+		report_counterattack_result(_counterattack_effect_handler.call(request))
 	else:
 		counterattack_effect_requested.emit(request)
