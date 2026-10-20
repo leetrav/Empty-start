@@ -18,7 +18,7 @@ signal flip_finished(tier: int)
 @export_range(0.0, 24.0, 1.0) var visible_edge_guard_px: float = 5.0
 # 列巴坐姿参考：增大 T1/T2 的 fox_idle.png，让头部略低、身体铺满直播镜头。
 # 两档使用同一贴图，采用同一构图，避免换档瞬间跳动。
-@export_range(1.0, 1.5, 0.01) var fox_idle_zoom: float = 1.14
+@export_range(1.0, 1.5, 0.01) var fox_idle_zoom: float = 1.08
 @export_range(0.0, 0.25, 0.01) var fox_idle_top_ratio: float = 0.10
 
 var current_tier: int = 0
@@ -47,6 +47,8 @@ func attach_portrait(portrait: TextureRect) -> void:
 	var index: int = portrait.get_index()
 	name = "OpponentTierPortrait"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 坐姿放大后由直播槽本身裁切；避免肢体溢出到下方评论区域。
+	clip_contents = true
 	slot.add_child(self)
 	slot.move_child(self, index)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
