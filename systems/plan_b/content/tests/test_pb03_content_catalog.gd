@@ -102,10 +102,10 @@ func _init() -> void:
 	var population_config: Dictionary = catalog.get_population_config()
 	assert(population_config["initial_neutral_count"] == 30)
 	assert(population_config["initial_seed_slot_count"] == 0)
-	assert(is_equal_approx(float(population_config["neutral_spawn_interval_seconds"]), 0.75))
+	assert(is_equal_approx(float(population_config["neutral_spawn_interval_seconds"]), 1.8))
 	assert(is_equal_approx(float(population_config["neutral_spawn_jitter_ratio"]), 0.25))
-	assert(is_equal_approx(float(population_config["neutral_spawn_min_seconds"]), 0.5625))
-	assert(is_equal_approx(float(population_config["neutral_spawn_max_seconds"]), 0.9375))
+	assert(is_equal_approx(float(population_config["neutral_spawn_min_seconds"]), 1.35))
+	assert(is_equal_approx(float(population_config["neutral_spawn_max_seconds"]), 2.25))
 
 	_test_slot_draw(catalog)
 	print("PB12_PB15_CONTENT_TEST_OK")

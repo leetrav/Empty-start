@@ -25,11 +25,13 @@ const COLOR_NEUTRAL := Color("#92a2ad")
 const COLOR_TEXT := Color("#eef5f6")
 const COLOR_MUTED := Color("#91a4ae")
 const BOARD_FALLBACK_BOUNDS := Rect2(Vector2(448.0, 72.0), Vector2(1024.0, 828.0))
-const MAX_ACTIVE_GROUP_BUBBLES := 3
-const GROUP_BUBBLE_MIN_DELAY := 2.5
-const GROUP_BUBBLE_MAX_DELAY := 5.0
-const GROUP_BUBBLE_MIN_DURATION := 1.2
-const GROUP_BUBBLE_MAX_DURATION := 1.8
+const MAX_ACTIVE_GROUP_BUBBLES := 1
+const GROUP_BUBBLE_MIN_INTERVAL_MSEC := 1800
+const GROUP_BUBBLE_DURATION_SECONDS := 1.2
+const GROUP_BUBBLE_REPEAT_GUARD_MSEC := 6000
+const GROUP_BUBBLE_EVENT_RESOLVE_MSEC := 700
+const GROUP_BUBBLE_QUEUE_EXPIRY_MSEC := 8000
+const MAX_PENDING_GROUP_BUBBLE_EVENTS := 6
 const DANMU_HAM: Texture2D = preload("res://assets/ui/plan_b/units/hamster_unit.png")
 const DANMU_NPC: Texture2D = preload("res://assets/ui/plan_b/units/neutral_unit.png")
 const DANMU_ALIEN: Texture2D = preload("res://assets/ui/plan_b/units/alien_unit.png")
@@ -98,7 +100,9 @@ var _word_groups: Array = []
 var _group_bubble_states: Dictionary = {}
 var _active_group_bubble_ids: Dictionary = {}
 var _pending_group_speech_events: Array[Dictionary] = []
-var _group_bubble_rng := RandomNumberGenerator.new()
+var _word_groups_revision: int = 0
+var _queued_group_bubble_events: Array[Dictionary] = []
+var _last_group_bubble_started_msec := -100000
 var _tracker_unit_snapshot_calls: int = 0
 var _tracker_unit_snapshot_total_usec: int = 0
 var _tracker_unit_snapshot_max_usec: int = 0
@@ -194,7 +198,6 @@ func _ready() -> void:
 	add_child(_dialogue_queue)
 	_refresh_sources()
 	set_opponent_portrait_connected(_battle_tier > 0)
-	_group_bubble_rng.randomize()
 	_refresh_view()
 
 
@@ -282,7 +285,7 @@ func get_pb14_performance_snapshot() -> Dictionary:
 		"unit_snapshot_count": _snapshots.size(),
 		"group_snapshot_count": _word_groups.size(),
 		"active_group_bubble_count": _active_group_bubble_ids.size(),
-		"pending_group_speech_events": _pending_group_speech_events.size(),
+		"pending_group_speech_events": _pending_group_speech_events.size() + _queued_group_bubble_events.size(),
 	}
 
 
@@ -375,11 +378,6 @@ func set_tutorial_highlighted_battle_types(battle_types: Array) -> void:
 	_refresh_hand_view()
 
 
-func set_group_bubble_random_seed(seed_value: int) -> void:
-	# 固定表现层的随机复读间隔，便于复核气泡计时而不影响战斗模拟 RNG。
-	_group_bubble_rng.seed = seed_value
-
-
 func set_word_group_snapshots(groups: Array) -> void:
 	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	# B 管理连通关系；D 只同步显示快照并延续可见气泡计时。
@@ -424,6 +422,15 @@ func set_word_group_snapshots(groups: Array) -> void:
 		next_states[group_id] = state
 	_group_bubble_states = next_states
 	_word_groups = next_groups
+	_word_groups_revision += 1
+	# 团体改口后立刻收起旧短语，避免旧话语继续跟随新团体。
+	for group_id_value in _group_bubble_states.keys():
+		var group_id := str(group_id_value)
+		var bubble_state: Dictionary = _group_bubble_states[group_id]
+		if (float(bubble_state.get("display_remaining", 0.0)) > 0.0
+				and str(bubble_state.get("display_phrase", "")) != _group_text_for_id(group_id)):
+			bubble_state["display_remaining"] = 0.0
+			bubble_state["display_phrase"] = ""
 	_sync_active_group_bubble_ids()
 	if _field != null:
 		_field.call("set_word_groups", _word_groups, _active_group_bubble_ids)
@@ -463,11 +470,14 @@ func _assign_previous_bubble_states(members_by_group: Dictionary) -> Dictionary:
 
 func _new_group_bubble_state() -> Dictionary:
 	return {
-		"cooldown_remaining": _group_bubble_rng.randf_range(GROUP_BUBBLE_MIN_DELAY, GROUP_BUBBLE_MAX_DELAY),
 		"display_remaining": 0.0,
-		"event_active": false,
+		"display_phrase": "",
+		"bubble_anchor_id": "",
 		"started_at_msec": 0,
-		"last_event_msec": -100000,
+		"last_display_phrase": "",
+		"last_display_msec": -100000,
+		"infection_bubble_queued": false,
+		"infection_bubble_consumed": false,
 	}
 
 
@@ -476,10 +486,11 @@ func _inherit_group_bubble_state(old_group_ids: Array) -> Dictionary:
 		return {}
 	var chosen: Dictionary = {}
 	var chosen_active := false
-	var soonest_cooldown := INF
 	var longest_display := 0.0
-	var merged_event_active := false
-	var most_recent_event := -100000
+	var newest_display_msec := -100000
+	var newest_display_phrase := ""
+	var infection_bubble_queued := false
+	var infection_bubble_consumed := false
 	for old_group_id in old_group_ids:
 		if not _group_bubble_states.has(old_group_id):
 			continue
@@ -490,20 +501,24 @@ func _inherit_group_bubble_state(old_group_ids: Array) -> Dictionary:
 			chosen = state.duplicate(false)
 			chosen_active = true
 			longest_display = display_remaining
-		elif not chosen_active and not is_active and float(state.get("cooldown_remaining", INF)) < soonest_cooldown:
+		elif not chosen_active and not is_active and int(state.get("last_display_msec", -100000)) > int(chosen.get("last_display_msec", -100001)):
 			chosen = state.duplicate(false)
-			soonest_cooldown = float(state.get("cooldown_remaining", INF))
-		if is_active:
-			merged_event_active = merged_event_active or bool(state.get("event_active", false))
-		most_recent_event = maxi(most_recent_event, int(state.get("last_event_msec", -100000)))
+		var displayed_at := int(state.get("last_display_msec", -100000))
+		if displayed_at > newest_display_msec:
+			newest_display_msec = displayed_at
+			newest_display_phrase = str(state.get("last_display_phrase", ""))
+		infection_bubble_queued = infection_bubble_queued or bool(state.get("infection_bubble_queued", false))
+		infection_bubble_consumed = infection_bubble_consumed or bool(state.get("infection_bubble_consumed", false))
 	if chosen.is_empty():
 		return {}
 	if chosen_active:
 		chosen["display_remaining"] = longest_display
-		chosen["event_active"] = merged_event_active
 	else:
-		chosen["cooldown_remaining"] = soonest_cooldown
-	chosen["last_event_msec"] = most_recent_event
+		chosen["display_remaining"] = 0.0
+	chosen["last_display_phrase"] = newest_display_phrase
+	chosen["last_display_msec"] = newest_display_msec
+	chosen["infection_bubble_queued"] = infection_bubble_queued
+	chosen["infection_bubble_consumed"] = infection_bubble_consumed
 	return chosen
 
 
@@ -2276,9 +2291,15 @@ func _on_unit_changed(unit_id: String, reason: String) -> void:
 		previous_snapshot = _snapshots[int(_snapshot_index_by_id[unit_id])]
 	_upsert_unit_snapshot(unit_id)
 	var current_snapshot: Dictionary = _snapshot_for_unit_id(unit_id)
-	var is_s1_rephrase := reason == "relay" and int(current_snapshot.get("strength", 0)) == 1
-	if not is_s1_rephrase:
-		_queue_group_speech_event([unit_id], false, reason)
+	var phrase_changed := (
+		str(previous_snapshot.get("word_id", "")) != str(current_snapshot.get("word_id", ""))
+		or int(previous_snapshot.get("word_order", 0)) != int(current_snapshot.get("word_order", 0))
+	)
+	var is_s1_rephrase := reason == "relay" and int(current_snapshot.get("strength", 0)) == 1 and phrase_changed
+	if reason == "convert":
+		_queue_group_speech_event([unit_id], "infection")
+	elif is_s1_rephrase:
+		_queue_group_speech_event([unit_id], "rephrase")
 	if (str(previous_snapshot.get("team", "")) != str(current_snapshot.get("team", ""))
 			or str(previous_snapshot.get("battle_type", "")) != str(current_snapshot.get("battle_type", ""))):
 		_counterable_targets_dirty = true
@@ -2316,7 +2337,7 @@ func _on_word_batch_spawned(batch: Dictionary) -> void:
 	_field.call("show_word_batch_burst", batch)
 	var unit_ids: Variant = batch.get("unit_ids", [])
 	if unit_ids is Array:
-		_queue_group_speech_event(unit_ids, true, "batch_spawned")
+		_queue_group_speech_event(unit_ids, "publish")
 
 
 func _on_word_groups_changed(groups: Array) -> void:
@@ -2329,28 +2350,31 @@ func _on_unit_physics_positions_updated(unit_ids: Variant, previous_positions: V
 		_field.call("set_physics_tick_position_arrays", unit_ids, previous_positions, current_positions)
 
 
+## 推进唯一可见气泡，并按真实事件队列与全局节流决定下一条。
 func _advance_group_bubbles(delta: float) -> void:
 	if _is_special_stage_active() or _battle_over:
 		return
 	var visibility_changed := false
+	var now := Time.get_ticks_msec()
 	for group_id_value in _group_bubble_states.keys():
 		var group_id := str(group_id_value)
 		var state: Dictionary = _group_bubble_states[group_id]
 		if float(state.get("display_remaining", 0.0)) > 0.0:
 			state["display_remaining"] = maxf(0.0, float(state["display_remaining"]) - delta)
 			if float(state["display_remaining"]) <= 0.0:
-				state["event_active"] = false
-				state["cooldown_remaining"] = _group_bubble_rng.randf_range(GROUP_BUBBLE_MIN_DELAY, GROUP_BUBBLE_MAX_DELAY)
+				state["display_phrase"] = ""
 				visibility_changed = true
-		else:
-			state["cooldown_remaining"] = maxf(0.0, float(state.get("cooldown_remaining", 0.0)) - delta)
-			if float(state["cooldown_remaining"]) <= 0.0:
-				_try_show_group_bubble(group_id, false)
 	if visibility_changed:
 		_sync_active_group_bubble_ids()
+	_apply_pending_group_speech_events()
+	if _active_group_bubble_ids.is_empty() and now - _last_group_bubble_started_msec >= GROUP_BUBBLE_MIN_INTERVAL_MSEC:
+		_show_next_queued_group_bubble(now)
 
 
-func _queue_group_speech_event(unit_ids: Array, is_batch: bool, reason: String) -> void:
+## 等团体拓扑同步后，把首次发表、首次感染和真实 S1 改口交给展示队列。
+func _queue_group_speech_event(unit_ids: Array, reason: String) -> void:
+	if reason not in ["publish", "infection", "rephrase"]:
+		return
 	var normalized_ids: Array[String] = []
 	for value in unit_ids:
 		var unit_id := str(value)
@@ -2358,11 +2382,17 @@ func _queue_group_speech_event(unit_ids: Array, is_batch: bool, reason: String) 
 			normalized_ids.append(unit_id)
 	if normalized_ids.is_empty():
 		return
+	if _pending_group_speech_events.size() >= MAX_PENDING_GROUP_BUBBLE_EVENTS:
+		_pending_group_speech_events.pop_front()
+	# unit_changed 在 Simulation 团体拓扑刷新前发出；需要等待后续 group snapshot。
+	var source_snapshot: Dictionary = _snapshot_for_unit_id(normalized_ids[0])
 	_pending_group_speech_events.append({
 		"unit_ids": normalized_ids,
-		"is_batch": is_batch,
 		"reason": reason,
-		"expires_at_msec": Time.get_ticks_msec() + 700,
+		"expected_team": str(source_snapshot.get("team", "")),
+		"expected_word_id": str(source_snapshot.get("word_id", "")),
+		"minimum_group_revision": _word_groups_revision + 1,
+		"expires_at_msec": Time.get_ticks_msec() + GROUP_BUBBLE_EVENT_RESOLVE_MSEC,
 	})
 	_queue_unit_presentation_refresh()
 
@@ -2371,97 +2401,189 @@ func _apply_pending_group_speech_events() -> void:
 	var now := Time.get_ticks_msec()
 	for event_index in range(_pending_group_speech_events.size() - 1, -1, -1):
 		var event: Dictionary = _pending_group_speech_events[event_index]
+		if _word_groups_revision < int(event.get("minimum_group_revision", 0)):
+			if now >= int(event.get("expires_at_msec", now)):
+				_pending_group_speech_events.remove_at(event_index)
+			continue
 		var event_ids: Array = event.get("unit_ids", [])
-		var best_group_id := ""
-		var best_overlap := 0
-		for group in _word_groups:
-			if not group is Dictionary:
-				continue
-			var group_id := str(group.get("group_id", group.get("id", "")))
-			var members: Array = _group_member_ids(group)
-			var overlap := 0
-			for unit_id in event_ids:
-				if members.has(unit_id) or members.has(str(unit_id)):
-					overlap += 1
-			if overlap > best_overlap:
-				best_overlap = overlap
-				best_group_id = group_id
-		if best_overlap > 0 and not best_group_id.is_empty():
-			_try_show_group_bubble(best_group_id, true)
+		var expected_team := str(event.get("expected_team", ""))
+		var expected_word_id := str(event.get("expected_word_id", ""))
+		var group_id := _best_group_id_for_units(
+			event_ids, expected_team, expected_word_id
+		)
+		if not group_id.is_empty():
+			_queue_group_bubble_for_group(
+				group_id, event_ids, str(event.get("reason", "")), expected_team, expected_word_id, now
+			)
 			_pending_group_speech_events.remove_at(event_index)
 		elif now >= int(event.get("expires_at_msec", now)):
 			_pending_group_speech_events.remove_at(event_index)
 
 
-func _try_show_group_bubble(group_id: String, event_priority: bool) -> void:
+func _best_group_id_for_units(unit_ids: Array, expected_team: String = "", expected_word_id: String = "") -> String:
+	var best_group_id := ""
+	var best_overlap := 0
+	for group in _word_groups:
+		if not group is Dictionary:
+			continue
+		if not expected_team.is_empty() and str(group.get("team", "")) != expected_team:
+			continue
+		if not expected_word_id.is_empty() and str(group.get("word_id", "")) != expected_word_id:
+			continue
+		var group_id := str(group.get("group_id", group.get("id", "")))
+		var members: Array = _group_member_ids(group)
+		var overlap := 0
+		for unit_id in unit_ids:
+			if members.has(str(unit_id)):
+				overlap += 1
+		if overlap > best_overlap:
+			best_overlap = overlap
+			best_group_id = group_id
+	return best_group_id
+
+
+func _group_bubble_event_priority(reason: String) -> int:
+	match reason:
+		"publish":
+			return 3
+		"infection":
+			return 2
+		"rephrase":
+			return 1
+	return 0
+
+
+## 同团同句限频，并在有限队列中保留更重要的传播事件。
+func _queue_group_bubble_for_group(
+	group_id: String, unit_ids: Array, reason: String, expected_team: String, expected_word_id: String, now: int
+) -> void:
 	if not _group_bubble_states.has(group_id):
 		return
 	var state: Dictionary = _group_bubble_states[group_id]
-	var now := Time.get_ticks_msec()
-	if float(state.get("display_remaining", 0.0)) > 0.0:
-		if event_priority and now - int(state.get("last_event_msec", -100000)) <= 150:
-			state["display_remaining"] = minf(GROUP_BUBBLE_MAX_DURATION, float(state["display_remaining"]) + 0.25)
-			state["last_event_msec"] = now
-			state["event_active"] = true
+	if reason == "infection" and (bool(state.get("infection_bubble_queued", false)) or bool(state.get("infection_bubble_consumed", false))):
+		return
+	var phrase := _group_text_for_id(group_id)
+	if phrase.is_empty():
+		return
+	var not_before_msec := now
+	if str(state.get("last_display_phrase", "")) == phrase:
+		not_before_msec = maxi(now, int(state.get("last_display_msec", -100000)) + GROUP_BUBBLE_REPEAT_GUARD_MSEC)
+	var priority := _group_bubble_event_priority(reason)
+	for queued_event in _queued_group_bubble_events:
+		if str(queued_event.get("group_id", "")) == group_id and str(queued_event.get("phrase", "")) == phrase:
+			queued_event["expected_team"] = expected_team
+			queued_event["expected_word_id"] = expected_word_id
+			if priority > int(queued_event.get("priority", 0)):
+				queued_event["priority"] = priority
+				queued_event["reason"] = reason
+				queued_event["unit_ids"] = unit_ids.duplicate()
+			if reason == "infection":
+				queued_event["infection_event"] = true
+				state["infection_bubble_queued"] = true
 			return
-		if not event_priority:
+	if _queued_group_bubble_events.size() >= MAX_PENDING_GROUP_BUBBLE_EVENTS:
+		var lowest_index := 0
+		for index in range(1, _queued_group_bubble_events.size()):
+			if int(_queued_group_bubble_events[index].get("priority", 0)) < int(_queued_group_bubble_events[lowest_index].get("priority", 0)):
+				lowest_index = index
+		if int(_queued_group_bubble_events[lowest_index].get("priority", 0)) > priority:
 			return
+		_drop_queued_group_bubble_event(lowest_index)
+	_queued_group_bubble_events.append({
+		"group_id": group_id,
+		"unit_ids": unit_ids.duplicate(),
+		"expected_team": expected_team,
+		"expected_word_id": expected_word_id,
+		"phrase": phrase,
+		"reason": reason,
+		"infection_event": reason == "infection",
+		"priority": priority,
+		"queued_at_msec": now,
+		"not_before_msec": not_before_msec,
+		"expires_at_msec": maxi(now + GROUP_BUBBLE_QUEUE_EXPIRY_MSEC, not_before_msec + GROUP_BUBBLE_MIN_INTERVAL_MSEC),
+	})
+	if reason == "infection":
+		state["infection_bubble_queued"] = true
+
+
+func _drop_queued_group_bubble_event(event_index: int) -> void:
+	var event: Dictionary = _queued_group_bubble_events[event_index]
+	if bool(event.get("infection_event", str(event.get("reason", "")) == "infection")):
+		var group_id := str(event.get("group_id", ""))
+		if _group_bubble_states.has(group_id):
+			var state: Dictionary = _group_bubble_states[group_id]
+			state["infection_bubble_queued"] = false
+	_queued_group_bubble_events.remove_at(event_index)
+
+
+## 只在当前气泡结束且全局间隔满足后显示下一条有效事件。
+func _show_next_queued_group_bubble(now: int) -> void:
+	for index in range(_queued_group_bubble_events.size() - 1, -1, -1):
+		if now >= int(_queued_group_bubble_events[index].get("expires_at_msec", now)):
+			_drop_queued_group_bubble_event(index)
+	if _queued_group_bubble_events.is_empty():
+		return
+	var best_index := -1
+	for index in _queued_group_bubble_events.size():
+		var candidate: Dictionary = _queued_group_bubble_events[index]
+		if now < int(candidate.get("not_before_msec", 0)):
+			continue
+		if best_index < 0 or int(candidate.get("priority", 0)) > int(_queued_group_bubble_events[best_index].get("priority", 0)):
+			best_index = index
+	if best_index < 0:
+		return
+	var event: Dictionary = _queued_group_bubble_events[best_index]
+	var event_unit_ids: Array = event.get("unit_ids", [])
+	var expected_team := str(event.get("expected_team", ""))
+	var expected_word_id := str(event.get("expected_word_id", ""))
+	if expected_team.is_empty() or expected_word_id.is_empty():
+		_drop_queued_group_bubble_event(best_index)
+		return
+	var group_id := _best_group_id_for_units(event_unit_ids, expected_team, expected_word_id)
+	if group_id.is_empty() or not _group_bubble_states.has(group_id):
+		_drop_queued_group_bubble_event(best_index)
+		return
+	var state: Dictionary = _group_bubble_states[group_id]
+	var phrase := str(event.get("phrase", ""))
+	if phrase.is_empty() or phrase != _group_text_for_id(group_id):
+		_drop_queued_group_bubble_event(best_index)
+		return
+	if str(state.get("last_display_phrase", "")) == phrase and now - int(state.get("last_display_msec", -100000)) < GROUP_BUBBLE_REPEAT_GUARD_MSEC:
+		event["not_before_msec"] = int(state.get("last_display_msec", now)) + GROUP_BUBBLE_REPEAT_GUARD_MSEC
+		return
 	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
-	var active_ids: Array[String] = []
-	for active_group_id in _group_bubble_states:
-		if float(_group_bubble_states[active_group_id].get("display_remaining", 0.0)) > 0.0:
-			active_ids.append(str(active_group_id))
-	if active_ids.size() >= MAX_ACTIVE_GROUP_BUBBLES:
-		if not event_priority:
-			state["cooldown_remaining"] = _group_bubble_rng.randf_range(GROUP_BUBBLE_MIN_DELAY, GROUP_BUBBLE_MAX_DELAY)
-			return
-		var displaced_id := _oldest_active_group_bubble(true)
-		if displaced_id.is_empty():
-			displaced_id = _oldest_active_group_bubble(false)
-		if not displaced_id.is_empty() and _group_bubble_states.has(displaced_id):
-			var displaced: Dictionary = _group_bubble_states[displaced_id]
-			displaced["display_remaining"] = 0.0
-			displaced["event_active"] = false
-			displaced["cooldown_remaining"] = _group_bubble_rng.randf_range(GROUP_BUBBLE_MIN_DELAY, GROUP_BUBBLE_MAX_DELAY)
-	var text := _group_text_for_id(group_id)
-	var duration := clampf(GROUP_BUBBLE_MIN_DURATION + float(text.length()) / 220.0, GROUP_BUBBLE_MIN_DURATION, GROUP_BUBBLE_MAX_DURATION)
-	state["display_remaining"] = duration
-	state["cooldown_remaining"] = 0.0
-	state["event_active"] = event_priority
+	state["display_remaining"] = GROUP_BUBBLE_DURATION_SECONDS
+	state["display_phrase"] = phrase
+	state["bubble_anchor_id"] = "%s:%d" % [group_id, now]
 	state["started_at_msec"] = now
-	state["last_event_msec"] = now if event_priority else int(state.get("last_event_msec", -100000))
+	state["last_display_phrase"] = phrase
+	state["last_display_msec"] = now
+	state["infection_bubble_queued"] = false
+	if bool(event.get("infection_event", str(event.get("reason", "")) == "infection")):
+		# 只在短语与目标团体复核通过、真正开始显示时消费首次感染提示。
+		state["infection_bubble_consumed"] = true
+	_last_group_bubble_started_msec = now
+	_drop_queued_group_bubble_event(best_index)
 	if _performance_tracker != null:
 		_performance_tracker.call(
 			"record_section",
 			PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_GROUP_BUBBLE_GENERATION,
 			Time.get_ticks_usec() - tracker_start_usec,
-			active_ids.size() + 1
+			MAX_ACTIVE_GROUP_BUBBLES
 		)
 		_performance_tracker.call("record_event", PB14_PERFORMANCE_TRACKER_SCRIPT.EVENT_GROUP_BUBBLE_STARTED)
 	_sync_active_group_bubble_ids()
 
 
-func _oldest_active_group_bubble(only_random: bool) -> String:
-	var oldest_id := ""
-	var oldest_time := 2147483647
-	for group_id in _group_bubble_states:
-		var state: Dictionary = _group_bubble_states[group_id]
-		if float(state.get("display_remaining", 0.0)) <= 0.0:
-			continue
-		if only_random and bool(state.get("event_active", false)):
-			continue
-		var started := int(state.get("started_at_msec", 0))
-		if started < oldest_time:
-			oldest_time = started
-			oldest_id = str(group_id)
-	return oldest_id
-
-
 func _sync_active_group_bubble_ids() -> void:
 	var next_active_ids: Dictionary = {}
 	for group_id in _group_bubble_states:
-		if float(_group_bubble_states[group_id].get("display_remaining", 0.0)) > 0.0:
-			next_active_ids[str(group_id)] = true
+		var state: Dictionary = _group_bubble_states[group_id]
+		if float(state.get("display_remaining", 0.0)) > 0.0:
+			next_active_ids[str(group_id)] = {
+				"phrase": str(state.get("display_phrase", "")),
+				"anchor_id": str(state.get("bubble_anchor_id", group_id)),
+			}
 	if _same_key_set(_active_group_bubble_ids, next_active_ids):
 		return
 	_active_group_bubble_ids.clear()
@@ -2516,16 +2638,23 @@ func _clear_group_bubbles() -> void:
 	_group_bubble_states.clear()
 	_word_groups.clear()
 	_pending_group_speech_events.clear()
+	_word_groups_revision = 0
+	_queued_group_bubble_events.clear()
 	_active_group_bubble_ids.clear()
+	_last_group_bubble_started_msec = -100000
 	if _performance_tracker != null:
 		_performance_tracker.call("set_active_group_bubble_count", 0)
 	if _field != null:
 		_field.call("set_word_groups", _word_groups, _active_group_bubble_ids)
+		_field.call("clear_unit_departures")
 
 
 func _on_unit_despawned(unit_id: String) -> void:
 	if _is_special_stage_active():
 		return
+	var departing_snapshot := _snapshot_for_unit_id(unit_id)
+	if not departing_snapshot.is_empty():
+		_field.call("show_unit_departure", departing_snapshot, 0.25)
 	_remove_unit_snapshot(unit_id)
 	_counterable_targets_dirty = true
 	_field.call("forget_unit_position", unit_id)

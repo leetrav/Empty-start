@@ -53,8 +53,9 @@
 ### PB-15 人口配置接线与当前规则
 
 - C 的 population_config.csv 使用 Keep File；PlanBContentCatalog.load_configuration() 验证后由 get_population_config() 返回副本。A 的 PlanBBattleHost.configure_modules() 已将该配置调用 B 的 configure_population_config() 实际写入 PlanBUnitSimulation。
-- B 模拟器应用30名中立、C额外播种槽0、中心间隔0.75秒、jitter ratio 0.25。A Host 仍独立持有 initial_opponent_seed_count=2，并显式调用 create_population(-1, 2)：B 创建30名中立加2个待播种槽，A播种后首个PK快照是30中立、2对手。
-- 补人使用独立随机流，set_random_seed() 同步重置棋子与补人随机流。自动补人上限为 maximum_population 减去可调 neutral_spawn_batch_reserve（默认8）；达到容量线后冻结周期，释放空间后继续。
+- B 模拟器应用30名中立、C额外播种槽0、中心间隔1.8秒、jitter ratio 0.25。A Host 仍独立持有 initial_opponent_seed_count=2，并显式调用 create_population(-1, 2)：B 创建30名中立加2个待播种槽，A播种后首个PK快照是30中立、2对手。
+- 补人使用独立随机流，set_random_seed() 同步重置棋子与补人随机流。自动补人上限为 maximum_population 减去可调 neutral_spawn_batch_reserve（PB-28默认20）；达到容量线后冻结周期，释放空间后继续。
+- 所有新生棋子的寿命在22～32秒内随机；感染和改口继续保留棋子原有年龄与寿命，寿命到期时人口立即结算。
 - 玩家与对手仍使用现有2/4/8完整批次接口；容量与PK来自实时单位总数和阵营快照。默认最大人口96保留。
 - PB-10 packed CSV smoke 已扩展为7份原表，增加 population_config.csv 与 battle_type_emoji.csv；Windows构建脚本的成功摘要预期同步为7。当前集成分支尚未执行PCK导出。
 - 30、50、80人口密度、正式场景切关/重开和玩家/对手批次仍待后续验收。
@@ -95,3 +96,8 @@
 - `alien` 分裂沿用完整快照和人口上限，最多生成2名子体；`kiwi` 按玩家现存信徒属性数量选主流属性，平局顺序为type_a→type_b→type_c，再从当前关合法未用敌方词池选择克制词，最多改写3名Kiwi单位并消费新word_id/word_order。
 - `frog` 以一名现存己方信徒为施法者，将120px内最近的最多3名中立观众改为同阵营、同完整词快照；`fox` 给最多3名现存己方信徒添加一次性reflect。合法的玩家/对手感染都消费接收单位的reflect保护。
 - D 消费 `counterattack_resolved` 中的技能名、影响数量、目标ID与结果消息；分裂/改口/转换/reflect仍通过现有单位更新信号和快照链展示。
+
+### PB-28 人口节奏、事件气泡与自然离场
+- 人口总上限96、开局30名中立加2名敌方不变；所有新单位寿命22～32秒，自动补人中心间隔1.8秒并保留±25%扰动。`neutral_spawn_batch_reserve=20`，给2/4/8颗发表批次预留空间。
+- 棋盘团体气泡由首次发表、同团首次成功感染和实际S1改口驱动；全棋盘同时最多1个，出现间隔至少1.8秒，显示约1.2秒。同团相同句子6秒内不重复，最多排队6条并按事件重要度丢弃积压项。
+- 气泡出现时确定主体位置，显示中保持该位置，尾巴继续跟随当前成员。寿命到期时Simulation即时移除单位，UI额外绘制0.25秒缩小淡出残影；残影不参与碰撞、感染或人口统计，阶段切换与重开会清除。

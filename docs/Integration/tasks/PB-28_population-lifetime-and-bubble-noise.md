@@ -1,6 +1,6 @@
 # PB-28 · 棋盘寿命与中立补人快调、复读降噪和自然消亡
 
-**状态：2026-10-20最新已确认P0需求；待功能开发。**
+**状态：实现与定向动态运行验证完成，2026-10-21；长时人口模拟按 Jackie 指示跳过，人工逐帧体验复核待做。**
 
 ## 开始前先阅读以下文档
 - `AGENTS.md`、`project.godot`、`known_traps.md`、`docs/Original/任务卡模板.md`。
@@ -33,7 +33,7 @@
 - B：`systems/plan_b/simulation/plan_b_unit_simulation.gd`、已存在参数消费者及最小模拟验证。
 - D：`ui/plan_b/plan_b_battle_ui.gd`（团体气泡调度）、`ui/plan_b/plan_b_unit_field.gd`（静态显示锚点与消亡表现）。
 - A：只处理必要的共同参数/真实事件接线；与PB-24同文件由总控协调串行合流。
-- 功能代码从共同基线**最新HEAD**建立独立分支与工作树，PR base对应共同基线；文档PR只交付卡片，旧任务中已实现的内容不再重做。
+- 本卡按Jackie 2026-10-20本轮指令，从最新 `main` HEAD建立独立分支与工作树，功能PR base为 `main`；此为单任务覆盖，其他新功能仍按共同基线执行。文档PR只交付卡片，旧任务中已实现的内容不再重做。
 
 ## Godot 开发环境
 - Godot **4.7.2**，**GDScript**；项目根 `Empty-start/`；Windows PC优先、兼顾Android；逻辑画布 **1920×1080**，关键UI再看1280×720。
