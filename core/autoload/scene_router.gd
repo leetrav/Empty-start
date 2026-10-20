@@ -307,10 +307,10 @@ func _fade_to(alpha: float, seconds: float) -> void:
 	await tween.finished
 
 # 每个正式顶层页面恰有一套暂停入口；保留Sandbox现有重开及指针取消接线。
-func _ensure_global_pause() -> void:
+func _ensure_global_pause() -> Node:
 	var scene: Node = get_tree().current_scene
 	if scene == null:
-		return
+		return null
 	var pause: Node = null
 	for candidate: Node in scene.find_children("*", "CanvasLayer", true, false):
 		var script: Script = candidate.get_script() as Script
@@ -321,13 +321,24 @@ func _ensure_global_pause() -> void:
 		var packed: PackedScene = load(PAUSE_MENU_PATH) as PackedScene
 		if packed == null:
 			push_error("SceneRouter: global pause scene could not be loaded")
-			return
+			return null
 		pause = packed.instantiate()
 		scene.add_child(pause)
 		pause.call("set_restart_available", false)
 	var callback: Callable = Callable(self, "_on_global_pause_changed")
 	if not pause.is_connected("paused_changed", callback):
 		pause.connect("paused_changed", callback)
+	return pause
+
+
+# 标题选项复用当前页面的唯一暂停/设置实例，避免两套样式与重复菜单。
+func open_title_settings() -> Node:
+	if is_transitioning():
+		return null
+	var pause := _ensure_global_pause()
+	if pause != null:
+		pause.call("open_settings")
+	return pause
 
 # 树暂停冻结玩法；漫画还要冻结自己的逐字/动画计时，音乐共用现有暂停接口。
 func _on_global_pause_changed(paused: bool) -> void:

@@ -1,7 +1,6 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://ui/main_menu/main_menu.gd" id="1"]
-[ext_resource type="PackedScene" path="res://ui/settings/settings_panel.tscn" id="2"]
 [ext_resource type="Texture2D" path="res://assets/ui/main_menu/cover_background.png" id="3"]
 [ext_resource type="Texture2D" path="res://assets/ui/main_menu/cover_hamster.png" id="4"]
 [ext_resource type="Texture2D" path="res://assets/ui/main_menu/cover_title_bo.png" id="5"]
@@ -203,5 +202,3 @@ script = ExtResource("8")
 caption = "返回菜单"
 text_size = 34
 
-[node name="SettingsPanel" parent="." instance=ExtResource("2")]
-unique_name_in_owner = true

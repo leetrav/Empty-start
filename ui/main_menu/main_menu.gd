@@ -5,7 +5,6 @@ const TITLE_MUSIC: StringName = &"music_title_cafe"
 @onready var _canvas: Control = $CoverCanvas
 @onready var _menu_actions: Control = %MenuActions
 @onready var _settings_button: Button = %SettingsButton
-@onready var _settings_panel: SettingsPanel = %SettingsPanel
 @onready var _continue_button: Button = %ContinueButton
 @onready var _replays: Control = %ReplayActions
 var _title_time: float = 0.0
@@ -26,7 +25,6 @@ func _ready() -> void:
 	%ReplayOpeningButton.pressed.connect(_replay_comic.bind(&"opening"))
 	%ReplayEndingButton.pressed.connect(_replay_comic.bind(&"ending"))
 	%ReplayBackButton.pressed.connect(_close_replays)
-	_settings_panel.closed.connect(_on_settings_panel_closed)
 	for group: Control in [_menu_actions, _replays]:
 		for child: Node in group.get_children():
 			if child is Button:
@@ -82,13 +80,19 @@ func _on_quit_button_pressed() -> void:
 	get_tree().quit()
 
 func _on_settings_button_pressed() -> void:
+	var settings := SceneRouter.open_title_settings()
+	if settings == null:
+		return
 	_menu_actions.hide()
 	_replays.hide()
-	_settings_panel.open()
+	if not settings.settings_closed.is_connected(_on_title_settings_closed):
+		settings.settings_closed.connect(_on_title_settings_closed)
 
-func _on_settings_panel_closed() -> void:
+
+# 设置返回只恢复原标题按钮，不重复创建场景或重播标题音乐。
+func _on_title_settings_closed() -> void:
 	_menu_actions.show()
-	_settings_button.grab_focus()
+	AudioManager.focus_ui_silently(_settings_button)
 
 # 回看集中到次级菜单，保留原路由及不改周目的语义。
 func _toggle_replays() -> void:

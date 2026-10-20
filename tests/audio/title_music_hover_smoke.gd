@@ -76,7 +76,7 @@ func _run() -> void:
 	var position: float = AudioManager.get_music_position()
 	menu._on_settings_button_pressed()
 	await _wait(0.12)
-	menu.get_node("%SettingsPanel").close()
+	menu.find_child("PauseMenu", true, false).call("_leave_audio_page")
 	print("TITLE_DIAG settings before=", position, " after=", AudioManager.get_music_position(), " event=", AudioManager.get_music_event_id())
 	_check(AudioManager.get_music_event_id() == &"music_title_cafe" and AudioManager.get_music_position() >= position - 0.08, "settings do not restart music")
 	var button: Button = menu.get_node("%StartButton") as Button

@@ -18,7 +18,6 @@ func _ready() -> void:
 	_sfx_slider.value_changed.connect(_on_sfx_volume_changed)
 	_ui_slider.value_changed.connect(_on_ui_volume_changed)
 	_fullscreen_check.toggled.connect(_on_fullscreen_toggled)
-	%MenuRaysQuality.item_selected.connect(SettingsManager.set_menu_rays_quality)
 	%ResetButton.pressed.connect(_on_reset_button_pressed)
 	%BackButton.pressed.connect(_on_back_button_pressed)
 	hide()
@@ -47,7 +46,6 @@ func _sync_from_manager() -> void:
 	_sfx_slider.set_value_no_signal(SettingsManager.sfx_volume)
 	_ui_slider.set_value_no_signal(SettingsManager.ui_volume)
 	_fullscreen_check.set_pressed_no_signal(SettingsManager.fullscreen)
-	%MenuRaysQuality.select(SettingsManager.menu_rays_quality)
 
 
 func _on_master_volume_changed(value: float) -> void:

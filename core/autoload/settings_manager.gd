@@ -1,7 +1,7 @@
 extends Node
 
 signal menu_rays_quality_changed(quality: int)
-var menu_rays_quality: int = 2
+var menu_rays_quality: int = 1
 
 const SETTINGS_FILE_PATH: String = "user://settings.cfg"
 
@@ -92,8 +92,8 @@ func load_settings() -> void:
 	sfx_volume = _read_volume_setting(SFX_VOLUME_KEY, DEFAULT_SFX_VOLUME)
 	ui_volume = _read_volume_setting(UI_VOLUME_KEY, DEFAULT_UI_VOLUME)
 	fullscreen = _read_fullscreen_setting()
-	var quality: Variant = _config.get_value(DISPLAY_SECTION, "menu_rays_quality", 2)
-	menu_rays_quality = quality if quality is int and quality >= 0 and quality <= 2 else 2
+	# 统一固定低配置，覆盖旧设置文件里的标准/关闭档位。
+	menu_rays_quality = 1
 	var seen: Variant = _config.get_value("story", "opening_intro_v2_seen", false)
 	opening_comic_seen = seen if seen is bool else false
 	var unlocked: Variant = _config.get_value("story", "ending_replay_unlocked", false)
@@ -176,7 +176,7 @@ func _set_default_values() -> void:
 	sfx_volume = DEFAULT_SFX_VOLUME
 	ui_volume = DEFAULT_UI_VOLUME
 	fullscreen = DEFAULT_FULLSCREEN
-	menu_rays_quality = 2
+	menu_rays_quality = 1
 
 
 func _read_volume_setting(key: String, default_value: float) -> float:
@@ -236,7 +236,7 @@ func _apply_fullscreen() -> void:
 	var window_mode: DisplayServer.WindowMode = DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 	DisplayServer.window_set_mode(window_mode)
 
-# 质量设置只作用于标题光效，通过信号立即更新已打开的菜单。
-func set_menu_rays_quality(value: int) -> void:
-	menu_rays_quality = clampi(value, 0, 2)
+# 保留旧调用接口；正式版本固定低档，不允许旧配置重新启用高档。
+func set_menu_rays_quality(_value: int) -> void:
+	menu_rays_quality = 1
 	menu_rays_quality_changed.emit(menu_rays_quality)

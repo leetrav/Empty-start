@@ -3,6 +3,7 @@ extends CanvasLayer
 ## 暂停菜单 V2：美术全屏底图 + 纯文字入口，内页以文字控制真实音量。
 signal restart_requested
 signal paused_changed(paused: bool)
+signal settings_closed
 
 const MENU_FONT: Font = preload("res://assets/fonts/ZCOOLKuaiLe-Regular.ttf")
 const COLOR_CONTINUE := Color("#64cf5c")
@@ -19,6 +20,7 @@ var _display_settings_button: Button
 var _main_menu_button: Button
 var _reload_button: Button
 var _volume_values: Dictionary = {}
+var _settings_only := false
 
 @onready var _overlay: Control = %Overlay
 @onready var _main_page: Control = %MainPage
@@ -99,7 +101,7 @@ func _build_audio_page() -> void:
 	_audio_actions.add_child(_make_text_button("返回", COLOR_EXIT, 49, 95, _leave_audio_page))
 
 
-# 保留新版美术音量内页，并复用设置面板提供全屏和光效档位，避免丢失已验收功能。
+# 新版音量页的更多设置保留全屏、重置等功能，统一读取SettingsManager。
 func _open_display_settings() -> void:
 	_audio_page.hide()
 	_settings_panel.open()
@@ -188,6 +190,9 @@ func _open_audio_page() -> void:
 func _leave_audio_page() -> void:
 	# 和旧 SettingsPanel 一样：修改立即生效，离开页面时持久化配置。
 	var result: Error = SettingsManager.save_settings()
+	if _settings_only:
+		resume_game()
+		return
 	_audio_page.hide()
 	_main_page.show()
 	if result != OK:
@@ -195,6 +200,16 @@ func _leave_audio_page() -> void:
 	else:
 		_feedback_label.text = ""
 	_settings_button.grab_focus()
+
+
+# 标题选项直接显示同一音量内页，以遮罩和隐藏标题按钮阻止穿透，不暂停音乐。
+func open_settings() -> void:
+	if get_tree().paused or SceneRouter.is_transitioning():
+		return
+	_previous_focus = get_viewport().gui_get_focus_owner()
+	_settings_only = true
+	_overlay.show()
+	_open_audio_page()
 
 
 func _save_completed_progress() -> void:
@@ -213,6 +228,13 @@ func _input(event: InputEvent) -> void:
 	# 所有暂停输入统一使用 Input Map 的 pause Action，不硬编码具体键位。
 	if SceneRouter.is_transitioning() or not event.is_action_pressed("pause") or event.is_echo():
 		return
+	if _settings_only:
+		if _settings_panel.visible:
+			_settings_panel.close()
+		else:
+			_leave_audio_page()
+		get_viewport().set_input_as_handled()
+		return
 	if get_tree().paused:
 		if _settings_panel.visible:
 			_settings_panel.close()
@@ -230,6 +252,7 @@ func pause_game() -> void:
 	if get_tree().paused or SceneRouter.is_transitioning():
 		return
 	_previous_focus = get_viewport().gui_get_focus_owner()
+	_settings_only = false
 	# 通关片尾可暂停和设置，但不能通过返回按钮跳过片尾。
 	_main_menu_button.disabled = SceneRouter.is_ending_performance_active()
 	_feedback_label.text = ""
@@ -243,6 +266,8 @@ func pause_game() -> void:
 
 
 func resume_game() -> void:
+	var was_settings_only := _settings_only
+	_settings_only = false
 	if _settings_panel.visible:
 		_settings_panel.close()
 	if _audio_page.visible:
@@ -258,6 +283,8 @@ func resume_game() -> void:
 	if is_instance_valid(_previous_focus) and _previous_focus.is_visible_in_tree():
 		_previous_focus.grab_focus()
 	_previous_focus = null
+	if was_settings_only:
+		settings_closed.emit()
 
 
 ## 休息房间只允许继续、存档、音量、返回；重开仅在战斗阶段显示。

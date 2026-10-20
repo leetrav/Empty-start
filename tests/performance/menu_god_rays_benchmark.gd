@@ -70,29 +70,22 @@ func _measure(mode: String, res: Vector2i) -> void:
 	results.append(row)
 	print("RAYS_RESULT ", JSON.stringify(row))
 	get_viewport().get_texture().get_image().save_png(OUT+"/"+mode+"_"+str(res.x)+".png")
-# 覆盖正式设置面板、保存重载、默认恢复和关闭时停止离屏渲染。
+# 正式版本固定低档；历史original/standard比较仍由上方测试夹具直接控制。
 func _settings_smoke() -> void:
 	rays.material = optimized
-	var panel: SettingsPanel = menu.get_node("%SettingsPanel")
-	panel.open()
-	var option: OptionButton = panel.get_node("%MenuRaysQuality")
-	option.select(0)
-	option.item_selected.emit(0)
-	_check(not rays.visible and rays.mask_viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED)
-	_check(SettingsManager.save_settings() == OK)
-	SettingsManager.set_menu_rays_quality(2)
-	SettingsManager.load_settings()
-	SettingsManager.set_menu_rays_quality(SettingsManager.menu_rays_quality)
-	_check(SettingsManager.menu_rays_quality == 0 and not rays.visible)
-	option.select(1)
-	option.item_selected.emit(1)
-	_check(rays.visible and rays.mask_viewport.size == Vector2i(480,270))
 	SettingsManager.reset_to_defaults()
-	_check(SettingsManager.menu_rays_quality == 2 and rays.mask_viewport.size == Vector2i(960,540))
-	panel.open()
+	_check(SettingsManager.menu_rays_quality == 1 and rays.mask_viewport.size == Vector2i(480,270))
+	_check(SettingsManager.save_settings() == OK)
+	SettingsManager.load_settings()
+	SettingsManager.apply_settings()
+	_check(SettingsManager.menu_rays_quality == 1 and rays.visible)
+	menu._on_settings_button_pressed()
+	var pause: Node = menu.find_child("PauseMenu", true, false)
+	_check(pause.get_node("%AudioPage").is_visible_in_tree())
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(OUT+"/settings.png")
-	print("RAYS_SETTINGS_PASS")# 相同光效时间和固定标题位置对照，限制平均色差，防止以削弱效果冒充优化。
+	pause.call("_leave_audio_page")
+	print("RAYS_SETTINGS_PASS")
 func _compare_images() -> void:
 	var before := Image.load_from_file(OUT+"/original_1920.png").get_data()
 	var after := Image.load_from_file(OUT+"/standard_1920.png").get_data()
