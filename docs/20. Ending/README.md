@@ -1,7 +1,7 @@
 # 20. Ending 结局系统任务拆分
 
 ## AU-03 结尾音乐（2026-10-19）
-EndingPage持有EndingMusicPresenter，共用AudioManager的music_ending_tendoh（天導 -Tendoh-）。正常神降临在最终进度满起曲，页面接管同曲不重播；保存结局回看或单独运行页面则淡入起曲，退出页面淡出。只增加音乐表现与署名，不改显示快照/判词/奖励计算。
+EndingPage持有EndingMusicPresenter，共用AudioManager的music_ending_tendoh（天導 -Tendoh-）。当前END-02在神谕停留并退字完成后起曲，页面接管同曲不重播；保存结局回看或单独运行页面则淡入起曲，退出页面淡出。不改显示快照、判词或奖励计算。
 
 ## PTF-05 独立结束序列与素材审核（2026-10-16）
 
@@ -171,4 +171,18 @@ Godot4.7.2实际加载确认九教名/四判词空值、三主图null和两类�
 
 ## END-01 当前通关衔接（2026-10-20）
 用户指定神谕后接原动画后两幕，再鸣谢。正式Sandbox完成调用SceneRouter.goto_ending(result,true)，ComicPlayer内部epilogue目的复用data/comics/ending.tres的P5/P6六分镜；结束后finish_ending_epilogue把同一快照交给EndingPage。原EndingSequenceView的独立注入接口保持，空data/ending/ending_comic.tres仍不代表正式内容来源。
-EndingPage先显示制作组和音频来源鸣谢，原圣典/判词保留在下方，可点击查看；保存结局仍直接打开该页，不重复奖励或重播漫画。结尾共用Tendoh不重置，神谕/漫画/鸣谢均支持Esc。详见END-01任务与日志。
+END-01的静态鸣谢与音乐时序已由下方END-02更新；原圣典/判词仍在保存成果的静态页面，不重复奖励。
+
+## END-02 当前正式片尾（2026-10-20）
+
+最终神谕7秒（0.8淡入、5.4阅读、0.8退字），文字退场时黑底保留至路由接管，避免重新露出PK。EndingMusicPresenter只消费completed起Tendoh，强调出现时不提前起结尾曲。原P5/P6六分镜按原时长自动播放，正常片尾不允许快进；独立开场/解锁回看保留原交互。
+
+EndingPage复用已有制作组与特别鸣谢Label/VBox，正常链下作为分组时间线播放；直接打开页面仍是静态鸣谢/圣典。结尾动画0.9秒慢慢淡出→纯黑停留至少0.6秒→制作组标题0.5秒渐显→全名单父VBox一起0.8秒渐显→停留8秒→整组0.6秒渐隐→特别鸣谢全组0.8秒渐显→停留12秒→0.6秒渐隐→原始标题界面整体1秒揭幕。同轮用户取消独立Thank you阶段，运行时不创建该文字节点。片尾背景与各边界遮幕均为纯黑。没有逐行延迟、逐字或新粒子；标题和名单是两个动画对象，组与组完全隐藏后才切换。Esc暂停Tween与阅读时间，正常片尾暂停菜单禁用返回，不增加跳过。
+
+制作分工：策划昂昂；程序昂昂、Akai；场景美术小火车；角色美术番茄牛腩；UI番茄牛腩、小火车；音乐音效Akai。按用户追加意见删除旧连写人名；鸣谢局部使用已有NotoSansSC-VF.ttf的wght500/650，其他界面主题不改。音频作者、十首曲名、出处和CC0音效信息完整保留。
+
+SceneRouter持有epilogue→credits→title资格状态，仅正式goto_ending(session,true)或真实ending_roll_pending存档可建立。静态goto_saved_ending/F6打开页面不建立资格。标题遮幕完全揭开、当前标题已存在后，才调用SettingsManager.mark_ending_replay_unlocked保存应用级story/ending_replay_unlocked，再清除并保存SaveData.ending_roll_pending。该事实跨重启、新周目、音量设置重置保留；旧存档字段缺失默认false，不从最终Boss记录或快照猜测解锁。
+
+中断的正常终局保留pending；标题“载入游戏”恢复原结尾动画与片尾，完整结束才解锁。已完成周目载入仍直接查看静态成果。标题资源只缓存PackedScene，不保留旧菜单节点；片尾始终由SceneRouter替换为一个原菜单，揭幕期间锁输入。详见END-02任务、日志与previews/END-02。
+
+神谕→结尾动画、结尾动画→制作组交接期间，AudioManager仅将两路音乐播放器及当时增益Tween临时改成可跨树暂停运行；路由结束恢复原模式，音效池与战斗处理不变。Esc继续通过既有set_music_paused显式暂停。不能只凭事件ID相同宣称无卡顿，END-02同时观测播放时钟与Music总线真实采样。

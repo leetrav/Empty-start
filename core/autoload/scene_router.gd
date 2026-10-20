@@ -27,6 +27,9 @@ var _transitioning: bool = false
 var _loading_layer: CanvasLayer
 var _failure_dialog: AcceptDialog
 var _loading_screen: Control
+# 只有正式终局或其未完成存档可以建立此链；静态鸣谢/回看不建立完成资格。
+var _completion_stage: StringName = &""
+var _main_menu_scene: PackedScene
 
 # 常驻层在暂停菜单和场景销毁期间继续工作，所有顶层入口共用同一过渡。
 func _ready() -> void:
@@ -60,6 +63,8 @@ func is_transitioning() -> bool:
 func goto_comic(kind: StringName, record_first_view: bool = false) -> Error:
 	if kind not in [&"intro", &"opening", &"ending"]:
 		return ERR_INVALID_PARAMETER
+	if kind == &"ending" and not SettingsManager.ending_replay_unlocked:
+		return ERR_UNAUTHORIZED
 	var error: Error = _request_scene(COMIC_SCENE_PATH)
 	if error == OK:
 		comic_kind = kind
@@ -67,6 +72,8 @@ func goto_comic(kind: StringName, record_first_view: bool = false) -> Error:
 	return error
 
 func goto_main_menu() -> Error:
+	if is_ending_performance_active():
+		return ERR_BUSY
 	return _request_scene(MAIN_MENU_SCENE_PATH)
 
 func goto_identity_setup() -> Error:
@@ -89,8 +96,11 @@ func goto_ending(session: EndingSession, play_epilogue: bool = false) -> Error:
 		_ending_session = session
 		_saved_ending_display.clear()
 		if play_epilogue:
+			_completion_stage = &"epilogue"
 			comic_kind = &"epilogue"
 			comic_record_first_view = false
+		else:
+			_completion_stage = &""
 	return error
 
 func _show_ending() -> void:
@@ -99,6 +109,8 @@ func _show_ending() -> void:
 		page.show_ending(_ending_session.get_display_data())
 	elif page != null and not _saved_ending_display.is_empty():
 		page.show_ending(_saved_ending_display)
+	if page != null and _completion_stage == &"credits":
+		page.start_credits_performance()
 
 # 已完成周目只呈现保存的显示快照，不再次执行奖励。
 func goto_saved_ending(display_data: Dictionary) -> Error:
@@ -108,7 +120,25 @@ func goto_saved_ending(display_data: Dictionary) -> Error:
 	if error == OK:
 		_ending_session = null
 		_saved_ending_display = display_data.duplicate(true)
+		_completion_stage = &""
 	return error
+
+# 仅恢复已保存的真实终局未完成标记；普通快照入口不能获得解锁资格。
+func resume_ending_roll() -> Error:
+	if SaveManager.data == null or not SaveManager.data.ending_roll_pending or SaveManager.data.ending_display_data.is_empty():
+		return ERR_UNCONFIGURED
+	var error := _request_scene(COMIC_SCENE_PATH)
+	if error == OK:
+		_ending_session = null
+		_saved_ending_display = SaveManager.data.ending_display_data.duplicate(true)
+		_completion_stage = &"epilogue"
+		comic_kind = &"epilogue"
+		comic_record_first_view = false
+	return error
+
+# 暂停菜单读取播放资格，仍保留继续/设置，不提供跳过片尾。
+func is_ending_performance_active() -> bool:
+	return _completion_stage in [&"epilogue", &"credits", &"title"]
 
 func reload_current_scene() -> Error:
 	var current: Node = get_tree().current_scene
@@ -120,6 +150,9 @@ func reload_current_scene() -> Error:
 func _request_scene(scene_path: String, override_scene: PackedScene = null) -> Error:
 	if _transitioning:
 		return ERR_BUSY
+	# 片尾返回复用已加载的标题资源，避免再次后台读取；只缓存资源，不保留或复制菜单节点。
+	if override_scene == null and scene_path == MAIN_MENU_SCENE_PATH:
+		override_scene = _main_menu_scene
 	if override_scene == null:
 		if not ResourceLoader.exists(scene_path, "PackedScene"):
 			push_error("SceneRouter: scene resource not found: %s" % scene_path)
@@ -140,11 +173,16 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 	var previous: Node = get_tree().current_scene
 	var previous_path: String = previous.scene_file_path if previous != null else ""
 	var comic_to_title: bool = previous_path == COMIC_SCENE_PATH and scene_path == MAIN_MENU_SCENE_PATH
+	var credits_to_title: bool = previous_path == ENDING_SCENE_PATH and scene_path == MAIN_MENU_SCENE_PATH and _completion_stage == &"title"
+	var movie_to_credits: bool = previous_path == COMIC_SCENE_PATH and scene_path == ENDING_SCENE_PATH and _completion_stage == &"credits"
 	var epilogue_boundary: bool = (previous_path == COMIC_SCENE_PATH and scene_path == ENDING_SCENE_PATH) or (scene_path == COMIC_SCENE_PATH and comic_kind == &"epilogue")
 	var cinematic: bool = comic_to_title or epilogue_boundary
 	var leaving_title: bool = previous_path == MAIN_MENU_SCENE_PATH
+	# 神谕→原结尾→制作组只交接同一播放器，树暂停不能造成可听见的音乐停顿。
+	AudioManager.set_music_handoff_processing(epilogue_boundary and AudioManager.get_music_event_id()==EndingMusicPresenter.EVENT and not was_paused)
+	_loading_screen.set("pure_black", epilogue_boundary or credits_to_title)
 	# 漫画收尾和标题离场先让音乐随遮幕淡完，不能先暂停音频Tween造成突然静音。
-	var music_exit: bool = (comic_to_title or leaving_title) and not was_paused
+	var music_exit: bool = (comic_to_title or leaving_title or credits_to_title) and not was_paused
 	if not music_exit:
 		get_tree().paused = true
 	_loading_screen.call("reset_indicator")
@@ -153,7 +191,7 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 	transition_started.emit(scene_path)
 	if music_exit:
 		AudioManager.fade_to_silence()
-	var fade_out: float = 0.45 if cinematic else (0.30 if music_exit else FADE_OUT_SECONDS)
+	var fade_out: float = 0.9 if movie_to_credits else (0.45 if cinematic else (0.30 if music_exit else FADE_OUT_SECONDS))
 	await _fade_to(1.0, fade_out)
 	get_tree().paused = true
 	var cover_start: int = Time.get_ticks_msec()
@@ -175,7 +213,9 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 	if scene == null:
 		await _recover_transition(scene_path, ERR_CANT_OPEN, was_paused)
 		return
-	var minimum_cover: float = 0.25 if cinematic else MINIMUM_COVER_SECONDS
+	if scene_path == MAIN_MENU_SCENE_PATH:
+		_main_menu_scene = scene
+	var minimum_cover: float = 0.6 if movie_to_credits else (0.25 if cinematic else MINIMUM_COVER_SECONDS)
 	var remaining: float = minimum_cover - float(Time.get_ticks_msec() - cover_start) / 1000.0
 	if remaining > 0.0:
 		await get_tree().create_timer(remaining, true, false, true).timeout
@@ -193,18 +233,25 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 		_show_ending()
 	# 保持新页面暂停直到淡入完成，避免对白/自动计时在黑幕下提前消耗。
 	_loading_screen.set("show_indicator", false)
-	await _fade_to(0.0, 0.60 if cinematic else FADE_IN_SECONDS)
+	# 常驻黑幕揭开整个原菜单，包括背景、标题、按钮和光效；不创建第二份菜单。
+	await _fade_to(0.0, 1.0 if credits_to_title else (0.60 if cinematic else FADE_IN_SECONDS))
 	_loading_screen.hide()
 	get_tree().paused = false
+	AudioManager.set_music_handoff_processing(false)
+	if credits_to_title:
+		_commit_ending_completion()
 	_transitioning = false
 	transition_finished.emit(scene_path)
 
 # 加载失败保留旧页面；允许玩家确认错误后继续操作，不让遮罩永久挡住输入。
 func _recover_transition(scene_path: String, error: Error, was_paused: bool) -> void:
+	# 加载失败不算播放完成；已落盘的pending使下次载入可重新完整播放。
+	_completion_stage = &""
 	push_error("SceneRouter: transition failed for %s: %s" % [scene_path, error_string(error)])
 	await _fade_to(0.0, FADE_IN_SECONDS)
 	_loading_screen.hide()
 	get_tree().paused = was_paused
+	AudioManager.set_music_handoff_processing(false)
 	_transitioning = false
 	transition_failed.emit(scene_path, error)
 	_failure_dialog.dialog_text = "场景未能载入，请返回主菜单重试。"
@@ -247,6 +294,31 @@ func _on_global_pause_changed(paused: bool) -> void:
 
 # 后两幕播放结束后交付同一终局快照，不重新接收奖励或重播动画。
 func finish_ending_epilogue() -> Error:
-	if _ending_session == null and _saved_ending_display.is_empty():
+	var current := get_tree().current_scene as ComicPlayer
+	if _completion_stage != &"epilogue" or current == null or comic_kind != &"epilogue":
 		return ERR_UNCONFIGURED
-	return _request_scene(ENDING_SCENE_PATH)
+	var error := _request_scene(ENDING_SCENE_PATH)
+	if error == OK:
+		_completion_stage = &"credits"
+	return error
+
+# 只有当前正常片尾页面的完成事实可以进入标题显现，重复回调被阶段守卫拒绝。
+func finish_ending_credits(page: EndingPage) -> Error:
+	if _completion_stage != &"credits" or page != get_tree().current_scene or page.get_credits_stage() != &"complete":
+		return ERR_UNCONFIGURED
+	var error := _request_scene(MAIN_MENU_SCENE_PATH)
+	if error == OK:
+		_completion_stage = &"title"
+	return error
+
+# 标题已完全显现才提交应用级事实；周目pending只在持久化成功后清除。
+func _commit_ending_completion() -> void:
+	var error := SettingsManager.mark_ending_replay_unlocked()
+	if error == OK and SaveManager.data != null and SaveManager.data.ending_roll_pending:
+		SaveManager.data.ending_roll_pending = false
+		if SaveManager.save_game() != OK:
+			SaveManager.data.ending_roll_pending = true
+			push_error("SceneRouter: 片尾完成后的周目标记保存失败，下次读档将重播片尾。")
+	elif error != OK:
+		push_error("SceneRouter: 结局回放解锁保存失败，保留未完成存档供下次重试。")
+	_completion_stage = &""

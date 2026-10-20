@@ -54,3 +54,7 @@ SceneRouter.goto_ending(session,play_epilogue=false)默认保持直接显示已�
 
 ### PK-01 PK单位与终点（2026-10-20）
 PlanBBattleHost.get_pk/pk_changed固定0～100百分点，get_pk_fraction固定0～1；PlanBBattleUI的Host读取按百分点解释，HUD.refresh_pk仍接受旧归一化调用。权威PK更新保留所有真实小增量，满值1/零值0分别触发原矛盾与失败入口；未满不能显示100%，正数不足1%显示<1%。见Integration/PK终点_PK-01日志及正式四Boss回归。
+
+### END-02 片尾完成资格与回放
+
+正常终局goto_ending(session,true)建立epilogue→credits→title资格，finish_ending_epilogue与finish_ending_credits(page)各校验当前页面/阶段；只有标题完整1秒揭幕后才提交应用级ending_replay_unlocked。goto_saved_ending及单独打开EndingPage不解锁。SaveData.ending_roll_pending保存正常片尾未结束事实；resume_ending_roll供载入中断周目，重播原结尾后走同一完整链。正常片尾保持Esc暂停/设置，返回菜单按钮禁用；标题渐显结束后恢复交互。标题PackedScene资源留存复用，始终只实例化一个菜单。见20.Ending的END-02。

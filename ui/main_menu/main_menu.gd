@@ -14,6 +14,7 @@ var _title_origins: Array[Vector2] = []
 
 # 主菜单组合既有路由与纯文字表现，不新增存档或音频服务。
 func _ready() -> void:
+	_refresh_ending_replay()
 	_continue_button.disabled = not SaveManager.has_save()
 	_continue_button.call("refresh_state")
 	_continue_button.tooltip_text = "" if not _continue_button.disabled else "暂无存档，请先开始游戏"
@@ -62,7 +63,7 @@ func _on_continue_button_pressed() -> void:
 	var error := SaveManager.load_game()
 	if error == OK:
 		if not SaveManager.data.ending_display_data.is_empty():
-			error = SceneRouter.goto_saved_ending(SaveManager.data.ending_display_data)
+			error = SceneRouter.resume_ending_roll() if SaveManager.data.ending_roll_pending else SceneRouter.goto_saved_ending(SaveManager.data.ending_display_data)
 		elif not SaveManager.data.identity_id.is_empty():
 			error = SceneRouter.goto_opening_room()
 		else:
@@ -102,6 +103,8 @@ func _close_replays() -> void:
 	%ReplayToggleButton.grab_focus()
 
 func _replay_comic(kind: StringName) -> void:
+	if kind == &"ending" and not SettingsManager.ending_replay_unlocked:
+		return
 	var error: Error = SceneRouter.goto_comic(kind)
 	if error != OK:
 		push_error("MainMenu: 无法播放漫画：%s" % error_string(error))
@@ -113,7 +116,14 @@ func _start_title_music() -> void:
 	AudioManager.change_music(TITLE_MUSIC, 1.5, 0.0, 1.5, false)
 
 func _on_title_revealed(_path: String) -> void:
+	_refresh_ending_replay()
 	_start_title_music()
+
+# 原按钮沿用禁用样式；只有应用级完成事实可以放行回看。
+func _refresh_ending_replay() -> void:
+	%ReplayEndingButton.disabled = not SettingsManager.ending_replay_unlocked
+	%ReplayEndingButton.tooltip_text = "" if SettingsManager.ending_replay_unlocked else "完整观看通关片尾后解锁"
+	%ReplayEndingButton.refresh_state()
 
 # 目标加载失败回到当前菜单时恢复标题曲。
 func _on_route_failed(_path: String, _error: Error) -> void:

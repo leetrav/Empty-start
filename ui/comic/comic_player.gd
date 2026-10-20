@@ -248,7 +248,8 @@ func _input(event: InputEvent) -> void:
 
 # 快进先补全当前文字，随后推进分镜；末格快进结束整段。
 func advance() -> void:
-	if _finished or _paused or _frame == null:
+	# 正常通关后两幕按配置播放；开场及已解锁回看保留原快进操作。
+	if _finished or _paused or _frame == null or _kind == &"epilogue":
 		return
 	var filled := false
 	for view in _caption_views:

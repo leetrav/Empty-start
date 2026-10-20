@@ -212,11 +212,22 @@ func set_music_paused(paused: bool) -> void:
 		if is_instance_valid(player):
 			player.stream_paused = paused
 	for tween: Tween in [_music_tween, _duck_tween]:
-		if tween != null and tween.is_valid():
+		# 完成回调所在帧Tween仍可能valid，但已不能play；只恢复仍有循环的暂停Tween。
+		if tween != null and tween.is_valid() and tween.get_loops_left() != 0:
 			if paused:
 				tween.pause()
-			else:
+			elif not tween.is_running():
 				tween.play()
+
+# 仅场景交接的短遮幕期间保持两路音乐及已有增益Tween运行；Esc仍显式暂停。
+# 结束交接恢复原继承模式，不把音效池或战斗系统改成常驻运行。
+func set_music_handoff_processing(enabled: bool) -> void:
+	for player: AudioStreamPlayer in [_music_player, _outgoing_music_player]:
+		if is_instance_valid(player):
+			player.process_mode = Node.PROCESS_MODE_ALWAYS if enabled else Node.PROCESS_MODE_INHERIT
+	for tween: Tween in [_music_tween, _duck_tween]:
+		if tween != null and tween.is_valid():
+			tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS if enabled else Tween.TWEEN_PAUSE_BOUND)
 
 
 # 使用配置时长淡出并停止，适用于离开当前音乐阶段。

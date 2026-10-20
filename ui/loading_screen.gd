@@ -3,6 +3,8 @@ extends Control
 # 常驻路由层只绘制轻量加载提示，不额外加载美术或写入存档。
 var show_indicator: bool = false
 var _elapsed: float = 0.0
+# 通关演出的遮幕与片尾使用同一纯黑，其他加载保留原底色。
+var pure_black: bool = false
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -20,7 +22,7 @@ func reset_indicator() -> void:
 	show_indicator = false
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), Color("100f0c"))
+	draw_rect(Rect2(Vector2.ZERO, size), Color.BLACK if pure_black else Color("100f0c"))
 	if not show_indicator:
 		return
 	var scale_factor: float = clampf(minf(size.x / 1280.0, size.y / 720.0), 0.65, 2.0)

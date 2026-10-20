@@ -231,3 +231,5 @@ INT-18B 在合并 #239/#240/#241/#242/#249 的资源与后端上再次完成有�
 
 ## END-01 用户确认的神谕停留（2026-10-20）
 15表及正式DecayConfig的final_emphasis_duration_seconds改为7秒，取代此前1.8秒；全屏正文淡入/淡出各0.8秒，完整停留5.4秒。最终强调收起底部阶段提示，正文保留真实锁定句与点击回应。表现层低于PauseMenu，Esc可冻结计时。完成后由Sandbox接原P5/P6动画，再到鸣谢/圣典页；不改变锁句、收束和EndingSession单次接收规则。详见20.Ending的END-01日志。
+
+END-02追加：退场只淡出Sentence，黑底不hide，随原场景保留到SceneRouter换场，避免淡出后露PK。结尾Tendoh只在神谕completed后起曲，不在emphasis开始时起曲；神谕原7秒时序与锁句规则不改。之后按20.Ending的分组片尾与标题显现流程完成。

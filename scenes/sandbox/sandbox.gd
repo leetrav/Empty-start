@@ -1244,6 +1244,7 @@ func _finish_divine_descent(result: EndingSession) -> void:
 		return
 	# 同一真实存档保留已提交倾向与奖励；写盘失败必须留下明确证据。
 	SaveManager.data.ending_display_data = result.get_display_data()
+	SaveManager.data.ending_roll_pending = true
 	SaveManager.data.current_scene = SceneRouter.ENDING_SCENE_PATH
 	var last_id := _run_state.get_current_level_profile().level_id
 	if not SaveManager.data.completed_normal_level_ids.has(last_id):

@@ -46,7 +46,8 @@ func play(sentence_text: String, fade_seconds: float, hold_seconds: float) -> vo
 	_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_STOP)
 	_tween.tween_property(_overlay, "modulate:a", 1.0, fade_seconds)
 	_tween.tween_interval(hold_seconds)
-	_tween.tween_property(_overlay, "modulate:a", 0.0, fade_seconds)
+	# 黑底保留到路由接管，只让神谕文字退场，避免露出底下的PK。
+	_tween.tween_property(_overlay.get_node("Sentence"), "modulate:a", 0.0, fade_seconds)
 	_tween.finished.connect(_on_tween_finished)
 
 
@@ -72,9 +73,8 @@ func respond_to_player(scale_value: float, return_seconds: float) -> void:
 	_response_tween.tween_property(sentence, "scale", Vector2.ONE, return_seconds)
 
 
-# 先收起遮罩再发出事实，组合方可以安全展示 Ending 页面。
+# 黑底随当前场景生命周期保留，由路由在全黑时替换场景。
 func _on_tween_finished() -> void:
-	_overlay.hide()
 	finished.emit()
 
 

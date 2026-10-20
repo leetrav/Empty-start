@@ -47,6 +47,8 @@ func pause_game() -> void:
 		return
 
 	_previous_focus = get_viewport().gui_get_focus_owner()
+	# 通关片尾可暂停和设置，但不能通过返回按钮跳过片尾。
+	%MainMenuButton.disabled = SceneRouter.is_ending_performance_active()
 	_pause_actions.show()
 	_overlay.show()
 	get_tree().paused = true
@@ -87,6 +89,8 @@ func _on_settings_panel_closed() -> void:
 
 
 func _on_main_menu_button_pressed() -> void:
+	if SceneRouter.is_ending_performance_active():
+		return
 	# 切换顶层场景前先解除暂停；失败时恢复可操作的暂停状态。
 	# 统一发出恢复事实，避免音乐/漫画仍保留暂停标记而带入下一页。
 	resume_game()
