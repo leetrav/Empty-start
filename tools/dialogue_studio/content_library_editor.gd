@@ -8,7 +8,7 @@ const TABLES: Array[Dictionary] = [
 		"text_key": "text",
 		"editable": ["text", "trigger_key", "line_order", "display_duration_s", "trigger_time_s", "enabled", "notes", "random_weight"],
 		"readonly": ["dialogue_id", "streamer_id", "story_config_id", "speaker_side", "trigger_type", "source_word_id", "priority"],
-		"numeric": ["display_duration_s", "trigger_time_s", "random_weight"]
+		"numeric": ["display_duration_s", "trigger_time_s", "line_order", "random_weight"]
 	},
 	{
 		"label": "19 · 直播评论",
@@ -63,7 +63,9 @@ var _source_picker: OptionButton
 var _search: LineEdit
 var _item_list: ItemList
 var _form: VBoxContainer
-var _preview: Label
+var _preview_panel: PanelContainer
+var _preview_text: RichTextLabel
+var _preview_meta: Label
 var _status: Label
 var _validation: Label
 var _switch_confirm: ConfirmationDialog
@@ -289,7 +291,9 @@ func _refresh_form() -> void:
 	var active := _selected_row >= 0 and _selected_row < _rows.size()
 	if not active:
 		_form.add_child(_label("从左侧选择一条文案。"))
-		_preview = null
+		_preview_panel = null
+		_preview_text = null
+		_preview_meta = null
 		_syncing = false
 		return
 
@@ -312,14 +316,67 @@ func _refresh_form() -> void:
 			continue
 		_add_editor_field(key, str(row.get(key, "")), key == text_key)
 	_form.add_child(HSeparator.new())
-	_form.add_child(_label("预览"))
-	_preview = _label(str(row.get(text_key, "")))
-	_preview.custom_minimum_size = Vector2(0, 90)
-	_preview.add_theme_font_size_override("font_size", 22)
-	_preview.add_theme_color_override("font_color", Color("#f3d89c"))
-	_form.add_child(_preview)
+	_form.add_child(_label("气泡预览（示意样式；实际运行效果以游戏渲染为准）"))
+	_build_preview(row, config)
 	_syncing = false
 	_update_validation()
+
+
+
+func _build_preview(row: Dictionary, config: Dictionary) -> void:
+	_preview_panel = PanelContainer.new()
+	_preview_panel.custom_minimum_size = Vector2(0, 132)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#292631")
+	panel_style.border_color = Color("#d7b86c")
+	panel_style.border_width_left = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_bottom = 2
+	panel_style.corner_radius_top_left = 16
+	panel_style.corner_radius_top_right = 16
+	panel_style.corner_radius_bottom_left = 16
+	panel_style.corner_radius_bottom_right = 16
+	panel_style.content_margin_left = 16
+	panel_style.content_margin_top = 12
+	panel_style.content_margin_right = 16
+	panel_style.content_margin_bottom = 12
+	if _table_index == 1:
+		panel_style.bg_color = Color("#202b37")
+		panel_style.border_color = Color("#83a6c9")
+	elif _table_index in [3, 4]:
+		panel_style.bg_color = Color("#342e23")
+		panel_style.border_color = Color("#d7b86c")
+	_preview_panel.add_theme_stylebox_override("panel", panel_style)
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 5)
+	_preview_meta = Label.new()
+	_preview_meta.add_theme_font_size_override("font_size", 12)
+	_preview_meta.add_theme_color_override("font_color", Color("#c5bda9"))
+	stack.add_child(_preview_meta)
+	_preview_text = RichTextLabel.new()
+	_preview_text.bbcode_enabled = true
+	_preview_text.fit_content = true
+	_preview_text.scroll_active = false
+	_preview_text.custom_minimum_size = Vector2(0, 68)
+	_preview_text.add_theme_font_size_override("normal_font_size", 20)
+	_preview_text.add_theme_color_override("default_color", Color("#fff4dd"))
+	stack.add_child(_preview_text)
+	_preview_panel.add_child(stack)
+	_form.add_child(_preview_panel)
+	_update_preview(row, config)
+
+
+func _update_preview(row: Dictionary, config: Dictionary) -> void:
+	if _preview_text == null or _preview_meta == null:
+		return
+	_preview_text.text = str(row.get(str(config["text_key"]), ""))
+	var parts: Array[String] = []
+	for key in ["speaker_side", "streamer_id", "trigger_type", "viewer_id", "audience_type", "side_scope", "tendency", "strength", "type"]:
+		var value := str(row.get(key, ""))
+		if not value.is_empty():
+			parts.append(value)
+	_preview_meta.text = " · ".join(parts) if not parts.is_empty() else str(config["label"])
 
 
 func _readonly_summary(row: Dictionary, config: Dictionary) -> String:
@@ -404,8 +461,8 @@ func _set_field_value(key: String, value: String) -> void:
 	_rows[_selected_row][key] = value
 	_dirty = true
 	var config: Dictionary = TABLES[_table_index]
-	if key == str(config["text_key"]) and _preview != null:
-		_preview.text = value
+	if _preview_text != null:
+		_update_preview(_rows[_selected_row], config)
 	_set_status("● 有未保存修改。点击「保存当前表」后才会写入 CSV。")
 	_update_validation()
 
