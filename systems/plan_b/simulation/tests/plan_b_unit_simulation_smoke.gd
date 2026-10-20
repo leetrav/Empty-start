@@ -196,7 +196,8 @@ func _test_counterattack_split() -> void:
 		"effect_id": &"split",
 		"effect_parameters": {"child_count": 2},
 	}
-	_check(_simulation.apply_counterattack_effect(request), "C split request applies through B public effect API")
+	var split_result: Dictionary = _simulation.apply_counterattack_effect(request)
+	_check(bool(split_result.get("ok", false)), "C split request applies through B public effect API")
 	var faction_counts: Dictionary = _simulation.get_faction_counts()
 	var snapshots: Array[Dictionary] = _simulation.get_unit_snapshots()
 	var copied_children: Array[Dictionary] = []
@@ -218,7 +219,8 @@ func _test_counterattack_split() -> void:
 			and child_snapshot.get("position") != source_snapshot.get("position"),
 			"split child inherits complete opponent word state"
 		)
-	_check(not _simulation.apply_counterattack_effect(request), "split refuses when the configured population ceiling is full")
+	var capacity_result: Dictionary = _simulation.apply_counterattack_effect(request)
+	_check(not bool(capacity_result.get("ok", false)), "split refuses when the configured population ceiling is full")
 
 
 ## 在上限 96 的密度下连续推进固定物理帧，日志记录实际帧时长供原型调参。
