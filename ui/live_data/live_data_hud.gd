@@ -48,6 +48,10 @@ var _comment_timer: float = 0.0
 var _comment_scroll_speed: float = 24.0
 var _comment_scroll_remainder: float = 0.0
 var _comment_row_cap: int = 5
+var _comment_fan_badge: Texture2D
+var _comment_fan_nameplate: Texture2D
+var _comment_nameplate_text_color: Color = Color("#33421f")
+const FAN_NAMEPLATE_VISIBLE_REGION := Rect2(10.0, 20.0, 316.0, 101.0)
 var _unknown_metrics: Dictionary = {}
 
 
@@ -98,6 +102,18 @@ func configure_formal_comments(rows: Array[Dictionary], parameters: Dictionary) 
 	process_mode = Node.PROCESS_MODE_PAUSABLE if pause_with_game else Node.PROCESS_MODE_ALWAYS
 
 
+## 粉丝徽章与横标由所属主播面板注入；显示实例仍由评论行负责。
+func configure_comment_branding(fan_badge: Texture2D, fan_nameplate: Texture2D, text_color: Color) -> void:
+	if (_comment_fan_badge == fan_badge and _comment_fan_nameplate == fan_nameplate
+			and _comment_nameplate_text_color == text_color):
+		return
+	_comment_fan_badge = fan_badge
+	_comment_fan_nameplate = fan_nameplate
+	_comment_nameplate_text_color = text_color
+	if _comment_list != null:
+		_clear_comment_rows()
+
+
 func _process(delta: float) -> void:
 	if _comment_rows.is_empty() or _comment_list == null:
 		return
@@ -136,24 +152,121 @@ func _add_next_comment() -> void:
 		return
 	var row: Dictionary = _pick_weighted_comment()
 	var viewer: Dictionary = row.get("viewer", {})
-	var show_badge := str(viewer.get("audience_type", "")) == "fan" and randf() <= float(_comment_params.get("comment_fan_probability", 0.45))
-	var badge := "[color=#ffd866]◆[/color] " if show_badge else ""
+	var display_name := str(viewer.get("display_name", viewer.get("viewer_id", "")))
+	if display_name.is_empty():
+		display_name = str(viewer.get("viewer_id", "路人"))
+	var comment_text := str(row.get("text", ""))
+	var is_fan := str(viewer.get("audience_type", "")) == "fan"
+	var badge_probability := clampf(float(_comment_params.get("comment_fan_probability", 0.45)), 0.0, 1.0)
+	var show_fan_nameplate := (
+		is_fan and _comment_fan_badge != null and _comment_fan_nameplate != null
+		and randf() <= badge_probability
+	)
+	if show_fan_nameplate:
+		_comment_list.add_child(_create_fan_nameplate_row(display_name, comment_text))
+	else:
+		_comment_list.add_child(_create_plain_comment_row(display_name, comment_text))
+	while _comment_list.get_child_count() > _comment_row_cap:
+		var oldest: Node = _comment_list.get_child(0)
+		_comment_list.remove_child(oldest)
+		oldest.queue_free()
+
+
+## 粉丝行按 PA-21 532×144 横标原比例绘制；徽章放入内圆，完整“昵称：正文”限于右侧文本安全区。
+func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Control:
+	var row_width := _comment_list.size.x
+	if row_width <= 0.0:
+		row_width = maxf(size.x - 32.0, 160.0)
+	# PA-21 源图在 532×144 画布上的有效横标范围是 (10,20)-(326,121)，右侧还有透明留白。
+	# 裁到真实标牌后再等比放大到评论宽度，文字不会跑进透明区。
+	var row_height: float = row_width * FAN_NAMEPLATE_VISIBLE_REGION.size.y / FAN_NAMEPLATE_VISIBLE_REGION.size.x
+	var row := Control.new()
+	row.name = "FanNameplateCommentRow"
+	row.custom_minimum_size = Vector2(0.0, row_height)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.clip_contents = true
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var nameplate := TextureRect.new()
+	var visible_nameplate := AtlasTexture.new()
+	visible_nameplate.atlas = _comment_fan_nameplate
+	visible_nameplate.region = FAN_NAMEPLATE_VISIBLE_REGION
+	nameplate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	nameplate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	nameplate.stretch_mode = TextureRect.STRETCH_SCALE
+	nameplate.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	nameplate.texture = visible_nameplate
+	nameplate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(nameplate)
+
+	# PA-21 横标左侧是直径144px的徽章位；缩放后再留出安全边距。
+	var badge_size: float = row_height * 0.68
+	var badge := TextureRect.new()
+	var badge_center := Vector2(row_width * 0.17, row_height * 0.51)
+	badge.position = badge_center - Vector2.ONE * badge_size * 0.5
+	badge.size = Vector2.ONE * badge_size
+	badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	badge.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	badge.texture = _comment_fan_badge
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(badge)
+
+	var text_rect := Rect2(
+		Vector2(row_width * 0.34, row_height * 0.12),
+		Vector2(row_width * 0.62, row_height * 0.76)
+	)
+	var safe_name := display_name.replace("[", "[lb]")
+	var safe_text := comment_text.replace("[", "[lb]")
+	var plain_text := "%s：%s" % [display_name, comment_text]
+	var font_size := _fit_comment_text_font_size(plain_text, text_rect.size, int(_comment_params.get("comment_font_size_px", 20)))
 	var label := RichTextLabel.new()
+	label.position = text_rect.position
+	label.size = text_rect.size
+	label.custom_minimum_size = text_rect.size
+	label.bbcode_enabled = true
+	label.fit_content = false
+	label.scroll_active = false
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.name = "CommentText"
+	label.add_theme_font_size_override("normal_font_size", font_size)
+	var text_color := "#" + _comment_nameplate_text_color.to_html(false)
+	label.text = "[b][color=%s]%s[/color][/b]：[color=%s]%s[/color]" % [text_color, safe_name, text_color, safe_text]
+	row.add_child(label)
+	return row
+
+
+## 路人或缺少粉丝素材时保留纯文字评论，正文仍可完整换行。
+func _create_plain_comment_row(display_name: String, comment_text: String) -> RichTextLabel:
+	var safe_name := display_name.replace("[", "[lb]")
+	var safe_text := comment_text.replace("[", "[lb]")
+	var label := RichTextLabel.new()
+	label.name = "PlainCommentRow"
 	label.bbcode_enabled = true
 	label.fit_content = true
 	label.scroll_active = false
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.custom_minimum_size = Vector2(0.0, float(_comment_params.get("comment_font_size_px", 20)) * 1.5)
-	label.add_theme_font_size_override("normal_font_size", int(_comment_params.get("comment_font_size_px", 20)))
-	var safe_name := str(viewer.get("display_name", "")).replace("[", "[lb]")
-	var safe_text := str(row.get("text", "")).replace("[", "[lb]")
-	label.text = "%s[color=#b8c0ce]%s[/color]  %s" % [badge, safe_name, safe_text]
-	_comment_list.add_child(label)
-	while _comment_list.get_child_count() > _comment_row_cap:
-		var oldest: Node = _comment_list.get_child(0)
-		_comment_list.remove_child(oldest)
-		oldest.queue_free()
+	var font_size: int = int(_comment_params.get("comment_font_size_px", 20))
+	label.custom_minimum_size = Vector2(0.0, float(font_size) * 1.5)
+	label.add_theme_font_size_override("normal_font_size", font_size)
+	label.text = "[color=#b8c0ce]%s[/color]  %s" % [safe_name, safe_text]
+	return label
+
+
+## 长 ID 和正文先尝试策划字号；空间不足时逐级缩小到可读下限以完整装入横标文本区。
+func _fit_comment_text_font_size(text: String, bounds: Vector2, preferred_size: int) -> int:
+	var font: Font = get_theme_default_font()
+	if font == null:
+		font = ThemeDB.fallback_font
+	var font_size: int = maxi(preferred_size, 12)
+	var minimum_font_size: int = 12
+	while font_size > minimum_font_size:
+		var measured: Vector2 = font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, bounds.x, font_size)
+		if measured.y <= bounds.y:
+			break
+		font_size -= 1
+	return font_size
 
 
 func _pick_weighted_comment() -> Dictionary:
