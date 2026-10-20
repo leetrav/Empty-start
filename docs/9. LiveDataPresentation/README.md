@@ -165,3 +165,7 @@ Sandbox 的 `FormalSheetRuntimeConsumer` 按 `viewer_id` 关联 19_直播评论�
 SHEET-C 将 22 表的 `comment_pause_with_game` 与 `comment_updates_business_counter` 按原生布尔值读入，其余 `value` 按数值读入。当前批准值 `comment_updates_business_counter=false`，滚动评论仍仅作展示；HUD 用布尔值控制暂停，用已映射数值控制间隔、行数、滚速、行距、字号和粉丝标识概率。权重抽样继续使用 19 表评论权重乘以 25 表账号权重。集成模拟验证玩家侧 18 条、Alien 对手侧 16 条候选均能产出非空昵称。
 
 目前 02 表四行的 `background_asset_id` 和 `fan_badge_asset_id` 均为空；消费者只按主播稳定 ID 查找仓库中已存在的 `assets/environment/live/<streamer_id>/background.png`，未找到时保留空背景。四名主播中只有 Alien、Kiwi、Frog 有该路径，Fox 缺图。粉丝牌无对手资源映射时不显示。
+
+## UI-LIVE-01 正式直播侧栏布局（2026-10-21）
+
+`LiveDataHud.horizontal_metrics`默认为false，正式Plan B主播面板在入树前启用true：四项指标单行横排，玩家/对手原图标顺序与未知值语义不变。横排模式的评论区域在底部预留手绘圆角空间并裁剪溢出；不影响评论生成或指标Resource。主播名进入顶部框，复读汇总不再展示。详见`docs/Integration/直播侧栏_UI-LIVE-01_2026-10-21_log.md`及两档正式GUI截图。
