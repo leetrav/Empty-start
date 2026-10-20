@@ -36,7 +36,9 @@ var _active_opponent_sprite_id := "alien"
 var _word_groups: Array = []
 var _active_group_bubble_ids: Dictionary = {}
 var _group_bubble_layouts: Dictionary = {}
+var _group_bubble_anchor_rects: Dictionary = {}
 var _group_bubble_styles: Dictionary = {}
+var _departing_units: Dictionary = {}
 var _word_group_signature := ""
 var _selected_unit_id := ""
 var _hovered_unit_id := ""
@@ -101,6 +103,7 @@ func _ready() -> void:
 # 主题字体更换后清除缓存；下一次布局读取新字体实际字宽。
 func _on_theme_changed() -> void:
 	_group_bubble_layouts.clear()
+	_group_bubble_anchor_rects.clear()
 	queue_redraw()
 
 
@@ -195,6 +198,27 @@ func forget_unit_position(unit_id: String) -> void:
 	queue_redraw()
 
 
+## 人口已由模拟器结算；这里仅保留不参与碰撞的短暂绘制快照。
+func show_unit_departure(snapshot: Dictionary, duration_seconds: float = 0.25) -> void:
+	var unit_id := str(snapshot.get("unit_id", ""))
+	if unit_id.is_empty():
+		return
+	_departing_units[unit_id] = {
+		"snapshot": snapshot.duplicate(true),
+		"center": _display_local_position(unit_id, snapshot),
+		"started_at_msec": Time.get_ticks_msec(),
+		"duration_seconds": clampf(duration_seconds, 0.2, 0.3),
+	}
+	queue_redraw()
+
+
+func clear_unit_departures() -> void:
+	if _departing_units.is_empty():
+		return
+	_departing_units.clear()
+	queue_redraw()
+
+
 func reset_physics_interpolation_history() -> void:
 	_physics_unit_ids = PackedInt32Array()
 	_physics_previous_positions = PackedVector2Array()
@@ -219,7 +243,17 @@ func set_word_groups(groups: Array, active_bubble_ids: Dictionary) -> void:
 		_word_group_signature = signature
 		_group_bubble_layouts.clear()
 	_word_groups = groups
-	_active_group_bubble_ids = active_bubble_ids
+	_active_group_bubble_ids = active_bubble_ids.duplicate()
+	var active_anchor_ids: Dictionary = {}
+	for group_id in _active_group_bubble_ids:
+		var active_value: Variant = _active_group_bubble_ids[group_id]
+		var anchor_id := str(group_id)
+		if active_value is Dictionary:
+			anchor_id = str(active_value.get("anchor_id", group_id))
+		active_anchor_ids[anchor_id] = true
+	for anchor_id in _group_bubble_anchor_rects.keys():
+		if not active_anchor_ids.has(anchor_id):
+			_group_bubble_anchor_rects.erase(anchor_id)
 	queue_redraw()
 	if _performance_tracker != null:
 		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_GROUP_SNAPSHOT, Time.get_ticks_usec() - tracker_start_usec, groups.size(), active_bubble_ids.size())
@@ -307,6 +341,7 @@ func set_unit_layer_visible(visible: bool) -> void:
 		_selected_unit_id = ""
 		_feedback_pulses.clear()
 		_contact_feedback.clear()
+		clear_unit_departures()
 	queue_redraw()
 
 
@@ -368,6 +403,15 @@ func _process(_delta: float) -> void:
 	if (had_transient_feedback or not _feedback_pulses.is_empty()
 			or not _contact_feedback.is_empty() or not _rephrase_feedback.is_empty()):
 		queue_redraw()
+	var departure_removed := false
+	for unit_id in _departing_units.keys():
+		var departure: Dictionary = _departing_units[unit_id]
+		var age_seconds := float(now - int(departure.get("started_at_msec", now))) / 1000.0
+		if age_seconds >= float(departure.get("duration_seconds", 0.25)):
+			_departing_units.erase(unit_id)
+			departure_removed = true
+	if not _departing_units.is_empty() or departure_removed:
+		queue_redraw()
 
 
 func _draw() -> void:
@@ -400,6 +444,7 @@ func _draw() -> void:
 	_frame_unit_centers.clear()
 	for snapshot in _snapshots:
 		_draw_unit(snapshot)
+	_draw_departing_units()
 	_draw_rephrase_feedback()
 	if _performance_tracker != null:
 		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UNIT_DRAW_BATCH, Time.get_ticks_usec() - unit_draw_start_usec, _snapshots.size())
@@ -407,6 +452,36 @@ func _draw() -> void:
 	if _performance_tracker != null:
 		_performance_tracker.call("set_ui_draw_work", _snapshots.size(), _last_drawn_group_bubbles, _last_group_tail_candidates)
 		_performance_tracker.call("record_section", PB14_PERFORMANCE_TRACKER_SCRIPT.SECTION_UI_DRAW, Time.get_ticks_usec() - tracker_start_usec, _snapshots.size(), _last_drawn_group_bubbles + _last_group_tail_candidates)
+
+
+func _draw_departing_units() -> void:
+	for unit_id_value in _departing_units:
+		var departure: Dictionary = _departing_units[unit_id_value]
+		var snapshot: Dictionary = departure.get("snapshot", {})
+		if snapshot.is_empty():
+			continue
+		var duration_seconds := maxf(float(departure.get("duration_seconds", 0.25)), 0.01)
+		var age_seconds := float(Time.get_ticks_msec() - int(departure.get("started_at_msec", 0))) / 1000.0
+		var progress := clampf(age_seconds / duration_seconds, 0.0, 1.0)
+		var alpha := 1.0 - progress
+		var center: Vector2 = departure.get("center", Vector2.ZERO)
+		var radius := _visual_radius(snapshot) * lerpf(1.0, 0.88, progress)
+		var team := str(snapshot.get("team", "neutral"))
+		var tint: Color = TEAM_COLORS.get(team, TEAM_COLORS["neutral"])
+		tint.a = tint.a * alpha
+		var sprite_id := _sprite_id_for(snapshot, team)
+		var token_texture: Texture2D = _unit_sprite_textures.get(sprite_id) as Texture2D
+		if token_texture != null:
+			draw_texture_rect(
+				token_texture,
+				Rect2(center - Vector2.ONE * radius, Vector2.ONE * radius * 2.0),
+				false,
+				Color(1.0, 1.0, 1.0, alpha)
+			)
+		else:
+			draw_circle(center, radius + 1.0, Color("#07121b", alpha))
+			draw_circle(center, radius, tint)
+		draw_arc(center, radius + 1.25, 0.0, TAU, 20, tint, 1.5, true)
 
 
 func _draw_unit(snapshot: Dictionary) -> void:
@@ -569,6 +644,14 @@ func _draw_group_bubbles() -> void:
 			continue
 		var word_id := str(group.get("word_id", ""))
 		var phrase := _group_text(group, word_id)
+		var bubble_anchor_id := group_id
+		var active_phrase_value: Variant = _active_group_bubble_ids.get(group_id, "")
+		if active_phrase_value is Dictionary:
+			phrase = str(active_phrase_value.get("phrase", phrase))
+			bubble_anchor_id = str(active_phrase_value.get("anchor_id", group_id))
+		elif active_phrase_value is String or active_phrase_value is StringName:
+			if not str(active_phrase_value).is_empty():
+				phrase = str(active_phrase_value)
 		if word_id.is_empty() or phrase.is_empty() or str(group.get("team", "neutral")) == "neutral":
 			continue
 		var layout_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
@@ -609,9 +692,14 @@ func _draw_group_bubbles() -> void:
 		center /= float(positions_by_id.size())
 		var bubble_width := float(layout.get("width", 100.0))
 		var bubble_height := float(layout.get("height", 48.0))
-		var bubble_rect := _choose_group_bubble_rect(
-			center, group_top_y, group_bottom_y, bubble_width, bubble_height, member_ids, placed_bubble_rects
-		)
+		var bubble_rect: Rect2
+		if _group_bubble_anchor_rects.has(bubble_anchor_id):
+			bubble_rect = _group_bubble_anchor_rects[bubble_anchor_id]
+		else:
+			bubble_rect = _choose_group_bubble_rect(
+				center, group_top_y, group_bottom_y, bubble_width, bubble_height, member_ids, placed_bubble_rects
+			)
+			_group_bubble_anchor_rects[bubble_anchor_id] = bubble_rect
 		placed_bubble_rects.append(bubble_rect)
 		var style: StyleBoxFlat = _get_group_bubble_style(str(group.get("team", "player")))
 		_draw_group_bubble_tails(bubble_rect, layout, positions_by_id, style.bg_color, style.border_color, center)

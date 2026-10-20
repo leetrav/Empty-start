@@ -39,12 +39,12 @@ const SPAWN_BURST_DURATION_SECONDS: float = 0.5
 @export_range(1, 512, 1) var maximum_population: int = 96
 @export_range(0, 500, 1) var initial_neutral_count: int = 30
 @export_range(0, 32, 1) var initial_seed_slot_count: int = 2
-@export_range(0, 32, 1) var neutral_spawn_batch_reserve: int = 8
-@export_range(0.05, 10.0, 0.05) var neutral_spawn_interval_seconds: float = 0.75
+@export_range(0, 32, 1) var neutral_spawn_batch_reserve: int = 20
+@export_range(0.05, 10.0, 0.05) var neutral_spawn_interval_seconds: float = 1.8
 ## 以现有补人节奏为中心扰动到达时间；固定随机 seed 时，补人时刻可重复。
 @export_range(0.0, 0.95, 0.05) var neutral_spawn_jitter_ratio: float = 0.25
-@export_range(1.0, 180.0, 0.5) var lifespan_min_seconds: float = 53.0
-@export_range(1.0, 180.0, 0.5) var lifespan_max_seconds: float = 77.0
+@export_range(1.0, 180.0, 0.5) var lifespan_min_seconds: float = 22.0
+@export_range(1.0, 180.0, 0.5) var lifespan_max_seconds: float = 32.0
 
 @export_group("Collision")
 @export_range(2.0, 32.0, 1.0) var unit_collision_radius: float = 32.0
@@ -1690,7 +1690,7 @@ func _despawn_expired_units() -> void:
 		_neighbor_grid_dirty = true
 
 
-## 以随机间隔补充中立观众；到达批次保留线后暂停计时，留出完整8颗发表空间。
+## 以随机间隔补充中立观众；到达保留线后暂停计时，为发表批次保留20个人口名额。
 func _update_neutral_replenishment(delta: float) -> void:
 	var neutral_spawn_population_limit: int = maxi(
 		maximum_population - neutral_spawn_batch_reserve,
