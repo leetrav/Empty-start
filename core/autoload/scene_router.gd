@@ -79,15 +79,18 @@ func goto_game() -> Error:
 	return _request_scene(GAME_SCENE_PATH, game_scene_override)
 
 # 请求被接受后保存显示参数；实际创建页面后再交付结局快照。
-func goto_ending(session: EndingSession) -> Error:
+func goto_ending(session: EndingSession, play_epilogue: bool = false) -> Error:
 	if session == null or not session.is_received():
 		return ERR_INVALID_PARAMETER
 	if _ending_session == session:
 		return ERR_ALREADY_IN_USE
-	var error: Error = _request_scene(ENDING_SCENE_PATH)
+	var error: Error = _request_scene(COMIC_SCENE_PATH if play_epilogue else ENDING_SCENE_PATH)
 	if error == OK:
 		_ending_session = session
 		_saved_ending_display.clear()
+		if play_epilogue:
+			comic_kind = &"epilogue"
+			comic_record_first_view = false
 	return error
 
 func _show_ending() -> void:
@@ -137,6 +140,8 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 	var previous: Node = get_tree().current_scene
 	var previous_path: String = previous.scene_file_path if previous != null else ""
 	var comic_to_title: bool = previous_path == COMIC_SCENE_PATH and scene_path == MAIN_MENU_SCENE_PATH
+	var epilogue_boundary: bool = (previous_path == COMIC_SCENE_PATH and scene_path == ENDING_SCENE_PATH) or (scene_path == COMIC_SCENE_PATH and comic_kind == &"epilogue")
+	var cinematic: bool = comic_to_title or epilogue_boundary
 	var leaving_title: bool = previous_path == MAIN_MENU_SCENE_PATH
 	# 漫画收尾和标题离场先让音乐随遮幕淡完，不能先暂停音频Tween造成突然静音。
 	var music_exit: bool = (comic_to_title or leaving_title) and not was_paused
@@ -148,7 +153,7 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 	transition_started.emit(scene_path)
 	if music_exit:
 		AudioManager.fade_to_silence()
-	var fade_out: float = 0.45 if comic_to_title else (0.30 if music_exit else FADE_OUT_SECONDS)
+	var fade_out: float = 0.45 if cinematic else (0.30 if music_exit else FADE_OUT_SECONDS)
 	await _fade_to(1.0, fade_out)
 	get_tree().paused = true
 	var cover_start: int = Time.get_ticks_msec()
@@ -170,7 +175,7 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 	if scene == null:
 		await _recover_transition(scene_path, ERR_CANT_OPEN, was_paused)
 		return
-	var minimum_cover: float = 0.25 if comic_to_title else MINIMUM_COVER_SECONDS
+	var minimum_cover: float = 0.25 if cinematic else MINIMUM_COVER_SECONDS
 	var remaining: float = minimum_cover - float(Time.get_ticks_msec() - cover_start) / 1000.0
 	if remaining > 0.0:
 		await get_tree().create_timer(remaining, true, false, true).timeout
@@ -188,7 +193,7 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 		_show_ending()
 	# 保持新页面暂停直到淡入完成，避免对白/自动计时在黑幕下提前消耗。
 	_loading_screen.set("show_indicator", false)
-	await _fade_to(0.0, 0.60 if comic_to_title else FADE_IN_SECONDS)
+	await _fade_to(0.0, 0.60 if cinematic else FADE_IN_SECONDS)
 	_loading_screen.hide()
 	get_tree().paused = false
 	_transitioning = false
@@ -239,3 +244,9 @@ func _on_global_pause_changed(paused: bool) -> void:
 	var scene: Node = get_tree().current_scene
 	if scene != null and scene.has_method("set_playback_paused"):
 		scene.call("set_playback_paused", paused)
+
+# 后两幕播放结束后交付同一终局快照，不重新接收奖励或重播动画。
+func finish_ending_epilogue() -> Error:
+	if _ending_session == null and _saved_ending_display.is_empty():
+		return ERR_UNCONFIGURED
+	return _request_scene(ENDING_SCENE_PATH)

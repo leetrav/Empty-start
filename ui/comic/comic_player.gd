@@ -24,6 +24,7 @@ var _text_elapsed: float = 0.0
 var _finished: bool = false
 var _kind: StringName
 var _record_first_view: bool = false
+var _ending_music: EndingMusicPresenter
 var _effects: ComicEffects
 var _caption_views: Array[ComicCaptionView] = []
 var _elapsed: float = 0.0
@@ -35,7 +36,7 @@ func _ready() -> void:
 	_record_first_view = SceneRouter.comic_record_first_view
 	# 开场仅播放 P1–P4；P5–P6 属于通关结局，回看入口按 kind 分开。
 	_sequence = ComicSequence.new()
-	_sequence.frames.append_array(ENDING.frames if _kind == &"ending" else OPENING.frames)
+	_sequence.frames.append_array(ENDING.frames if _kind in [&"ending", &"epilogue"] else OPENING.frames)
 	var background := ColorRect.new()
 	background.color = Color(0.07, 0.07, 0.025)
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -81,6 +82,12 @@ func _frame_duration(frame: ComicFrame) -> float:
 
 # 各回看入口重置曲目；后两幕从动态版前四幕的实际配置时长继续。
 func _start_comic_music() -> void:
+	# 通关后两幕延续神谕/结尾曲；独立回看仍沿用原漫画音乐。
+	if _kind == &"epilogue":
+		_ending_music = EndingMusicPresenter.new()
+		add_child(_ending_music)
+		_ending_music.start()
+		return
 	var start_seconds: float = 0.0
 	if _kind == &"ending":
 		for frame in OPENING.frames:
@@ -98,19 +105,21 @@ func get_playback_control() -> ComicPanelPlaybackControl:
 # 隐藏页面时冻结计时、动画及逐字进度，回到页面后继续。
 func set_playback_paused(value: bool) -> void:
 	_paused = value
+	if is_instance_valid(_ending_music):
+		_ending_music.set_paused(value)
 	if AudioManager.get_music_event_id() == MUSIC_EVENT:
 		AudioManager.set_music_paused(value)
 	if is_instance_valid(_effects):
 		_effects.paused = value
 	if value:
 		_control.pause_playback()
-		if _animation != null:
+		if _animation != null and _animation.is_valid():
 			_animation.pause()
 		if is_instance_valid(_sound):
 			_sound.stop()
 	else:
 		_control.resume_playback()
-		if _animation != null:
+		if _animation != null and _animation.is_valid():
 			_animation.play()
 
 # 固定原图坐标，以等比缩放及居中留边适配任意窗口。
@@ -270,9 +279,13 @@ func _finish(reason: StringName) -> void:
 	if _record_first_view and _kind == &"intro":
 		SettingsManager.mark_opening_comic_seen()
 	playback_finished.emit(reason)
-	var error := SceneRouter.goto_main_menu()
+	if is_instance_valid(_ending_music):
+		_ending_music.set_handoff(true)
+	var error := SceneRouter.finish_ending_epilogue() if _kind == &"epilogue" else SceneRouter.goto_main_menu()
 	if error != OK:
-		push_error("ComicPlayer: 返回主菜单失败：%s" % error_string(error))
+		if is_instance_valid(_ending_music):
+			_ending_music.set_handoff(false)
+		push_error("ComicPlayer: 漫画完成路由失败：%s" % error_string(error))
 
 # 中断时停止本场景拥有的动画及音频，不影响其他播放池。
 func _stop_animation_and_sound() -> void:
@@ -289,7 +302,7 @@ func _stop_animation_and_sound() -> void:
 		_canvas.remove_child(_transition)
 		_transition.queue_free()
 		_transition = null
-	if _animation != null:
+	if _animation != null and _animation.is_valid():
 		_animation.kill()
 		_animation = null
 	if is_instance_valid(_sound):

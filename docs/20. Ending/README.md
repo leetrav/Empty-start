@@ -168,3 +168,7 @@ EN-06～09 完成页面数据和显示。
 独立通关漫画配置路径为 `data/ending/ending_comic.tres`，当前ComicSequence.frames为空；复导保留人工填入的正式帧。历史 `data/comics/ending.tres` 仍属开场P5/P6，不能据其非空宣称通关漫画已交付。INT-16在独立漫画未交付时继续 `SceneRouter.goto_ending(session)`；未来显式序列入口由流程Owner接线。
 
 Godot4.7.2实际加载确认九教名/四判词空值、三主图null和两类漫画隔离；整局转场未在本卡验收。见[INT-17E日志](../Integration/生产集成_INT-17E_2026-10-16_log.md)。
+
+## END-01 当前通关衔接（2026-10-20）
+用户指定神谕后接原动画后两幕，再鸣谢。正式Sandbox完成调用SceneRouter.goto_ending(result,true)，ComicPlayer内部epilogue目的复用data/comics/ending.tres的P5/P6六分镜；结束后finish_ending_epilogue把同一快照交给EndingPage。原EndingSequenceView的独立注入接口保持，空data/ending/ending_comic.tres仍不代表正式内容来源。
+EndingPage先显示制作组和音频来源鸣谢，原圣典/判词保留在下方，可点击查看；保存结局仍直接打开该页，不重复奖励或重播漫画。结尾共用Tendoh不重置，神谕/漫画/鸣谢均支持Esc。详见END-01任务与日志。

@@ -48,3 +48,6 @@ Esc使用Input Map的pause Action。首次按下暂停并打开继续/设置/返
 
 ### 标题光效设置（PA-25）
 SettingsManager.menu_rays_quality为0关闭、1低、2标准（默认），set_menu_rays_quality限制范围并发出menu_rays_quality_changed；SettingsPanel即时生效，返回保存display/menu_rays_quality，旧配置缺失或非法值回退标准。load_settings读取，apply_settings统一通知；reset_to_defaults恢复标准。关闭同时停止标题离屏光效绘制，仅影响标题画面。性能依据见PresentationAssets/表现资产_PA-25_2026-10-20_log.md。
+
+### END-01 终局动画路由
+SceneRouter.goto_ending(session,play_epilogue=false)默认保持直接显示已有结局结果；正式Sandbox传true，保存同一EndingSession后进入ComicPlayer内部epilogue目的，仅播P5/P6。finish_ending_epilogue只交付已保存快照到EndingPage，不重新计算结算。goto_saved_ending保持直接成果/鸣谢入口；后半回看kind=ending与首次观看记录语义保持。神谕7秒与鸣谢署名详见20.Ending/END-01日志。

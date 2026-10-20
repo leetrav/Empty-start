@@ -115,7 +115,7 @@ func start(
 		stop()
 		return false
 	_feedback_layer = CanvasLayer.new()
-	_feedback_layer.layer = 21
+	_feedback_layer.layer = 14
 	add_child(_feedback_layer)
 	_feedback = preload("res://core/divine_descent/divine_descent_interaction_view.gd").new()
 	_feedback_layer.add_child(_feedback)
@@ -176,8 +176,9 @@ func _refresh_interaction_phase() -> void:
 	if _spread.is_converging():
 		_phase = &"emphasis"
 		progress = 1.0
-		prompt = "神谕显现 · 点击回应 · 即将进入结局"
+		prompt = "最终神谕 · 点击回应"
 	if is_instance_valid(_feedback):
+		_feedback.visible = not _spread.is_converging()
 		_feedback.show_phase(prompt, progress)
 	phase_changed.emit(_phase, prompt, progress)
 

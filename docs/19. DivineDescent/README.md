@@ -228,3 +228,6 @@ R26-B 增加 `DivineDescentFlow.configure_formal_parameters(auto_repeat_min_seco
 自动复读的 one-shot Timer 在 timeout 时已停止，现先安排下一次再调用公开生成入口；生成回调里的显式 stop 可取消下一次。配置或历史解析失败返回 false 并停止本场组件。真实非空历史已验证自然衰减、自动复读、锁句、0.9 收束、暂停中的强调 Tween 和 `completed(EndingSession)`；INT-16 继续拥有根场景路由。入口与本地 GPU 证据见 [INT-17B 日志](../Integration/生产集成_INT-17B_2026-10-16_log.md)。
 
 INT-18B 在合并 #239/#240/#241/#242/#249 的资源与后端上再次完成有效历史收束，正式 HUD 音频消费者实际请求并播放 `divine_descent_start`。原 smoke 的 `--with-presentation` 加载正式 HUD 和成败演出；`--divine-only` 可快速复播 DD 收束及强调暂停。实际截图和根场景尚待 A 接续的范围见 [INT-18B 日志](../Integration/INT-18B_2026-10-16_log.md)。
+
+## END-01 用户确认的神谕停留（2026-10-20）
+15表及正式DecayConfig的final_emphasis_duration_seconds改为7秒，取代此前1.8秒；全屏正文淡入/淡出各0.8秒，完整停留5.4秒。最终强调收起底部阶段提示，正文保留真实锁定句与点击回应。表现层低于PauseMenu，Esc可冻结计时。完成后由Sandbox接原P5/P6动画，再到鸣谢/圣典页；不改变锁句、收束和EndingSession单次接收规则。详见20.Ending的END-01日志。

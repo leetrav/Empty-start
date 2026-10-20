@@ -1252,7 +1252,7 @@ func _finish_divine_descent(result: EndingSession) -> void:
 		push_error("Sandbox: 终局成果存盘失败。")
 	# 结局页面接管同曲，不让旧场景退出在淡入途中把音乐停掉。
 	_ending_music.set_handoff(true)
-	var error := SceneRouter.goto_ending(result)
+	var error := SceneRouter.goto_ending(result, true)
 	if error != OK:
 		_ending_music.set_handoff(false)
 		push_error("Sandbox: Ending 顶层路由失败：%s" % error_string(error))
