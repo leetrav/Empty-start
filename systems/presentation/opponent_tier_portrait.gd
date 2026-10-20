@@ -16,6 +16,10 @@ signal flip_finished(tier: int)
 # 旧版 0.94 在 432px 框中人为留下约 26px 悬空间隙。
 @export var visible_anchor_ratio: Vector2 = Vector2(0.5, 1.0)
 @export_range(0.0, 24.0, 1.0) var visible_edge_guard_px: float = 5.0
+# 列巴坐姿参考：增大 T1/T2 的 fox_idle.png，让头部略低、身体铺满直播镜头。
+# 两档使用同一贴图，采用同一构图，避免换档瞬间跳动。
+@export_range(1.0, 1.5, 0.01) var fox_idle_zoom: float = 1.14
+@export_range(0.0, 0.25, 0.01) var fox_idle_top_ratio: float = 0.10
 
 var current_tier: int = 0
 var fx: OpponentTierFx
@@ -37,7 +41,7 @@ var _maximum_visible_size: Vector2 = Vector2.ONE
 var _result_textures: Array[Texture2D] = []
 
 
-# 插入 PA-14 的 Idle 层内部，让汗滴、切图与现有呼吸动作共同移动。
+# 保留 PA-14 的 Idle 层级给射击/切图使用；循环呼吸动画已停用。
 func attach_portrait(portrait: TextureRect) -> void:
 	var slot: Control = portrait.get_parent() as Control
 	var index: int = portrait.get_index()
@@ -119,6 +123,9 @@ func fit_current_texture() -> void:
 	# _maximum_visible_size 只作图像测量参考，不再缩小较短/较窄的阶段姿态。
 	var raw_size: Vector2 = texture.get_size().max(Vector2.ONE)
 	var fit_scale: float = minf(available.x / raw_size.x, available.y / raw_size.y)
+	var fox_seated: bool = _character_id == "fox" and texture == _idle and current_tier in [1, 2]
+	if fox_seated:
+		fit_scale *= fox_idle_zoom
 	var ground_ratio: Vector2 = visible_anchor_ratio.clamp(Vector2.ZERO, Vector2.ONE)
 	var display_height: float = bounds.size.y * fit_scale * absf(_portrait.scale.y)
 	var visible_top: float = clampf(
@@ -126,6 +133,9 @@ func fit_current_texture() -> void:
 		guard,
 		maxf(guard, size.y - guard - display_height)
 	)
+	# 列巴坐姿：完整显示头部，窗口下沿裁掉坐姿多余部分。
+	if fox_seated:
+		visible_top = size.y * fox_idle_top_ratio
 	_portrait.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	_portrait.stretch_mode = TextureRect.STRETCH_SCALE
 	_portrait.size = texture.get_size() * fit_scale
