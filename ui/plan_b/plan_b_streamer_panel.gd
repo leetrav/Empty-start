@@ -278,10 +278,6 @@ func _build_header(parent: VBoxContainer) -> void:
 	header.custom_minimum_size.y = 128.0
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(header)
-	var role := _label("你的直播间" if streamer_side == "player" else "对手直播间", 16, Color("#aeb8ca"))
-	role.position = Vector2(20.0, 30.0)
-	role.size = Vector2(356.0, 24.0)
-	header.add_child(role)
 	_name_label = _label("玩家主播" if streamer_side == "player" else "当前主播", 29, Color("#f1f4fa"))
 	_name_label.position = Vector2(20.0, 57.0)
 	_name_label.size = Vector2(356.0, 40.0)
