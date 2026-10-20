@@ -100,6 +100,7 @@ var _word_groups: Array = []
 var _group_bubble_states: Dictionary = {}
 var _active_group_bubble_ids: Dictionary = {}
 var _pending_group_speech_events: Array[Dictionary] = []
+var _word_groups_revision: int = 0
 var _queued_group_bubble_events: Array[Dictionary] = []
 var _last_group_bubble_started_msec := -100000
 var _tracker_unit_snapshot_calls: int = 0
@@ -419,6 +420,7 @@ func set_word_group_snapshots(groups: Array) -> void:
 		next_states[group_id] = state
 	_group_bubble_states = next_states
 	_word_groups = next_groups
+	_word_groups_revision += 1
 	_sync_active_group_bubble_ids()
 	if _field != null:
 		_field.call("set_word_groups", _word_groups, _active_group_bubble_ids)
@@ -2372,9 +2374,14 @@ func _queue_group_speech_event(unit_ids: Array, reason: String) -> void:
 		return
 	if _pending_group_speech_events.size() >= MAX_PENDING_GROUP_BUBBLE_EVENTS:
 		_pending_group_speech_events.pop_front()
+	# unit_changed 在 Simulation 团体拓扑刷新前发出；需要等待后续 group snapshot。
+	var source_snapshot: Dictionary = _snapshot_for_unit_id(normalized_ids[0])
 	_pending_group_speech_events.append({
 		"unit_ids": normalized_ids,
 		"reason": reason,
+		"expected_team": str(source_snapshot.get("team", "")),
+		"expected_word_id": str(source_snapshot.get("word_id", "")),
+		"minimum_group_revision": _word_groups_revision + 1,
 		"expires_at_msec": Time.get_ticks_msec() + GROUP_BUBBLE_EVENT_RESOLVE_MSEC,
 	})
 	_queue_unit_presentation_refresh()
@@ -2384,8 +2391,14 @@ func _apply_pending_group_speech_events() -> void:
 	var now := Time.get_ticks_msec()
 	for event_index in range(_pending_group_speech_events.size() - 1, -1, -1):
 		var event: Dictionary = _pending_group_speech_events[event_index]
+		if _word_groups_revision < int(event.get("minimum_group_revision", 0)):
+			if now >= int(event.get("expires_at_msec", now)):
+				_pending_group_speech_events.remove_at(event_index)
+			continue
 		var event_ids: Array = event.get("unit_ids", [])
-		var group_id := _best_group_id_for_units(event_ids)
+		var group_id := _best_group_id_for_units(
+			event_ids, str(event.get("expected_team", "")), str(event.get("expected_word_id", ""))
+		)
 		if not group_id.is_empty():
 			_queue_group_bubble_for_group(group_id, event_ids, str(event.get("reason", "")), now)
 			_pending_group_speech_events.remove_at(event_index)
@@ -2393,11 +2406,15 @@ func _apply_pending_group_speech_events() -> void:
 			_pending_group_speech_events.remove_at(event_index)
 
 
-func _best_group_id_for_units(unit_ids: Array) -> String:
+func _best_group_id_for_units(unit_ids: Array, expected_team: String = "", expected_word_id: String = "") -> String:
 	var best_group_id := ""
 	var best_overlap := 0
 	for group in _word_groups:
 		if not group is Dictionary:
+			continue
+		if not expected_team.is_empty() and str(group.get("team", "")) != expected_team:
+			continue
+		if not expected_word_id.is_empty() and str(group.get("word_id", "")) != expected_word_id:
 			continue
 		var group_id := str(group.get("group_id", group.get("id", "")))
 		var members: Array = _group_member_ids(group)
@@ -2498,7 +2515,7 @@ func _show_next_queued_group_bubble(now: int) -> void:
 		return
 	var event: Dictionary = _queued_group_bubble_events[best_index]
 	var event_unit_ids: Array = event.get("unit_ids", [])
-	var group_id := _best_group_id_for_units(event_unit_ids)
+	var group_id := _best_group_id_for_units(event_unit_ids, str(event.get("expected_team", "")), str(event.get("expected_word_id", "")))
 	if group_id.is_empty() or not _group_bubble_states.has(group_id):
 		_drop_queued_group_bubble_event(best_index)
 		return
@@ -2596,6 +2613,7 @@ func _clear_group_bubbles() -> void:
 	_group_bubble_states.clear()
 	_word_groups.clear()
 	_pending_group_speech_events.clear()
+	_word_groups_revision = 0
 	_queued_group_bubble_events.clear()
 	_active_group_bubble_ids.clear()
 	_last_group_bubble_started_msec = -100000
