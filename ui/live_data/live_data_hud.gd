@@ -185,8 +185,8 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	var row_width: float = _comment_list.size.x
 	if row_width <= 0.0:
 		row_width = maxf(size.x - 32.0, 240.0)
-	# 昵称以整张牌的水平中心为轴；左右对称安全区保护徽章与尖角。
-	# 最小尺寸随字符宽度增加，让短昵称居中后也不会压到左边徽章。
+	# 牌宽仍根据昵称实际宽度变化；文字排在圆徽章后的矩形色条中。
+	# 圆徽章属于装饰，计算昵称水平居中时不包含它。
 	var text_inset: float = 47.0
 	var plate_width: float = clampf(
 		ceilf(name_width + text_inset * 2.0),
@@ -244,7 +244,7 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	var nickname := Label.new()
 	nickname.name = "FanNickname"
 	nickname.text = display_name
-	# 左右留白对称，文字几何中心严格等于 plate_width / 2。
+	# 中文昵称水平居中于圆形徽章右侧的矩形色条（含右侧尖角前的留白）。
 	nickname.add_theme_font_size_override("font_size", nickname_font_size)
 	nickname.add_theme_color_override("font_color", _comment_nameplate_text_color)
 	nickname.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -253,10 +253,12 @@ func _create_fan_nameplate_row(display_name: String, comment_text: String) -> Co
 	nickname.clip_text = true
 	nickname.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	identity.add_child(nickname)
-	# Godot applies the Label intrinsic min-size when it enters the tree.
-	# Set geometry last so the real bounding-box center matches the plate center.
-	nickname.position = Vector2(text_inset, 4.0)
-	nickname.size = Vector2(maxf(1.0, plate_width - text_inset * 2.0), plate_height - 8.0)
+	# 左徽章有效边缘约 x=49；右尖角起点约 x=plate_width-17。
+	# Label 入树后再指定宽度，确保文字区域居中于这段矩形条。
+	var name_strip_left: float = 51.0
+	var name_strip_right: float = 17.0
+	nickname.position = Vector2(name_strip_left, 4.0)
+	nickname.size = Vector2(maxf(1.0, plate_width - name_strip_left - name_strip_right), plate_height - 8.0)
 
 	var message := RichTextLabel.new()
 	message.name = "CommentText"
