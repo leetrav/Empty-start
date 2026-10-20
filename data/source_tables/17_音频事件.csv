@@ -1,4 +1,4 @@
-event_id,audio_type,asset_path_or_id,volume_db,pitch_min,pitch_max,loop,transition_group,notes
+﻿event_id,audio_type,asset_path_or_id,volume_db,pitch_min,pitch_max,loop,transition_group,notes
 ui_name_confirm,ui,assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_003.ogg,0,1,1,false,,系统案1 身份系统｜输入确认｜资产审计2026-10-15：第二轮试听 ui_confirm 选中：身份/名字确认共用；volume_db=0dB暂按Unity初值，正式试听混音可调。
 ui_identity_switch,ui,assets/audio/sfx/kenney_interface-sounds/Audio/click_002.ogg,0,1,1,false,,系统案1｜身份切换｜资产审计2026-10-15：第二轮试听 ui_click 选中：身份切换共用；volume_db=0dB暂按Unity初值，正式试听混音可调。
 ui_identity_confirm,ui,assets/audio/sfx/Ogg/Confirm_tones/style2/confirm_style_2_003.ogg,0,1,1,false,,系统案1｜身份确认｜资产审计2026-10-15：第二轮试听 ui_confirm 选中：身份/名字确认共用；volume_db=0dB暂按Unity初值，正式试听混音可调。
@@ -93,3 +93,4 @@ music_comic_street,music,assets/audio/music/opening/street.ogg,-14,1,1,false,com
 music_rest_room,music,assets/audio/music/rest/pure_soul.ogg,-12,1,1,true,rest,首次开播前房间Pure Soul
 music_ending_tendoh,music,assets/audio/music/ending/tendoh.ogg,-10,1,1,true,ending,神降临最终进度满后淡入并延续结局鸣谢
 music_rest_after_pk,music,assets/audio/music/rest/yume_akari.ogg,-12,1,1,true,rest,每场PK后休息及后续开播房间夢灯
+music_preboss_pop_sky,music,assets/audio/music/preboss/pop_sky.ogg,-12,1,1,true,battle_waiting,四Boss出场前Pop Sky原曲01分56秒起片段

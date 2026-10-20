@@ -38,3 +38,5 @@
 开场回放集成：au03_opening_check.gd，经--script运行、使用隔离APPDATA，覆盖真实菜单三入口、音乐进度/暂停/退出、Boot首次与已观看行为。成功标记OPENING_STREET_INTEGRATION_PASS。
 
 四Boss第二次箭头统一检查：au03_four_boss_check.gd默认四关均用真实清场/箭头进入T1、T2，逐关记录mid请求与第二次箭头淡出同帧；超时260秒。au03_khleb_intro_check.gd对白完成后预期仍为intro，只有第二次箭头放行才切mid。au03_pack_check.gd另断言四份Profile均开启保持首档。
+
+2026-10-20 AU-05：T0静音策略改为Pop Sky，每场1.5秒淡入。`preboss_pop_sky_smoke.tscn`在真实Plan B四关检查播放器增益、循环、暂停续播、重复T0、Boss接管及退出清理；GUI退出0，PREBOSS_DONE failures=0。上述历史用例中的T0专用断言已同步；其他旧路由等待/历史流程不作为本次回归覆盖结论。

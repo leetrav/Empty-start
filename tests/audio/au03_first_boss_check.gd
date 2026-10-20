@@ -16,8 +16,8 @@ func _run() -> void:
 	await process_frame
 	var audio: Node = root.get_node("AudioManager")
 	await create_timer(0.2).timeout
-	assert(audio.get_music_event_id() == &"")
-	print("PASS 正式费米开局静音")
+	assert(audio.get_music_event_id() == TierMusicPresenter.PREBOSS_EVENT)
+	print("PASS 正式费米开局Pop Sky")
 	scene.dialogue_event_sequence_completed.connect(_on_dialogue_completed)
 	var flow: Node = scene.get_node("BattleAttemptFlow")
 	# 直接驱动PK事实测试正式连线路径，F3调档绕过对白的场景另验。

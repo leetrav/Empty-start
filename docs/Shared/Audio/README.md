@@ -225,3 +225,9 @@ AudioManager.get_music_loop_offset()返回当前OGG循环起点（非OGG或不�
 - Fermi Profile改为hold_intro_through_first_tier=true：56%连线起曲从0秒保留首次约4秒静音；第一次箭头淡出、对白结束都不切曲/不重播；64%第二次箭头淡出才接中段。后续T3同组、T4/T5高段与稳定降档规则不变。F3直接调档仍走明确试听旁路。
 - teek_intro原生loop_offset=4.8继续保留，等待期间可持续循环有声伴奏，不重放静音前缀；未重编码素材或改变原曲速度/音高。删除已被更正的intro_before_connection属性。
 - 保留StageArrowFx真实淡出事实和过期档位保护，仅首次箭头对仍在开场的费米不放行换段；第二次真实升档才放行。其他三Boss默认false，音乐策略未改。
+
+## AU-05 · Boss出场前游玩音乐（2026-10-20）
+
+四位Boss的T0游玩阶段统一使用music_preboss_pop_sky：用户提供的Pop Sky原曲01:56起至结尾片段。每场/重开从0秒开始，1.5秒淡入，基准-12dB，原生循环。等待期不进入Boss分组调度；重复T0信号不重播。暂停/继续、失败/离场以及Boss连线接管仍由TierMusicPresenter和AudioManager统一拥有。
+
+正式17表负责事件映射，AudioEventConfig强引用资源用于稳定收录；素材来源/加工见assets/audio/music/preboss/README.md。验收入口为tests/audio/preboss_pop_sky_smoke.tscn。
