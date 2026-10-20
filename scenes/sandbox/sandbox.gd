@@ -1995,8 +1995,10 @@ func _advance_pb25_tutorial(delta: float) -> void:
 				0.0, _pb25_tutorial_force_conversion_remaining - delta
 			)
 			if _pb25_tutorial_force_conversion_remaining <= 0.0:
-				if not _apply_pb25_tutorial_conversion_fallback():
-					_pb25_tutorial_force_conversion_remaining = 0.5
+				if _apply_pb25_tutorial_conversion_fallback():
+					# 本帧内兜底会推进到下一教程步骤；下一帧再按新步骤请求第二轮反击。
+					return
+				_pb25_tutorial_force_conversion_remaining = 0.5
 	if _pb25_tutorial_counterattack_pending_round > 0:
 		var expected_step := (
 			PB25_STEP_FIRST_COUNTERATTACK
