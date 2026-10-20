@@ -136,7 +136,7 @@ func _build_ui() -> void:
 	_add_line(form, "completion_event", "完成事件")
 	form.add_child(_label("策划备注（不在游戏内显示）"))
 	_add_line(form, "notes", "备注")
-	form.add_child(_label("Plan B 事件链：pb25_tutorial_begin → pb25_first_player_publish → pb25_paper_type_c_conversion → pb25_fermi_scissors_published → pb25_final_hint_finished。旧版事件链：tutorial_target_available → tutorial_aim_acquired → tutorial_charge_full → tutorial_normal_hit。事件 ID 必须与代码发出的字符串一致。"))
+	form.add_child(_label("Plan B V2：pb25_tutorial_begin → pb25_first_player_publish → pb25_v2_first_counterattack_resolved → pb25_paper_type_c_conversion → pb25_v2_second_counterattack_resolved → pb25_v2_contradiction_stage_started → pb25_v2_contradiction_break_finished。旧版事件链：tutorial_target_available → tutorial_aim_acquired → tutorial_charge_full → tutorial_normal_hit。事件 ID 必须与代码发出的字符串一致。"))
 	_validation = _label("")
 	form.add_child(_validation)
 	_status = _label("准备就绪")
