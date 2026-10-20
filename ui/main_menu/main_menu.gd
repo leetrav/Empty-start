@@ -1,5 +1,7 @@
 extends Control
 
+const TITLE_MUSIC: StringName = &"music_title_cafe"
+
 @onready var _canvas: Control = $CoverCanvas
 @onready var _menu_actions: Control = %MenuActions
 @onready var _settings_button: Button = %SettingsButton
@@ -34,6 +36,12 @@ func _ready() -> void:
 		_title_origins.append(title.position)
 	resized.connect(_fit_cover)
 	_fit_cover()
+	# 路由揭幕后才起曲，避免黑幕暂停消耗淡入；F6独立预览则直接播放。
+	if SceneRouter.is_transitioning():
+		SceneRouter.transition_finished.connect(_on_title_revealed, CONNECT_ONE_SHOT)
+	else:
+		_start_title_music()
+	SceneRouter.transition_failed.connect(_on_route_failed)
 
 # 完整画布等比适配，非16:9窗口留边而不裁剪菜单与标题。
 func _fit_cover() -> void:
@@ -97,3 +105,22 @@ func _replay_comic(kind: StringName) -> void:
 	var error: Error = SceneRouter.goto_comic(kind)
 	if error != OK:
 		push_error("MainMenu: 无法播放漫画：%s" % error_string(error))
+
+# 标题和设置/回看子菜单共用音乐，不因面板切换而重播。
+func _start_title_music() -> void:
+	AudioManager.set_music_paused(false)
+	AudioManager.restore_music()
+	AudioManager.change_music(TITLE_MUSIC, 1.5, 0.0, 1.5, false)
+
+func _on_title_revealed(_path: String) -> void:
+	_start_title_music()
+
+# 目标加载失败回到当前菜单时恢复标题曲。
+func _on_route_failed(_path: String, _error: Error) -> void:
+	if get_tree().current_scene == self:
+		_start_title_music()
+
+# 非路由退出也只淡出本菜单仍持有的曲目，不能停掉后续页面接管的新曲。
+func _exit_tree() -> void:
+	if AudioManager.get_music_event_id() == TITLE_MUSIC:
+		AudioManager.fade_to_silence()

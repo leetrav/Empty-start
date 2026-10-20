@@ -129,12 +129,23 @@ func _request_scene(scene_path: String, override_scene: PackedScene = null) -> E
 # 先绘出遮罩再取加载结果；只有后台读取完成才允许 get，避免在这里阻塞资源读取。
 func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 	var was_paused: bool = get_tree().paused
-	get_tree().paused = true
+	var previous: Node = get_tree().current_scene
+	var previous_path: String = previous.scene_file_path if previous != null else ""
+	var comic_to_title: bool = previous_path == COMIC_SCENE_PATH and scene_path == MAIN_MENU_SCENE_PATH
+	var leaving_title: bool = previous_path == MAIN_MENU_SCENE_PATH
+	# 漫画收尾和标题离场先让音乐随遮幕淡完，不能先暂停音频Tween造成突然静音。
+	var music_exit: bool = (comic_to_title or leaving_title) and not was_paused
+	if not music_exit:
+		get_tree().paused = true
 	_loading_screen.call("reset_indicator")
 	_loading_screen.modulate.a = 0.0
 	_loading_screen.show()
 	transition_started.emit(scene_path)
-	await _fade_to(1.0, FADE_OUT_SECONDS)
+	if music_exit:
+		AudioManager.fade_to_silence()
+	var fade_out: float = 0.45 if comic_to_title else (0.30 if music_exit else FADE_OUT_SECONDS)
+	await _fade_to(1.0, fade_out)
+	get_tree().paused = true
 	var cover_start: int = Time.get_ticks_msec()
 	var scene: PackedScene = override_scene
 	if scene == null and DisplayServer.get_name() == "headless":
@@ -154,7 +165,8 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 	if scene == null:
 		await _recover_transition(scene_path, ERR_CANT_OPEN, was_paused)
 		return
-	var remaining: float = MINIMUM_COVER_SECONDS - float(Time.get_ticks_msec() - cover_start) / 1000.0
+	var minimum_cover: float = 0.25 if comic_to_title else MINIMUM_COVER_SECONDS
+	var remaining: float = minimum_cover - float(Time.get_ticks_msec() - cover_start) / 1000.0
 	if remaining > 0.0:
 		await get_tree().create_timer(remaining, true, false, true).timeout
 	# 遮罩已完整渲染，实例化期间即使出现主线程峰值，也不会暴露空场景。
@@ -171,7 +183,7 @@ func _run_transition(scene_path: String, override_scene: PackedScene) -> void:
 		_show_ending()
 	# 保持新页面暂停直到淡入完成，避免对白/自动计时在黑幕下提前消耗。
 	_loading_screen.set("show_indicator", false)
-	await _fade_to(0.0, FADE_IN_SECONDS)
+	await _fade_to(0.0, 0.60 if comic_to_title else FADE_IN_SECONDS)
 	_loading_screen.hide()
 	get_tree().paused = false
 	_transitioning = false

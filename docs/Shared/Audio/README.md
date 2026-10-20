@@ -231,3 +231,11 @@ AudioManager.get_music_loop_offset()返回当前OGG循环起点（非OGG或不�
 四位Boss的T0游玩阶段统一使用music_preboss_pop_sky：用户提供的Pop Sky原曲01:56起至结尾片段。每场/重开从0秒开始，1.5秒淡入，基准-12dB，原生循环。等待期不进入Boss分组调度；重复T0信号不重播。暂停/继续、失败/离场以及Boss连线接管仍由TierMusicPresenter和AudioManager统一拥有。
 
 正式17表负责事件映射，AudioEventConfig强引用资源用于稳定收录；素材来源/加工见assets/audio/music/preboss/README.md。验收入口为tests/audio/preboss_pop_sky_smoke.tscn。
+
+## AU-06 · 标题音乐、开场遮幕和菜单悬停（2026-10-20）
+
+标题使用用户选定的Cafe de Fineday完整曲，music_title_cafe，-12dB、1.5秒淡入、原生循环。标题揭幕后起播；设置和回看入口不重播。离开标题由SceneRouter先让音乐随遮幕淡出，非路由离树也只释放本菜单仍拥有的曲目。
+
+漫画至标题复用全局加载层：末幕0.45秒淡入黑幕，完整遮幕至少0.25秒，标题0.60秒淡入。旧曲《街》先淡出；音乐淡出期间不预先暂停全树，避免音频Tween首帧冻结。随后加载与新场景揭幕沿用原暂停保护。其他游戏场景的过渡时长沿用LOAD-01。
+
+CoverMenuButton悬停事件ui_menu_hover使用Kenney Interface Sounds的drop_003.ogg（CC0），每次进入一次，70ms全菜单限流，禁用项不响。点击仍使用原事件，用户UI总线设置继续生效。

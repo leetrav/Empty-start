@@ -94,3 +94,5 @@ music_rest_room,music,assets/audio/music/rest/pure_soul.ogg,-12,1,1,true,rest,�
 music_ending_tendoh,music,assets/audio/music/ending/tendoh.ogg,-10,1,1,true,ending,神降临最终进度满后淡入并延续结局鸣谢
 music_rest_after_pk,music,assets/audio/music/rest/yume_akari.ogg,-12,1,1,true,rest,每场PK后休息及后续开播房间夢灯
 music_preboss_pop_sky,music,assets/audio/music/preboss/pop_sky.ogg,-12,1,1,true,battle_waiting,四Boss出场前Pop Sky原曲01分56秒起片段
+music_title_cafe,music,assets/audio/music/title/cafe_de_fineday.ogg,-12,1,1,true,title,标题Cafe de Fineday完整曲1.5秒淡入
+ui_menu_hover,ui,assets/audio/sfx/kenney_interface-sounds/Audio/drop_003.ogg,-12,0.96,1.04,false,,菜单字体悬停短气泡Kenney CC0

@@ -33,3 +33,7 @@ DBG-01 通过 F3 显示共用 DEBUG 面板。面板只读取当前 Sandbox 与�
 `Error == OK` 表示请求已接受，不表示新页面已可操作。业务逻辑可订阅 `transition_finished(scene_path)`；若仅需读取新节点，可等待 `SceneTree.scene_changed`。加载中再次请求返回 `ERR_BUSY`，无效路径同步返回错误；异步错误发出 `transition_failed(scene_path, error)`，保留原页面与原暂停状态，并提供返回主菜单入口。新场景在淡入结束前暂停，避免对白与自动计时在黑幕下提前消耗。
 
 图形版使用 `ResourceLoader.load_threaded_request/get_status/get`；headless 因本机 dummy renderer 对战斗资源后台读取停在 `IN_PROGRESS`，沿用同步读取。实际视觉验收使用 GUI，不能用 headless 代替。
+
+### 开场末幕至标题（2026-10-20，AU-06）
+
+comic_player至main_menu采用0.45秒淡出、至少0.25秒全黑、0.60秒淡入；标题离场淡出0.30秒，其他路由保持LOAD-01时长。漫画收尾和标题离场的旧音乐先随黑幕淡出，之后再暂停全树读取/初始化新页面；否则音乐Tween会随树暂停而无法实际淡出。输入仍从请求接受开始拦截。
