@@ -376,6 +376,8 @@ func set_tutorial_highlighted_battle_types(battle_types: Array) -> void:
 			return
 	_tutorial_highlighted_battle_types = next_types
 	_refresh_hand_view()
+
+
 func set_word_group_snapshots(groups: Array) -> void:
 	var tracker_start_usec: int = Time.get_ticks_usec() if _performance_tracker != null else 0
 	# B 管理连通关系；D 只同步显示快照并延续可见气泡计时。
@@ -421,6 +423,14 @@ func set_word_group_snapshots(groups: Array) -> void:
 	_group_bubble_states = next_states
 	_word_groups = next_groups
 	_word_groups_revision += 1
+	# 团体改口后立刻收起旧短语，避免旧话语继续跟随新团体。
+	for group_id_value in _group_bubble_states.keys():
+		var group_id := str(group_id_value)
+		var bubble_state: Dictionary = _group_bubble_states[group_id]
+		if (float(bubble_state.get("display_remaining", 0.0)) > 0.0
+				and str(bubble_state.get("display_phrase", "")) != _group_text_for_id(group_id)):
+			bubble_state["display_remaining"] = 0.0
+			bubble_state["display_phrase"] = ""
 	_sync_active_group_bubble_ids()
 	if _field != null:
 		_field.call("set_word_groups", _word_groups, _active_group_bubble_ids)
@@ -2396,11 +2406,15 @@ func _apply_pending_group_speech_events() -> void:
 				_pending_group_speech_events.remove_at(event_index)
 			continue
 		var event_ids: Array = event.get("unit_ids", [])
+		var expected_team := str(event.get("expected_team", ""))
+		var expected_word_id := str(event.get("expected_word_id", ""))
 		var group_id := _best_group_id_for_units(
-			event_ids, str(event.get("expected_team", "")), str(event.get("expected_word_id", ""))
+			event_ids, expected_team, expected_word_id
 		)
 		if not group_id.is_empty():
-			_queue_group_bubble_for_group(group_id, event_ids, str(event.get("reason", "")), now)
+			_queue_group_bubble_for_group(
+				group_id, event_ids, str(event.get("reason", "")), expected_team, expected_word_id, now
+			)
 			_pending_group_speech_events.remove_at(event_index)
 		elif now >= int(event.get("expires_at_msec", now)):
 			_pending_group_speech_events.remove_at(event_index)
@@ -2440,7 +2454,9 @@ func _group_bubble_event_priority(reason: String) -> int:
 
 
 ## 同团同句限频，并在有限队列中保留更重要的传播事件。
-func _queue_group_bubble_for_group(group_id: String, unit_ids: Array, reason: String, now: int) -> void:
+func _queue_group_bubble_for_group(
+	group_id: String, unit_ids: Array, reason: String, expected_team: String, expected_word_id: String, now: int
+) -> void:
 	if not _group_bubble_states.has(group_id):
 		return
 	var state: Dictionary = _group_bubble_states[group_id]
@@ -2455,14 +2471,15 @@ func _queue_group_bubble_for_group(group_id: String, unit_ids: Array, reason: St
 	var priority := _group_bubble_event_priority(reason)
 	for queued_event in _queued_group_bubble_events:
 		if str(queued_event.get("group_id", "")) == group_id and str(queued_event.get("phrase", "")) == phrase:
+			queued_event["expected_team"] = expected_team
+			queued_event["expected_word_id"] = expected_word_id
 			if priority > int(queued_event.get("priority", 0)):
 				queued_event["priority"] = priority
 				queued_event["reason"] = reason
 				queued_event["unit_ids"] = unit_ids.duplicate()
-				if reason == "infection":
-					state["infection_bubble_queued"] = true
 			if reason == "infection":
-				state["infection_bubble_consumed"] = true
+				queued_event["infection_event"] = true
+				state["infection_bubble_queued"] = true
 			return
 	if _queued_group_bubble_events.size() >= MAX_PENDING_GROUP_BUBBLE_EVENTS:
 		var lowest_index := 0
@@ -2475,8 +2492,11 @@ func _queue_group_bubble_for_group(group_id: String, unit_ids: Array, reason: St
 	_queued_group_bubble_events.append({
 		"group_id": group_id,
 		"unit_ids": unit_ids.duplicate(),
+		"expected_team": expected_team,
+		"expected_word_id": expected_word_id,
 		"phrase": phrase,
 		"reason": reason,
+		"infection_event": reason == "infection",
 		"priority": priority,
 		"queued_at_msec": now,
 		"not_before_msec": not_before_msec,
@@ -2484,12 +2504,11 @@ func _queue_group_bubble_for_group(group_id: String, unit_ids: Array, reason: St
 	})
 	if reason == "infection":
 		state["infection_bubble_queued"] = true
-		state["infection_bubble_consumed"] = true
 
 
 func _drop_queued_group_bubble_event(event_index: int) -> void:
 	var event: Dictionary = _queued_group_bubble_events[event_index]
-	if str(event.get("reason", "")) == "infection":
+	if bool(event.get("infection_event", str(event.get("reason", "")) == "infection")):
 		var group_id := str(event.get("group_id", ""))
 		if _group_bubble_states.has(group_id):
 			var state: Dictionary = _group_bubble_states[group_id]
@@ -2515,13 +2534,18 @@ func _show_next_queued_group_bubble(now: int) -> void:
 		return
 	var event: Dictionary = _queued_group_bubble_events[best_index]
 	var event_unit_ids: Array = event.get("unit_ids", [])
-	var group_id := _best_group_id_for_units(event_unit_ids, str(event.get("expected_team", "")), str(event.get("expected_word_id", "")))
+	var expected_team := str(event.get("expected_team", ""))
+	var expected_word_id := str(event.get("expected_word_id", ""))
+	if expected_team.is_empty() or expected_word_id.is_empty():
+		_drop_queued_group_bubble_event(best_index)
+		return
+	var group_id := _best_group_id_for_units(event_unit_ids, expected_team, expected_word_id)
 	if group_id.is_empty() or not _group_bubble_states.has(group_id):
 		_drop_queued_group_bubble_event(best_index)
 		return
 	var state: Dictionary = _group_bubble_states[group_id]
 	var phrase := str(event.get("phrase", ""))
-	if phrase.is_empty():
+	if phrase.is_empty() or phrase != _group_text_for_id(group_id):
 		_drop_queued_group_bubble_event(best_index)
 		return
 	if str(state.get("last_display_phrase", "")) == phrase and now - int(state.get("last_display_msec", -100000)) < GROUP_BUBBLE_REPEAT_GUARD_MSEC:
@@ -2535,7 +2559,8 @@ func _show_next_queued_group_bubble(now: int) -> void:
 	state["last_display_phrase"] = phrase
 	state["last_display_msec"] = now
 	state["infection_bubble_queued"] = false
-	if str(event.get("reason", "")) == "infection":
+	if bool(event.get("infection_event", str(event.get("reason", "")) == "infection")):
+		# 只在短语与目标团体复核通过、真正开始显示时消费首次感染提示。
 		state["infection_bubble_consumed"] = true
 	_last_group_bubble_started_msec = now
 	_drop_queued_group_bubble_event(best_index)
