@@ -44,6 +44,8 @@ comic_player至main_menu采用0.45秒淡出、至少0.25秒全黑、0.60秒淡�
 
 SceneRouter初始启动及每次scene_changed后统一检查当前页面的PauseMenu。Sandbox、房间已有实例继续复用；标题、漫画、身份设置和结局等遗漏页自动补同一现有场景，默认隐藏“重新开始当前关”。每个页面只保留一套，不增加第二种暂停UI，也不替代战斗现有重开/攻击取消回调。
 
+PAUSE-02：共享PauseMenu使用CanvasLayer 90，高于RestResultView及其历史页30、DebugPanel21，低于SceneRouter加载层100。结算页不独立创建暂停菜单，仍由当前Sandbox的同一菜单处理Esc；验证必须包含实际截图与鼠标点击设置，不能只看Overlay.visible和SceneTree.paused。
+
 Esc使用Input Map的pause Action。首次按下暂停并打开继续/设置/返回面板；再次按下恢复。暂停内设置打开时，Esc先关闭设置，仍保持暂停。全屏时也能经此入口关闭设置里的全屏选项。转场中忽略pause，避免误解除加载层的树暂停。
 
 暂停/恢复统一通知AudioManager；独立ComicPlayer额外调用set_playback_paused冻结分镜Timer、文字和Tween，Esc不再直接退出漫画。暂停返回菜单先完整恢复并发出paused_changed(false)，避免音乐暂停标志留到新页面。

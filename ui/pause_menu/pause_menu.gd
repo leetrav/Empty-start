@@ -14,7 +14,7 @@ var _previous_focus: Control
 
 
 func _ready() -> void:
-	# PauseMenu 必须在暂停状态下继续处理输入和按钮。
+	# 场景层级90高于结算/历史层30、低于加载层100；暂停时继续处理输入和按钮。
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_overlay.hide()
 	_settings_panel.hide()

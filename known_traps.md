@@ -408,7 +408,7 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 
 ### END-01：结束的Tween非null也不能再次play
 - 漫画淡入完成后Tween引用仍存在，稍后Esc恢复调用play会报Tween invalid。暂停、恢复和清理前检查is_valid；不能只检查非null。
-- 神降临CanvasLayer原强调20/提示21可能覆盖PauseMenu20；当前终局表现15/14，暂停20、加载100。验证要在真实强调和漫画中发送Esc，确认面板实际可见及计时冻结。
+- 神降临CanvasLayer原强调20/提示21可能覆盖PauseMenu20；当前终局表现15/14，暂停90（PAUSE-02修订）、加载100。验证要在真实强调和漫画中发送Esc，确认面板实际可见及计时冻结。
 
 ### PK-01：近似相等不可用于权威累计和终点写入
 - 现象：99.9995%经界面四舍五入成100%，实际Host仍running；连续1000次正增量也无法走入1.0。
@@ -420,3 +420,9 @@ PB15/PB18 又增加 population_config.csv 与 battle_type_emoji.csv。后续新�
 - 最终文字与背景共用overlay.modulate淡出再hide会重新露出下层PK，随后路由才盖黑。改为只退Sentence，保留黑底至换场；完成信号仍只来自原Tween，不提前发奖或路由。
 - 开启EndingPage不等于完整通关。路由保存正常片尾资格，标题整体显现后才写持久解锁；中断留pending，静态成果与回看入口不能伪造资格。
 - AudioManager恢复时，Tween在完成回调帧可能仍is_valid但已结束；get_loops_left()==0时不能play。真实跨页音乐淡出/恢复需覆盖，不能只看非null或valid。
+# PAUSE-02：暂停状态正确但菜单被结算层遮挡
+
+- 现象：结算页Esc后游戏停止，Overlay.visible=true，却看不到菜单，也点不到设置。
+- 条件：RestResultView CanvasLayer30高于原PauseMenu20，后加的结算页覆盖原菜单。仅断言暂停与visible不足以发现。
+- 处理：共享PauseMenu统一为90，加载遮幕保持100；结算／圣典历史／败者卡历史必须真实Esc并截图，鼠标点击设置/继续，覆盖全屏退出路径。不靠增加重复暂停菜单解决。
+
