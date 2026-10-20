@@ -760,17 +760,26 @@ func _on_plan_b_counterattack_resolved(result: Dictionary) -> void:
 		return
 	var active_step := _tutorial_runner.get_active_step_id()
 	var round_number := int(result.get("counterattack_round", 0))
-	# 反击结果已由正式技能执行器结算；无论效果是否成功，都推进对应教学事实。
+	var applied := bool(result.get("applied", false))
 	if active_step == PB25_STEP_FIRST_COUNTERATTACK and round_number == 1:
 		_set_pb25_tutorial_counterattack_paused(true)
-		_pb25_tutorial_counterattack_pending_round = 0
-		_pb25_tutorial_counterattack_remaining = 0.0
-		_tutorial_runner.notify_event(PB25_EVENT_FIRST_COUNTERATTACK_RESOLVED)
+		if applied:
+			_pb25_tutorial_counterattack_pending_round = 0
+			_pb25_tutorial_counterattack_remaining = 0.0
+			_tutorial_runner.notify_event(PB25_EVENT_FIRST_COUNTERATTACK_RESOLVED)
+		else:
+			# 效果失败保留当前教学阶段，短暂重试，避免把“未反击”误判为完成。
+			_pb25_tutorial_counterattack_pending_round = 1
+			_pb25_tutorial_counterattack_remaining = 0.5
 	elif active_step == PB25_STEP_CONVERSION and round_number == 2:
 		_set_pb25_tutorial_counterattack_paused(true)
-		_pb25_tutorial_counterattack_pending_round = 0
-		_pb25_tutorial_counterattack_remaining = 0.0
-		_tutorial_runner.notify_event(PB25_EVENT_SECOND_COUNTERATTACK_RESOLVED)
+		if applied:
+			_pb25_tutorial_counterattack_pending_round = 0
+			_pb25_tutorial_counterattack_remaining = 0.0
+			_tutorial_runner.notify_event(PB25_EVENT_SECOND_COUNTERATTACK_RESOLVED)
+		else:
+			_pb25_tutorial_counterattack_pending_round = 2
+			_pb25_tutorial_counterattack_remaining = 0.5
 
 func _on_opponent_word_pool_exhausted(_level_id: String, streamer_id: String) -> void:
 	if _battle_hud != null:
