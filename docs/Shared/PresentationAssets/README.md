@@ -7,10 +7,12 @@
 | 现有事件 | 表情与时长 |
 | --- | --- |
 | `resolve_publish_request()` 成功回执 | `smile`，1.2s |
-| `set_paradox_stage_active(false → true)` 首次进入矛盾阶段 | `evil`，1.6s |
+| `show_counterattack_result(result)` 且 `result.applied == true` | `angry`，5s；即使特殊阶段跳过战斗文案也保留表情 |
+| `set_paradox_stage_active(false → true)` 首次进入矛盾阶段 | `evil`，5s |
+| `play_opponent_result(broken == true)` 矛盾击破成功 | `happy`，5s；普通 PK 满值只进入矛盾阶段，不触发 happy |
 | 反馈到期、面板重开 | `idle` |
 
-`Tier` 升降不映射 `happy/angry`。当前结果流程没有可由玩家面板消费、且能保证在结算覆盖前可见的胜负反馈入口；不为表情新增结果事件。真实运行证据与最小验证见 [PA-26 日志](表现资产_PA-26_2026-10-21_log.md) 及 [`evidence/PA-26-2026-10-21/`](evidence/PA-26-2026-10-21/)。
+`Tier` 升降不映射情绪。仅成功反击结果触发 angry；失败、取消与无效结果保持当前表情。happy 由真实矛盾击破结果入口触发，并且优先级高于之后到达的 smile / angry / evil；明确 idle 复位与计时到期仍正常。结果顺序为 PA-17 对手演出、PA-12 0.75s 结果漫画、全屏 RestResultView。happy Timer 固定 5s，但全屏 RestResultView 会覆盖其余画面；在 Frog 立即结束路径中，完整游戏里 happy 可见时间约为结果漫画的 0.75s，另加任何对手演出时间。本任务不延长结算或修改 Rest 场景。真实运行证据与最小验证见 [PA-26 日志](表现资产_PA-26_2026-10-21_log.md) 及 [`evidence/PA-26-2026-10-21/`](evidence/PA-26-2026-10-21/)。
 
 ## PTF-04 立绘与 PK 视图修复（2026-10-16）
 
