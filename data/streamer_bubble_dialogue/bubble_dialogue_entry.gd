@@ -18,3 +18,9 @@ enum Priority { TIMED_IDLE = 0, HIT = 1, PLOT = 2 }
 @export_range(0.0, 1000.0, 0.1) var random_weight: float = 1.0
 
 @export var is_random_idle: bool = false
+
+## 保留正式20表的稳定行 ID、触发键和行序；跨侧对白需要按行序串行播放。
+@export_storage var dialogue_id: String = ""
+@export_storage var trigger_key: String = ""
+@export_storage var line_order: int = 0
+@export_storage var source_order: int = 0
