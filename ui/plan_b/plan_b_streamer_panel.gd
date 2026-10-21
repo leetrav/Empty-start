@@ -75,6 +75,7 @@ var _result_defeat_texture: Texture2D
 var _player_expression_textures: Dictionary = {}
 var _player_idle_texture: Texture2D
 var _player_expression_timer: Timer
+var _player_expression_kind: StringName = &"idle"
 
 func configure_side(side: String) -> void:
 	## 场景组合前声明左右侧，以匹配指标对齐、气泡尾部和主播待机动效。
@@ -117,11 +118,15 @@ func show_player_expression(kind: StringName, seconds: float = 1.2) -> bool:
 	var expression := String(kind)
 	if not PLAYER_EXPRESSION_PATHS.has(expression):
 		expression = "idle"
-	# 高频成功发表在当前反馈结束前略过，避免表情连续闪烁。
-	if expression == "smile" and _player_expression_timer != null and not _player_expression_timer.is_stopped():
+	var feedback_active := _player_expression_timer != null and not _player_expression_timer.is_stopped()
+	# 当前反馈期间略过高频 smile；happy 属于终局反馈，只能由 idle 复位或计时结束。
+	if feedback_active and expression == "smile":
+		return false
+	if feedback_active and _player_expression_kind == &"happy" and expression != "idle":
 		return false
 	if _player_expression_timer != null:
 		_player_expression_timer.stop()
+	_player_expression_kind = StringName(expression)
 	_portrait_art.texture = _player_expression_texture(expression)
 	if expression == "idle" or seconds <= 0.0:
 		return true
@@ -136,6 +141,7 @@ func reset_player_expression() -> void:
 	# 重开或显式复位时立即停止计时并恢复本侧配置的 idle 原图。
 	if _player_expression_timer != null:
 		_player_expression_timer.stop()
+	_player_expression_kind = &"idle"
 	if streamer_side == "player" and _portrait_art != null:
 		_portrait_art.texture = _player_expression_texture("idle")
 

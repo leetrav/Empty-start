@@ -722,7 +722,7 @@ func set_paradox_stage_active(active: bool, current_tier: int) -> void:
 	_tier_label = "T%d" % _battle_tier
 	_refresh_special_stage_layout()
 	if entered_paradox_stage and _player_panel != null:
-		_player_panel.call("show_player_expression", &"evil", 1.6)
+		_player_panel.call("show_player_expression", &"evil", 5.0)
 	if active and not _final_oracle_stage_active:
 		_show_field_event("矛盾阶段 · 蓄力射击", 2.5)
 		_aim_reticle.call("refresh_mouse_position")
@@ -813,6 +813,9 @@ func configure_opponent_result(level: LevelProfile, presentation: Dictionary = {
 
 
 func play_opponent_result(broken: bool) -> bool:
+	# 只有矛盾击破结果才是玩家胜利；普通 PK 满值仅进入此阶段，不播放 happy。
+	if broken and _player_panel != null:
+		_player_panel.call("show_player_expression", &"happy", 5.0)
 	return bool(_opponent_panel.call("play_opponent_result", broken))
 
 
@@ -2263,13 +2266,16 @@ func show_counterattack_windup(request: Dictionary) -> void:
 
 
 func show_counterattack_result(result: Dictionary) -> void:
+	var applied := bool(result.get("applied", false))
+	# 只有实际反击生效才显 angry；特殊阶段仍可跳过战斗文案，但不能丢表情反馈。
+	if applied and _player_panel != null:
+		_player_panel.call("show_player_expression", &"angry", 5.0)
 	if _is_special_stage_active():
 		return
 	var target_id := str(result.get("target_unit_id", ""))
 	var skill_id := str(result.get("skill_id", result.get("effect_id", "费米反击")))
 	var streamer_name := _counterattack_streamer_name(result)
 	var skill_name := _counterattack_skill_name(result, skill_id)
-	var applied := bool(result.get("applied", false))
 	var qualification_tier: int = int(result.get("qualification_tier", 0))
 	var round_number: int = int(result.get("counterattack_round", 0))
 	var round_label: String = "T%d第%d轮" % [qualification_tier, round_number] if qualification_tier > 0 else "特殊反击"
