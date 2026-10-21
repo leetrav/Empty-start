@@ -2,6 +2,8 @@
 
 独立可注入触摸适配场景：`res://ui/mobile/mobile_touch_aim.tscn`。默认关闭，正式布局尚待真人选择；没有在Sandbox自动挂载，也没有新增Autoload。
 
+2026-10-21 Android分辨率P0：项目保持横屏与1920×1080设计基准，CanvasItems使用`expand`适配宽屏，19.5:9和20:9增加的可视宽度交给战斗中区；左右主播栏继续固定448逻辑像素。移动安全区仍由屏幕坐标经Viewport屏幕变换逆变换后与可视区域相交，触摸区跟随棋盘当前矩形更新。依据[Godot多分辨率指南](https://docs.godotengine.org/en/stable/tutorials/rendering/multiple_resolutions.html#mobile-game-in-landscape-mode)。Android设备不可用时，桌面比例预览不能代替APK和真机验收。
+
 2026-10-20 PAUSE-03：正式Plan B界面另提供顶部PK栏右侧的「暂停」原生按钮，不依赖MobileTouchAim是否启用。HUD只发pause_requested，宿主连接既有PauseMenu.pause_game；支持ScreenTouch与鼠标，消费按钮触点避免攻击层接手。720p有效区域64×48像素；2400×1080宽屏窗口在现有16:9内容黑边策略下可正常触摸。此为Windows真实GUI输入注入验收，尚非Android硬件／APK验收。
 
 ## 接入顺序（A / D）
