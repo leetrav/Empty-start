@@ -51,20 +51,23 @@ func enqueue_entry(entry: BubbleDialogueEntry) -> bool:
 	return true
 
 
-# 同一侧剧情序列保持原数组顺序并连续播放，低优先级请求在序列完整播完后恢复。
+# 同侧序列沿用条目优先级保持数组顺序；低优先级闲聊可逐句退场并让位剧情。
 func enqueue_sequence(
 	entries: Array[BubbleDialogueEntry], sequence_id: StringName = &""
 ) -> StringName:
 	if entries.is_empty():
 		return &""
 	var side: int = entries[0].side
+	var sequence_priority: int = int(entries[0].priority)
 	if not _is_side_valid(side) or not bool(_side_enabled.get(side, false)):
+		return &""
+	if sequence_priority not in [PLOT_PRIORITY, TIMED_IDLE_PRIORITY]:
 		return &""
 	var copied_entries: Array[BubbleDialogueEntry] = []
 	for entry: BubbleDialogueEntry in entries:
 		if not _is_entry_valid(entry) or entry.side != side:
 			return &""
-		if entry.priority != BubbleDialogueEntry.Priority.PLOT:
+		if int(entry.priority) != sequence_priority:
 			return &""
 		copied_entries.append(entry)
 	if String(sequence_id).is_empty():
@@ -72,7 +75,7 @@ func enqueue_sequence(
 	_enqueue_request({
 		"entries": copied_entries,
 		"index": 0,
-		"priority": PLOT_PRIORITY,
+		"priority": sequence_priority,
 		"order": _next_arrival_order(),
 		"sequence_id": sequence_id,
 		"side": side,
@@ -121,6 +124,13 @@ func _pump_side(side: int) -> void:
 		return
 	var next_request: Dictionary = pending[next_index]
 	var priority: int = int(next_request["priority"])
+	if priority == TIMED_IDLE_PRIORITY and next_request.has("entries"):
+		# 随机闲聊可按顺序播出；同侧有活跃对白时先等待其完整退场。
+		if not active.is_empty() or _has_active_higher_priority(side, TIMED_IDLE_PRIORITY):
+			return
+		_active_sequence_by_side[side] = pending.pop_at(next_index)
+		_show_next_sequence_line(side)
+		return
 	if priority == PLOT_PRIORITY:
 		_active_sequence_by_side[side] = pending.pop_at(next_index)
 		_retire_active_below(side, PLOT_PRIORITY)

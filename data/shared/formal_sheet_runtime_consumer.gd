@@ -80,13 +80,14 @@ func get_level_presentation(level_id: String) -> Dictionary:
 ## 把当前剧情 ID 下已启用的事件对白装入现有剧情 Presenter 配置。
 func create_dialogue_config(story_config_id: String) -> BubbleDialogueConfig:
 	var config: BubbleDialogueConfig = BubbleConfig.new()
-	for row: Dictionary in _tables.get("dialogue", []):
+	var rows: Array = _tables.get("dialogue", [])
+	for row_index: int in range(rows.size()):
+		var row: Dictionary = rows[row_index]
 		if str(row.get("story_config_id", "")) != story_config_id or not _is_enabled(row):
 			continue
-		var event_id := _dialogue_event_id(
-			str(row.get("trigger_type", "")), str(row.get("trigger_key", "")))
-		if str(row.get("trigger_type", "")) == "random_idle":
-			event_id = &"timed"
+		var trigger_type: String = str(row.get("trigger_type", ""))
+		var trigger_key: String = str(row.get("trigger_key", ""))
+		var event_id := _dialogue_event_id(trigger_type, trigger_key)
 		if event_id == &"":
 			continue
 		var entry: BubbleDialogueEntry = BubbleEntry.new()
@@ -94,14 +95,30 @@ func create_dialogue_config(story_config_id: String) -> BubbleDialogueConfig:
 		entry.text = str(row.get("text", ""))
 		entry.original_sentence_id = str(row.get("source_word_id", ""))
 		entry.event_id = event_id
-		entry.is_random_idle = str(row.get("trigger_type", "")) == "random_idle"
+		entry.is_random_idle = trigger_type == "random_idle"
+		entry.dialogue_id = str(row.get("dialogue_id", ""))
+		entry.trigger_key = trigger_key
+		entry.line_order = _int_or(str(row.get("line_order", "")), 0)
+		entry.source_order = row_index
 		# 闲聊使用低优先级定时气泡；CSV 定时字段即使当前为空也保留为 0。
 		entry.priority = BubbleEntry.Priority.TIMED_IDLE if entry.is_random_idle else BubbleEntry.Priority.PLOT
 		entry.display_duration_seconds = maxf(0.1, float(row.get("display_duration_s", "3")))
 		entry.trigger_time_seconds = _float_or(str(row.get("trigger_time_s", "")), 0.0)
 		entry.random_weight = maxf(0.0, float(row.get("random_weight", "1")))
 		config.entries.append(entry)
+	config.entries.sort_custom(_dialogue_entries_precede)
 	return config
+
+
+## 同事件脚本按 trigger_key 分组，再按 line_order 排序；同序沿用 CSV 原始位置。
+func _dialogue_entries_precede(left: BubbleDialogueEntry, right: BubbleDialogueEntry) -> bool:
+	if left.event_id != right.event_id:
+		return String(left.event_id) < String(right.event_id)
+	if left.trigger_key != right.trigger_key:
+		return left.trigger_key < right.trigger_key
+	if left.line_order != right.line_order:
+		return left.line_order < right.line_order
+	return left.source_order < right.source_order
 
 
 ## 正式音频表覆盖已有稳定事件 ID；未映射资产保留项目现有兼容配置。
@@ -198,6 +215,15 @@ func _dialogue_event_id(trigger_type: String, trigger_key: String) -> StringName
 		"pk_win": return &"combat_win"
 		"pk_lose": return &"combat_lose"
 		"tier_down": return &"combat_tier_down"
+		"paradox_enter": return &"paradox_enter"
+		"hit_any": return &"opponent_hit_any"
+	if trigger_type == "tier_up":
+		var tier_text: String = trigger_key.trim_prefix("T")
+		if tier_text.is_valid_int() and int(tier_text) >= 1 and int(tier_text) <= 5:
+			return StringName("combat_tier_up_t%d" % int(tier_text))
+		return &""
+	if trigger_type == "random_idle":
+		return &"timed"
 	match trigger_type:
 		"timed": return &"timed"
 		"connect": return &"combat_connected"
@@ -219,6 +245,10 @@ func _audio_type(value: String) -> int:
 ## CSV 空值按既有默认值处理，避免一个空选填单元格中止整张表加载。
 func _float_or(value: String, fallback: float) -> float:
 	return float(value) if value.is_valid_float() else fallback
+
+
+func _int_or(value: String, fallback: int) -> int:
+	return int(value) if value.is_valid_int() else fallback
 
 
 func _side_matches(account_scope: String, side_scope: String) -> bool:
