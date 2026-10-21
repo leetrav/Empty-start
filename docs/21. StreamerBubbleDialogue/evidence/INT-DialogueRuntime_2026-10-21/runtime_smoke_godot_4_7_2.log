@@ -1,0 +1,141 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: AMD - AMD Radeon(TM) Graphics
+
+PASS DIALOGUE_SMOKE: story_level_001 将启用 20 表记录绑定为 39 条对手对白
+PASS DIALOGUE_SMOKE: story_level_001 同时绑定 Tier、随机闲聊、受击及矛盾入场事件
+LOAD_BOUND story=story_level_001 opponent=39 tier=14 idle=6 hit=1 paradox=2
+PASS DIALOGUE_SMOKE: story_level_002 将启用 20 表记录绑定为 53 条对手对白
+PASS DIALOGUE_SMOKE: story_level_002 同时绑定 Tier、随机闲聊、受击及矛盾入场事件
+LOAD_BOUND story=story_level_002 opponent=53 tier=21 idle=7 hit=2 paradox=3
+PASS DIALOGUE_SMOKE: story_level_003 将启用 20 表记录绑定为 41 条对手对白
+PASS DIALOGUE_SMOKE: story_level_003 同时绑定 Tier、随机闲聊、受击及矛盾入场事件
+LOAD_BOUND story=story_level_003 opponent=41 tier=14 idle=6 hit=1 paradox=4
+PASS DIALOGUE_SMOKE: story_level_004 将启用 20 表记录绑定为 57 条对手对白
+PASS DIALOGUE_SMOKE: story_level_004 同时绑定 Tier、随机闲聊、受击及矛盾入场事件
+LOAD_BOUND story=story_level_004 opponent=57 tier=25 idle=8 hit=2 paradox=3
+PASS DIALOGUE_SMOKE: 正式表 T1 双侧脚本保留全局 line_order
+PASS DIALOGUE_SMOKE: 正式 Plan B Sandbox 从 20 表绑定到 level_001 / story_level_001
+PASS DIALOGUE_SMOKE: 真实 Sandbox 提供 BattleAttemptFlow、Host 与双方主播气泡栈
+LIVE_CONFIG entries=60 connected=5 t2=3
+PASS DIALOGUE_SMOKE: 经 Sandbox/Host 正式 PK 更新从 T0 连线并跨入 T2
+WAIT_CONNECTED paused=false
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_001 event=combat_connected key=T1_connect order=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_002 event=combat_connected key=T1_connect order=2
+HUD_SEQUENCE_DONE id=dialogue_script_1_0 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_1_0 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_003 event=combat_connected key=T1_connect order=3
+HUD_SEQUENCE_DONE id=dialogue_script_1_1 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_1_1 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_004 event=combat_connected key=T1_connect order=4
+HUD_SEQUENCE_DONE id=dialogue_script_1_2 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_1_2 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_005 event=combat_connected key=T1_connect order=5
+HUD_SEQUENCE_DONE id=dialogue_script_1_3 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_1_3 side=1
+BUBBLE_SEQUENCE_DONE event=combat_connected id=dialogue_script_1 side=1
+HUD_SEQUENCE_DONE id=dialogue_script_1_4 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_1_4 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_030 event=combat_tier_up_t2 key=T2 order=1
+WAIT_CONNECTED_DONE value=true paused=false
+PASS DIALOGUE_SMOKE: 连线序列逐句展示并在最后一只气泡退场后完成
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_031 event=combat_tier_up_t2 key=T2 order=2
+HUD_SEQUENCE_DONE id=dialogue_script_2_0 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_2_0 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_032 event=combat_tier_up_t2 key=T2 order=3
+HUD_SEQUENCE_DONE id=dialogue_script_2_1 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_2_1 side=1
+BUBBLE_SEQUENCE_DONE event=combat_tier_up id=dialogue_script_2 side=1
+HUD_SEQUENCE_DONE id=dialogue_script_2_2 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_2_2 side=1
+PASS DIALOGUE_SMOKE: T2 多句剧本在连线开场完成后按 line_order 顺序出现
+PASS DIALOGUE_SMOKE: T2 对白的第一行晚于完整连线序列
+PASS DIALOGUE_SMOKE: 费米 T2 对手三句按 1→2→3 顺序展示
+PASS DIALOGUE_SMOKE: 通过正式 HUD/Host 发表入口生成玩家棋子
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_055 event=opponent_hit_any key=hit_any order=1
+HUD_SEQUENCE_DONE id=dialogue_script_3_0 side=0
+QUEUE_SEQUENCE_DONE id=dialogue_script_3_0 side=0
+BUBBLE_SEQUENCE_DONE event=opponent_hit_any id=dialogue_script_5 side=1
+HUD_SEQUENCE_DONE id=dialogue_script_5_0 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_5_0 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_016 event=timed key=alien_banter_pair_06 order=1
+PASS DIALOGUE_SMOKE: 玩家正式发表与对手棋子发生真实接触后触发通用受击台词
+PASS DIALOGUE_SMOKE: 随机闲聊按 trigger_key 成组选取并实际展示一条对手对白
+PASS DIALOGUE_SMOKE: 正式 PK Host 接受最大值并进入普通胜利/矛盾流程
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_033 event=combat_tier_up_t3 key=T3 order=1
+HUD_SEQUENCE_DONE id=dialogue_script_4_0 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_4_0 side=1
+PASS DIALOGUE_SMOKE: 真实 ContradictionOracleFlow 进入矛盾阶段
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_034 event=combat_tier_up_t3 key=T3 order=2
+HUD_SEQUENCE_DONE id=dialogue_script_6_0 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_0 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_035 event=combat_tier_up_t3 key=T3 order=3
+HUD_SEQUENCE_DONE id=dialogue_script_6_1 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_1 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_036 event=combat_tier_up_t3 key=T3 order=4
+HUD_SEQUENCE_DONE id=dialogue_script_6_2 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_2 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_037 event=combat_tier_up_t3 key=T3 order=5
+HUD_SEQUENCE_DONE id=dialogue_script_6_3 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_3 side=1
+BUBBLE_SEQUENCE_DONE event=paradox_not_broken id= side=-1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_038 event=combat_tier_up_t3 key=T3 order=6
+HUD_SEQUENCE_DONE id=dialogue_script_6_4 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_4 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_039 event=combat_tier_up_t3 key=T3 order=7
+HUD_SEQUENCE_DONE id=dialogue_script_6_5 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_5 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_040 event=combat_tier_up_t4 key=T4 order=1
+HUD_SEQUENCE_DONE id=dialogue_script_6_6 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_6 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_041 event=combat_tier_up_t4 key=T4 order=2
+HUD_SEQUENCE_DONE id=dialogue_script_6_7 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_7 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_042 event=combat_tier_up_t5 key=T5 order=1
+HUD_SEQUENCE_DONE id=dialogue_script_6_8 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_8 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_043 event=combat_tier_up_t5 key=T5 order=2
+HUD_SEQUENCE_DONE id=dialogue_script_6_9 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_9 side=1
+BUBBLE_SEQUENCE_DONE event=combat_tier_up id=dialogue_script_6 side=1
+HUD_SEQUENCE_DONE id=dialogue_script_6_10 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_6_10 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_046 event=combat_win key=pk_win order=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_047 event=combat_win key=pk_win order=2
+HUD_SEQUENCE_DONE id=dialogue_script_7_0 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_7_0 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_048 event=combat_win key=pk_win order=3
+HUD_SEQUENCE_DONE id=dialogue_script_7_1 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_7_1 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_049 event=combat_win key=pk_win order=4
+HUD_SEQUENCE_DONE id=dialogue_script_7_2 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_7_2 side=1
+BUBBLE_SEQUENCE_DONE event=combat_win id=dialogue_script_7 side=1
+HUD_SEQUENCE_DONE id=dialogue_script_7_3 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_7_3 side=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_044 event=paradox_enter key=paradox_enter order=1
+BUBBLE_PRESENT side=opponent id=bubble_alien_script_20261013_045 event=paradox_enter key=paradox_enter order=2
+HUD_SEQUENCE_DONE id=dialogue_script_8_0 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_8_0 side=1
+BUBBLE_SEQUENCE_DONE event=paradox_enter id=dialogue_script_8 side=1
+HUD_SEQUENCE_DONE id=dialogue_script_8_1 side=1
+QUEUE_SEQUENCE_DONE id=dialogue_script_8_1 side=1
+BUBBLE_SEQUENCE_DONE event=timed id=dialogue_script_3 side=0
+PASS DIALOGUE_SMOKE: 矛盾入场多句对白按表格行序播完
+HUD_SEQUENCE_DONE id=dialogue_script_4_1 side=0
+QUEUE_SEQUENCE_DONE id=dialogue_script_4_1 side=0
+HUD_SEQUENCE_DONE id=dialogue_script_4_2 side=0
+QUEUE_SEQUENCE_DONE id=dialogue_script_4_2 side=0
+HUD_SEQUENCE_DONE id=dialogue_script_4_3 side=0
+QUEUE_SEQUENCE_DONE id=dialogue_script_4_3 side=0
+BUBBLE_SEQUENCE_DONE event=timed id=dialogue_script_4 side=0
+HUD_SEQUENCE_DONE id=dialogue_script_4_4 side=0
+QUEUE_SEQUENCE_DONE id=dialogue_script_4_4 side=0
+PASS DIALOGUE_SMOKE: 已展示气泡全部发出 expired 并从主播栈退场
+PASS DIALOGUE_SMOKE: 气泡创建/展示与真实退场计数一致：33/33
+DIALOGUE_SMOKE_SUMMARY shown=33 expired=33 events=9 active=0
+DIALOGUE_SMOKE_EVENT id=combat_connected completed=1
+DIALOGUE_SMOKE_EVENT id=combat_tier_up completed=2
+DIALOGUE_SMOKE_EVENT id=opponent_hit_any completed=1
+DIALOGUE_SMOKE_EVENT id=timed completed=2
+DIALOGUE_SMOKE_EVENT id=paradox_enter completed=1
+DIALOGUE_SMOKE_RESULT checks=24 failures=0

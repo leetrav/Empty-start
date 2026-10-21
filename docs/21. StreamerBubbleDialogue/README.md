@@ -183,3 +183,35 @@ Sandbox 每次尝试按 02 表 `story_config_id` 从 20 表装配启用的事件
 正式 20 表共 119 条启用对白，四关分别 28/32/28/31；48 条 `random_idle` **全部属于 player**，每关 12 条，当前没有对手随机闲聊行。对手 71 条是剧情事件行；不为填满两侧而复制玩家闲聊。双方队列独立，随机权重和时长沿用正式数据。`timed` 现在支持双方，T0 只暂存对手侧到期条目，玩家侧照常提交。
 
 `ui/tutorial/tutorial_hint_view.tscn` 只显示 C 的 `TutorialStepRunner` 文案。INT-16 在 `runner.begin()` 前调用 `hud.bind_tutorial_runner(runner)`，消费 `hint_requested(step_id, hint_text)`、`step_completed(step_id)`、`tutorial_completed(config_id)`；完成隐藏，重开显式清理视图，进度与输入判定仍归原所有者。Godot GUI 重播与媒体路径见 [INT-17D 日志](../Integration/生产集成_INT-17D_2026-10-16_log.md)。
+
+## 2026-10-21 正式 20 表对手对白运行接线
+
+### 根因与当前数据
+
+- 正式 20 表共 279 行，其中 200 行为对手侧；修复前仅 71 行启用。74 行 `tier_up`、34 行对手 `random_idle`、6 行 `hit_word/hit_any`、12 行 `trigger_type` 留空但 `trigger_key=paradox_enter` 的对白因此未进入当前配置。
+- `FormalSheetRuntimeConsumer` 原先丢弃 `trigger_key` 与 `line_order`，所有升档都落到同一个事件 ID。它既无法选择对应 T1–T5，也无法保持跨双方的脚本顺序；现已保留稳定对白 ID、触发键和原序，并将 Tier、泛受击、矛盾入场映射到独立稳定事件。
+- Plan B 在 T0 连线/升档时先清理对手气泡队列。原 Presenter 在 `tier_changed` 阶段就提交事件，第一句可能被转场清理；Plan B 现在只在正式转场完成后提交。
+- 本次只改启用标记和运行代码，20 表原文 SHA-256 保持一致。保留了 7 行 `alien_t2_t3_cat_lesson`，其备注指出有一句来源可能属于观众且触发方未定；另有 3 行现有禁用 connect 示例/对白保持禁用。
+
+| story_config_id | connect | tier_up | random_idle | tier_down | hit_word | win | lose | 空 trigger_type / paradox_enter | 对手启用数 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `story_level_001` | 5 | 14 | 6 | 2 | 1 | 4 | 5 | 2 | 39 |
+| `story_level_002` | 6 | 21 | 7 | 2 | 2 | 5 | 7 | 3 | 53 |
+| `story_level_003` | 5 | 14 | 6 | 2 | 1 | 6 | 3 | 4 | 41 |
+| `story_level_004` | 6 | 25 | 8 | 2 | 2 | 6 | 5 | 3 | 57 |
+| **总计** | **22** | **74** | **27** | **8** | **6** | **21** | **20** | **12** | **190** |
+
+当前有 269/279 行启用，包括 190 条对手对白与 79 条玩家对白；玩家侧新增启用的 31 条是对应 Tier / 闲聊双侧对话的必要接话行。
+
+### 事件与队列
+
+- `T1_connect` 先播开场；升档按目标 Tier 从低到高查询 `combat_tier_up_t1` 至 `combat_tier_up_t5`，T0 首次连线完成后再播该关的 T1 阶段脚本。
+- 多句对白由同一个脚本串行器逐句调用现有 SD-03 队列，按 `line_order` 在玩家/对手主播间交替。随机闲聊按 `trigger_key` 成组抽取；间隔与优先级继续沿用 06 表和 `TIMED_IDLE`，高优先级对白可在当前闲聊句结束后插队。
+- `hit_any` 在每局第一次真实玩家/对手棋子接触时触发；旧弹幕战路径按一次真实射击命中触发。`paradox_enter` 消费 `ContradictionOracleFlow.entered`。两类事件均走剧情队列并按配置顺序播放。
+
+### Runtime 验证
+
+- Godot `4.7.2.stable.steam.ed1daf0bf`，正式 `sandbox_plan_b.tscn`，`level_001`。验证驱动将本次隔离存档中的 PB-25 六步标为已完成，并以 Host 公开调试入口改变 Tier；接触事件通过 HUD 发表入口和正式 Simulation 产生。
+- 日志观察到 5 句 connect、3 句 T2、真实 `opponent_hit_any`、对手随机闲聊、T3/T4/T5、PK 胜利、2 句 `paradox_enter`。共 33 只气泡出现且 33 只均退场，双方栈最后活动气泡数为 0；24 项检查通过，0 失败。
+- 四关的正式表绑定数同步由 smoke 检查。完整运行日志见 [runtime smoke](evidence/INT-DialogueRuntime_2026-10-21/runtime_smoke_godot_4_7_2.log)；短复现入口为 `tests/streamer_bubble_dialogue/formal_opponent_dialogue_runtime_smoke.tscn`。
+- 本次没有运行 Computer Use，也未做 1280×720 / 1920×1080 视觉审查；验证范围是正式场景、事件、排队、显示和退场。
