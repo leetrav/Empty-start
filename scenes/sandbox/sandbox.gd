@@ -318,14 +318,15 @@ func _ready() -> void:
 			_contradiction_oracle_flow,
 			_active_dialogue_config,
 			Callable(_battle_hud, "enqueue_dialogue_sequence"),
-			_battle_hud)):
+			_battle_hud,
+			_plan_b_simulation)):
 		push_error("Sandbox: 无法接入战斗状态对白消费者。")
 		return
 	_combat_state_dialogue_presenter.connect(
 		"event_sequence_completed", Callable(self, "_on_dialogue_event_sequence_completed")
 	)
 	_battle_hud.dialogue_bubble_presented.connect(_on_dialogue_bubble_presented)
-	# 定时闲聊由可暂停的独立消费者计时，并提交 HUD 已有的低优先级入口。
+	# 定时闲聊由可暂停的独立消费者计时；成组对白交给状态 Presenter 串行跨侧播放。
 	_timed_opponent_dialogue_presenter = TIMED_OPPONENT_DIALOGUE_PRESENTER_SCRIPT.new()
 	_timed_opponent_dialogue_presenter.name = "StreamerBubbleTimedOpponentDialoguePresenter"
 	add_child(_timed_opponent_dialogue_presenter)
@@ -333,7 +334,8 @@ func _ready() -> void:
 			"configure",
 			_battle_attempt_flow,
 			_active_dialogue_config,
-			Callable(_battle_hud, "enqueue_dialogue_bubble"))):
+			Callable(_battle_hud, "enqueue_dialogue_bubble"),
+			_combat_state_dialogue_presenter)):
 		push_error("Sandbox: 无法接入战斗定时对手对白消费者。")
 		return
 	_setup_pb14_performance_tracker()
