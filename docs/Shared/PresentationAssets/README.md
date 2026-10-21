@@ -1,5 +1,19 @@
 # PresentationAssets 表现资产接入
 
+## PA-26 主角仓鼠事件表情（2026-10-21）
+
+`PlanBStreamerPanel.show_player_expression(kind, seconds)` 只替换玩家现有 `_portrait_art.texture`；相机槽尺寸、TextureRect 锚点/等比显示、PA-14 射击层、CRT 与桌沿前景保持原状。面板加载 `hamster_idle/smile/happy/angry/evil.png`；非 idle 贴图缺失时回退 idle。一次性 Timer 到期及 `reset_for_attempt()` 都恢复 idle；前一段表情尚未结束时忽略重复 smile，其他新反馈可覆盖当前反馈。
+
+| 现有事件 | 表情与时长 |
+| --- | --- |
+| `resolve_publish_request()` 成功回执 | `smile`，1.2s |
+| `show_counterattack_result(result)` 且 `result.applied == true` | `angry`，5s；即使特殊阶段跳过战斗文案也保留表情 |
+| `set_paradox_stage_active(false → true)` 首次进入矛盾阶段 | `evil`，5s |
+| `play_opponent_result(broken == true)` 矛盾击破成功 | `happy`，5s；普通 PK 满值只进入矛盾阶段，不触发 happy |
+| 反馈到期、面板重开 | `idle` |
+
+`Tier` 升降不映射情绪。仅成功反击结果触发 angry；失败、取消与无效结果保持当前表情。happy 由真实矛盾击破结果入口触发，并且优先级高于之后到达的 smile / angry / evil；明确 idle 复位与计时到期仍正常。结果顺序为 PA-17 对手演出、PA-12 0.75s 结果漫画、全屏 RestResultView。happy Timer 固定 5s，但全屏 RestResultView 会覆盖其余画面；在 Frog 立即结束路径中，完整游戏里 happy 可见时间约为结果漫画的 0.75s，另加任何对手演出时间。本任务不延长结算或修改 Rest 场景。真实运行证据与最小验证见 [PA-26 日志](表现资产_PA-26_2026-10-21_log.md) 及 [`evidence/PA-26-2026-10-21/`](evidence/PA-26-2026-10-21/)。
+
 ## PTF-04 立绘与 PK 视图修复（2026-10-16）
 
 `OpponentTierPortrait` 在 PTF-04 曾使用同角色全套 alpha 边界共同缩放，使较短/较窄的阶段图明显缩小。**PA-23-FIX 现按每张原图完整画布的宽高比适配直播框**，恢复 PA-14 的显示尺度：保留原图比例、翻牌 Pivot、角色专属修正系数；同时将可见主体底边放在 `(0.5,1.0)` 站立线上（保留 5px 画面内安全距离），四周预留 5px 边距，较高姿态优先完整显示。PA-17 的过渡和击败图继续调用 `fit_current_texture()`。Fox 的 `level_004.tres.streamer_live_background` 已引用仓库存在的 `fox/background.png`。最终视觉取舍由策划验收。
